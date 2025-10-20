@@ -274,6 +274,24 @@ impl BorrowChecker {
                 self.check_expression(&try_expr.expression)?;
                 Ok(ResolvedType::Unknown)
             }
+            Expression::IfExpression(if_expr) => {
+                // Check condition
+                self.check_expression(&if_expr.condition)?;
+                // Check then expression
+                let then_type = self.check_expression(&if_expr.then_expr)?;
+                // Check else expression if present
+                if let Some(else_expr) = &if_expr.else_expr {
+                    self.check_expression(else_expr)?;
+                }
+                Ok(then_type)
+            }
+            Expression::Block(block) => {
+                // Check all statements in the block
+                for stmt in&block.statements {
+                    self.check_statement(stmt)?;
+                }
+                Ok(ResolvedType::Unknown)
+            }
         }
     }
 }

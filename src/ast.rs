@@ -35,6 +35,7 @@ pub struct UseStatement {
 #[derive(Debug, Clone)]
 pub struct LetStatement {
     pub name: Identifier,
+    pub type_annotation: Option<TypeExpression>,
     pub value: Expression,
 }
 
@@ -150,6 +151,7 @@ pub enum Expression {
     FieldAccess(FieldAccessExpression),
     IndexAccess(IndexExpression),
     Match(MatchExpression),
+    IfExpression(IfExpression),  // if cond { then } else { else } as an expression
     JsxElement(JsxElement),
     FunctionCall(FunctionCall),
     Lambda(LambdaExpression),
@@ -158,6 +160,7 @@ pub enum Expression {
     Dereference(DereferenceExpression),  // *x (dereference)
     Range(RangeExpression),  // start..end or start..=end
     TryOperator(TryOperatorExpression),  // expr? (error propagation)
+    Block(BlockStatement),  // { statements... } as an expression (for match arms, etc.)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -252,6 +255,13 @@ pub struct MatchArm {
 }
 
 #[derive(Debug, Clone)]
+pub struct IfExpression {
+    pub condition: Box<Expression>,
+    pub then_expr: Box<Expression>,
+    pub else_expr: Option<Box<Expression>>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Pattern {
     Identifier(Identifier),           // x (binds to variable)
     Literal(Expression),              // 42, "hello", true
@@ -277,6 +287,7 @@ pub enum TypeExpression {
     Reference(Box<TypeExpression>),  // &T (immutable reference)
     MutableReference(Box<TypeExpression>),  // &mut T (mutable reference)
     Slice(Box<TypeExpression>),  // [T] (slice type)
+    Function(Vec<TypeExpression>, Box<TypeExpression>),  // fn(T1, T2) -> R (function type)
 }
 
 // --- JSX AST Nodes ---

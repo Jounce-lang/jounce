@@ -1,0 +1,16 @@
+// Test if-expressions with blocks
+
+fn get_status(score: i32) -> i32 {
+    let result = if score > 80 {
+        100
+    } else {
+        50
+    };
+    return result;
+}
+
+fn main() -> i32 {
+    let score = 90;
+    let status = get_status(score);
+    return status;
+}

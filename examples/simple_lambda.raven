@@ -1,0 +1,14 @@
+// Simplest possible lambda test
+fn test_simple_lambda() -> i32 {
+    // Simple lambda with type annotation
+    let add_ten: fn(i32) -> i32 = |x| x + 10;
+
+    // Call it
+    let result = add_ten(5);
+
+    return result;
+}
+
+fn main() -> i32 {
+    return test_simple_lambda();
+}

@@ -237,6 +237,11 @@ impl SemanticAnalyzer {
                 let inner_type = self.type_expression_to_resolved_type(inner);
                 ResolvedType::Array(Box::new(inner_type))
             }
+            TypeExpression::Function(_param_types, _return_type) => {
+                // For now, return Unknown for function types
+                // In a full implementation, we'd track function signatures properly
+                ResolvedType::Unknown
+            }
         }
     }
 
@@ -582,6 +587,41 @@ impl SemanticAnalyzer {
                 // In a full implementation, we would verify that the inner expression
                 // returns a Result<T, E> type and extract the T type
                 self.analyze_expression(&try_expr.expression)
+            }
+            Expression::IfExpression(if_expr) => {
+                // Analyze the condition
+                let cond_type = self.analyze_expression(&if_expr.condition)?;
+                if cond_type != ResolvedType::Bool && cond_type != ResolvedType::Integer && cond_type != ResolvedType::Unknown {
+                    return Err(CompileError::Generic(format!(
+                        "If condition must be bool or integer, got '{}'",
+                        cond_type
+                    )));
+                }
+
+                // Analyze then expression
+                let then_type = self.analyze_expression(&if_expr.then_expr)?;
+
+                // Analyze else expression if present
+                if let Some(else_expr) = &if_expr.else_expr {
+                    let else_type = self.analyze_expression(else_expr)?;
+                    // Check type compatibility
+                    if !self.types_compatible(&then_type, &else_type) {
+                        return Err(CompileError::Generic(format!(
+                            "If expression branches have incompatible types: then '{}', else '{}'",
+                            then_type, else_type
+                        )));
+                    }
+                }
+
+                Ok(then_type)
+            }
+            Expression::Block(block) => {
+                // Analyze all statements in the block
+                let mut last_type = ResolvedType::Unit;
+                for stmt in &block.statements {
+                    last_type = self.analyze_statement(stmt)?;
+                }
+                Ok(last_type)
             }
         }
     }
