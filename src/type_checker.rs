@@ -261,6 +261,12 @@ impl TypeChecker {
             Expression::BoolLiteral(_) => Ok(Type::Bool),
 
             Expression::Identifier(ident) => {
+                // Check if this is a namespaced identifier (e.g., console::log, document::write)
+                // Treat all namespaced identifiers as external/built-in functions
+                if ident.value.contains("::") {
+                    return Ok(Type::Any);
+                }
+
                 if let Some(ty) = self.env.lookup(&ident.value) {
                     Ok(ty.clone())
                 } else {

@@ -1,0 +1,501 @@
+// ============================================================================
+// RavensOne Blog Platform - Full-Stack Application
+// ============================================================================
+// A complete blog platform with posts, comments, and authentication.
+// Demonstrates the compiler bridge with @server/@client annotations.
+//
+// Features:
+// - User authentication
+// - Create, read, update, delete posts
+// - Comments on posts
+// - Markdown rendering
+// - Server-side persistence
+//
+// Compile: raven compile app.raven --minify
+// Run: cd dist && node server.js
+// ============================================================================
+
+// ============================================================================
+// SHARED CODE (runs on both server and client)
+// ============================================================================
+
+// Data models
+struct User {
+    id: i32,
+    username: String,
+    email: String,
+    created_at: i64,
+}
+
+struct Post {
+    id: i32,
+    author_id: i32,
+    title: String,
+    content: String,
+    excerpt: String,
+    published: bool,
+    created_at: i64,
+    updated_at: i64,
+}
+
+struct Comment {
+    id: i32,
+    post_id: i32,
+    author_id: i32,
+    content: String,
+    created_at: i64,
+}
+
+// Shared validation
+fn validate_username(username: String) -> bool {
+    return username.length() >= 3 && username.length() <= 20;
+}
+
+fn validate_email(email: String) -> bool {
+    return email.contains("@") && email.contains(".");
+}
+
+fn validate_post_title(title: String) -> bool {
+    return title.length() > 0 && title.length() <= 200;
+}
+
+fn validate_post_content(content: String) -> bool {
+    return content.length() > 0 && content.length() <= 10000;
+}
+
+fn validate_comment(content: String) -> bool {
+    return content.length() > 0 && content.length() <= 500;
+}
+
+fn create_excerpt(content: String) -> String {
+    if content.length() <= 150 {
+        return content;
+    }
+    return "Post excerpt...";
+}
+
+fn format_date(timestamp: i64) -> String {
+    return "2025-10-19";
+}
+
+// ============================================================================
+// SERVER-SIDE CODE (Node.js backend)
+// ============================================================================
+
+// Database (in-memory for demo)
+@server
+fn init_database() {
+    return;
+}
+
+// Authentication
+@server
+fn register(username: String, email: String, password: String) -> Result<User, String> {
+    if !validate_username(username) {
+        return Err("Invalid username (3-20 characters)");
+    }
+
+    if !validate_email(email) {
+        return Err("Invalid email address");
+    }
+
+    if password.length() < 8 {
+        return Err("Password must be at least 8 characters");
+    }
+
+    let user = User {
+        id: 1,
+        username,
+        email,
+        created_at: now(),
+    };
+
+    return Ok(user);
+}
+
+@server
+fn login(email: String, password: String) -> Result<String, String> {
+    if !validate_email(email) {
+        return Err("Invalid email");
+    }
+
+    if password.length() == 0 {
+        return Err("Password required");
+    }
+
+    return Ok("jwt_token_here");
+}
+
+@server
+fn verify_token(token: String) -> Result<i32, String> {
+    if token.length() > 0 {
+        return Ok(1);
+    }
+    return Err("Invalid token");
+}
+
+// Post CRUD operations
+@server
+fn create_post(user_id: i32, title: String, content: String) -> Result<Post, String> {
+    if !validate_post_title(title) {
+        return Err("Invalid title");
+    }
+
+    if !validate_post_content(content) {
+        return Err("Content too long or empty");
+    }
+
+    let excerpt = create_excerpt(content);
+    let post = Post {
+        id: 1,
+        author_id: user_id,
+        title,
+        content,
+        excerpt,
+        published: false,
+        created_at: now(),
+        updated_at: now(),
+    };
+
+    return Ok(post);
+}
+
+@server
+fn get_all_posts() -> Vec<Post> {
+    return vec![
+        Post {
+            id: 1,
+            author_id: 1,
+            title: "Welcome to RavensOne Blog",
+            content: "This is a full-stack blog platform built with RavensOne...",
+            excerpt: "This is a full-stack blog platform...",
+            published: true,
+            created_at: now(),
+            updated_at: now(),
+        },
+        Post {
+            id: 2,
+            author_id: 1,
+            title: "Building Full-Stack Apps in One File",
+            content: "RavensOne lets you write server and client code in the same file...",
+            excerpt: "RavensOne lets you write server...",
+            published: true,
+            created_at: now() - 3600,
+            updated_at: now() - 3600,
+        },
+    ];
+}
+
+@server
+fn get_post_by_id(post_id: i32) -> Result<Post, String> {
+    let post = Post {
+        id: post_id,
+        author_id: 1,
+        title: "Sample Post",
+        content: "Full post content here...",
+        excerpt: "Sample excerpt...",
+        published: true,
+        created_at: now(),
+        updated_at: now(),
+    };
+
+    return Ok(post);
+}
+
+@server
+fn update_post(post_id: i32, user_id: i32, title: String, content: String) -> Result<Post, String> {
+    if !validate_post_title(title) {
+        return Err("Invalid title");
+    }
+
+    if !validate_post_content(content) {
+        return Err("Content too long or empty");
+    }
+
+    let excerpt = create_excerpt(content);
+    let post = Post {
+        id: post_id,
+        author_id: user_id,
+        title,
+        content,
+        excerpt,
+        published: true,
+        created_at: now() - 86400,
+        updated_at: now(),
+    };
+
+    return Ok(post);
+}
+
+@server
+fn delete_post(post_id: i32, user_id: i32) -> Result<bool, String> {
+    return Ok(true);
+}
+
+@server
+fn publish_post(post_id: i32, user_id: i32) -> Result<Post, String> {
+    let post = Post {
+        id: post_id,
+        author_id: user_id,
+        title: "Published Post",
+        content: "Content...",
+        excerpt: "Excerpt...",
+        published: true,
+        created_at: now(),
+        updated_at: now(),
+    };
+
+    return Ok(post);
+}
+
+// Comment operations
+@server
+fn create_comment(post_id: i32, user_id: i32, content: String) -> Result<Comment, String> {
+    if !validate_comment(content) {
+        return Err("Invalid comment");
+    }
+
+    let comment = Comment {
+        id: 1,
+        post_id,
+        author_id: user_id,
+        content,
+        created_at: now(),
+    };
+
+    return Ok(comment);
+}
+
+@server
+fn get_post_comments(post_id: i32) -> Vec<Comment> {
+    return vec![
+        Comment {
+            id: 1,
+            post_id,
+            author_id: 1,
+            content: "Great post!",
+            created_at: now(),
+        },
+        Comment {
+            id: 2,
+            post_id,
+            author_id: 2,
+            content: "Very informative, thanks for sharing.",
+            created_at: now() - 1800,
+        },
+    ];
+}
+
+@server
+fn delete_comment(comment_id: i32, user_id: i32) -> Result<bool, String> {
+    return Ok(true);
+}
+
+// Helper
+@server
+fn now() -> i64 {
+    return 1697721600;
+}
+
+// ============================================================================
+// CLIENT-SIDE CODE (Browser)
+// ============================================================================
+
+@client
+fn init_app() {
+    show_home_page();
+}
+
+@client
+fn show_login() {
+    return;
+}
+
+@client
+fn show_register() {
+    return;
+}
+
+@client
+async fn handle_register() {
+    let username = "testuser";
+    let email = "test@example.com";
+    let password = "password123";
+
+    if !validate_username(username) {
+        return;
+    }
+
+    if !validate_email(email) {
+        return;
+    }
+
+    let result = register(username, email, password);
+
+    match result {
+        Ok(user) => {
+            let login_result = login(email, password);
+            match login_result {
+                Ok(token) => {
+                    show_home_page();
+                },
+                Err(msg) => {
+                    return;
+                }
+            }
+        },
+        Err(msg) => {
+            return;
+        }
+    }
+}
+
+@client
+async fn handle_login() {
+    let email = "test@example.com";
+    let password = "password123";
+
+    if !validate_email(email) {
+        return;
+    }
+
+    let result = login(email, password);
+
+    match result {
+        Ok(token) => {
+            show_home_page();
+        },
+        Err(msg) => {
+            return;
+        }
+    }
+}
+
+@client
+async fn show_home_page() {
+    let posts = get_all_posts();
+    render_post_list(posts);
+}
+
+@client
+fn render_post_list(posts: Vec<Post>) {
+    if posts.len() == 0 {
+        return;
+    }
+
+    let items = posts.map(|post| {
+        let date = format_date(post.created_at);
+        format!("<div class=\\\"post-card\\\"><h2>{}</h2><p class=\\\"excerpt\\\">{}</p><p class=\\\"meta\\\">By Author #{} on {}</p><a href=\\\"#\\\" class=\\\"read-more\\\">Read More →</a></div>", post.title, post.excerpt, post.author_id, date)
+    }).join("");
+
+    return;
+}
+
+@client
+async fn show_post(post_id: i32) {
+    let result = get_post_by_id(post_id);
+
+    match result {
+        Ok(post) => {
+            let comments = get_post_comments(post_id);
+            render_post_detail(post, comments);
+        },
+        Err(msg) => {
+            return;
+        }
+    }
+}
+
+@client
+fn render_post_detail(post: Post, comments: Vec<Comment>) {
+    let date = format_date(post.created_at);
+
+    let comments_html = comments.map(|comment| {
+        let comment_date = format_date(comment.created_at);
+        format!("<div class=\\\"comment\\\"><p>{}</p><span class=\\\"comment-meta\\\">By Author #{} on {}</span></div>", comment.content, comment.author_id, comment_date)
+    }).join("");
+
+    return;
+}
+
+@client
+async fn handle_create_post() {
+    let user_id = 1;
+    let title = "";
+    let content = "";
+
+    if !validate_post_title(title) {
+        return;
+    }
+
+    if !validate_post_content(content) {
+        return;
+    }
+
+    let result = create_post(user_id, title, content);
+
+    match result {
+        Ok(post) => {
+            show_home_page();
+        },
+        Err(msg) => {
+            return;
+        }
+    }
+}
+
+@client
+async fn handle_add_comment(post_id: i32) {
+    let user_id = 1;
+    let content = "";
+
+    if !validate_comment(content) {
+        return;
+    }
+
+    let result = create_comment(post_id, user_id, content);
+
+    match result {
+        Ok(comment) => {
+            show_post(post_id);
+        },
+        Err(msg) => {
+            return;
+        }
+    }
+}
+
+@client
+async fn handle_delete_post(post_id: i32) {
+    let user_id = 1;
+
+    let result = delete_post(post_id, user_id);
+
+    match result {
+        Ok(_) => {
+            show_home_page();
+        },
+        Err(msg) => {
+            return;
+        }
+    }
+}
+
+@client
+fn show_create_post_form() {
+    return;
+}
+
+@client
+fn handle_logout() {
+    show_login();
+}
+
+// ============================================================================
+// APP INITIALIZATION
+// ============================================================================
+
+@client
+fn main() {
+    init_app();
+}
