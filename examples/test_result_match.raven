@@ -1,0 +1,18 @@
+// Minimal test for Result pattern matching
+
+fn test_match() -> i32 {
+    let result = Result::Ok(42);
+
+    match result {
+        Result::Ok(value) => {
+            return value;
+        },
+        Result::Err(msg) => {
+            return 0;
+        }
+    }
+}
+
+fn main() -> i32 {
+    return test_match();
+}

@@ -1,0 +1,12 @@
+// Ultra-minimal match test
+
+fn main() -> i32 {
+    let x = 1;
+
+    match x {
+        1 => 10,
+        2 => 20
+    }
+
+    return 0;
+}
