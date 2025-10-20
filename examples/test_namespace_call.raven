@@ -1,0 +1,6 @@
+// Test namespace resolution with function call
+
+fn main() -> i32 {
+    let x = Result::Ok(42);
+    return 0;
+}

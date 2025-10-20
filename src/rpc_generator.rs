@@ -150,6 +150,17 @@ impl RPCGenerator {
             TypeExpression::Slice(inner) => {
                 format!("{}[]", self.format_type(inner))
             }
+            TypeExpression::Function(param_types, return_type) => {
+                // Format as TypeScript function type: (param1: Type1, param2: Type2) => ReturnType
+                let param_strs = param_types
+                    .iter()
+                    .enumerate()
+                    .map(|(i, t)| format!("arg{}: {}", i, self.format_type(t)))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let ret_str = self.format_type(return_type);
+                format!("({}) => {}", param_strs, ret_str)
+            }
         }
     }
 
