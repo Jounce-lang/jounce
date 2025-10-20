@@ -1,0 +1,13 @@
+// Test basic function references without closures
+fn add_ten(x: i32) -> i32 {
+    return x + 10;
+}
+
+fn apply_func(f: fn(i32) -> i32, value: i32) -> i32 {
+    return f(value);
+}
+
+fn main() -> i32 {
+    let result = apply_func(add_ten, 5);
+    return result;
+}

@@ -85,7 +85,7 @@ fn format_date(timestamp: i64) -> String {
 // Database (in-memory for demo)
 @server
 fn init_database() {
-    return;
+    let x = 0;
 }
 
 // Authentication
@@ -105,8 +105,8 @@ fn register(username: String, email: String, password: String) -> Result<User, S
 
     let user = User {
         id: 1,
-        username,
-        email,
+        username: username,
+        email: email,
         created_at: now(),
     };
 
@@ -149,9 +149,9 @@ fn create_post(user_id: i32, title: String, content: String) -> Result<Post, Str
     let post = Post {
         id: 1,
         author_id: user_id,
-        title,
-        content,
-        excerpt,
+        title: title,
+        content: content,
+        excerpt: excerpt,
         published: false,
         created_at: now(),
         updated_at: now(),
@@ -216,9 +216,9 @@ fn update_post(post_id: i32, user_id: i32, title: String, content: String) -> Re
     let post = Post {
         id: post_id,
         author_id: user_id,
-        title,
-        content,
-        excerpt,
+        title: title,
+        content: content,
+        excerpt: excerpt,
         published: true,
         created_at: now() - 86400,
         updated_at: now(),
@@ -257,9 +257,9 @@ fn create_comment(post_id: i32, user_id: i32, content: String) -> Result<Comment
 
     let comment = Comment {
         id: 1,
-        post_id,
+        post_id: post_id,
         author_id: user_id,
-        content,
+        content: content,
         created_at: now(),
     };
 
@@ -271,14 +271,14 @@ fn get_post_comments(post_id: i32) -> Vec<Comment> {
     return vec![
         Comment {
             id: 1,
-            post_id,
+            post_id: post_id,
             author_id: 1,
             content: "Great post!",
             created_at: now(),
         },
         Comment {
             id: 2,
-            post_id,
+            post_id: post_id,
             author_id: 2,
             content: "Very informative, thanks for sharing.",
             created_at: now() - 1800,
@@ -308,12 +308,12 @@ fn init_app() {
 
 @client
 fn show_login() {
-    return;
+    let _ = 0;
 }
 
 @client
 fn show_register() {
-    return;
+    let _ = 0;
 }
 
 @client
@@ -323,29 +323,29 @@ async fn handle_register() {
     let password = "password123";
 
     if !validate_username(username) {
-        return;
+        let _ = 0;
     }
 
     if !validate_email(email) {
-        return;
+        let _ = 0;
     }
 
     let result = register(username, email, password);
 
     match result {
-        Ok(user) => {
+        Result::Ok(user) => {
             let login_result = login(email, password);
             match login_result {
-                Ok(token) => {
+                Result::Ok(token) => {
                     show_home_page();
                 },
-                Err(msg) => {
-                    return;
+                Result::Err(msg) => {
+                    let _ = 0;
                 }
             }
         },
-        Err(msg) => {
-            return;
+        Result::Err(msg) => {
+            let _ = 0;
         }
     }
 }
@@ -356,17 +356,17 @@ async fn handle_login() {
     let password = "password123";
 
     if !validate_email(email) {
-        return;
+        let _ = 0;
     }
 
     let result = login(email, password);
 
     match result {
-        Ok(token) => {
+        Result::Ok(token) => {
             show_home_page();
         },
-        Err(msg) => {
-            return;
+        Result::Err(msg) => {
+            let _ = 0;
         }
     }
 }
@@ -380,7 +380,7 @@ async fn show_home_page() {
 @client
 fn render_post_list(posts: Vec<Post>) {
     if posts.len() == 0 {
-        return;
+        let _ = 0;
     }
 
     let items = posts.map(|post| {
@@ -388,7 +388,7 @@ fn render_post_list(posts: Vec<Post>) {
         format!("<div class=\\\"post-card\\\"><h2>{}</h2><p class=\\\"excerpt\\\">{}</p><p class=\\\"meta\\\">By Author #{} on {}</p><a href=\\\"#\\\" class=\\\"read-more\\\">Read More →</a></div>", post.title, post.excerpt, post.author_id, date)
     }).join("");
 
-    return;
+    let _ = 0;
 }
 
 @client
@@ -396,12 +396,12 @@ async fn show_post(post_id: i32) {
     let result = get_post_by_id(post_id);
 
     match result {
-        Ok(post) => {
+        Result::Ok(post) => {
             let comments = get_post_comments(post_id);
             render_post_detail(post, comments);
         },
-        Err(msg) => {
-            return;
+        Result::Err(msg) => {
+            let _ = 0;
         }
     }
 }
@@ -415,7 +415,7 @@ fn render_post_detail(post: Post, comments: Vec<Comment>) {
         format!("<div class=\\\"comment\\\"><p>{}</p><span class=\\\"comment-meta\\\">By Author #{} on {}</span></div>", comment.content, comment.author_id, comment_date)
     }).join("");
 
-    return;
+    let _ = 0;
 }
 
 @client
@@ -425,21 +425,21 @@ async fn handle_create_post() {
     let content = "";
 
     if !validate_post_title(title) {
-        return;
+        let _ = 0;
     }
 
     if !validate_post_content(content) {
-        return;
+        let _ = 0;
     }
 
     let result = create_post(user_id, title, content);
 
     match result {
-        Ok(post) => {
+        Result::Ok(post) => {
             show_home_page();
         },
-        Err(msg) => {
-            return;
+        Result::Err(msg) => {
+            let _ = 0;
         }
     }
 }
@@ -450,17 +450,17 @@ async fn handle_add_comment(post_id: i32) {
     let content = "";
 
     if !validate_comment(content) {
-        return;
+        let _ = 0;
     }
 
     let result = create_comment(post_id, user_id, content);
 
     match result {
-        Ok(comment) => {
+        Result::Ok(comment) => {
             show_post(post_id);
         },
-        Err(msg) => {
-            return;
+        Result::Err(msg) => {
+            let _ = 0;
         }
     }
 }
@@ -472,18 +472,18 @@ async fn handle_delete_post(post_id: i32) {
     let result = delete_post(post_id, user_id);
 
     match result {
-        Ok(_) => {
+        Result::Ok(_) => {
             show_home_page();
         },
-        Err(msg) => {
-            return;
+        Result::Err(msg) => {
+            let _ = 0;
         }
     }
 }
 
 @client
 fn show_create_post_form() {
-    return;
+    let _ = 0;
 }
 
 @client

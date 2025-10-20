@@ -1,0 +1,24 @@
+// Test typed let bindings
+// Demonstrates the new type annotation syntax
+
+fn test_typed_let() -> i32 {
+    // Simple typed let binding
+    let x: i32 = 42;
+
+    // Type annotation with function type
+    let adder: fn(i32) -> i32 = add_ten;
+
+    // Let without type annotation (for comparison)
+    let y = 100;
+
+    return x + y;
+}
+
+fn add_ten(n: i32) -> i32 {
+    return n + 10;
+}
+
+fn main() -> i32 {
+    let result = test_typed_let();
+    return result;
+}

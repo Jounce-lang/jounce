@@ -1,0 +1,6 @@
+// Test just namespace identifier
+
+fn main() -> i32 {
+    console::log("test");
+    return 0;
+}
