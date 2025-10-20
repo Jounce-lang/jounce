@@ -1,0 +1,17 @@
+// Test file for :: (double colon) operator support
+
+@server
+fn init() {
+    // This should now parse successfully!
+    console::log("Server initialized");
+}
+
+@client
+fn render() {
+    console::log("Client rendering");
+    document::getElementById("app");
+}
+
+fn shared_function() {
+    return 42;
+}
