@@ -1,0 +1,2000 @@
+install.cmd:36:set "DOWNLOAD_DIR=%USERPROFILE%\.claude\downloads"
+install.cmd:40:if not exist "!DOWNLOAD_DIR!" mkdir "!DOWNLOAD_DIR!"
+install.cmd:50:call :download_file "!GCS_BUCKET!/stable" "!DOWNLOAD_DIR!\stable"
+install.cmd:57:set /p VERSION=<"!DOWNLOAD_DIR!\stable"
+install.cmd:58:del "!DOWNLOAD_DIR!\stable"
+install.cmd:61:call :download_file "!GCS_BUCKET!/!VERSION!/manifest.json" "!DOWNLOAD_DIR!\manifest.json"
+install.cmd:68:call :parse_manifest "!DOWNLOAD_DIR!\manifest.json" "!PLATFORM!"
+install.cmd:71:    del "!DOWNLOAD_DIR!\manifest.json" 2>nul
+install.cmd:74:del "!DOWNLOAD_DIR!\manifest.json"
+install.cmd:77:set "BINARY_PATH=!DOWNLOAD_DIR!\claude-!VERSION!-!PLATFORM!.exe"
+examples/test_full_compiler_bridge.rs:9:use ravensone_compiler::token::TokenKind;
+examples/test_full_compiler_bridge.rs:63:        let is_eof = token.kind == TokenKind::Eof;
+examples/test_full_compiler_bridge.rs:189:    if !client_js.contains("export function render_todo_list") {
+examples/test_full_compiler_bridge.rs:193:    if !client_js.contains("export function handle_add_click") {
+examples/test_full_compiler_bridge.rs:197:    if !client_js.contains("export function format_date") {
+STATUS.md:69:[Parser] → AST with annotations
+STATUS.md:139:│   ├── parser.rs               # AST construction (1,500 lines)
+STATUS.md:150:│       ├── iterator.rs         # Iterator traits (180 lines)
+STATUS.md:184:- ✅ Semantic analyzer with type inference
+STATUS.md:195:- ✅ Iterator and IntoIterator traits
+STATUS.md:220:- ✅ std::iterator - Iterator traits
+DOUBLE_COLON_OPERATOR.md:85:   - Added `TokenKind::DoubleColon` case in postfix operations loop
+DOUBLE_COLON_OPERATOR.md:97:The lexer already tokenizes `::` as `TokenKind::DoubleColon` (src/lexer.rs:30-37).
+DOUBLE_COLON_OPERATOR.md:168:export function render() {
+DOUBLE_COLON_OPERATOR.md:177:export function init() {
+benches/compiler_bench.rs:9:    pub const SMALL_PROGRAM: &str = r#"
+benches/compiler_bench.rs:15:    pub const MEDIUM_PROGRAM: &str = r#"
+benches/compiler_bench.rs:30:    pub const LARGE_PROGRAM: &str = r#"
+benches/compiler_bench.rs:108:    pub const REACTIVE_HEAVY: &str = r#"
+benches/compiler_bench.rs:178:pub struct BenchmarkResult {
+benches/compiler_bench.rs:179:    pub name: String,
+benches/compiler_bench.rs:180:    pub duration: Duration,
+benches/compiler_bench.rs:181:    pub ops_per_sec: f64,
+benches/compiler_bench.rs:182:    pub source_size: usize,
+benches/compiler_bench.rs:183:    pub wasm_size: usize,
+benches/compiler_bench.rs:187:    pub fn display(&self) {
+benches/compiler_bench.rs:202:pub fn bench_compile(name: &str, source: &str, target: BuildTarget, iterations: usize) -> BenchmarkResult {
+benches/compiler_bench.rs:241:pub fn run_benchmarks() {
+_repo_filelist.tsv:263:examples/traits.raven	4 KB
+registry-server.js:14:const REGISTRY_DIR = path.join(__dirname, 'registry');
+registry-server.js:15:const PACKAGES_DIR = path.join(REGISTRY_DIR, 'packages');
+registry-server.js:16:const METADATA_DIR = path.join(REGISTRY_DIR, 'metadata');
+registry-server.js:17:const AUTH_DIR = path.join(REGISTRY_DIR, 'auth');
+registry-server.js:28:        const packageDir = path.join(PACKAGES_DIR, packageName, version);
+registry-server.js:41:    await fs.mkdir(PACKAGES_DIR, { recursive: true });
+registry-server.js:42:    await fs.mkdir(METADATA_DIR, { recursive: true });
+registry-server.js:43:    await fs.mkdir(AUTH_DIR, { recursive: true });
+registry-server.js:57:    const authFile = path.join(AUTH_DIR, `${tokenHash}.json`);
+registry-server.js:93:            path.join(AUTH_DIR, `${tokenHash}.json`),
+registry-server.js:123:        const versionFile = path.join(METADATA_DIR, name, `${version}.json`);
+registry-server.js:141:        const metadataDir = path.join(METADATA_DIR, name);
+registry-server.js:161:        const indexFile = path.join(METADATA_DIR, name, 'index.json');
+registry-server.js:174:        const versionFile = path.join(METADATA_DIR, name, `${version}.json`);
+registry-server.js:187:        const packageDir = path.join(PACKAGES_DIR, name, version);
+registry-server.js:212:        const filePath = path.join(PACKAGES_DIR, name, version, filename);
+registry-server.js:230:        const packages = await fs.readdir(METADATA_DIR);
+registry-server.js:235:                const indexFile = path.join(METADATA_DIR, pkg, 'index.json');
+registry-server.js:254:        const packages = await fs.readdir(METADATA_DIR);
+registry-server.js:258:            const indexFile = path.join(METADATA_DIR, pkg, 'index.json');
+registry-server.js:276:    const indexFile = path.join(METADATA_DIR, name, 'index.json');
+registry-server.js:302:    const versionFile = path.join(METADATA_DIR, name, `${version}.json`);
+registry-server.js:311:        const indexFile = path.join(METADATA_DIR, name, 'index.json');
+registry-server.js:326:        console.log(`   📂 Registry: ${REGISTRY_DIR}`);
+examples/iterator_for_in_syntax.raven:1:// Test iterator trait and for-in loop syntax
+examples/iterator_for_in_syntax.raven:297:// Demonstrating Iterator trait implementation (conceptual)
+examples/iterator_for_in_syntax.raven:298:// This shows what the stdlib Iterator trait looks like
+examples/iterator_for_in_syntax.raven:301:trait Iterator {
+examples/iterator_for_in_syntax.raven:302:    type Item;  // Associated type for the element type
+examples/iterator_for_in_syntax.raven:306:trait IntoIterator {
+examples/iterator_for_in_syntax.raven:307:    type Item;
+examples/iterator_for_in_syntax.raven:308:    type IntoIter: Iterator;
+FULLSTACK_GUIDE.md:219:export async function get_user(id) {
+FULLSTACK_GUIDE.md:224:export function show_profile(user_id) {
+FULLSTACK_GUIDE.md:242:RavensOne preserves type information through the compilation process:
+FULLSTACK_GUIDE.md:265:export function get_products(category: string, limit: number): Promise<Array<Product>>;
+CODEGEN_PROGRESS_SUMMARY.md:142:1. **Locals Counting**: Recursive traversal of AST to count required locals
+CODEGEN_PROGRESS_SUMMARY.md:144:3. **Type Inference**: Local type table tracks struct types for field access
+package-lock.json:361:      "integrity": "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==",
+package-lock.json:582:      "integrity": "sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==",
+scripts/rpm.js:16:const REGISTRY_DIR = path.join(process.cwd(), '.ravens');
+scripts/rpm.js:17:const PACKAGES_DIR = path.join(REGISTRY_DIR, 'packages');
+scripts/rpm.js:18:const CACHE_DIR = path.join(REGISTRY_DIR, 'cache');
+scripts/rpm.js:148:        const packageDir = path.join(PACKAGES_DIR, packageName);
+scripts/rpm.js:246:        const archivePath = path.join(CACHE_DIR, archiveName);
+scripts/rpm.js:292:            REGISTRY_DIR,
+scripts/rpm.js:293:            PACKAGES_DIR,
+scripts/rpm.js:294:            CACHE_DIR
+scripts/rpm.js:373:        const packageDir = path.join(PACKAGES_DIR, pkg.name);
+scripts/rpm.js:401:        const packageDir = path.join(PACKAGES_DIR, packageName);
+scripts/rpm.js:442:export class HttpClient {
+scripts/rpm.js:469:export { Button, Card, Modal, Input, Badge, List } from './components';
+scripts/rpm.js:481:export class WasmLoader {
+scripts/rpm.js:499:export class Database {
+scripts/rpm.js:519:export class Auth {
+scripts/rpm.js:539:export class Router {
+scripts/compile-wasm.js:33:        0x00, // function 0 uses type 0
+scripts/hmr-server.js:210:     * Get update type based on file extension
+scripts/build-for-deployment.sh:19:OUTPUT_DIR="dist/deployment"
+scripts/build-for-deployment.sh:28:echo "📦 Output: $OUTPUT_DIR"
+scripts/build-for-deployment.sh:32:mkdir -p "$OUTPUT_DIR"
+scripts/build-for-deployment.sh:38:    --output "$OUTPUT_DIR/app.wasm" \
+scripts/build-for-deployment.sh:48:    --output "$OUTPUT_DIR/app_ssr.wasm"
+scripts/build-for-deployment.sh:55:cat > "$OUTPUT_DIR/index.html" << 'EOF'
+scripts/build-for-deployment.sh:124:SOURCE_DIR=$(dirname "$SOURCE_FILE")
+scripts/build-for-deployment.sh:125:if [ -f "$SOURCE_DIR/analytics_dashboard.css" ]; then
+scripts/build-for-deployment.sh:126:    cp "$SOURCE_DIR/analytics_dashboard.css" "$OUTPUT_DIR/styles.css"
+scripts/build-for-deployment.sh:130:    touch "$OUTPUT_DIR/styles.css"
+scripts/build-for-deployment.sh:135:cat > "$OUTPUT_DIR/vercel.json" << 'EOF'
+scripts/build-for-deployment.sh:188:cat > "$OUTPUT_DIR/package.json" << 'EOF'
+scripts/build-for-deployment.sh:205:cat > "$OUTPUT_DIR/README.md" << 'EOF'
+scripts/build-for-deployment.sh:267:echo "📦 Deployment package created at: $OUTPUT_DIR"
+scripts/build-for-deployment.sh:270:echo "  - Client WASM: $OUTPUT_DIR/app.wasm"
+scripts/build-for-deployment.sh:271:echo "  - Server WASM: $OUTPUT_DIR/app_ssr.wasm"
+scripts/build-for-deployment.sh:272:echo "  - HTML: $OUTPUT_DIR/index.html"
+scripts/build-for-deployment.sh:273:echo "  - CSS: $OUTPUT_DIR/styles.css"
+scripts/build-for-deployment.sh:276:echo "  cd $OUTPUT_DIR"
+ACCOMPLISHMENTS.md:8:#### AST Changes (`src/ast.rs`)
+ACCOMPLISHMENTS.md:10:// Added function type variant to TypeExpression enum (line 260)
+ACCOMPLISHMENTS.md:11:pub enum TypeExpression {
+ACCOMPLISHMENTS.md:21:// Extended LetStatement to support type annotations (lines 36-40)
+ACCOMPLISHMENTS.md:22:pub struct LetStatement {
+ACCOMPLISHMENTS.md:23:    pub name: Identifier,
+ACCOMPLISHMENTS.md:24:    pub type_annotation: Option<TypeExpression>,  // NEW!
+ACCOMPLISHMENTS.md:25:    pub value: Expression,
+ACCOMPLISHMENTS.md:35:    if self.consume_if_matches(&TokenKind::Fn) {
+ACCOMPLISHMENTS.md:36:        self.expect_and_consume(&TokenKind::LParen)?;
+ACCOMPLISHMENTS.md:38:        while self.current_token().kind != TokenKind::RParen {
+ACCOMPLISHMENTS.md:40:            if !self.consume_if_matches(&TokenKind::Comma) { break; }
+ACCOMPLISHMENTS.md:42:        self.expect_and_consume(&TokenKind::RParen)?;
+ACCOMPLISHMENTS.md:43:        self.expect_and_consume(&TokenKind::Arrow)?;
+ACCOMPLISHMENTS.md:44:        let return_type = Box::new(self.parse_type_expression()?);
+ACCOMPLISHMENTS.md:54:    self.expect_and_consume(&TokenKind::Let)?;
+ACCOMPLISHMENTS.md:57:    // Parse optional type annotation: let x: Type = value
+ACCOMPLISHMENTS.md:58:    let type_annotation = if self.consume_if_matches(&TokenKind::Colon) {
+ACCOMPLISHMENTS.md:64:    self.expect_and_consume(&TokenKind::Assign)?;
+ACCOMPLISHMENTS.md:74:- Returns `ResolvedType::Unknown` as placeholder for function type resolution
+ACCOMPLISHMENTS.md:78:- Supports type unification for function signatures
+ACCOMPLISHMENTS.md:81:- Handles function types in type expression conversion
+ACCOMPLISHMENTS.md:100:    // Let without type annotation (for comparison)
+ACCOMPLISHMENTS.md:177:// Explicit type annotation
+ACCOMPLISHMENTS.md:189:2. **src/parser.rs** - Added function type and typed let parsing
+ACCOMPLISHMENTS.md:190:3. **src/semantic_analyzer.rs** - Added function type resolution
+ACCOMPLISHMENTS.md:191:4. **src/type_checker.rs** - Added function type to Hindley-Milner system
+ACCOMPLISHMENTS.md:192:5. **src/codegen.rs** - Added function type handling (basic)
+ACCOMPLISHMENTS.md:193:6. **src/rpc_generator.rs** - Added TypeScript function type formatting
+ACCOMPLISHMENTS.md:215:- Function type syntax parsing
+ACCOMPLISHMENTS.md:216:- Function type in type signatures
+ACCOMPLISHMENTS.md:220:- TypeScript type generation for function types
+ACCOMPLISHMENTS.md:257:(call_indirect (type $func_type) (local.get $func_index))
+ACCOMPLISHMENTS.md:267:1. **Type System First:** Building the type system infrastructure before runtime support was the right approach
+ACCOMPLISHMENTS.md:268:2. **Incremental Progress:** Each component (AST, parser, type checker) works independently
+ACCOMPLISHMENTS.md:285:### Lambda AST Node
+ACCOMPLISHMENTS.md:287:pub struct LambdaExpression {
+ACCOMPLISHMENTS.md:288:    pub parameters: Vec<Identifier>,
+ACCOMPLISHMENTS.md:289:    pub body: Box<Expression>,
+ACCOMPLISHMENTS.md:290:    pub captures: Vec<CapturedVariable>,  // For closure analysis
+ACCOMPLISHMENTS.md:296:pub enum CaptureMode {
+ACCOMPLISHMENTS.md:305:1. **Parser Design:** Recursive descent parsing works beautifully for complex type expressions
+ACCOMPLISHMENTS.md:306:2. **Type Inference:** Bidirectional type checking needed for lambda parameter inference
+ACCOMPLISHMENTS.md:313:- Modern type system with function types
+docs-site/pages/docs.html:388:enum AppAction {
+docs-site/pages/examples.html:382:enum AppAction {
+docs-site/pages/getting-started.html:70:export PATH="$PWD/target/release:$PATH"</code></pre>
+docs-site/public/api-reference.html:141:        .return-type {
+docs-site/public/index.html:220:                <p>Hindley-Milner type inference catches errors at compile time without verbose annotations.</p>
+docs-site/public/getting-started.html:101:        <h1>Getting Started with RavensOne</h1></p><p>Welcome to RavensOne! This guide will help you build your first RavensOne application in under 10 minutes.</p><p>---</p><p><h2>What is RavensOne?</h2></p><p>RavensOne is a modern full-stack web framework that compiles to WebAssembly. It's designed for AI-assisted development and offers:</p><p><ul><li>✅ <strong>Type-safe</strong> with automatic type inference</li><li>⚡ <strong>Blazing fast</strong> (65,000+ compilations/second)</li><li>🎨 <strong>Reactive</strong> state management with Signals</li><li>🚀 <strong>Server-side rendering</strong> (SSR) out of the box</li><li>📦 <strong>Single-file components</strong> with JSX-like syntax</li><li>🔒 <strong>Memory safe</strong> with borrow checking</li></p><p>---</p><p><h2>Installation</h2></p><p><h3>Prerequisites</h3></p><p><li>macOS, Linux, or Windows</li><li>Terminal/Command Prompt access</li></ul></p><p><h3>Install RavensOne</h3></p><p><strong>macOS/Linux:</strong>
+docs-site/public/getting-started.html:189:<ul><li><strong>Solution</strong>: Check the error message for line numbers. RavensOne's type inference is smart but may need hints for complex types.</li></ul></p><p><strong>Issue</strong>: Hot reload not working
+docs-site/public/getting-started.html:210:</code></pre></p><p>---</p><p><h2>What Makes RavensOne Special?</h2></p><p><h3>1. AI-First Development</h3></p><p>RavensOne is designed to work seamlessly with AI assistants. The syntax is clear, concise, and easy for LLMs to generate.</p><p><h3>2. No Virtual DOM</h3></p><p>Fine-grained reactivity means updates are surgical - only the exact DOM nodes that need to change are updated.</p><p><h3>3. Type Safety Without Annotations</h3></p><p>Hindley-Milner type inference means you get type safety without writing type annotations everywhere.</p><p><h3>4. True Full-Stack</h3></p><p>Server functions let you call server-side code as if it were a local function. No REST APIs, no GraphQL schemas - just functions.</p><p><h3>5. WebAssembly Native</h3></p><p>Compiles to WASM for near-native performance. Your app runs at 60 FPS even with complex UIs.</p><p>---</p><p><h2>Ready to Build?</h2></p><p>You now know the basics! Here are some next steps:</p><p>1. <strong>Build the Todo app</strong> - <a href="./tutorials/todo-app.md">Tutorial</a>
+docs-site/nginx.conf:7:    default_type application/octet-stream;
+docs-site/DEPLOYMENT.md:115:   netlify deploy --dir=public --prod
+docs-site/index.html:37:                    Built-in reactivity, type safety, and a growing package ecosystem.
+archive/MISSION.md:7:**Key Principle:** ONE file type (.raven), ZERO context switching, MAXIMUM velocity.
+examples/traits.raven:1:// Test trait definitions and impl blocks
+examples/traits.raven:14:// Define a trait for drawable shapes
+examples/traits.raven:15:trait Draw {
+examples/traits.raven:20:// Implement the Draw trait for Point
+examples/traits.raven:31:// Implement the Draw trait for Circle
+examples/traits.raven:42:// Inherent implementation (not a trait impl)
+archive/PROJECT_TRACKING.md:22:| 2025-10-17 | Initial Commit | Started RavensOne compiler with lexer/parser for .raven syntax, AST generation | Established core compiler foundation; importance of early testing validated |
+archive/PROJECT_TRACKING.md:23:| 2025-10-17 | Phase 1: Core Infrastructure | Implemented lexer, parser, semantic analyzer, borrow checker, basic codegen | Complete compilation pipeline; learned AST design is critical for extensibility |
+archive/PROJECT_TRACKING.md:24:| 2025-10-17 | Type System Implementation | Built Hindley-Milner type inference with Type enum, TypeEnv, Substitution (365 lines) | Automatic type inference working; occurs check prevents infinite types; minimal annotations needed |
+archive/PROJECT_TRACKING.md:25:| 2025-10-17 | Type Checker Complete | Implemented unification algorithm, expression/statement type checking (405 lines) | Type safety achieved; careful RefCell management required; AST matching crucial |
+archive/PROJECT_TRACKING.md:48:| 2025-10-19 | Core Language Features Complete | Implemented 8 essential language features completing the core syntax | Unary operators (-x, !x); while loops with condition checking; variable assignment/mutation; for loops with init/condition/update; array literal syntax ([1, 2, 3]); struct field access (obj.field); enum definitions with 3 variant types; match/pattern matching with destructuring; all 109 tests still passing |
+archive/PROJECT_TRACKING.md:49:| 2025-10-19 | Phase 5 Complete - Advanced Language Features | Completed all advanced language features including reference types, closures, iterators, and standard library types | Reference types (&T, &mut T); Slice types ([T]) with range syntax (.. and ..=); Option<T> and Result<T, E> in stdlib; Error propagation operator (?); Closure syntax with capture semantics; Iterator and IntoIterator traits; For-in loop syntax (for item in collection); Vec<T> growable array type; 124 tests passing (100% pass rate); Phase 5 fully complete, transitioning to Phase 6/7 |
+archive/PROJECT_TRACKING.md:106:| Array Literals | Jordan Hill | 🟢 Complete | 100 | 2025-10-19 | ✅ [1, 2, 3] syntax with type inference |
+archive/PROJECT_TRACKING.md:117:| Iterator Trait | Jordan Hill | 🟢 Complete | 100 | 2025-10-19 | ✅ IntoIterator trait implementation |
+archive/PROJECT_TRACKING.md:176:| Parser | ~800 | ✅ | Full AST generation with JSX |
+archive/PROJECT_TRACKING.md:243:- All infrastructure for public deployment ready
+archive/PROJECT_TRACKING.md:258:| Option<T> | ~120 | 124 ✅ | ✅ | Standard library type for nullable values |
+archive/PROJECT_TRACKING.md:259:| Result<T, E> | ~140 | 124 ✅ | ✅ | Standard library type for error handling |
+archive/PROJECT_TRACKING.md:262:| Iterator Trait | ~180 | 124 ✅ | ✅ | Iterator and IntoIterator trait definitions |
+archive/PROJECT_TRACKING.md:264:| Vec<T> | ~300 | 128 ✅ | ✅ | Growable array type with push/pop/get/len methods |
+archive/PROJECT_TRACKING.md:299:   - ✅ Iterator trait with next() method
+archive/PROJECT_TRACKING.md:300:   - ✅ IntoIterator trait for collection conversion
+archive/PROJECT_TRACKING.md:318:- `src/ast.rs` - Added AST nodes for all 10 features
+archive/PROJECT_TRACKING.md:325:- `src/stdlib/iterator.rs` - Iterator traits (180 lines)
+archive/PROJECT_TRACKING.md:344:| Unary Operators | ~50 | 109 ✅ | ✅ | Negation (-x), logical NOT (!x) in AST/parser/codegen |
+archive/PROJECT_TRACKING.md:348:| Array Literals | ~100 | 109 ✅ | ✅ | [1, 2, 3] syntax with type inference |
+archive/PROJECT_TRACKING.md:356:   - ✅ Full pipeline integration (AST → Parser → Semantic → Borrow → Codegen)
+archive/PROJECT_TRACKING.md:360:   - ✅ Added WhileStatement to AST with condition and body
+archive/PROJECT_TRACKING.md:398:   - ✅ Pattern enum with 4 types: Identifier, Literal, Wildcard (_), EnumVariant
+archive/PROJECT_TRACKING.md:400:   - ✅ Support for enum pattern matching (Option::Some(x))
+archive/PROJECT_TRACKING.md:406:- `src/ast.rs` - Added AST nodes for all 8 features
+archive/PROJECT_TRACKING.md:415:- `examples/enum_simple.raven` - All three enum variant types
+archive/PROJECT_TRACKING.md:582:1. **2025-10-17**: 🎉 **Type System Complete** - Hindley-Milner inference working flawlessly with minimal type annotations
+archive/PROJECT_TRACKING.md:587:6. **2025-10-17**: 🎉 **Deployment Ready** - Complete infrastructure and documentation for public deployment
+archive/PROJECT_TRACKING.md:588:7. **2025-10-17**: 🎉 **GitHub Launch** - 952 files, 116,833+ insertions pushed to public repository
+archive/PROJECT_TRACKING.md:610:   - ✅ **Lesson**: Matching AST structure is critical - read actual AST before implementing type checker
+archive/PROJECT_TRACKING.md:620:   - ✅ **Lesson**: Simplifying VNode enum (removing Fragment) reduced complexity without losing functionality
+archive/PROJECT_TRACKING.md:635:   - ✅ **Lesson**: LSP scope analysis benefits from parsing document AST
+archive/PROJECT_TRACKING.md:684:   - Document public APIs with doc comments
+archive/ROADMAP_Q1_2026.md:112:- 🔍 `raven check` - type check without compiling
+archive/ROADMAP_Q1_2026.md:122:- Implement formatter using AST pretty-printing
+archive/ROADMAP_Q1_2026.md:123:- Auto-fix using AST transformations
+archive/ROADMAP_Q1_2026.md:191:**`std::option`** - Option<T> type for nullable values ✅
+archive/ROADMAP_Q1_2026.md:193:enum Option<T> {
+archive/ROADMAP_Q1_2026.md:205:**`std::result`** - Result<T, E> type for error handling ✅
+archive/ROADMAP_Q1_2026.md:207:enum Result<T, E> {
+archive/ROADMAP_Q1_2026.md:221:**`std::iterator`** - Iterator and IntoIterator traits ✅
+archive/ROADMAP_Q1_2026.md:223:trait Iterator {
+archive/ROADMAP_Q1_2026.md:224:    type Item;
+archive/ROADMAP_Q1_2026.md:228:trait IntoIterator {
+archive/ROADMAP_Q1_2026.md:229:    type Item;
+archive/ROADMAP_Q1_2026.md:230:    type IntoIter: Iterator<Item = Self::Item>;
+archive/ROADMAP_Q1_2026.md:235:**`std::vec`** - Vec<T> growable array type ✅
+examples/ai-generator/parse_manual.sh:17:PROJECT_DIR="generated/$PROJECT_NAME"
+examples/ai-generator/parse_manual.sh:18:RESPONSE_FILE="$PROJECT_DIR/response.json"
+examples/ai-generator/parse_manual.sh:27:    echo "  mkdir -p $PROJECT_DIR"
+examples/ai-generator/parse_manual.sh:44:    mkdir -p "$PROJECT_DIR/$(dirname "$FILE_PATH")"
+examples/ai-generator/parse_manual.sh:47:    echo "$FILE_CONTENT" > "$PROJECT_DIR/$FILE_PATH"
+examples/ai-generator/parse_manual.sh:56:echo "🎉 Done! Files extracted to: $PROJECT_DIR"
+examples/ai-generator/parse_manual.sh:59:cd "$PROJECT_DIR"
+examples/ai-generator/parse_manual.sh:60:find . -type f -not -path "*/\.*" | sort
+examples/ai-generator/parse_manual.sh:64:echo "  cd $PROJECT_DIR"
+examples/ai-generator/DEMO.md:331:✅ **Type Safety** - Full TypeScript-like type checking
+examples/ai-generator/DEMO.md:393:Features: syntax highlighting, export to PDF, auto-save, dark mode
+archive/STATUS.txt:19:  [✓] Semantic analyzer with type checking and inference
+archive/STATUS.txt:36:    • Signal<T> type for reactive state
+archive/STATUS.txt:74:    src/parser.rs             - AST construction
+examples/ai-generator/TROUBLESHOOTING.md:16:export ANTHROPIC_API_KEY='sk-ant-your-actual-key-here'
+demo-hmr.html:523:        function addLog(message, type = 'info') {
+examples/ai-generator/QUICK_START.md:12:export ANTHROPIC_API_KEY='sk-ant-your-key-here'
+examples/ai-generator/QUICK_START.md:141:Good: "persist to local storage, export to JSON"
+examples/ai-generator/QUICK_START.md:165:export ANTHROPIC_API_KEY='your-key-here'
+examples/ai-generator/generated/social-feed/response.json:9:"content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n <meta charset=\"utf-8\" />\n <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n <title>Bluebird — Social Feed</title>\n <link rel=\"stylesheet\" href=\"./styles.css\" />\n <link rel=\"preconnect\" href=\"https://images.unsplash.com\" />\n</head>\n<body>\n <header class=\"nav\">\n <div class=\"container nav-inner\">\n <div class=\"brand\">\n <div class=\"logo\">🐦</div>\n <span class=\"brand-name\">Bluebird</span>\n </div>\n <div class=\"nav-actions\">\n <input class=\"search\" type=\"search\" placeholder=\"Search\" aria-label=\"Search\" />\n <div class=\"profile\">\n <div class=\"avatar gradient-a\" aria-hidden=\"true\"></div>\n <span class=\"username\">you</span>\n </div>\n </div>\n </div>\n </header>\n\n <main class=\"container\">\n <section class=\"feed\" aria-label=\"Social feed\">\n\n <!-- 1. Alex Chen - Travel photo with beach sunset -->\n <article class=\"card\" tabindex=\"0\">\n <header class=\"card-head\">\n <div class=\"avatar gradient-b\" aria-hidden=\"true\"></div>\n <div class=\"meta\">\n <div class=\"user\">Alex Chen</div>\n <time class=\"time\" datetime=\"2025-10-15T18:24:00Z\">2h ago</time>\n </div>\n </header>\n <div class=\"card-media\">\n <img loading=\"lazy\" alt=\"Golden beach sunset with calm waves\" src=\"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop\" />\n </div>\n <div class=\"card-body\">\n <p class=\"caption\">Chasing sunsets and salt air. 🌅 #travel #beach</p>\n <div class=\"actions\">\n <button class=\"btn like-btn\" aria-pressed=\"false\" data-liked=\"false\" data-count=\"312\">\n <svg viewBox=\"0 0 24 24\" class=\"icon heart\" aria-hidden=\"true\"><path d=\"M12.1 8.64l-.1.1-.11-.11C10.14 6.9 7.1 7.24 5.6 9.1c-1.63 2.05-1.06 5.02 1.17 6.52L12 21l5.23-5.38c2.23-1.5 2.8-4.47 1.17-6.52-1.5-1.86-4.54-2.2-6.3-.46z\"></path></svg>\n <span class=\"count\">312</span>\n </button>\n <button class=\"btn comment-btn\" aria-label=\"Comments\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M20 2H4a2 2 0 00-2 2v14l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2z\"></path></svg>\n <span class=\"count\">28</span>\n </button>\n <button class=\"btn share-btn\" data-share-title=\"Alex Chen — Bluebird\" data-share-url=\"#alex-chen-1\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M14 9l-1-1 5-5 1 1-5 5zm-4 6l1 1-5 5-1-1 5-5z\"></path><path d=\"M5 14V9a4 4 0 014-4h5\"></path><path d=\"M15 15h-5a4 4 0 01-4-4\"></path></svg>\n <span>Share</span>\n </button>\n </div>\n </div>\n </article>\n\n <!-- 2. Sarah Kim - Food photography -->\n <article class=\"card\" tabindex=\"0\">\n <header class=\"card-head\">\n <div class=\"avatar gradient-c\" aria-hidden=\"true\"></div>\n <div class=\"meta\">\n <div class=\"user\">Sarah Kim</div>\n <time class=\"time\" datetime=\"2025-10-14T19:12:00Z\">Yesterday</time>\n </div>\n </header>\n <div class=\"card-media\">\n <img loading=\"lazy\" alt=\"Gourmet dish plated with microgreens\" src=\"https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1600&auto=format&fit=crop\" />\n </div>\n <div class=\"card-body\">\n <p class=\"caption\">New tasting menu drop. Crispy skin, cloud-light puree. 🍽️</p>\n <div class=\"actions\">\n <button class=\"btn like-btn\" aria-pressed=\"false\" data-liked=\"false\" data-count=\"468\">\n <svg viewBox=\"0 0 24 24\" class=\"icon heart\" aria-hidden=\"true\"><path d=\"M12.1 8.64l-.1.1-.11-.11C10.14 6.9 7.1 7.24 5.6 9.1c-1.63 2.05-1.06 5.02 1.17 6.52L12 21l5.23-5.38c2.23-1.5 2.8-4.47 1.17-6.52-1.5-1.86-4.54-2.2-6.3-.46z\"></path></svg>\n <span class=\"count\">468</span>\n </button>\n <button class=\"btn comment-btn\" aria-label=\"Comments\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M20 2H4a2 2 0 00-2 2v14l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2z\"></path></svg>\n <span class=\"count\">41</span>\n </button>\n <button class=\"btn share-btn\" data-share-title=\"Sarah Kim — Bluebird\" data-share-url=\"#sarah-kim-1\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M14 9l-1-1 5-5 1 1-5 5zm-4 6l1 1-5 5-1-1 5-5z\"></path><path d=\"M5 14V9a4 4 0 014-4h5\"></path><path d=\"M15 15h-5a4 4 0 01-4-4\"></path></svg>\n <span>Share</span>\n </button>\n </div>\n </div>\n </article>\n\n <!-- 3. Mike Johnson - Tech gadget showcase -->\n <article class=\"card\" tabindex=\"0\">\n <header class=\"card-head\">\n <div class=\"avatar gradient-d\" aria-hidden=\"true\"></div>\n <div class=\"meta\">\n <div class=\"user\">Mike Johnson</div>\n <time class=\"time\" datetime=\"2025-10-13T16:10:00Z\">2 days ago</time>\n </div>\n </header>\n <div class=\"card-media\">\n <img loading=\"lazy\" alt=\"Sleek tech gadget on a desk\" src=\"https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=1600&auto=format&fit=crop\" />\n </div>\n <div class=\"card-body\">\n <p class=\"caption\">Prototype v2: brighter, thinner, smarter. ⚙️📱</p>\n <div class=\"actions\">\n <button class=\"btn like-btn\" aria-pressed=\"false\" data-liked=\"false\" data-count=\"221\">\n <svg viewBox=\"0 0 24 24\" class=\"icon heart\" aria-hidden=\"true\"><path d=\"M12.1 8.64l-.1.1-.11-.11C10.14 6.9 7.1 7.24 5.6 9.1c-1.63 2.05-1.06 5.02 1.17 6.52L12 21l5.23-5.38c2.23-1.5 2.8-4.47 1.17-6.52-1.5-1.86-4.54-2.2-6.3-.46z\"></path></svg>\n <span class=\"count\">221</span>\n </button>\n <button class=\"btn comment-btn\" aria-label=\"Comments\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M20 2H4a2 2 0 00-2 2v14l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2z\"></path></svg>\n <span class=\"count\">17</span>\n </button>\n <button class=\"btn share-btn\" data-share-title=\"Mike Johnson — Bluebird\" data-share-url=\"#mike-johnson-1\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M14 9l-1-1 5-5 1 1-5 5zm-4 6l1 1-5 5-1-1 5-5z\"></path><path d=\"M5 14V9a4 4 0 014-4h5\"></path><path d=\"M15 15h-5a4 4 0 01-4-4\"></path></svg>\n <span>Share</span>\n </button>\n </div>\n </div>\n </article>\n\n <!-- 4. Emma Davis - Nature landscape -->\n <article class=\"card\" tabindex=\"0\">\n <header class=\"card-head\">\n <div class=\"avatar gradient-e\" aria-hidden=\"true\"></div>\n <div class=\"meta\">\n <div class=\"user\">Emma Davis</div>\n <time class=\"time\" datetime=\"2025-10-12T09:30:00Z\">3 days ago</time>\n </div>\n </header>\n <div class=\"card-media\">\n <img loading=\"lazy\" alt=\"Snowy mountains and a tranquil lake\" src=\"https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop\" />\n </div>\n <div class=\"card-body\">\n <p class=\"caption\">Morning light over the ridge. Nature resets everything. 🏔️</p>\n <div class=\"actions\">\n <button class=\"btn like-btn\" aria-pressed=\"false\" data-liked=\"false\" data-count=\"377\">\n <svg viewBox=\"0 0 24 24\" class=\"icon heart\" aria-hidden=\"true\"><path d=\"M12.1 8.64l-.1.1-.11-.11C10.14 6.9 7.1 7.24 5.6 9.1c-1.63 2.05-1.06 5.02 1.17 6.52L12 21l5.23-5.38c2.23-1.5 2.8-4.47 1.17-6.52-1.5-1.86-4.54-2.2-6.3-.46z\"></path></svg>\n <span class=\"count\">377</span>\n </button>\n <button class=\"btn comment-btn\" aria-label=\"Comments\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M20 2H4a2 2 0 00-2 2v14l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2z\"></path></svg>\n <span class=\"count\">33</span>\n </button>\n <button class=\"btn share-btn\" data-share-title=\"Emma Davis — Bluebird\" data-share-url=\"#emma-davis-1\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M14 9l-1-1 5-5 1 1-5 5zm-4 6l1 1-5 5-1-1 5-5z\"></path><path d=\"M5 14V9a4 4 0 014-4h5\"></path><path d=\"M15 15h-5a4 4 0 01-4-4\"></path></svg>\n <span>Share</span>\n </button>\n </div>\n </div>\n </article>\n\n <!-- 5. Chris Lee - Street photography -->\n <article class=\"card\" tabindex=\"0\">\n <header class=\"card-head\">\n <div class=\"avatar gradient-f\" aria-hidden=\"true\"></div>\n <div class=\"meta\">\n <div class=\"user\">Chris Lee</div>\n <time class=\"time\" datetime=\"2025-10-11T22:00:00Z\">4 days ago</time>\n </div>\n </header>\n <div class=\"card-media\">\n <img loading=\"lazy\" alt=\"Street scene with neon lights at night\" src=\"https://images.unsplash.com/photo-1517999349371-c43520457b23?q=80&w=1600&auto=format&fit=crop\" />\n </div>\n <div class=\"card-body\">\n <p class=\"caption\">City hum + neon rain. 🎞️ #street</p>\n <div class=\"actions\">\n <button class=\"btn like-btn\" aria-pressed=\"false\" data-liked=\"false\" data-count=\"259\">\n <svg viewBox=\"0 0 24 24\" class=\"icon heart\" aria-hidden=\"true\"><path d=\"M12.1 8.64l-.1.1-.11-.11C10.14 6.9 7.1 7.24 5.6 9.1c-1.63 2.05-1.06 5.02 1.17 6.52L12 21l5.23-5.38c2.23-1.5 2.8-4.47 1.17-6.52-1.5-1.86-4.54-2.2-6.3-.46z\"></path></svg>\n <span class=\"count\">259</span>\n </button>\n <button class=\"btn comment-btn\" aria-label=\"Comments\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M20 2H4a2 2 0 00-2 2v14l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2z\"></path></svg>\n <span class=\"count\">22</span>\n </button>\n <button class=\"btn share-btn\" data-share-title=\"Chris Lee — Bluebird\" data-share-url=\"#chris-lee-1\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M14 9l-1-1 5-5 1 1-5 5zm-4 6l1 1-5 5-1-1 5-5z\"></path><path d=\"M5 14V9a4 4 0 014-4h5\"></path><path d=\"M15 15h-5a4 4 0 01-4-4\"></path></svg>\n <span>Share</span>\n </button>\n </div>\n </div>\n </article>\n\n <!-- 6. Maya Patel - Coffee art -->\n <article class=\"card\" tabindex=\"0\">\n <header class=\"card-head\">\n <div class=\"avatar gradient-g\" aria-hidden=\"true\"></div>\n <div class=\"meta\">\n <div class=\"user\">Maya Patel</div>\n <time class=\"time\" datetime=\"2025-10-10T08:45:00Z\">Last week</time>\n </div>\n </header>\n <div class=\"card-media\">\n <img loading=\"lazy\" alt=\"Latte art in a ceramic mug\" src=\"https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?q=80&w=1600&auto=format&fit=crop\" />\n </div>\n <div class=\"card-body\">\n <p class=\"caption\">Pour-over mornings, latte-art wins. ☕️✨</p>\n <div class=\"actions\">\n <button class=\"btn like-btn\" aria-pressed=\"false\" data-liked=\"false\" data-count=\"198\">\n <svg viewBox=\"0 0 24 24\" class=\"icon heart\" aria-hidden=\"true\"><path d=\"M12.1 8.64l-.1.1-.11-.11C10.14 6.9 7.1 7.24 5.6 9.1c-1.63 2.05-1.06 5.02 1.17 6.52L12 21l5.23-5.38c2.23-1.5 2.8-4.47 1.17-6.52-1.5-1.86-4.54-2.2-6.3-.46z\"></path></svg>\n <span class=\"count\">198</span>\n </button>\n <button class=\"btn comment-btn\" aria-label=\"Comments\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M20 2H4a2 2 0 00-2 2v14l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2z\"></path></svg>\n <span class=\"count\">12</span>\n </button>\n <button class=\"btn share-btn\" data-share-title=\"Maya Patel — Bluebird\" data-share-url=\"#maya-patel-1\">\n <svg viewBox=\"0 0 24 24\" class=\"icon\" aria-hidden=\"true\"><path d=\"M14 9l-1-1 5-5 1 1-5 5zm-4 6l1 1-5 5-1-1 5-5z\"></path><path d=\"M5 14V9a4 4 0 014-4h5\"></path><path d=\"M15 15h-5a4 4 0 01-4-4\"></path></svg>\n <span>Share</span>\n </button>\n </div>\n </div>\n </article>\n\n </section>\n </main>\n\n <script>\n // Like toggle logic\n document.querySelectorAll('.like-btn').forEach(function(btn){\n btn.addEventListener('click', function(){\n var liked = this.getAttribute('data-liked') === 'true';\n var countEl = this.querySelector('.count');\n var icon = this.querySelector('.heart');\n var count = parseInt(this.getAttribute('data-count'), 10);\n if(!liked){\n count += 1;\n this.setAttribute('data-liked','true');\n this.setAttribute('aria-pressed','true');\n icon.classList.add('liked');\n } else {\n count = Math.max(0, count - 1);\n this.setAttribute('data-liked','false');\n this.setAttribute('aria-pressed','false');\n icon.classList.remove('liked');\n }\n this.setAttribute('data-count', String(count));\n countEl.textContent = count;\n });\n });\n\n // Share button logic\n document.querySelectorAll('.share-btn').forEach(function(btn){\n btn.addEventListener('click', async function(){\n var title = this.getAttribute('data-share-title') || 'Bluebird';\n var url = location.origin + location.pathname + (this.getAttribute('data-share-url') || '');\n try{\n if(navigator.share){\n await navigator.share({ title: title, url: url });\n } else {\n await navigator.clipboard.writeText(url);\n this.classList.add('shared');\n setTimeout(() => this.classList.remove('shared'), 1200);\n alert('Link copied to clipboard');\n }\n } catch(e){ /* user canceled */ }\n });\n });\n </script>\n</body>\n</html>"
+registry/Dockerfile:7:WORKDIR /app
+registry/Dockerfile:28:WORKDIR /app
+registry/aloha-shirts/raven-ui/src/lib.raven:5:export { Button, ButtonVariant, ButtonSize } from "./components/Button.raven";
+registry/aloha-shirts/raven-ui/src/lib.raven:6:export { Input, InputType } from "./components/Input.raven";
+registry/aloha-shirts/raven-ui/src/lib.raven:7:export { Card } from "./components/Card.raven";
+registry/aloha-shirts/raven-ui/src/lib.raven:9:// Re-export commonly used types
+registry/aloha-shirts/raven-ui/src/lib.raven:10:export type { ButtonProps } from "./components/Button.raven";
+registry/aloha-shirts/raven-ui/src/lib.raven:11:export type { InputProps } from "./components/Input.raven";
+registry/aloha-shirts/raven-ui/src/lib.raven:12:export type { CardProps } from "./components/Card.raven";
+registry/aloha-shirts/raven-ui/src/components/Input.raven:3:enum InputType {
+registry/aloha-shirts/raven-ui/src/components/Input.raven:27:    let type_str = match props.input_type {
+registry/aloha-shirts/raven-ui/src/components/Button.raven:3:enum ButtonVariant {
+registry/aloha-shirts/raven-ui/src/components/Button.raven:12:enum ButtonSize {
+registry/COMPILER_BRIDGE_DESIGN.md:14:│     (Modified)      │    Tag AST nodes with context
+registry/COMPILER_BRIDGE_DESIGN.md:34:│     (Modified)      │    - Import/export setup
+registry/COMPILER_BRIDGE_DESIGN.md:54:   pub enum Token {
+registry/COMPILER_BRIDGE_DESIGN.md:83:3. **AST** (`src/ast.rs`):
+registry/COMPILER_BRIDGE_DESIGN.md:86:   pub enum Annotation {
+registry/COMPILER_BRIDGE_DESIGN.md:93:   pub struct Function {
+registry/COMPILER_BRIDGE_DESIGN.md:94:       pub name: String,
+registry/COMPILER_BRIDGE_DESIGN.md:95:       pub params: Vec<FunctionParam>,
+registry/COMPILER_BRIDGE_DESIGN.md:96:       pub return_type: Option<Type>,
+registry/COMPILER_BRIDGE_DESIGN.md:97:       pub body: Vec<Statement>,
+registry/COMPILER_BRIDGE_DESIGN.md:98:       pub annotation: Annotation,  // NEW FIELD
+registry/COMPILER_BRIDGE_DESIGN.md:102:   pub struct ComponentDecl {
+registry/COMPILER_BRIDGE_DESIGN.md:103:       pub name: String,
+registry/COMPILER_BRIDGE_DESIGN.md:104:       pub props: Option<Type>,
+registry/COMPILER_BRIDGE_DESIGN.md:105:       pub body: Vec<Statement>,
+registry/COMPILER_BRIDGE_DESIGN.md:106:       pub annotation: Annotation,  // NEW FIELD
+registry/COMPILER_BRIDGE_DESIGN.md:149:pub struct CodeSplitter {
+registry/COMPILER_BRIDGE_DESIGN.md:158:    pub fn new() -> Self {
+registry/COMPILER_BRIDGE_DESIGN.md:168:    pub fn split(&mut self, program: &Program) {
+registry/COMPILER_BRIDGE_DESIGN.md:185:    pub fn get_server_code(&self) -> Vec<Function> {
+registry/COMPILER_BRIDGE_DESIGN.md:191:    pub fn get_client_code(&self) -> Vec<Function> {
+registry/COMPILER_BRIDGE_DESIGN.md:224:pub struct RPCGenerator {
+registry/COMPILER_BRIDGE_DESIGN.md:229:    pub fn new(server_functions: Vec<Function>) -> Self {
+registry/COMPILER_BRIDGE_DESIGN.md:233:    pub fn generate_client_stubs(&self) -> String {
+registry/COMPILER_BRIDGE_DESIGN.md:264:    pub fn generate_server_handlers(&self) -> String {
+registry/COMPILER_BRIDGE_DESIGN.md:317:pub struct JSEmitter {
+registry/COMPILER_BRIDGE_DESIGN.md:324:    pub fn emit_server_js(&self) -> String {
+registry/COMPILER_BRIDGE_DESIGN.md:356:    pub fn emit_client_js(&self) -> String {
+registry/src/db.rs:5:pub struct AppState {
+registry/src/db.rs:6:    pub pool: Arc<PgPool>,
+registry/src/db.rs:10:    pub fn new(pool: PgPool) -> Self {
+registry/src/db.rs:16:    pub async fn connect(database_url: &str) -> Result<Self, sqlx::Error> {
+registry/src/db.rs:31:pub struct UserDb;
+registry/src/db.rs:34:    pub async fn create(
+registry/src/db.rs:56:    pub async fn find_by_email(pool: &PgPool, email: &str) -> Result<Option<User>, sqlx::Error> {
+registry/src/db.rs:63:    pub async fn find_by_username(
+registry/src/db.rs:73:    pub async fn find_by_id(pool: &PgPool, user_id: Uuid) -> Result<Option<User>, sqlx::Error> {
+registry/src/db.rs:80:    pub async fn count(pool: &PgPool) -> Result<i64, sqlx::Error> {
+registry/src/db.rs:88:pub struct PackageDb;
+registry/src/db.rs:91:    pub async fn create(
+registry/src/db.rs:122:    pub async fn find_by_name(
+registry/src/db.rs:132:    pub async fn find_by_id(
+registry/src/db.rs:142:    pub async fn update_timestamp(pool: &PgPool, package_id: Uuid) -> Result<(), sqlx::Error> {
+registry/src/db.rs:151:    pub async fn count(pool: &PgPool) -> Result<i64, sqlx::Error> {
+registry/src/db.rs:158:    pub async fn search(
+registry/src/db.rs:181:pub struct VersionDb;
+registry/src/db.rs:185:    pub async fn create(
+registry/src/db.rs:228:    pub async fn find_by_package_and_version(
+registry/src/db.rs:242:    pub async fn list_by_package(
+registry/src/db.rs:254:    pub async fn yank(
+registry/src/db.rs:267:    pub async fn count(pool: &PgPool) -> Result<i64, sqlx::Error> {
+registry/src/db.rs:275:pub struct DownloadDb;
+registry/src/db.rs:278:    pub async fn record(
+registry/src/db.rs:300:    pub async fn count_total(pool: &PgPool) -> Result<i64, sqlx::Error> {
+registry/src/db.rs:307:    pub async fn count_for_package(pool: &PgPool, package_id: Uuid) -> Result<i64, sqlx::Error> {
+registry/src/db.rs:316:    pub async fn count_for_package_period(
+registry/src/db.rs:332:pub struct OwnerDb;
+registry/src/db.rs:335:    pub async fn add(
+registry/src/db.rs:356:    pub async fn remove(pool: &PgPool, package_id: Uuid, user_id: Uuid) -> Result<(), sqlx::Error> {
+registry/src/db.rs:365:    pub async fn list(pool: &PgPool, package_id: Uuid) -> Result<Vec<PackageOwner>, sqlx::Error> {
+registry/src/db.rs:374:    pub async fn is_owner(
+registry/src/error.rs:9:pub enum AppError {
+registry/src/error.rs:88:pub type AppResult<T> = Result<T, AppError>;
+registry/src/rate_limit.rs:10:pub async fn rate_limiter_middleware(
+registry/src/validation.rs:5:pub fn validate<T: Validate>(data: &T) -> AppResult<()> {
+registry/src/validation.rs:11:pub fn validate_package_name(name: &str) -> AppResult<()> {
+registry/src/validation.rs:37:pub fn validate_version(version: &str) -> AppResult<()> {
+registry/src/models.rs:11:pub struct User {
+registry/src/models.rs:12:    pub user_id: Uuid,
+registry/src/models.rs:13:    pub username: String,
+registry/src/models.rs:14:    pub email: String,
+registry/src/models.rs:16:    pub password_hash: String,
+registry/src/models.rs:17:    pub created_at: DateTime<Utc>,
+registry/src/models.rs:21:pub struct RegisterRequest {
+registry/src/models.rs:23:    pub username: String,
+registry/src/models.rs:25:    pub email: String,
+registry/src/models.rs:27:    pub password: String,
+registry/src/models.rs:31:pub struct RegisterResponse {
+registry/src/models.rs:32:    pub user_id: Uuid,
+registry/src/models.rs:33:    pub username: String,
+registry/src/models.rs:34:    pub email: String,
+registry/src/models.rs:35:    pub created_at: DateTime<Utc>,
+registry/src/models.rs:36:    pub token: String,
+registry/src/models.rs:40:pub struct LoginRequest {
+registry/src/models.rs:41:    pub email: String,
+registry/src/models.rs:42:    pub password: String,
+registry/src/models.rs:46:pub struct LoginResponse {
+registry/src/models.rs:47:    pub token: String,
+registry/src/models.rs:48:    pub expires_at: DateTime<Utc>,
+registry/src/models.rs:49:    pub user: UserInfo,
+registry/src/models.rs:53:pub struct UserInfo {
+registry/src/models.rs:54:    pub user_id: Uuid,
+registry/src/models.rs:55:    pub username: String,
+registry/src/models.rs:56:    pub email: String,
+registry/src/models.rs:62:pub struct ApiToken {
+registry/src/models.rs:63:    pub token_id: Uuid,
+registry/src/models.rs:64:    pub user_id: Uuid,
+registry/src/models.rs:66:    pub token_hash: String,
+registry/src/models.rs:67:    pub name: String,
+registry/src/models.rs:68:    pub created_at: DateTime<Utc>,
+registry/src/models.rs:69:    pub expires_at: DateTime<Utc>,
+registry/src/models.rs:70:    pub last_used: Option<DateTime<Utc>>,
+registry/src/models.rs:74:pub struct CreateTokenRequest {
+registry/src/models.rs:75:    pub name: String,
+registry/src/models.rs:77:    pub expires_in_days: i64,
+registry/src/models.rs:85:pub struct CreateTokenResponse {
+registry/src/models.rs:86:    pub token: String,
+registry/src/models.rs:87:    pub token_id: Uuid,
+registry/src/models.rs:88:    pub name: String,
+registry/src/models.rs:89:    pub created_at: DateTime<Utc>,
+registry/src/models.rs:90:    pub expires_at: DateTime<Utc>,
+registry/src/models.rs:96:pub struct Package {
+registry/src/models.rs:97:    pub package_id: Uuid,
+registry/src/models.rs:98:    pub name: String,
+registry/src/models.rs:99:    pub owner_id: Uuid,
+registry/src/models.rs:100:    pub description: Option<String>,
+registry/src/models.rs:101:    pub license: String,
+registry/src/models.rs:102:    pub repository: Option<String>,
+registry/src/models.rs:103:    pub homepage: Option<String>,
+registry/src/models.rs:104:    pub keywords: Vec<String>,
+registry/src/models.rs:105:    pub created_at: DateTime<Utc>,
+registry/src/models.rs:106:    pub updated_at: DateTime<Utc>,
+registry/src/models.rs:110:pub struct PackageVersion {
+registry/src/models.rs:111:    pub version_id: Uuid,
+registry/src/models.rs:112:    pub package_id: Uuid,
+registry/src/models.rs:113:    pub version: String,
+registry/src/models.rs:114:    pub authors: Vec<String>,
+registry/src/models.rs:115:    pub description: Option<String>,
+registry/src/models.rs:116:    pub license: String,
+registry/src/models.rs:117:    pub repository: Option<String>,
+registry/src/models.rs:118:    pub dependencies: serde_json::Value, // JSON object
+registry/src/models.rs:119:    pub dev_dependencies: serde_json::Value, // JSON object
+registry/src/models.rs:120:    pub tarball_url: String,
+registry/src/models.rs:121:    pub checksum: String,
+registry/src/models.rs:122:    pub size_bytes: i64,
+registry/src/models.rs:123:    pub published_at: DateTime<Utc>,
+registry/src/models.rs:124:    pub yanked: bool,
+registry/src/models.rs:125:    pub yanked_at: Option<DateTime<Utc>>,
+registry/src/models.rs:129:pub struct PublishRequest {
+registry/src/models.rs:131:    pub name: String,
+registry/src/models.rs:132:    pub version: String,
+registry/src/models.rs:133:    pub authors: Vec<String>,
+registry/src/models.rs:134:    pub description: Option<String>,
+registry/src/models.rs:136:    pub license: String,
+registry/src/models.rs:137:    pub repository: Option<String>,
+registry/src/models.rs:138:    pub homepage: Option<String>,
+registry/src/models.rs:140:    pub keywords: Vec<String>,
+registry/src/models.rs:142:    pub dependencies: HashMap<String, serde_json::Value>,
+registry/src/models.rs:144:    pub dev_dependencies: HashMap<String, serde_json::Value>,
+registry/src/models.rs:148:pub struct PublishResponse {
+registry/src/models.rs:149:    pub package_id: Uuid,
+registry/src/models.rs:150:    pub name: String,
+registry/src/models.rs:151:    pub version: String,
+registry/src/models.rs:152:    pub published_at: DateTime<Utc>,
+registry/src/models.rs:153:    pub download_url: String,
+registry/src/models.rs:154:    pub checksum: String,
+registry/src/models.rs:158:pub struct PackageResponse {
+registry/src/models.rs:159:    pub name: String,
+registry/src/models.rs:160:    pub description: Option<String>,
+registry/src/models.rs:161:    pub latest_version: String,
+registry/src/models.rs:162:    pub versions: Vec<String>,
+registry/src/models.rs:163:    pub owner: OwnerInfo,
+registry/src/models.rs:164:    pub license: String,
+registry/src/models.rs:165:    pub repository: Option<String>,
+registry/src/models.rs:166:    pub homepage: Option<String>,
+registry/src/models.rs:167:    pub keywords: Vec<String>,
+registry/src/models.rs:168:    pub downloads_total: i64,
+registry/src/models.rs:169:    pub downloads_last_month: i64,
+registry/src/models.rs:170:    pub created_at: DateTime<Utc>,
+registry/src/models.rs:171:    pub updated_at: DateTime<Utc>,
+registry/src/models.rs:175:pub struct OwnerInfo {
+registry/src/models.rs:176:    pub username: String,
+registry/src/models.rs:177:    pub user_id: Uuid,
+registry/src/models.rs:181:pub struct VersionResponse {
+registry/src/models.rs:182:    pub name: String,
+registry/src/models.rs:183:    pub version: String,
+registry/src/models.rs:184:    pub description: Option<String>,
+registry/src/models.rs:185:    pub authors: Vec<String>,
+registry/src/models.rs:186:    pub license: String,
+registry/src/models.rs:187:    pub repository: Option<String>,
+registry/src/models.rs:188:    pub dependencies: serde_json::Value,
+registry/src/models.rs:189:    pub dev_dependencies: serde_json::Value,
+registry/src/models.rs:190:    pub published_at: DateTime<Utc>,
+registry/src/models.rs:191:    pub download_url: String,
+registry/src/models.rs:192:    pub checksum: String,
+registry/src/models.rs:193:    pub size_bytes: i64,
+registry/src/models.rs:194:    pub yanked: bool,
+registry/src/models.rs:200:pub struct SearchQuery {
+registry/src/models.rs:201:    pub q: String,
+registry/src/models.rs:203:    pub limit: i64,
+registry/src/models.rs:205:    pub offset: i64,
+registry/src/models.rs:213:pub struct SearchResult {
+registry/src/models.rs:214:    pub name: String,
+registry/src/models.rs:215:    pub version: String,
+registry/src/models.rs:216:    pub description: Option<String>,
+registry/src/models.rs:217:    pub keywords: Vec<String>,
+registry/src/models.rs:218:    pub downloads: i64,
+registry/src/models.rs:219:    pub score: f64,
+registry/src/models.rs:223:pub struct SearchResponse {
+registry/src/models.rs:224:    pub results: Vec<SearchResult>,
+registry/src/models.rs:225:    pub total: i64,
+registry/src/models.rs:226:    pub limit: i64,
+registry/src/models.rs:227:    pub offset: i64,
+registry/src/models.rs:233:pub struct GlobalStats {
+registry/src/models.rs:234:    pub total_packages: i64,
+registry/src/models.rs:235:    pub total_versions: i64,
+registry/src/models.rs:236:    pub total_downloads: i64,
+registry/src/models.rs:237:    pub total_users: i64,
+registry/src/models.rs:238:    pub updated_at: DateTime<Utc>,
+registry/src/models.rs:242:pub struct PackageStats {
+registry/src/models.rs:243:    pub name: String,
+registry/src/models.rs:244:    pub downloads: DownloadStats,
+registry/src/models.rs:245:    pub versions_count: i64,
+registry/src/models.rs:246:    pub dependents_count: i64,
+registry/src/models.rs:247:    pub updated_at: DateTime<Utc>,
+registry/src/models.rs:251:pub struct DownloadStats {
+registry/src/models.rs:252:    pub total: i64,
+registry/src/models.rs:253:    pub last_week: i64,
+registry/src/models.rs:254:    pub last_month: i64,
+registry/src/models.rs:255:    pub last_year: i64,
+registry/src/models.rs:261:pub struct Download {
+registry/src/models.rs:262:    pub download_id: Uuid,
+registry/src/models.rs:263:    pub package_id: Uuid,
+registry/src/models.rs:264:    pub version_id: Uuid,
+registry/src/models.rs:265:    pub downloaded_at: DateTime<Utc>,
+registry/src/models.rs:266:    pub ip_hash: String,
+registry/src/models.rs:272:pub struct PackageOwner {
+registry/src/models.rs:273:    pub package_id: Uuid,
+registry/src/models.rs:274:    pub user_id: Uuid,
+registry/src/models.rs:275:    pub role: String, // "owner" or "maintainer"
+registry/src/models.rs:276:    pub added_at: DateTime<Utc>,
+registry/src/models.rs:280:pub struct AddOwnerRequest {
+registry/src/models.rs:281:    pub username: String,
+registry/src/models.rs:282:    pub role: String,
+registry/src/models.rs:286:pub struct OwnerResponse {
+registry/src/models.rs:287:    pub username: String,
+registry/src/models.rs:288:    pub user_id: Uuid,
+registry/src/models.rs:289:    pub role: String,
+registry/src/models.rs:295:pub struct ErrorResponse {
+registry/src/models.rs:296:    pub error: String,
+registry/src/models.rs:297:    pub message: String,
+registry/src/models.rs:299:    pub details: Option<serde_json::Value>,
+registry/src/models.rs:303:    pub fn new(error: impl Into<String>, message: impl Into<String>) -> Self {
+registry/src/models.rs:311:    pub fn with_details(
+registry/src/auth.rs:11:const TOKEN_EXPIRY_DAYS: i64 = 30;
+registry/src/auth.rs:14:pub struct Claims {
+registry/src/auth.rs:15:    pub sub: String,      // User ID
+registry/src/auth.rs:16:    pub username: String, // Username
+registry/src/auth.rs:17:    pub exp: i64,         // Expiration time
+registry/src/auth.rs:18:    pub iat: i64,         // Issued at
+registry/src/auth.rs:22:pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
+registry/src/auth.rs:32:pub fn verify_password(password: &str, hash: &str) -> Result<bool, argon2::password_hash::Error> {
+registry/src/auth.rs:41:pub fn generate_token(user_id: Uuid, username: &str) -> Result<String, jsonwebtoken::errors::Error> {
+registry/src/auth.rs:43:    let expiry = now + Duration::days(TOKEN_EXPIRY_DAYS);
+registry/src/auth.rs:60:pub fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+registry/src/auth.rs:71:pub fn extract_token(auth_header: &str) -> Option<&str> {
+registry/src/auth.rs:77:    async_trait,
+registry/src/auth.rs:85:pub struct AuthUser {
+registry/src/auth.rs:86:    pub user_id: Uuid,
+registry/src/auth.rs:87:    pub username: String,
+registry/src/auth.rs:90:#[async_trait]
+registry/src/auth.rs:95:    type Rejection = AppError;
+registry/src/handlers/mod.rs:1:pub mod auth;
+registry/src/handlers/mod.rs:2:pub mod packages;
+registry/src/handlers/mod.rs:3:pub mod users;
+registry/src/handlers/mod.rs:4:pub mod search;
+registry/src/handlers/mod.rs:5:pub mod stats;
+registry/src/handlers/users.rs:8:pub async fn get_user(
+registry/src/handlers/users.rs:16:pub async fn get_current_user(State(_state): State<AppState>) -> AppResult<Json<serde_json::Value>> {
+registry/src/handlers/users.rs:21:pub async fn create_token(State(_state): State<AppState>) -> AppResult<Json<serde_json::Value>> {
+registry/src/handlers/users.rs:26:pub async fn revoke_token(
+registry/src/handlers/search.rs:9:pub async fn search_packages(
+registry/src/handlers/search.rs:78:pub async fn trending_packages(
+registry/src/handlers/search.rs:121:pub async fn packages_by_category(
+registry/src/handlers/stats.rs:10:pub async fn global_stats(State(state): State<AppState>) -> AppResult<Json<GlobalStats>> {
+registry/src/handlers/stats.rs:26:pub async fn package_stats(
+registry/src/handlers/packages.rs:21:pub async fn publish(
+registry/src/handlers/packages.rs:101:    let storage_dir = std::env::var("STORAGE_DIR").unwrap_or_else(|_| "./storage".to_string());
+registry/src/handlers/packages.rs:146:pub async fn get_package(
+registry/src/handlers/packages.rs:193:pub async fn get_version(
+registry/src/handlers/packages.rs:226:pub async fn download(
+registry/src/handlers/packages.rs:249:    let storage_dir = std::env::var("STORAGE_DIR").unwrap_or_else(|_| "./storage".to_string());
+registry/src/handlers/packages.rs:264:pub async fn yank_version(
+registry/src/handlers/packages.rs:308:pub async fn list_owners(
+registry/src/handlers/packages.rs:335:pub async fn add_owner(
+registry/src/handlers/packages.rs:379:pub async fn remove_owner(
+registry/src/handlers/auth.rs:11:pub async fn register(
+registry/src/handlers/auth.rs:56:pub async fn login(
+registry/src/handlers/auth.rs:88:pub async fn refresh_token(
+registry/WHATS_LEFT.md:68:   - Tag AST nodes with execution context
+registry/WHATS_LEFT.md:127:   - Full type checking across boundaries
+registry/WHATS_LEFT.md:226:- ✅ Language core (100%) - Parser, type system, WASM codegen
+registry/DEPLOYMENT.md:190:pub fn new() -> Self {
+examples/ai-generator/generate.sh:15:    echo "Set it with: export ANTHROPIC_API_KEY='your-api-key'"
+examples/ai-generator/generate.sh:25:OUTPUT_DIR="generated/$PROJECT_NAME"
+examples/ai-generator/generate.sh:26:mkdir -p "$OUTPUT_DIR"
+examples/ai-generator/generate.sh:94:echo "$RESPONSE" > "$OUTPUT_DIR/api_response.json"
+examples/ai-generator/generate.sh:101:    echo "Full error details saved to: $OUTPUT_DIR/api_response.json"
+examples/ai-generator/generate.sh:109:echo "$GENERATED_JSON" > "$OUTPUT_DIR/generated.json"
+examples/ai-generator/generate.sh:117:    mkdir -p "$OUTPUT_DIR/$(dirname "$FILE_PATH")"
+examples/ai-generator/generate.sh:120:    echo "$FILE_CONTENT" > "$OUTPUT_DIR/$FILE_PATH"
+examples/ai-generator/generate.sh:126:cd "$OUTPUT_DIR"
+examples/ai-generator/generate.sh:138:echo "📁 Location: $OUTPUT_DIR"
+examples/ai-generator/generate.sh:141:echo "  cd $OUTPUT_DIR"
+examples/ai-generator/README.md:24:export ANTHROPIC_API_KEY='your-api-key-here'
+examples/ai-generator/README.md:259:export ANTHROPIC_API_KEY='sk-ant-...'
+aloha-shirts/raven-http/src/lib.raven:4:export { HttpClient, HttpConfig } from "./client"
+aloha-shirts/raven-http/src/lib.raven:5:export { Request, RequestConfig, RequestMethod } from "./request"
+aloha-shirts/raven-http/src/lib.raven:6:export { Response, ResponseType } from "./response"
+aloha-shirts/raven-http/src/lib.raven:7:export { Interceptor, RequestInterceptor, ResponseInterceptor } from "./interceptors"
+aloha-shirts/raven-http/src/lib.raven:8:export { createHttpClient, get, post, put, patch, del } from "./helpers"
+aloha-shirts/raven-http/src/lib.raven:9:export { RetryConfig, CacheConfig } from "./config"
+examples/simple_lambda.raven:3:    // Simple lambda with type annotation
+aloha-shirts/raven-http/src/request.raven:3:export enum RequestMethod {
+aloha-shirts/raven-http/src/request.raven:14:    pub fn to_string(self) -> String {
+aloha-shirts/raven-http/src/request.raven:27:export type RequestConfig = {
+aloha-shirts/raven-http/src/request.raven:40:export class Request {
+aloha-shirts/raven-http/src/request.raven:43:    pub fn new(config: RequestConfig) -> Request {
+aloha-shirts/raven-http/src/request.raven:48:    pub fn build_query_string(self) -> String {
+aloha-shirts/raven-http/src/request.raven:62:    pub fn get_full_url(self) -> String {
+aloha-shirts/raven-http/src/client.raven:8:export type HttpConfig = {
+aloha-shirts/raven-http/src/client.raven:16:export class HttpClient {
+aloha-shirts/raven-http/src/client.raven:21:    pub fn new(config: HttpConfig) -> HttpClient {
+aloha-shirts/raven-http/src/client.raven:30:    pub fn use_request_interceptor(mut self, interceptor: RequestInterceptor) {
+aloha-shirts/raven-http/src/client.raven:35:    pub fn use_response_interceptor(mut self, interceptor: ResponseInterceptor) {
+aloha-shirts/raven-http/src/client.raven:40:    pub fn request(self, config: RequestConfig) -> Promise<Response> {
+aloha-shirts/raven-http/src/client.raven:138:    pub fn get(self, url: String, config: RequestConfig) -> Promise<Response> {
+aloha-shirts/raven-http/src/client.raven:145:    pub fn post(self, url: String, data: Any, config: RequestConfig) -> Promise<Response> {
+aloha-shirts/raven-http/src/client.raven:153:    pub fn put(self, url: String, data: Any, config: RequestConfig) -> Promise<Response> {
+aloha-shirts/raven-http/src/client.raven:161:    pub fn patch(self, url: String, data: Any, config: RequestConfig) -> Promise<Response> {
+aloha-shirts/raven-http/src/client.raven:169:    pub fn delete(self, url: String, config: RequestConfig) -> Promise<Response> {
+aloha-shirts/raven-http/src/interceptors.raven:7:export type RequestInterceptor = (RequestConfig) -> RequestConfig
+aloha-shirts/raven-http/src/interceptors.raven:8:export type ResponseInterceptor = (Response) -> Response
+aloha-shirts/raven-http/src/interceptors.raven:10:export type Interceptor = {
+aloha-shirts/raven-http/src/interceptors.raven:18:export fn authInterceptor(token: String) -> RequestInterceptor {
+aloha-shirts/raven-http/src/interceptors.raven:29:export fn loggingRequestInterceptor() -> RequestInterceptor {
+aloha-shirts/raven-http/src/interceptors.raven:37:export fn loggingResponseInterceptor() -> ResponseInterceptor {
+aloha-shirts/raven-http/src/interceptors.raven:45:export fn apiKeyInterceptor(apiKey: String, paramName: String) -> RequestInterceptor {
+aloha-shirts/raven-http/src/interceptors.raven:56:export fn timestampInterceptor() -> RequestInterceptor {
+aloha-shirts/raven-http/src/interceptors.raven:67:export fn errorTransformInterceptor() -> ResponseInterceptor {
+aloha-shirts/raven-http/src/interceptors.raven:87:export fn retryInterceptor(maxRetries: Int, retryDelay: Int) -> ResponseInterceptor {
+aloha-shirts/raven-http/src/interceptors.raven:114:export fn cacheInterceptor(cacheDuration: Int) -> Interceptor {
+examples/chatwave/backend/schema.sql:37:    message_type VARCHAR(20) DEFAULT 'text',
+aloha-shirts/raven-http/src/response.raven:5:export enum ResponseType {
+aloha-shirts/raven-http/src/response.raven:12:export type Response = {
+aloha-shirts/raven-http/src/response.raven:22:    pub fn is_ok(self) -> Bool {
+aloha-shirts/raven-http/src/response.raven:27:    pub fn is_client_error(self) -> Bool {
+aloha-shirts/raven-http/src/response.raven:32:    pub fn is_server_error(self) -> Bool {
+aloha-shirts/raven-http/src/response.raven:37:    pub fn get_header(self, name: String) -> String | Null {
+examples/chatwave/backend/src/main.rs:139:type Tx = broadcast::Sender<WsMessage>;
+aloha-shirts/raven-http/src/helpers.raven:10:export fn createHttpClient(config: HttpConfig) -> HttpClient {
+aloha-shirts/raven-http/src/helpers.raven:18:export fn getDefaultClient() -> HttpClient {
+aloha-shirts/raven-http/src/helpers.raven:35:export fn get(url: String, config: Any) -> Promise<Response> {
+aloha-shirts/raven-http/src/helpers.raven:39:export fn post(url: String, data: Any, config: Any) -> Promise<Response> {
+aloha-shirts/raven-http/src/helpers.raven:43:export fn put(url: String, data: Any, config: Any) -> Promise<Response> {
+aloha-shirts/raven-http/src/helpers.raven:47:export fn patch(url: String, data: Any, config: Any) -> Promise<Response> {
+aloha-shirts/raven-http/src/helpers.raven:51:export fn del(url: String, config: Any) -> Promise<Response> {
+aloha-shirts/raven-http/src/helpers.raven:58:export fn downloadFile(url: String, filename: String) -> Promise<Void> {
+aloha-shirts/raven-http/src/helpers.raven:71:export fn uploadFile(url: String, file: File, fieldName: String) -> Promise<Response> {
+aloha-shirts/raven-http/src/helpers.raven:83:export fn batch(requests: Vec<Promise<Response>>) -> Promise<Vec<Response>> {
+aloha-shirts/raven-http/src/helpers.raven:88:export fn parallel(requests: Vec<() => Promise<Response>>, limit: Int) -> Promise<Vec<Response>> {
+aloha-shirts/raven-http/src/helpers.raven:130:export fn graphql(url: String, query: String, variables: Map<String, Any>) -> Promise<Response> {
+aloha-shirts/raven-http/src/helpers.raven:138:export fn jsonrpc(url: String, method: String, params: Vec<Any>, id: Int) -> Promise<Response> {
+aloha-shirts/raven-http/src/config.raven:3:export type RetryConfig = {
+aloha-shirts/raven-http/src/config.raven:10:export type CacheConfig = {
+aloha-shirts/raven-http/src/config.raven:18:export type RateLimitConfig = {
+aloha-shirts/raven-http/src/config.raven:26:export fn getDefaultRetryConfig() -> RetryConfig {
+aloha-shirts/raven-http/src/config.raven:38:export fn getDefaultCacheConfig() -> CacheConfig {
+aloha-shirts/raven-http/src/config.raven:50:export fn getDefaultRateLimitConfig() -> RateLimitConfig {
+examples/chatwave/backend/Cargo.lock:55:name = "async-trait"
+examples/chatwave/backend/Cargo.lock:71: "num-traits",
+examples/chatwave/backend/Cargo.lock:92: "async-trait",
+examples/chatwave/backend/Cargo.lock:130: "async-trait",
+examples/chatwave/backend/Cargo.lock:266: "num-traits",
+examples/chatwave/backend/Cargo.lock:854: "stable_deref_trait",
+examples/chatwave/backend/Cargo.lock:1075: "num-traits",
+examples/chatwave/backend/Cargo.lock:1089: "num-traits",
+examples/chatwave/backend/Cargo.lock:1107: "num-traits",
+examples/chatwave/backend/Cargo.lock:1118: "num-traits",
+examples/chatwave/backend/Cargo.lock:1122:name = "num-traits"
+examples/chatwave/backend/Cargo.lock:1369: "num-traits",
+examples/chatwave/backend/Cargo.lock:1579: "num-traits",
+examples/chatwave/backend/Cargo.lock:1841:name = "stable_deref_trait"
+examples/chatwave/backend/Cargo.lock:2722: "stable_deref_trait",
+aloha-shirts/raven-http/README.md:48:- ✅ **TypeScript-like Types** - Full type safety
+aloha-shirts/raven-http/README.md:267:type Response = {
+aloha-shirts/raven-http/README.md:386:type HttpConfig = {
+aloha-shirts/raven-http/README.md:398:type RequestConfig = {
+examples/generics_syntax.raven:1:// Test that the parser accepts generic type parameter syntax
+examples/generics_syntax.raven:4:// Generic struct with type parameter T
+examples/generics_syntax.raven:9:// Generic enum with type parameter T
+examples/generics_syntax.raven:10:enum Option<T> {
+examples/generics_syntax.raven:15:// Generic enum with multiple type parameters
+examples/generics_syntax.raven:16:enum Result<T, E> {
+examples/generics_syntax.raven:21:// Generic function with type parameter T
+examples/generics_syntax.raven:26:// Generic function with multiple type parameters
+examples/generics_syntax.raven:38:// Generic trait with type parameter T
+examples/generics_syntax.raven:39:trait Container<T> {
+examples/generics_syntax.raven:43:// Implement generic trait for generic struct
+aloha-shirts/raven-router/src/router.raven:8:export type RouterConfig = {
+aloha-shirts/raven-router/src/router.raven:15:export type RouterContextValue = {
+aloha-shirts/raven-router/src/router.raven:27:export fn getRouterInstance() -> RouterContextValue | Null {
+aloha-shirts/raven-router/src/router.raven:31:export component Router(config: RouterConfig) {
+aloha-shirts/raven-router/src/history.raven:4:export type History = {
+aloha-shirts/raven-router/src/history.raven:14:export fn createBrowserHistory(base: String) -> History {
+aloha-shirts/raven-router/src/history.raven:53:export fn createHashHistory(base: String) -> History {
+aloha-shirts/raven-router/src/history.raven:84:export fn createMemoryHistory(initialPath: String) -> History {
+aloha-shirts/raven-router/src/lib.raven:4:export { Router, RouterConfig } from "./router"
+aloha-shirts/raven-router/src/lib.raven:5:export { Route, RouteConfig } from "./route"
+aloha-shirts/raven-router/src/lib.raven:6:export { Link } from "./link"
+aloha-shirts/raven-router/src/lib.raven:7:export { useRouter, useRoute, useParams, useQuery } from "./hooks"
+aloha-shirts/raven-router/src/lib.raven:8:export { NavigationGuard, BeforeEach, AfterEach } from "./guards"
+aloha-shirts/raven-router/src/lib.raven:9:export { createMemoryHistory, createBrowserHistory, createHashHistory } from "./history"
+aloha-shirts/raven-router/src/guards.raven:4:export type NavigationContext = {
+aloha-shirts/raven-router/src/guards.raven:11:export type NavigationGuard = (NavigationContext) -> Bool | Promise<Bool>
+aloha-shirts/raven-router/src/guards.raven:18:export fn BeforeEach(guard: NavigationGuard) {
+aloha-shirts/raven-router/src/guards.raven:23:export fn AfterEach(callback: (NavigationContext) -> Void) {
+aloha-shirts/raven-router/src/guards.raven:28:export fn executeBeforeGuards(context: NavigationContext) -> Promise<Bool> {
+aloha-shirts/raven-router/src/guards.raven:61:export fn executeAfterGuards(context: NavigationContext) {
+aloha-shirts/raven-router/src/guards.raven:68:export fn requireAuth(context: NavigationContext) -> Bool {
+aloha-shirts/raven-router/src/guards.raven:81:export fn requirePermission(permission: String) -> NavigationGuard {
+aloha-shirts/raven-router/src/guards.raven:97:export fn redirectIfAuth(redirectTo: String) -> NavigationGuard {
+aloha-shirts/raven-router/src/hooks.raven:7:export fn useRouter() -> RouterContextValue {
+aloha-shirts/raven-router/src/hooks.raven:18:export fn useRoute() -> Map<String, Any> {
+aloha-shirts/raven-router/src/hooks.raven:29:export fn useParams() -> Map<String, String> {
+aloha-shirts/raven-router/src/hooks.raven:35:export fn useQuery() -> Map<String, String> {
+aloha-shirts/raven-router/src/hooks.raven:41:export fn useNavigate() -> (String, Bool) -> Void {
+aloha-shirts/raven-router/src/hooks.raven:47:export fn useBack() -> () -> Void {
+aloha-shirts/raven-router/src/hooks.raven:53:export fn useForward() -> () -> Void {
+aloha-shirts/raven-router/src/route.raven:3:export type RouteConfig = {
+aloha-shirts/raven-router/src/route.raven:12:export type RouteMatch = {
+aloha-shirts/raven-router/src/route.raven:19:export fn matchRoute(pattern: String, path: String) -> RouteMatch {
+aloha-shirts/raven-router/src/route.raven:63:export component Route(config: RouteConfig) {
+aloha-shirts/raven-router/src/link.raven:6:export type LinkProps = {
+aloha-shirts/raven-router/src/link.raven:14:export component Link(props: LinkProps) {
+aloha-shirts/raven-router/README.md:64:- ✅ **TypeScript-like Types** - Full type safety with RavensOne's type system
+aloha-shirts/raven-router/README.md:329:type RouteConfig = {
+aloha-shirts/raven-test/src/mocking.raven:4:export type MockCall = {
+aloha-shirts/raven-test/src/mocking.raven:11:export type MockFunction = {
+aloha-shirts/raven-test/src/mocking.raven:28:export fn mock(implementation: (Vec<Any>) -> Any) -> MockFunction {
+aloha-shirts/raven-test/src/mocking.raven:113:export fn spy(obj: Any, method: String) -> MockFunction {
+aloha-shirts/raven-test/src/mocking.raven:126:export fn stub() -> MockFunction {
+aloha-shirts/raven-test/src/mocking.raven:131:export fn resetMock(mockFn: MockFunction) {
+aloha-shirts/raven-test/src/mocking.raven:142:export fn registerMock(mockFn: MockFunction) {
+aloha-shirts/raven-test/src/mocking.raven:147:export fn resetAllMocks() {
+aloha-shirts/raven-test/src/mocking.raven:157:export fn mockModule(modulePath: String, mockExports: Any) {
+aloha-shirts/raven-test/src/mocking.raven:161:export fn unmockModule(modulePath: String) {
+aloha-shirts/raven-test/src/mocking.raven:165:export fn getMockModule(modulePath: String) -> Any | Null {
+aloha-shirts/raven-test/src/lib.raven:4:export { describe, it, test, beforeEach, afterEach, beforeAll, afterAll } from "./framework"
+aloha-shirts/raven-test/src/lib.raven:5:export { expect } from "./assertions"
+aloha-shirts/raven-test/src/lib.raven:6:export { mock, spy, stub, resetMocks, resetAllMocks } from "./mocking"
+aloha-shirts/raven-test/src/lib.raven:7:export { snapshot, updateSnapshots } from "./snapshot"
+aloha-shirts/raven-test/src/lib.raven:8:export { TestRunner, TestConfig } from "./runner"
+aloha-shirts/raven-test/src/lib.raven:9:export { coverage, getCoverageReport } from "./coverage"
+aloha-shirts/raven-test/src/framework.raven:6:export type TestCase = {
+aloha-shirts/raven-test/src/framework.raven:14:export type TestSuite = {
+aloha-shirts/raven-test/src/framework.raven:38:export fn describe(name: String, fn: () -> Void) {
+aloha-shirts/raven-test/src/framework.raven:60:export fn it(name: String, fn: () -> Void | Promise<Void>, timeout: Int) {
+aloha-shirts/raven-test/src/framework.raven:72:export fn test(name: String, fn: () -> Void | Promise<Void>, timeout: Int) {
+aloha-shirts/raven-test/src/framework.raven:77:export fn it_skip(name: String, fn: () -> Void) {
+aloha-shirts/raven-test/src/framework.raven:89:export fn it_only(name: String, fn: () -> Void) {
+aloha-shirts/raven-test/src/framework.raven:102:export fn beforeEach(fn: () -> Void) {
+aloha-shirts/raven-test/src/framework.raven:107:export fn afterEach(fn: () -> Void) {
+aloha-shirts/raven-test/src/framework.raven:112:export fn beforeAll(fn: () -> Void) {
+aloha-shirts/raven-test/src/framework.raven:117:export fn afterAll(fn: () -> Void) {
+aloha-shirts/raven-test/src/framework.raven:123:export fn getRootSuite() -> TestSuite {
+aloha-shirts/raven-test/src/framework.raven:128:export fn resetRegistry() {
+aloha-shirts/raven-test/src/coverage.raven:4:export type CoverageData = {
+aloha-shirts/raven-test/src/coverage.raven:10:export type CoverageReport = {
+aloha-shirts/raven-test/src/coverage.raven:29:export fn coverage(enabled: Bool) {
+aloha-shirts/raven-test/src/coverage.raven:34:export fn recordLine(file: String, line: Int) {
+aloha-shirts/raven-test/src/coverage.raven:51:export fn recordFunction(file: String, fnName: String) {
+aloha-shirts/raven-test/src/coverage.raven:68:export fn recordBranch(file: String, branchId: String) {
+aloha-shirts/raven-test/src/coverage.raven:85:export fn getCoverageReport() -> CoverageReport {
+aloha-shirts/raven-test/src/coverage.raven:120:export fn printCoverageReport() {
+aloha-shirts/raven-test/src/coverage.raven:145:export fn resetCoverage() {
+aloha-shirts/raven-test/src/runner.raven:7:export type TestConfig = {
+aloha-shirts/raven-test/src/runner.raven:17:export type TestResult = {
+aloha-shirts/raven-test/src/runner.raven:24:export type SuiteResult = {
+aloha-shirts/raven-test/src/runner.raven:34:export class TestRunner {
+aloha-shirts/raven-test/src/runner.raven:41:    pub fn new(config: TestConfig) -> TestRunner {
+aloha-shirts/raven-test/src/runner.raven:52:    pub fn run(mut self) -> Promise<SuiteResult> {
+aloha-shirts/raven-test/src/runner.raven:58:    pub fn run_suite(mut self, suite: TestSuite) -> Promise<SuiteResult> {
+aloha-shirts/raven-test/src/runner.raven:164:    pub fn run_test(self, test: TestCase, suite: TestSuite) -> Promise<TestResult> {
+aloha-shirts/raven-test/src/runner.raven:257:    pub fn print_results(self, results: SuiteResult) {
+aloha-shirts/raven-test/src/assertions.raven:4:export class Expectation {
+aloha-shirts/raven-test/src/assertions.raven:8:    pub fn new(value: Any) -> Expectation {
+aloha-shirts/raven-test/src/assertions.raven:16:    pub fn not(mut self) -> Expectation {
+aloha-shirts/raven-test/src/assertions.raven:22:    pub fn toBe(self, expected: Any) {
+aloha-shirts/raven-test/src/assertions.raven:27:    pub fn toEqual(self, expected: Any) {
+aloha-shirts/raven-test/src/assertions.raven:33:    pub fn toBeTruthy(self) {
+aloha-shirts/raven-test/src/assertions.raven:38:    pub fn toBeFalsy(self) {
+aloha-shirts/raven-test/src/assertions.raven:44:    pub fn toBeNull(self) {
+aloha-shirts/raven-test/src/assertions.raven:49:    pub fn toBeUndefined(self) {
+aloha-shirts/raven-test/src/assertions.raven:54:    pub fn toBeDefined(self) {
+aloha-shirts/raven-test/src/assertions.raven:60:    pub fn toBeGreaterThan(self, expected: Float) {
+aloha-shirts/raven-test/src/assertions.raven:65:    pub fn toBeGreaterThanOrEqual(self, expected: Float) {
+aloha-shirts/raven-test/src/assertions.raven:70:    pub fn toBeLessThan(self, expected: Float) {
+aloha-shirts/raven-test/src/assertions.raven:75:    pub fn toBeLessThanOrEqual(self, expected: Float) {
+aloha-shirts/raven-test/src/assertions.raven:80:    pub fn toBeCloseTo(self, expected: Float, precision: Int) {
+aloha-shirts/raven-test/src/assertions.raven:88:    pub fn toContain(self, substring: String) {
+aloha-shirts/raven-test/src/assertions.raven:99:    pub fn toMatch(self, pattern: RegExp | String) {
+aloha-shirts/raven-test/src/assertions.raven:109:    pub fn toStartWith(self, prefix: String) {
+aloha-shirts/raven-test/src/assertions.raven:114:    pub fn toEndWith(self, suffix: String) {
+aloha-shirts/raven-test/src/assertions.raven:120:    pub fn toHaveLength(self, length: Int) {
+aloha-shirts/raven-test/src/assertions.raven:125:    pub fn toHaveProperty(self, property: String, value: Any) {
+aloha-shirts/raven-test/src/assertions.raven:134:    pub fn toThrow(self, expected: String | RegExp) {
+aloha-shirts/raven-test/src/assertions.raven:157:    pub fn toHaveBeenCalled(self) {
+aloha-shirts/raven-test/src/assertions.raven:165:    pub fn toHaveBeenCalledTimes(self, times: Int) {
+aloha-shirts/raven-test/src/assertions.raven:173:    pub fn toHaveBeenCalledWith(self, ...args: Vec<Any>) {
+aloha-shirts/raven-test/src/assertions.raven:231:export fn expect(value: Any) -> Expectation {
+aloha-shirts/raven-test/src/snapshot.raven:9:export fn updateSnapshots() {
+aloha-shirts/raven-test/src/snapshot.raven:14:export fn loadSnapshots() {
+aloha-shirts/raven-test/src/snapshot.raven:24:export fn saveSnapshots() {
+aloha-shirts/raven-test/src/snapshot.raven:30:export fn snapshot(name: String, value: Any) {
+aloha-shirts/raven-test/src/snapshot.raven:47:export fn toMatchInlineSnapshot(value: Any, snapshot: String) {
+examples/taskflow/backend/Dockerfile:4:WORKDIR /app
+examples/taskflow/backend/Dockerfile:25:WORKDIR /app
+aloha-shirts/raven-test/README.md:432:type TestConfig = {
+examples/taskflow/backend/Cargo.lock:55:name = "async-trait"
+examples/taskflow/backend/Cargo.lock:71: "num-traits",
+examples/taskflow/backend/Cargo.lock:92: "async-trait",
+examples/taskflow/backend/Cargo.lock:127: "async-trait",
+examples/taskflow/backend/Cargo.lock:240: "num-traits",
+examples/taskflow/backend/Cargo.lock:794: "stable_deref_trait",
+examples/taskflow/backend/Cargo.lock:1015: "num-traits",
+examples/taskflow/backend/Cargo.lock:1029: "num-traits",
+examples/taskflow/backend/Cargo.lock:1047: "num-traits",
+examples/taskflow/backend/Cargo.lock:1058: "num-traits",
+examples/taskflow/backend/Cargo.lock:1062:name = "num-traits"
+examples/taskflow/backend/Cargo.lock:1309: "num-traits",
+examples/taskflow/backend/Cargo.lock:1519: "num-traits",
+examples/taskflow/backend/Cargo.lock:1781:name = "stable_deref_trait"
+examples/taskflow/backend/Cargo.lock:2646: "stable_deref_trait",
+examples/option_usage.raven:1:// Test Option<T> type usage
+examples/option_usage.raven:2:// Demonstrates the standard library Option type for handling nullable values
+aloha-shirts/raven-forms/src/lib.raven:7:pub use validation::validators::{
+aloha-shirts/raven-forms/src/lib.raven:20:pub use fields::form::{
+aloha-shirts/raven-forms/src/lib.raven:26:pub use fields::components::{
+aloha-shirts/raven-forms/src/lib.raven:31:// Re-export modules
+aloha-shirts/raven-forms/src/lib.raven:32:pub mod validation;
+aloha-shirts/raven-forms/src/lib.raven:33:pub mod fields;
+aloha-shirts/raven-forms/src/fields/components.raven:113:pub struct SelectOption {
+aloha-shirts/raven-forms/src/fields/components.raven:114:    pub value: String,
+aloha-shirts/raven-forms/src/fields/components.raven:115:    pub label: String
+aloha-shirts/raven-forms/src/fields/form.raven:5:pub struct FieldConfig {
+aloha-shirts/raven-forms/src/fields/form.raven:6:    pub initial: String,
+aloha-shirts/raven-forms/src/fields/form.raven:7:    pub validators: Vec<Validator>,
+aloha-shirts/raven-forms/src/fields/form.raven:8:    pub async_validators: Vec<AsyncValidator>,
+aloha-shirts/raven-forms/src/fields/form.raven:9:    pub validate_on: ValidateOn
+aloha-shirts/raven-forms/src/fields/form.raven:12:pub enum ValidateOn {
+aloha-shirts/raven-forms/src/fields/form.raven:18:pub struct FieldState {
+aloha-shirts/raven-forms/src/fields/form.raven:19:    pub value: String,
+aloha-shirts/raven-forms/src/fields/form.raven:20:    pub error: Option<String>,
+aloha-shirts/raven-forms/src/fields/form.raven:21:    pub touched: bool,
+aloha-shirts/raven-forms/src/fields/form.raven:22:    pub dirty: bool,
+aloha-shirts/raven-forms/src/fields/form.raven:23:    pub validating: bool
+aloha-shirts/raven-forms/src/fields/form.raven:26:pub struct FormState {
+aloha-shirts/raven-forms/src/fields/form.raven:27:    pub fields: HashMap<String, FieldState>,
+aloha-shirts/raven-forms/src/fields/form.raven:28:    pub submitting: bool,
+aloha-shirts/raven-forms/src/fields/form.raven:29:    pub submitted: bool
+aloha-shirts/raven-forms/src/fields/form.raven:32:pub struct Form {
+aloha-shirts/raven-forms/src/fields/form.raven:38:pub type FormValidator = fn(HashMap<String, String>) -> HashMap<String, String>;
+aloha-shirts/raven-forms/src/fields/form.raven:42:    pub fn new(
+aloha-shirts/raven-forms/src/fields/form.raven:72:    pub fn get(&self, field: &str) -> String {
+aloha-shirts/raven-forms/src/fields/form.raven:80:    pub fn set(&mut self, field: &str, value: String) {
+aloha-shirts/raven-forms/src/fields/form.raven:97:    pub fn touch(&mut self, field: &str) {
+aloha-shirts/raven-forms/src/fields/form.raven:113:    pub fn validate_field(&mut self, field: &str) {
+aloha-shirts/raven-forms/src/fields/form.raven:169:    pub fn validate_all(&mut self) {
+aloha-shirts/raven-forms/src/fields/form.raven:189:    pub fn is_valid(&self) -> bool {
+aloha-shirts/raven-forms/src/fields/form.raven:195:    pub fn error(&self, field: &str) -> Option<String> {
+aloha-shirts/raven-forms/src/fields/form.raven:202:    pub fn is_touched(&self, field: &str) -> bool {
+aloha-shirts/raven-forms/src/fields/form.raven:210:    pub fn is_dirty(&self, field: &str) -> bool {
+aloha-shirts/raven-forms/src/fields/form.raven:218:    pub fn values(&self) -> HashMap<String, String> {
+aloha-shirts/raven-forms/src/fields/form.raven:226:    pub fn errors(&self) -> HashMap<String, String> {
+aloha-shirts/raven-forms/src/fields/form.raven:236:    pub fn reset(&mut self) {
+aloha-shirts/raven-forms/src/fields/form.raven:255:    pub async fn submit(&mut self, on_submit: fn(HashMap<String, String>) -> ()) {
+aloha-shirts/raven-forms/src/fields/form.raven:275:pub fn use_form(
+aloha-shirts/raven-forms/src/validation/validators.raven:3:pub type Validator = fn(String) -> Option<String>;
+aloha-shirts/raven-forms/src/validation/validators.raven:4:pub type AsyncValidator = fn(String) -> Promise<Option<String>>;
+aloha-shirts/raven-forms/src/validation/validators.raven:7:pub fn required() -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:11:pub fn required_with_message(message: &str) -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:23:pub fn email() -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:27:pub fn email_with_message(message: &str) -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:40:pub fn url() -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:44:pub fn url_with_message(message: &str) -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:57:pub fn min(min_value: f64) -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:72:pub fn max(max_value: f64) -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:87:pub fn min_length(min_len: usize) -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:98:pub fn max_length(max_len: usize) -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:109:pub fn pattern(regex: Regex) -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:113:pub fn pattern_with_message(regex: Regex, message: &str) -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:125:pub fn alphanumeric() -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:130:pub fn numeric() -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:135:pub fn alpha() -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:140:pub fn has_uppercase() -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:151:pub fn has_lowercase() -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:162:pub fn has_digit() -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:173:pub fn has_special_char() -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:184:pub fn matches_field(field_name: &str) -> FormFieldValidator {
+aloha-shirts/raven-forms/src/validation/validators.raven:197:pub fn custom(validator_fn: fn(String) -> bool, message: &str) -> Validator {
+aloha-shirts/raven-forms/src/validation/validators.raven:209:pub fn async_validator(
+aloha-shirts/raven-forms/src/validation/validators.raven:225:pub fn compose(validators: Vec<Validator>) -> Validator {
+aloha-shirts/raven-forms/README.md:14:- **Type Safety**: Full type inference for form values
+aloha-shirts/raven-ui/src/lib.raven:4:// Re-export all components
+aloha-shirts/raven-ui/src/lib.raven:5:export { Button, ButtonVariant, ButtonSize } from "./components/Button"
+aloha-shirts/raven-ui/src/lib.raven:6:export { Input, InputType } from "./components/Input"
+aloha-shirts/raven-ui/src/lib.raven:7:export { Card } from "./components/Card"
+aloha-shirts/raven-ui/src/lib.raven:8:export { Modal } from "./components/Modal"
+aloha-shirts/raven-ui/src/lib.raven:9:export { Dropdown } from "./components/Dropdown"
+aloha-shirts/raven-ui/src/lib.raven:10:export { Tabs, Tab } from "./components/Tabs"
+aloha-shirts/raven-ui/src/lib.raven:11:export { Accordion, AccordionItem } from "./components/Accordion"
+aloha-shirts/raven-ui/src/lib.raven:12:export { Tooltip } from "./components/Tooltip"
+aloha-shirts/raven-ui/src/lib.raven:13:export { Badge, BadgeVariant } from "./components/Badge"
+aloha-shirts/raven-ui/src/lib.raven:14:export { Spinner, SpinnerSize } from "./components/Spinner"
+aloha-shirts/raven-ui/src/lib.raven:17:export { Theme, applyTheme, getTheme } from "./utils/theme"
+aloha-shirts/raven-ui/src/lib.raven:20:export const VERSION = "0.1.0"
+aloha-shirts/raven-ui/src/components/Input.raven:4:export enum InputType {
+aloha-shirts/raven-ui/src/components/Input.raven:14:export type InputProps = {
+aloha-shirts/raven-ui/src/components/Input.raven:25:export component Input(props: InputProps) {
+aloha-shirts/raven-ui/src/components/Input.raven:26:    let inputType = match props.type {
+aloha-shirts/raven-ui/src/components/Accordion.raven:4:export type AccordionItemData = {
+aloha-shirts/raven-ui/src/components/Accordion.raven:11:export type AccordionProps = {
+aloha-shirts/raven-ui/src/components/Accordion.raven:17:export component Accordion(props: AccordionProps) {
+aloha-shirts/raven-ui/src/components/Accordion.raven:152:export type AccordionItemProps = {
+aloha-shirts/raven-ui/src/components/Accordion.raven:160:export component AccordionItem(props: AccordionItemProps) {
+aloha-shirts/raven-ui/src/components/Dropdown.raven:4:export type DropdownItem = {
+aloha-shirts/raven-ui/src/components/Dropdown.raven:11:export type DropdownProps = {
+aloha-shirts/raven-ui/src/components/Dropdown.raven:19:export component Dropdown(props: DropdownProps) {
+aloha-shirts/raven-ui/src/components/Modal.raven:4:export type ModalProps = {
+aloha-shirts/raven-ui/src/components/Modal.raven:13:export component Modal(props: ModalProps) {
+aloha-shirts/raven-ui/src/components/Card.raven:4:export type CardProps = {
+aloha-shirts/raven-ui/src/components/Card.raven:12:export component Card(props: CardProps) {
+aloha-shirts/raven-ui/src/components/Tabs.raven:2:// A tabbed interface component for organizing content
+aloha-shirts/raven-ui/src/components/Tabs.raven:4:export type TabItem = {
+aloha-shirts/raven-ui/src/components/Tabs.raven:11:export type TabsProps = {
+aloha-shirts/raven-ui/src/components/Tabs.raven:18:export component Tabs(props: TabsProps) {
+aloha-shirts/raven-ui/src/components/Tabs.raven:154:export type TabProps = {
+aloha-shirts/raven-ui/src/components/Tabs.raven:162:export component Tab(props: TabProps) {
+aloha-shirts/raven-ui/src/components/Spinner.raven:4:export enum SpinnerSize {
+aloha-shirts/raven-ui/src/components/Spinner.raven:10:export type SpinnerProps = {
+aloha-shirts/raven-ui/src/components/Spinner.raven:16:export component Spinner(props: SpinnerProps) {
+aloha-shirts/raven-ui/src/components/Button.raven:4:export enum ButtonVariant {
+aloha-shirts/raven-ui/src/components/Button.raven:13:export enum ButtonSize {
+aloha-shirts/raven-ui/src/components/Button.raven:19:export type ButtonProps = {
+aloha-shirts/raven-ui/src/components/Button.raven:29:export component Button(props: ButtonProps) {
+aloha-shirts/raven-ui/src/components/Tooltip.raven:4:export type TooltipProps = {
+aloha-shirts/raven-ui/src/components/Tooltip.raven:10:export component Tooltip(props: TooltipProps) {
+aloha-shirts/raven-ui/src/components/Badge.raven:4:export enum BadgeVariant {
+aloha-shirts/raven-ui/src/components/Badge.raven:13:export type BadgeProps = {
+aloha-shirts/raven-ui/src/components/Badge.raven:19:export component Badge(props: BadgeProps) {
+aloha-shirts/raven-ui/src/utils/theme.raven:3:export type Theme = {
+aloha-shirts/raven-ui/src/utils/theme.raven:9:export fn applyTheme(theme: Theme) {
+aloha-shirts/raven-ui/src/utils/theme.raven:13:export fn getTheme() -> Theme {
+aloha-shirts/raven-ui/README.md:129:Tabbed interface component (Coming soon).
+aloha-shirts/raven-ui/README.md:196:- TypeScript-like type safety
+aloha-shirts/raven-ui/README.md:201:- ✅ **Fully Typed** - Complete type safety with RavensOne's type system
+examples/apps/todo-app/README.md:209:export async function create_todo(user_id, title) {
+examples/generics.raven:1:// Test generic type parameters for structs, enums, functions, traits, and impl blocks
+examples/generics.raven:3:// Generic struct with type parameter T
+examples/generics.raven:8:// Generic enum with type parameter T (Option-like)
+examples/generics.raven:9:enum Option<T> {
+examples/generics.raven:14:// Generic enum with multiple type parameters
+examples/generics.raven:15:enum Result<T, E> {
+examples/generics.raven:20:// Generic function with type parameter T
+examples/generics.raven:25:// Generic function with multiple type parameters
+examples/generics.raven:42:// Generic trait with type parameter T
+examples/generics.raven:43:trait Container<T> {
+examples/generics.raven:48:// Implement generic trait for generic struct
+aloha-shirts/raven-animation/src/lib.raven:7:pub use transitions::animate::{animate, Animation, AnimationOptions};
+aloha-shirts/raven-animation/src/lib.raven:8:pub use transitions::easing::{
+aloha-shirts/raven-animation/src/lib.raven:18:pub use spring::physics::{Spring, SpringConfig, use_spring};
+aloha-shirts/raven-animation/src/lib.raven:20:// Re-export modules
+aloha-shirts/raven-animation/src/lib.raven:21:pub mod transitions;
+aloha-shirts/raven-animation/src/lib.raven:22:pub mod spring;
+aloha-shirts/raven-animation/src/lib.raven:23:pub mod keyframes;
+aloha-shirts/raven-animation/src/lib.raven:24:pub mod timeline;
+aloha-shirts/raven-animation/src/transitions/easing.raven:3:pub fn get_easing(name: &str) -> fn(f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:23:pub fn linear(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:27:pub fn ease_in_quad(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:31:pub fn ease_out_quad(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:35:pub fn ease_in_out_quad(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:43:pub fn ease_in_cubic(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:47:pub fn ease_out_cubic(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:52:pub fn ease_in_out_cubic(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:61:pub fn ease_in_back(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:67:pub fn ease_out_back(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:74:pub fn ease_in_out_back(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:85:pub fn ease_in_elastic(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:97:pub fn ease_out_elastic(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:109:pub fn ease_out_bounce(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/easing.raven:127:pub fn ease_in_bounce(t: f64) -> f64 {
+aloha-shirts/raven-animation/src/transitions/animate.raven:4:pub struct AnimationOptions {
+aloha-shirts/raven-animation/src/transitions/animate.raven:5:    pub duration: f64,
+aloha-shirts/raven-animation/src/transitions/animate.raven:6:    pub easing: String,
+aloha-shirts/raven-animation/src/transitions/animate.raven:7:    pub delay: f64,
+aloha-shirts/raven-animation/src/transitions/animate.raven:8:    pub on_complete: Option<fn() -> ()>
+aloha-shirts/raven-animation/src/transitions/animate.raven:22:pub fn animate(
+aloha-shirts/raven-animation/src/transitions/animate.raven:33:pub struct Animation {
+aloha-shirts/raven-animation/src/transitions/animate.raven:67:    pub fn start(&mut self) {
+aloha-shirts/raven-animation/src/transitions/animate.raven:105:    pub fn get(&self) -> f64 {
+aloha-shirts/raven-animation/src/spring/physics.raven:4:pub struct SpringConfig {
+aloha-shirts/raven-animation/src/spring/physics.raven:5:    pub stiffness: f64,
+aloha-shirts/raven-animation/src/spring/physics.raven:6:    pub damping: f64,
+aloha-shirts/raven-animation/src/spring/physics.raven:7:    pub mass: f64,
+aloha-shirts/raven-animation/src/spring/physics.raven:8:    pub precision: f64
+aloha-shirts/raven-animation/src/spring/physics.raven:22:pub struct Spring {
+aloha-shirts/raven-animation/src/spring/physics.raven:31:    pub fn new(initial: f64, config: SpringConfig) -> Self {
+aloha-shirts/raven-animation/src/spring/physics.raven:41:    pub fn set(&mut self, target: f64) {
+aloha-shirts/raven-animation/src/spring/physics.raven:48:    pub fn get(&self) -> f64 {
+aloha-shirts/raven-animation/src/spring/physics.raven:86:pub fn use_spring(initial: f64, config: Option<SpringConfig>) -> Signal<f64> {
+aloha-shirts/raven-i18n/src/lib.raven:7:pub use translator::i18n::{
+aloha-shirts/raven-i18n/src/lib.raven:12:pub use translator::pluralization::{
+aloha-shirts/raven-i18n/src/lib.raven:17:pub use formatters::number::{
+aloha-shirts/raven-i18n/src/lib.raven:22:pub use formatters::date::{
+aloha-shirts/raven-i18n/src/lib.raven:28:pub use loaders::rtl::{
+aloha-shirts/raven-i18n/src/lib.raven:32:// Re-export modules
+aloha-shirts/raven-i18n/src/lib.raven:33:pub mod translator;
+aloha-shirts/raven-i18n/src/lib.raven:34:pub mod formatters;
+aloha-shirts/raven-i18n/src/lib.raven:35:pub mod loaders;
+aloha-shirts/raven-i18n/src/formatters/date.raven:3:pub enum DateStyle {
+aloha-shirts/raven-i18n/src/formatters/date.raven:10:pub enum TimeStyle {
+aloha-shirts/raven-i18n/src/formatters/date.raven:17:pub fn format_date(date: Date, locale: &str, style: DateStyle) -> String {
+aloha-shirts/raven-i18n/src/formatters/date.raven:38:pub fn format_time(date: Date, locale: &str, style: TimeStyle) -> String {
+aloha-shirts/raven-i18n/src/formatters/date.raven:58:pub fn format_relative(date: Date, locale: &str) -> String {
+aloha-shirts/raven-i18n/src/formatters/number.raven:3:pub struct NumberFormatOptions {
+aloha-shirts/raven-i18n/src/formatters/number.raven:4:    pub min_fraction_digits: Option<i32>,
+aloha-shirts/raven-i18n/src/formatters/number.raven:5:    pub max_fraction_digits: Option<i32>,
+aloha-shirts/raven-i18n/src/formatters/number.raven:6:    pub use_grouping: bool
+aloha-shirts/raven-i18n/src/formatters/number.raven:20:pub fn format_number(value: f64, locale: &str, options: Option<NumberFormatOptions>) -> String {
+aloha-shirts/raven-i18n/src/formatters/number.raven:39:pub fn format_currency(value: f64, currency: &str, locale: &str) -> String {
+aloha-shirts/raven-i18n/src/formatters/number.raven:54:pub fn format_percent(value: f64, locale: &str) -> String {
+aloha-shirts/raven-i18n/src/formatters/number.raven:70:pub fn format_compact(value: f64, locale: &str) -> String {
+examples/shopone/backend/Dockerfile:4:WORKDIR /app
+examples/shopone/backend/Dockerfile:25:WORKDIR /app
+examples/shopone/backend/fly.toml:27:    type = "connections"
+aloha-shirts/raven-i18n/src/translator/pluralization.raven:3:pub enum PluralForm {
+aloha-shirts/raven-i18n/src/translator/pluralization.raven:13:pub fn get_plural_form(locale: &str, count: i32) -> PluralForm {
+aloha-shirts/raven-i18n/src/translator/pluralization.raven:108:pub fn translate_plural(
+aloha-shirts/raven-i18n/src/translator/i18n.raven:4:pub struct I18nConfig {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:5:    pub default_locale: String,
+aloha-shirts/raven-i18n/src/translator/i18n.raven:6:    pub fallback_locale: String,
+aloha-shirts/raven-i18n/src/translator/i18n.raven:7:    pub translations: HashMap<String, HashMap<String, any>>,
+aloha-shirts/raven-i18n/src/translator/i18n.raven:8:    pub namespaces: Vec<String>,
+aloha-shirts/raven-i18n/src/translator/i18n.raven:9:    pub lazy: bool
+aloha-shirts/raven-i18n/src/translator/i18n.raven:12:pub struct I18nState {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:13:    pub current_locale: String,
+aloha-shirts/raven-i18n/src/translator/i18n.raven:14:    pub loaded_locales: Vec<String>
+aloha-shirts/raven-i18n/src/translator/i18n.raven:17:pub struct I18n {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:25:    pub fn new(config: I18nConfig) -> Self {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:39:    pub fn t(&self, key: &str, params: Option<HashMap<String, any>>) -> String {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:123:    pub fn set_locale(&mut self, locale: &str) {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:134:    pub fn get_locale(&self) -> String {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:139:    pub fn add_translations(&mut self, locale: &str, translations: HashMap<String, any>) {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:147:    pub fn is_locale_loaded(&self, locale: &str) -> bool {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:153:    pub fn on_locale_change(&mut self, listener: fn(String) -> ()) {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:161:pub fn create_i18n(config: I18nConfig) -> I18n {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:169:pub fn init_i18n(config: I18nConfig) {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:176:pub fn use_i18n() -> &'static mut I18n {
+aloha-shirts/raven-i18n/src/translator/i18n.raven:183:pub fn use_translation() -> fn(&str, Option<HashMap<String, any>>) -> String {
+examples/shopone/backend/Cargo.lock:55:name = "async-trait"
+examples/shopone/backend/Cargo.lock:71: "num-traits",
+examples/shopone/backend/Cargo.lock:92: "async-trait",
+examples/shopone/backend/Cargo.lock:127: "async-trait",
+examples/shopone/backend/Cargo.lock:240: "num-traits",
+examples/shopone/backend/Cargo.lock:800: "stable_deref_trait",
+examples/shopone/backend/Cargo.lock:1031: "num-traits",
+examples/shopone/backend/Cargo.lock:1045: "num-traits",
+examples/shopone/backend/Cargo.lock:1063: "num-traits",
+examples/shopone/backend/Cargo.lock:1074: "num-traits",
+examples/shopone/backend/Cargo.lock:1078:name = "num-traits"
+examples/shopone/backend/Cargo.lock:1325: "num-traits",
+examples/shopone/backend/Cargo.lock:1555: "num-traits",
+examples/shopone/backend/Cargo.lock:1817:name = "stable_deref_trait"
+examples/shopone/backend/Cargo.lock:2689: "stable_deref_trait",
+aloha-shirts/raven-i18n/src/loaders/rtl.raven:3:pub const RTL_LOCALES: &[&str] = &[
+aloha-shirts/raven-i18n/src/loaders/rtl.raven:19:pub fn is_rtl(locale: &str) -> bool {
+aloha-shirts/raven-i18n/src/loaders/rtl.raven:25:pub fn get_text_direction(locale: &str) -> &'static str {
+aloha-shirts/raven-i18n/src/loaders/rtl.raven:34:pub fn set_document_direction(locale: &str) {
+aloha-shirts/raven-i18n/src/loaders/rtl.raven:40:pub fn apply_rtl_styles(locale: &str) {
+examples/enum_simple.raven:1:// Test enum definition parsing
+examples/enum_simple.raven:3:// Simple enum with no associated data
+examples/enum_simple.raven:4:enum Color {
+examples/enum_simple.raven:11:enum Option {
+examples/enum_simple.raven:17:enum Message {
+examples/enum_simple.raven:25:    // For now, we can't create enum instances
+examples/enum_simple.raven:26:    // But the parser can handle enum definition syntax
+aloha-shirts/src/types.raven:17:// A shared error type for our server API calls.
+aloha-shirts/src/types.raven:18:enum ApiError {
+examples/bluebird-backend/migrations/001_init.sql:68: 'Prototype v2: brighter, thinner, smarter. ⚙️📱',
+aloha-shirts/raven-store/src/lib.raven:7:pub use store::store::{Store, create_store, create_store_with_middleware};
+aloha-shirts/raven-store/src/lib.raven:8:pub use store::computed::{Computed, Signal, Effect, computed, signal, effect};
+aloha-shirts/raven-store/src/lib.raven:9:pub use store::selector::{
+aloha-shirts/raven-store/src/lib.raven:15:pub use middleware::middleware::{Middleware, compose, apply_middleware};
+aloha-shirts/raven-store/src/lib.raven:16:pub use middleware::logger::{
+aloha-shirts/raven-store/src/lib.raven:20:pub use middleware::devtools::{
+aloha-shirts/raven-store/src/lib.raven:25:pub use persistence::localstorage::{
+aloha-shirts/raven-store/src/lib.raven:31:// Re-export modules
+aloha-shirts/raven-store/src/lib.raven:32:pub mod store;
+aloha-shirts/raven-store/src/lib.raven:33:pub mod middleware;
+aloha-shirts/raven-store/src/lib.raven:34:pub mod persistence;
+examples/bluebird-backend/Cargo.lock:34:name = "async-trait"
+examples/bluebird-backend/Cargo.lock:50: "num-traits",
+examples/bluebird-backend/Cargo.lock:71: "async-trait",
+examples/bluebird-backend/Cargo.lock:105: "async-trait",
+examples/bluebird-backend/Cargo.lock:210: "num-traits",
+examples/bluebird-backend/Cargo.lock:753: "stable_deref_trait",
+examples/bluebird-backend/Cargo.lock:954: "num-traits",
+examples/bluebird-backend/Cargo.lock:966: "num-traits",
+examples/bluebird-backend/Cargo.lock:977: "num-traits",
+examples/bluebird-backend/Cargo.lock:981:name = "num-traits"
+examples/bluebird-backend/Cargo.lock:1184: "num-traits",
+examples/bluebird-backend/Cargo.lock:1644:name = "stable_deref_trait"
+examples/bluebird-backend/Cargo.lock:2434: "stable_deref_trait",
+examples/bluebird-backend/README.md:9:│                       BLUEBIRD STACK                         │
+aloha-shirts/raven-store/src/persistence/localstorage.raven:4:pub struct PersistOptions {
+aloha-shirts/raven-store/src/persistence/localstorage.raven:5:    pub key: String,
+aloha-shirts/raven-store/src/persistence/localstorage.raven:6:    pub debounce_ms: i32,
+aloha-shirts/raven-store/src/persistence/localstorage.raven:7:    pub serialize: fn(any) -> String,
+aloha-shirts/raven-store/src/persistence/localstorage.raven:8:    pub deserialize: fn(String) -> any
+aloha-shirts/raven-store/src/persistence/localstorage.raven:23:pub fn persist<T: Clone + Serialize + Deserialize>(key: &str) -> Middleware<T> {
+aloha-shirts/raven-store/src/persistence/localstorage.raven:33:pub fn persist_with_options<T: Clone + Serialize + Deserialize>(
+aloha-shirts/raven-store/src/persistence/localstorage.raven:69:pub fn load_from_storage<T: Deserialize>(
+aloha-shirts/raven-store/src/persistence/localstorage.raven:89:pub fn clear_storage(key: &str) {
+aloha-shirts/raven-store/src/persistence/localstorage.raven:95:pub fn has_stored_state(key: &str) -> bool {
+aloha-shirts/raven-store/src/persistence/localstorage.raven:100:pub fn persist_session<T: Clone + Serialize + Deserialize>(key: &str) -> Middleware<T> {
+aloha-shirts/raven-store/src/persistence/localstorage.raven:109:pub fn load_from_session<T: Deserialize>(key: &str) -> Option<T> {
+examples/analytics_dashboard.raven:261:export App with {
+examples/test_parse_annotations.rs:3:use ravensone_compiler::token::TokenKind;
+examples/test_parse_annotations.rs:19:        let is_eof = token.kind == TokenKind::Eof;
+examples/test_parse_annotations.rs:33:            println!("\n=== AST ===");
+aloha-shirts/raven-store/src/store/computed.raven:3:pub struct Computed<T> {
+aloha-shirts/raven-store/src/store/computed.raven:12:    pub fn new(getter: fn() -> T) -> Self {
+aloha-shirts/raven-store/src/store/computed.raven:22:    pub fn get(&mut self) -> T {
+aloha-shirts/raven-store/src/store/computed.raven:32:    pub fn invalidate(&mut self) {
+aloha-shirts/raven-store/src/store/computed.raven:37:    pub fn track_dependency(&mut self, signal: Signal<any>) {
+aloha-shirts/raven-store/src/store/computed.raven:48:pub fn computed<T: Clone>(getter: fn() -> T) -> Computed<T> {
+aloha-shirts/raven-store/src/store/computed.raven:53:pub struct Signal<T> {
+aloha-shirts/raven-store/src/store/computed.raven:60:    pub fn new(initial_value: T) -> Self {
+aloha-shirts/raven-store/src/store/computed.raven:68:    pub fn get(&self) -> T {
+aloha-shirts/raven-store/src/store/computed.raven:73:    pub fn set(&mut self, new_value: T) {
+aloha-shirts/raven-store/src/store/computed.raven:79:    pub fn update(&mut self, updater: fn(T) -> T) {
+aloha-shirts/raven-store/src/store/computed.raven:85:    pub fn subscribe(&mut self, listener: fn() -> ()) -> fn() -> () {
+aloha-shirts/raven-store/src/store/computed.raven:103:pub fn signal<T: Clone>(initial_value: T) -> Signal<T> {
+aloha-shirts/raven-store/src/store/computed.raven:108:pub struct Effect {
+aloha-shirts/raven-store/src/store/computed.raven:116:    pub fn new(effect_fn: fn() -> ()) -> Self {
+aloha-shirts/raven-store/src/store/computed.raven:125:    pub fn run(&mut self) {
+aloha-shirts/raven-store/src/store/computed.raven:136:    pub fn track(&mut self, signal: Signal<any>) {
+aloha-shirts/raven-store/src/store/computed.raven:145:    pub fn on_cleanup(&mut self, cleanup_fn: fn() -> ()) {
+aloha-shirts/raven-store/src/store/computed.raven:151:pub fn effect(effect_fn: fn() -> ()) -> Effect {
+examples/try_operator_syntax.raven:4:enum ParseError {
+examples/try_operator_syntax.raven:10:enum FileError {
+examples/try_operator_syntax.raven:40:    // Note: In a real implementation, we'd need error type conversion here
+aloha-shirts/raven-store/src/store/selector.raven:4:pub struct Selector<T, R> {
+aloha-shirts/raven-store/src/store/selector.raven:14:    pub fn new(store: Store<T>, selector_fn: fn(T) -> R) -> Self {
+aloha-shirts/raven-store/src/store/selector.raven:25:    pub fn get(&mut self) -> R {
+aloha-shirts/raven-store/src/store/selector.raven:44:    pub fn invalidate(&mut self) {
+aloha-shirts/raven-store/src/store/selector.raven:49:    pub fn subscribe(&mut self, listener: fn(R) -> ()) {
+aloha-shirts/raven-store/src/store/selector.raven:58:pub fn create_selector<T: Clone + PartialEq, R: Clone>(
+aloha-shirts/raven-store/src/store/selector.raven:66:pub struct ComposedSelector<T, R> {
+aloha-shirts/raven-store/src/store/selector.raven:74:    pub fn new(
+aloha-shirts/raven-store/src/store/selector.raven:86:    pub fn get(&mut self) -> R {
+aloha-shirts/raven-store/src/store/selector.raven:99:pub fn compose_selectors<T: Clone + PartialEq, R: Clone>(
+aloha-shirts/raven-store/src/store/selector.raven:107:pub fn derived<T: Clone + PartialEq, R: Clone>(
+aloha-shirts/raven-store/src/store/store.raven:5:pub struct Store<T> {
+aloha-shirts/raven-store/src/store/store.raven:16:    pub fn new(initial_state: T) -> Self {
+aloha-shirts/raven-store/src/store/store.raven:28:    pub fn with_middleware(initial_state: T, middleware: Vec<Middleware<T>>) -> Self {
+aloha-shirts/raven-store/src/store/store.raven:35:    pub fn get(&self) -> T {
+aloha-shirts/raven-store/src/store/store.raven:40:    pub fn set(&mut self, new_state: T) {
+aloha-shirts/raven-store/src/store/store.raven:49:    pub fn update(&mut self, updater: fn(T) -> T) {
+aloha-shirts/raven-store/src/store/store.raven:56:    pub fn subscribe(&mut self, listener: fn(T) -> ()) -> fn() -> () {
+aloha-shirts/raven-store/src/store/store.raven:100:    pub fn undo(&mut self) {
+aloha-shirts/raven-store/src/store/store.raven:109:    pub fn redo(&mut self) {
+aloha-shirts/raven-store/src/store/store.raven:118:    pub fn jump_to(&mut self, index: i32) {
+aloha-shirts/raven-store/src/store/store.raven:127:    pub fn get_history(&self) -> Vec<T> {
+aloha-shirts/raven-store/src/store/store.raven:132:    pub fn can_undo(&self) -> bool {
+aloha-shirts/raven-store/src/store/store.raven:137:    pub fn can_redo(&self) -> bool {
+aloha-shirts/raven-store/src/store/store.raven:143:pub fn create_store<T: Clone>(initial_state: T) -> Store<T> {
+aloha-shirts/raven-store/src/store/store.raven:148:pub fn create_store_with_middleware<T: Clone>(
+examples/json_usage.raven:459:       Result::Err(_) => { /* handle type mismatch */ },
+aloha-shirts/raven-store/src/middleware/logger.raven:4:pub struct LoggerOptions {
+aloha-shirts/raven-store/src/middleware/logger.raven:5:    pub log_actions: bool,
+aloha-shirts/raven-store/src/middleware/logger.raven:6:    pub log_state: bool,
+aloha-shirts/raven-store/src/middleware/logger.raven:7:    pub log_diff: bool,
+aloha-shirts/raven-store/src/middleware/logger.raven:8:    pub collapsed: bool
+aloha-shirts/raven-store/src/middleware/logger.raven:23:pub fn logger<T: Clone + Debug>() -> Middleware<T> {
+aloha-shirts/raven-store/src/middleware/logger.raven:28:pub fn logger_with_options<T: Clone + Debug>(options: LoggerOptions) -> Middleware<T> {
+aloha-shirts/raven-store/src/middleware/logger.raven:51:pub fn console_logger<T: Clone + Debug>() -> Middleware<T> {
+aloha-shirts/raven-store/src/middleware/logger.raven:59:pub fn timestamp_logger<T: Clone + Debug>() -> Middleware<T> {
+aloha-shirts/raven-store/src/middleware/logger.raven:72:pub fn conditional_logger<T: Clone + Debug>(
+examples/ANALYTICS_README.md:20:- Compile-time type checking prevents runtime errors
+examples/ANALYTICS_README.md:43:- **Props-based communication** with type safety
+examples/ANALYTICS_README.md:50:- Shared type definitions across boundaries
+aloha-shirts/raven-store/src/middleware/middleware.raven:3:pub struct Middleware<T> {
+aloha-shirts/raven-store/src/middleware/middleware.raven:9:    pub fn new(apply_fn: fn(&str, T) -> T) -> Self {
+aloha-shirts/raven-store/src/middleware/middleware.raven:14:    pub fn apply(&self, action: &str, state: T) -> T {
+aloha-shirts/raven-store/src/middleware/middleware.raven:20:pub fn compose<T: Clone>(middleware_list: Vec<Middleware<T>>) -> Middleware<T> {
+aloha-shirts/raven-store/src/middleware/middleware.raven:33:pub fn apply_middleware<T: Clone>(
+examples/todo_app.raven:14:            description: "Complete the type system and code generation".to_string(),
+examples/todo_app.raven:120:enum Priority {
+examples/todo_app.raven:150:enum Filter {
+aloha-shirts/raven-store/src/middleware/devtools.raven:4:pub struct DevtoolsOptions {
+aloha-shirts/raven-store/src/middleware/devtools.raven:5:    pub max_history: i32,
+aloha-shirts/raven-store/src/middleware/devtools.raven:6:    pub enable_jump: bool,
+aloha-shirts/raven-store/src/middleware/devtools.raven:7:    pub enable_export: bool
+aloha-shirts/raven-store/src/middleware/devtools.raven:20:pub struct DevtoolsState<T> {
+aloha-shirts/raven-store/src/middleware/devtools.raven:103:pub fn devtools<T: Clone + Debug>() -> Middleware<T> {
+aloha-shirts/raven-store/src/middleware/devtools.raven:108:pub fn devtools_with_options<T: Clone + Debug>(
+aloha-shirts/raven-store/src/middleware/devtools.raven:143:            if options.enable_export {
+aloha-shirts/raven-store/README.md:14:- **Type Safety**: Full type inference and compile-time checking
+aloha-shirts/raven-store/README.md:278:5. **Type your state**: Always define state types for type safety
+examples/match_simple.raven:3:enum Color {
+examples/match_simple.raven:9:enum Option {
+demo-compiler.html:237:  (func (export "Counter") (result i32)
+examples/test_compiler_bridge.rs:8:use ravensone_compiler::token::TokenKind;
+examples/test_compiler_bridge.rs:55:        let is_eof = token.kind == TokenKind::Eof;
+CLOSURE_STATUS.md:11:- **Feature**: Parse function type expressions like `fn(T1, T2) -> R`
+CLOSURE_STATUS.md:15:- **Feature**: Optional type annotations on let statements
+CLOSURE_STATUS.md:18:  - AST: `src/ast.rs:36-40`
+CLOSURE_STATUS.md:28:- **AST**: `Expression::Lambda` with parameters, body, and captures
+CLOSURE_STATUS.md:53:**Problem**: Lambda parameters without type annotations get `Type::Any`, causing type errors.
+CLOSURE_STATUS.md:57:let adder = |x| x + 10;  // ❌ Can't infer type of 'x'
+CLOSURE_STATUS.md:60:**Workaround**: Use explicit type annotation on the let binding:
+CLOSURE_STATUS.md:127:1. Bidirectional type inference for lambdas
+src/type_checker.rs:8:pub struct TypeChecker {
+src/type_checker.rs:14:    pub fn new() -> Self {
+src/type_checker.rs:27:    /// Convert TypeExpression from AST to Type
+src/type_checker.rs:51:                // Convert tuple type expression to Type::Tuple
+src/type_checker.rs:68:                let inner_type = self.type_expr_to_type(inner);
+src/type_checker.rs:72:                // Convert function type to Type::Function
+src/type_checker.rs:83:    pub fn check_program(&mut self, statements: &[Statement]) -> Result<(), CompileError> {
+src/type_checker.rs:90:    /// Infer the type of a statement
+src/type_checker.rs:91:    pub fn check_statement(&mut self, stmt: &Statement) -> Result<Type, CompileError> {
+src/type_checker.rs:94:                let value_type = self.infer_expression(&let_stmt.value)?;
+src/type_checker.rs:101:                let var_type = self.env.lookup(&assign_stmt.target.value)
+src/type_checker.rs:107:                // Check that value type matches variable type
+src/type_checker.rs:108:                let value_type = self.infer_expression(&assign_stmt.value)?;
+src/type_checker.rs:125:                    let param_type = self.type_expr_to_type(&param.type_annotation);
+src/type_checker.rs:131:                let mut body_type = Type::Void;
+src/type_checker.rs:133:                    body_type = self.check_statement(stmt)?;
+src/type_checker.rs:138:                let func_type = Type::function(param_types, body_type);
+src/type_checker.rs:152:                let _body_type = self.infer_expression(&comp_def.body)?;
+src/type_checker.rs:156:                let component_type = Type::Component(vec![]);
+src/type_checker.rs:168:                let cond_type = self.infer_expression(&if_stmt.condition)?;
+src/type_checker.rs:169:                if cond_type != Type::Bool {
+src/type_checker.rs:188:                let cond_type = self.infer_expression(&while_stmt.condition)?;
+src/type_checker.rs:189:                if cond_type != Type::Bool {
+src/type_checker.rs:210:                let cond_type = self.infer_expression(&for_stmt.condition)?;
+src/type_checker.rs:211:                if cond_type != Type::Bool {
+src/type_checker.rs:232:                // Infer the type of the iterator expression
+src/type_checker.rs:233:                let iterator_type = self.infer_expression(&for_in_stmt.iterator)?;
+src/type_checker.rs:235:                // Verify that the iterator is an iterable type (Array, Range, etc.)
+src/type_checker.rs:236:                match &iterator_type {
+src/type_checker.rs:241:                        // Accept Any type (may be a range or other iterable)
+src/type_checker.rs:263:    /// Infer the type of an expression using Hindley-Milner algorithm
+src/type_checker.rs:264:    pub fn infer_expression(&mut self, expr: &Expression) -> Result<Type, CompileError> {
+src/type_checker.rs:278:                // Special handling for Result enum constructors and built-in macros
+src/type_checker.rs:280:                    // These are Result enum constructors or built-in macros, treat as functions
+src/type_checker.rs:289:                    // TODO: Implement proper two-pass type checking to handle forward references
+src/type_checker.rs:304:                let func_type = self.infer_expression(&call.function)?;
+src/type_checker.rs:307:                match &func_type {
+src/type_checker.rs:308:                    Type::Function { params, return_type } => {
+src/type_checker.rs:320:                            let arg_type = self.infer_expression(arg)?;
+src/type_checker.rs:322:                            // Try to unify the argument type with expected type
+src/type_checker.rs:325:                                    "Argument {} type mismatch: expected {}, got {}. {}",
+src/type_checker.rs:335:                        // If function type is Any (e.g., from external functions), skip checking
+src/type_checker.rs:361:                let body_type = self.infer_expression(&lambda.body)?;
+src/type_checker.rs:373:                    // Infer type from first element
+src/type_checker.rs:374:                    let first_type = self.infer_expression(&array_lit.elements[0])?;
+src/type_checker.rs:378:                        let elem_type = self.infer_expression(elem)?;
+src/type_checker.rs:387:                // Infer type for each element
+src/type_checker.rs:390:                    let elem_type = self.infer_expression(elem)?;
+src/type_checker.rs:408:                let array_type = self.infer_expression(&index_expr.array)?;
+src/type_checker.rs:409:                let index_type = self.infer_expression(&index_expr.index)?;
+src/type_checker.rs:412:                if index_type != Type::Int && index_type != Type::Any {
+src/type_checker.rs:419:                // If array type is Array<T>, return T
+src/type_checker.rs:420:                match array_type {
+src/type_checker.rs:464:                // returns a Result<T, E> type and extract the T type
+src/type_checker.rs:470:                let cond_type = self.infer_expression(&if_expr.condition)?;
+src/type_checker.rs:471:                if cond_type != Type::Bool && cond_type != Type::Any {
+src/type_checker.rs:479:                let then_type = self.infer_expression(&if_expr.then_expr)?;
+src/type_checker.rs:481:                    let else_type = self.infer_expression(else_expr)?;
+src/type_checker.rs:490:                // Type-check all statements in the block and return the type of the last statement
+src/type_checker.rs:491:                let mut last_type = Type::Void;
+src/type_checker.rs:493:                    last_type = self.check_statement(stmt)?;
+src/type_checker.rs:501:        let right_type = self.infer_expression(&prefix.right)?;
+src/type_checker.rs:518:                match &right_type {
+src/type_checker.rs:535:        let left_type = self.infer_expression(&infix.left)?;
+src/type_checker.rs:536:        let right_type = self.infer_expression(&infix.right)?;
+src/type_checker.rs:557:                if left_type == Type::Float || right_type == Type::Float {
+src/type_checker.rs:577:                if left_type != Type::Bool {
+src/type_checker.rs:583:                if right_type != Type::Bool {
+src/type_checker.rs:597:    pub fn unify(&mut self, t1: &Type, t2: &Type) -> Result<Substitution, CompileError> {
+src/type_checker.rs:608:                    Err(CompileError::Generic("Infinite type detected".to_string()))
+src/type_checker.rs:680:            Type::Function { params, return_type } => {
+src/type_checker.rs:691:    pub fn solve_constraints(&mut self) -> Result<Substitution, CompileError> {
+src/type_checker.rs:702:    /// Get free type variables in a type
+src/type_checker.rs:713:            Type::Function { params, return_type } => {
+src/type_checker.rs:771:        let recursive_type = Type::Array(Box::new(Type::Var(0)));
+src/js_emitter.rs:5:// 2. Actual function implementations (converted from WASM or AST)
+src/js_emitter.rs:18:pub struct JSEmitter {
+src/js_emitter.rs:19:    pub splitter: CodeSplitter,
+src/js_emitter.rs:23:    pub fn new(program: &Program) -> Self {
+src/js_emitter.rs:30:    pub fn generate_server_js(&self) -> String {
+src/js_emitter.rs:76:    pub fn generate_client_js(&self) -> String {
+src/js_emitter.rs:128:    /// Generates a JavaScript function implementation from AST
+src/js_emitter.rs:138:        let export_keyword = if is_server { "module.exports." } else { "export " };
+src/js_emitter.rs:148:    /// Generates a JavaScript component implementation from AST
+src/js_emitter.rs:160:            "export function {}({}) {{\n  return {};\n}}",
+src/js_emitter.rs:330:    pub fn stats(&self) -> EmitterStats {
+src/js_emitter.rs:341:pub struct EmitterStats {
+src/js_emitter.rs:342:    pub server_functions: usize,
+src/js_emitter.rs:343:    pub client_functions: usize,
+src/js_emitter.rs:344:    pub shared_functions: usize,
+src/js_emitter.rs:345:    pub client_components: usize,
+src/js_emitter.rs:371:            let is_eof = token.kind == crate::token::TokenKind::Eof;
+src/js_emitter.rs:412:            let is_eof = token.kind == crate::token::TokenKind::Eof;
+src/js_emitter.rs:426:        assert!(client_js.contains("export function render_user"));  // Client function
+src/js_emitter.rs:427:        assert!(client_js.contains("export function format_name"));  // Shared function
+src/js_emitter.rs:444:            let is_eof = token.kind == crate::token::TokenKind::Eof;
+src/vdom.rs:5:pub enum VNode {
+src/vdom.rs:18:    pub fn serialize(&self) -> String {
+src/vdom.rs:51:pub enum Patch {
+src/vdom.rs:60:pub fn diff(_old: &VNode, new: &VNode) -> Vec<Patch> {
+src/codegen.rs:4:use crate::token::TokenKind;
+src/codegen.rs:89:pub struct CodeGenerator {
+src/codegen.rs:103:    pub fn new(target: BuildTarget) -> Self {
+src/codegen.rs:116:    /// The main entry point for generating a complete Wasm module from an AST.
+src/codegen.rs:117:    pub fn generate_program(&mut self, program: &Program) -> Result<Vec<u8>, CompileError> {
+src/codegen.rs:127:        // Build struct layouts from the AST
+src/codegen.rs:133:                    let resolved_type = self.type_expression_to_resolved_type(field_type);
+src/codegen.rs:165:                    // All functions, server or client, get a type signature.
+src/codegen.rs:369:                // Track the type if it's a struct literal
+src/codegen.rs:521:        // - Dynamic dispatch for trait methods (into_iter, next)
+src/codegen.rs:522:        // - Option<T> enum discrimination in WASM
+src/codegen.rs:523:        // - Proper type inference from semantic analysis
+src/codegen.rs:643:                    TokenKind::Minus => {
+src/codegen.rs:649:                    TokenKind::Bang => {
+src/codegen.rs:664:                    TokenKind::Plus => { f.instruction(&Instruction::I32Add); }
+src/codegen.rs:665:                    TokenKind::Minus => { f.instruction(&Instruction::I32Sub); }
+src/codegen.rs:666:                    TokenKind::Star => { f.instruction(&Instruction::I32Mul); }
+src/codegen.rs:667:                    TokenKind::Eq => { f.instruction(&Instruction::I32Eq); }
+src/codegen.rs:668:                    TokenKind::NotEq => { f.instruction(&Instruction::I32Ne); }
+src/codegen.rs:669:                    TokenKind::LAngle => { f.instruction(&Instruction::I32LtS); }
+src/codegen.rs:670:                    TokenKind::RAngle => { f.instruction(&Instruction::I32GtS); }
+src/codegen.rs:671:                    TokenKind::LtEq => { f.instruction(&Instruction::I32LeS); }
+src/codegen.rs:672:                    TokenKind::GtEq => { f.instruction(&Instruction::I32GeS); }
+src/codegen.rs:743:                        "Codegen: Unknown struct type '{}'",
+src/codegen.rs:769:                    // For now, assume all fields are i32 (we'll need to check type later)
+src/codegen.rs:784:                // Try to infer struct type and field offset
+src/codegen.rs:786:                // TODO: Use semantic analyzer type information for accurate field access
+src/codegen.rs:933:                // Start if block with a result type (produces i32 value)
+src/codegen.rs:1185:                    let inner_type = self.type_expression_to_resolved_type(&args[0]);
+src/codegen.rs:1192:                // Convert tuple type expression to resolved tuple type
+src/codegen.rs:1213:                let inner_type = self.type_expression_to_resolved_type(inner);
+src/codegen.rs:1233:    /// Attempts to infer the struct type from an expression
+src/codegen.rs:1234:    /// This is a simplified version - in a full implementation, we'd use the semantic analyzer's type information
+src/codegen.rs:1238:                // Look up the variable in our local type table
+src/codegen.rs:1243:                        "Codegen: Cannot infer struct type for variable '{}' (not tracked)",
+src/codegen.rs:1249:                // Easy case - we know the struct type from the literal
+src/codegen.rs:1253:                // Recursively infer the type of nested field access
+src/codegen.rs:1254:                // The type is determined by the base object
+src/codegen.rs:1258:                "Codegen: Cannot infer struct type for this expression".to_string()
+src/codegen.rs:1332:                // For enum variants like Result::Ok or Result::Err
+src/codegen.rs:1334:                // TODO: Implement proper enum tag checking and field extraction
+src/codegen.rs:1338:                // 1. Load the enum tag from scrutinee (first field at offset 0)
+src/deployer.rs:6:/// A trait for different deployment providers (e.g., Cloudflare, Vercel).
+src/deployer.rs:7:pub trait DeployProvider {
+src/deployer.rs:13:pub struct CloudflareProvider {
+src/deployer.rs:33:pub fn deploy_project() -> Result<(), CompileError> {
+src/token.rs:4:pub struct Token {
+src/token.rs:5:    pub kind: TokenKind,
+src/token.rs:6:    pub lexeme: String,
+src/token.rs:7:    pub line: usize,
+src/token.rs:8:    pub column: usize,
+src/token.rs:12:    pub fn new(kind: TokenKind, lexeme: String, line: usize, column: usize) -> Self {
+src/token.rs:18:pub enum TokenKind {
+src/token.rs:75:    pub static ref KEYWORDS: std::collections::HashMap<&'static str, TokenKind> = {
+src/token.rs:77:        map.insert("let", TokenKind::Let);
+src/token.rs:78:        map.insert("fn", TokenKind::Fn);
+src/token.rs:79:        map.insert("struct", TokenKind::Struct);
+src/token.rs:80:        map.insert("enum", TokenKind::Enum);
+src/token.rs:81:        map.insert("impl", TokenKind::Impl);
+src/token.rs:82:        map.insert("trait", TokenKind::Trait);
+src/token.rs:83:        map.insert("component", TokenKind::Component);
+src/token.rs:84:        map.insert("extern", TokenKind::Extern);
+src/token.rs:85:        map.insert("return", TokenKind::Return);
+src/token.rs:86:        map.insert("server", TokenKind::Server);
+src/token.rs:87:        map.insert("client", TokenKind::Client);
+src/token.rs:88:        map.insert("async", TokenKind::Async);
+src/token.rs:89:        map.insert("await", TokenKind::Await);
+src/token.rs:90:        map.insert("use", TokenKind::Use);
+src/token.rs:91:        map.insert("true", TokenKind::True);
+src/token.rs:92:        map.insert("false", TokenKind::False);
+src/token.rs:93:        map.insert("if", TokenKind::If);
+src/token.rs:94:        map.insert("else", TokenKind::Else);
+src/token.rs:95:        map.insert("while", TokenKind::While);
+src/token.rs:96:        map.insert("for", TokenKind::For);
+src/token.rs:97:        map.insert("in", TokenKind::In);
+src/token.rs:98:        map.insert("match", TokenKind::Match);
+src/token.rs:99:        map.insert("mut", TokenKind::Mut);
+src/reactive.rs:9:type NodeId = usize;
+src/reactive.rs:17:pub struct ReactiveContext {
+src/reactive.rs:67:pub struct Signal<T: Clone> {
+src/reactive.rs:74:    pub fn new(initial: T) -> Self {
+src/reactive.rs:83:    pub fn get(&self) -> T {
+src/reactive.rs:89:    pub fn set(&self, new_value: T) {
+src/reactive.rs:95:    pub fn update<F>(&self, f: F)
+src/reactive.rs:117:pub struct Computed<T: Clone> {
+src/reactive.rs:123:    pub fn new<F>(compute: F) -> Self
+src/reactive.rs:141:    pub fn get(&self) -> T {
+src/reactive.rs:147:pub struct Effect {
+src/reactive.rs:153:    pub fn dispose(&self) {
+src/reactive.rs:166:pub fn create_effect<F>(f: F) -> Effect
+src/reactive.rs:193:pub fn batch<F, R>(f: F) -> R
+src/reactive.rs:203:pub struct Store<T: Clone> {
+src/reactive.rs:209:    pub fn new(initial: T) -> Self {
+src/reactive.rs:216:    pub fn get(&self) -> T {
+src/reactive.rs:221:    pub fn set(&self, value: T) {
+src/reactive.rs:226:    pub fn update<F>(&self, f: F)
+src/reactive.rs:244:pub enum ResourceState<T> {
+src/reactive.rs:250:pub struct Resource<T: Clone> {
+src/reactive.rs:256:    pub fn new() -> Self {
+src/reactive.rs:263:    pub fn state(&self) -> ResourceState<T> {
+src/reactive.rs:268:    pub fn set_ready(&self, value: T) {
+src/reactive.rs:273:    pub fn set_error(&self, error: String) {
+src/reactive.rs:278:    pub fn set_loading(&self) {
+src/reactive.rs:290:pub struct ReactiveVec<T: Clone> {
+src/reactive.rs:296:    pub fn new() -> Self {
+src/reactive.rs:303:    pub fn from_vec(items: Vec<T>) -> Self {
+src/reactive.rs:310:    pub fn get(&self) -> Vec<T> {
+src/reactive.rs:315:    pub fn push(&self, item: T) {
+src/reactive.rs:320:    pub fn remove(&self, index: usize) -> Option<T> {
+src/reactive.rs:331:    pub fn len(&self) -> usize {
+src/reactive.rs:336:    pub fn is_empty(&self) -> bool {
+src/reactive.rs:341:    pub fn clear(&self) {
+src/reactive.rs:346:    pub fn filter<F>(&self, predicate: F) -> Vec<T>
+src/reactive.rs:354:    pub fn map<U, F>(&self, f: F) -> Vec<U>
+src/reactive.rs:369:pub struct ReactiveMap<K: Clone + Eq + std::hash::Hash, V: Clone> {
+src/reactive.rs:375:    pub fn new() -> Self {
+src/reactive.rs:382:    pub fn insert(&self, key: K, value: V) {
+src/reactive.rs:389:    pub fn get(&self, key: &K) -> Option<V> {
+src/reactive.rs:394:    pub fn remove(&self, key: &K) {
+src/reactive.rs:401:    pub fn contains_key(&self, key: &K) -> bool {
+src/reactive.rs:406:    pub fn keys(&self) -> Vec<K> {
+src/reactive.rs:411:    pub fn values(&self) -> Vec<V> {
+src/reactive.rs:416:    pub fn clear(&self) {
+src/hydration.rs:9:pub struct HydrationState {
+src/hydration.rs:10:    pub hydrated_nodes: HashMap<String, bool>,
+src/hydration.rs:11:    pub mismatches: Vec<HydrationMismatch>,
+src/hydration.rs:15:pub struct HydrationMismatch {
+src/hydration.rs:16:    pub node_id: String,
+src/hydration.rs:17:    pub expected: String,
+src/hydration.rs:18:    pub actual: String,
+src/hydration.rs:22:    pub fn new() -> Self {
+src/hydration.rs:29:    pub fn mark_hydrated(&mut self, node_id: String) {
+src/hydration.rs:33:    pub fn record_mismatch(&mut self, node_id: String, expected: String, actual: String) {
+src/hydration.rs:41:    pub fn is_hydrated(&self, node_id: &str) -> bool {
+src/hydration.rs:45:    pub fn has_mismatches(&self) -> bool {
+src/hydration.rs:58:pub enum HydrationStrategy {
+src/hydration.rs:71:pub struct HydrationPlan {
+src/hydration.rs:72:    pub strategy: HydrationStrategy,
+src/hydration.rs:73:    pub priority: u8, // 0-255, higher = more important
+src/hydration.rs:74:    pub dependencies: Vec<String>, // Component IDs that must be hydrated first
+src/hydration.rs:78:    pub fn immediate() -> Self {
+src/hydration.rs:86:    pub fn lazy() -> Self {
+src/hydration.rs:94:    pub fn on_interaction() -> Self {
+src/hydration.rs:104:pub fn hydrate_tree(vnode: &VNode, state: &mut HydrationState) -> Result<(), String> {
+src/hydration.rs:135:pub fn generate_hydration_script(state: &HydrationState) -> String {
+src/hydration.rs:168:pub struct HydrationScheduler {
+src/hydration.rs:174:    pub fn new() -> Self {
+src/hydration.rs:181:    pub fn schedule(&mut self, component_id: String, plan: HydrationPlan) {
+src/hydration.rs:187:    pub fn next(&mut self) -> Option<(String, HydrationPlan)> {
+src/hydration.rs:215:    pub fn is_complete(&self) -> bool {
+src/code_splitter.rs:3:// This module analyzes the AST and splits code based on @server/@client annotations:
+src/code_splitter.rs:12:pub struct CodeSplitter {
+src/code_splitter.rs:13:    pub server_functions: Vec<FunctionDefinition>,
+src/code_splitter.rs:14:    pub client_functions: Vec<FunctionDefinition>,
+src/code_splitter.rs:15:    pub shared_functions: Vec<FunctionDefinition>,
+src/code_splitter.rs:16:    pub client_components: Vec<ComponentDefinition>,
+src/code_splitter.rs:20:    pub fn new() -> Self {
+src/code_splitter.rs:30:    pub fn split(&mut self, program: &Program) {
+src/code_splitter.rs:68:    pub fn get_server_code(&self) -> Vec<FunctionDefinition> {
+src/code_splitter.rs:76:    pub fn get_client_code(&self) -> Vec<FunctionDefinition> {
+src/code_splitter.rs:83:    pub fn stats(&self) -> SplitStats {
+src/code_splitter.rs:96:pub struct SplitStats {
+src/code_splitter.rs:97:    pub server_functions: usize,
+src/code_splitter.rs:98:    pub client_functions: usize,
+src/code_splitter.rs:99:    pub shared_functions: usize,
+src/code_splitter.rs:100:    pub client_components: usize,
+src/code_splitter.rs:101:    pub total_server_code: usize,
+src/code_splitter.rs:102:    pub total_client_code: usize,
+src/code_splitter.rs:134:            let is_eof = token.kind == crate::token::TokenKind::Eof;
+src/code_splitter.rs:179:            let is_eof = token.kind == crate::token::TokenKind::Eof;
+src/hmr/mod.rs:14:pub struct HmrConfig {
+src/hmr/mod.rs:15:    pub watch_paths: Vec<PathBuf>,
+src/hmr/mod.rs:16:    pub websocket_port: u16,
+src/hmr/mod.rs:17:    pub debounce_ms: u64,
+src/hmr/mod.rs:18:    pub preserve_state: bool,
+src/hmr/mod.rs:33:pub struct HmrServer {
+src/hmr/mod.rs:42:pub struct HmrUpdate {
+src/hmr/mod.rs:43:    pub update_type: UpdateType,
+src/hmr/mod.rs:44:    pub file_path: String,
+src/hmr/mod.rs:45:    pub timestamp: u64,
+src/hmr/mod.rs:46:    pub wasm_url: Option<String>,
+src/hmr/mod.rs:47:    pub css_content: Option<String>,
+src/hmr/mod.rs:51:pub enum UpdateType {
+src/hmr/mod.rs:59:    pub fn new(config: HmrConfig) -> Self {
+src/hmr/mod.rs:69:    pub async fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
+src/hmr/mod.rs:264:    pub fn get_last_wasm(&self) -> Option<Vec<u8>> {
+src/hmr/mod.rs:278:pub const HMR_CLIENT_SCRIPT: &str = r#"
+src/ssr.rs:8:pub struct SSRContext {
+src/ssr.rs:9:    pub metadata: HashMap<String, String>,
+src/ssr.rs:10:    pub head_elements: Vec<String>,
+src/ssr.rs:11:    pub preload_scripts: Vec<String>,
+src/ssr.rs:15:    pub fn new() -> Self {
+src/ssr.rs:23:    pub fn set_title(&mut self, title: &str) {
+src/ssr.rs:27:    pub fn add_meta(&mut self, name: &str, content: &str) {
+src/ssr.rs:35:    pub fn add_preload_script(&mut self, src: &str) {
+src/ssr.rs:47:pub fn render_to_string(vnode: &VNode, ctx: &mut SSRContext) -> String {
+src/ssr.rs:90:pub fn render_to_document(
+src/ssr.rs:138:pub struct SSRStream {
+src/ssr.rs:144:    pub fn new() -> Self {
+src/ssr.rs:151:    pub fn write(&mut self, html: &str) {
+src/ssr.rs:155:    pub fn flush(&mut self) -> String {
+src/ssr.rs:161:    pub fn render_streaming(&mut self, vnode: &VNode, ctx: &mut SSRContext) -> String {
+src/ssr.rs:203:pub fn generate_hydration_id() -> String {
+src/ssr.rs:212:pub struct SSRMetrics {
+src/ssr.rs:213:    pub render_time_ms: u64,
+src/ssr.rs:214:    pub html_size_bytes: usize,
+src/ssr.rs:215:    pub components_rendered: usize,
+src/ssr.rs:219:    pub fn new() -> Self {
+src/ssr.rs:223:    pub fn record_render(&mut self, start_time: std::time::Instant) {
+src/ssr.rs:227:    pub fn record_html_size(&mut self, html: &str) {
+src/wasm_runtime.rs:7:pub const MEMORY_PAGE_SIZE: u32 = 65536; // 64KB per page
+src/wasm_runtime.rs:8:pub const INITIAL_PAGES: u32 = 1;
+src/wasm_runtime.rs:9:pub const MAX_PAGES: u32 = 100;
+src/wasm_runtime.rs:12:pub const HEAP_START: u32 = 1024; // First 1KB reserved for runtime
+src/wasm_runtime.rs:13:pub const STRING_TABLE_START: u32 = HEAP_START;
+src/wasm_runtime.rs:16:pub struct RuntimeImports {
+src/wasm_runtime.rs:21:    pub fn new() -> Self {
+src/wasm_runtime.rs:49:    pub fn add_to_import_section(&self, section: &mut ImportSection, types: &TypeSection) {
+src/wasm_runtime.rs:55:    pub fn get_type_section(&self) -> TypeSection {
+src/wasm_runtime.rs:100:    pub fn import_count(&self) -> u32 {
+src/wasm_runtime.rs:112:pub struct MemoryManager {
+src/wasm_runtime.rs:118:    pub fn new() -> Self {
+src/wasm_runtime.rs:126:    pub fn allocate_string(&mut self, s: &str) -> u32 {
+src/wasm_runtime.rs:135:    pub fn create_data_section(&self) -> DataSection {
+src/wasm_runtime.rs:156:    pub fn create_memory_section() -> MemorySection {
+src/wasm_runtime.rs:175:pub struct InstructionHelper;
+src/wasm_runtime.rs:179:    pub fn load_string(f: &mut Function, offset: u32) {
+src/wasm_runtime.rs:193:    pub fn call_log(f: &mut Function, string_offset: u32, log_func_index: u32) {
+src/wasm_runtime.rs:199:    pub fn malloc(f: &mut Function, size: u32, heap_ptr_global: u32) {
+src/wasm_runtime.rs:214:    pub fn store_i32(f: &mut Function, addr: u32, value: i32) {
+src/wasm_runtime.rs:225:    pub fn load_i32(f: &mut Function, addr: u32) {
+src/wasm_runtime.rs:236:pub struct FunctionTable {
+src/wasm_runtime.rs:241:    pub fn new() -> Self {
+src/wasm_runtime.rs:247:    pub fn add_function(&mut self, func_index: u32) -> u32 {
+src/wasm_runtime.rs:253:    pub fn create_table_section(&self) -> TableSection {
+src/wasm_runtime.rs:263:    pub fn create_element_section(&self) -> ElementSection {
+src/wasm_runtime.rs:283:pub struct GlobalsManager {
+src/wasm_runtime.rs:288:    pub fn new() -> Self {
+src/wasm_runtime.rs:300:    pub fn create_global_section(&self) -> GlobalSection {
+src/wasm_runtime.rs:304:            let init_value = match val_type {
+src/wasm_runtime.rs:332:    pub fn heap_pointer_index(&self) -> u32 {
+src/wasm_runtime.rs:336:    pub fn reactive_context_index(&self) -> u32 {
+src/profiler.rs:7:pub struct ProfileData {
+src/profiler.rs:8:    pub function_name: String,
+src/profiler.rs:9:    pub call_count: u64,
+src/profiler.rs:10:    pub total_time: Duration,
+src/profiler.rs:11:    pub min_time: Duration,
+src/profiler.rs:12:    pub max_time: Duration,
+src/profiler.rs:13:    pub avg_time: Duration,
+src/profiler.rs:17:pub struct Profiler {
+src/profiler.rs:31:    pub fn new() -> Self {
+src/profiler.rs:39:    pub fn start(&mut self, function_name: &str) {
+src/profiler.rs:44:    pub fn stop(&mut self, function_name: &str) {
+src/profiler.rs:66:    pub fn get_data(&self) -> Vec<ProfileData> {
+src/profiler.rs:81:    pub fn print_summary(&self) {
+src/profiler.rs:104:    pub fn reset(&mut self) {
+src/profiler.rs:117:pub struct ProfileGuard<'a> {
+src/profiler.rs:123:    pub fn new(profiler: &'a mut Profiler, function_name: String) -> Self {
+src/types.rs:2:// Defines the type representation and type operations
+src/types.rs:8:pub enum Type {
+src/types.rs:31:    Generic(String), // Generic type variable (e.g., T, U)
+src/types.rs:65:            Type::Function { params, return_type } => {
+src/types.rs:104:    /// Check if this type is a primitive type
+src/types.rs:105:    pub fn is_primitive(&self) -> bool {
+src/types.rs:109:    /// Check if this type is numeric
+src/types.rs:110:    pub fn is_numeric(&self) -> bool {
+src/types.rs:115:    pub fn is_compatible_with(&self, other: &Type) -> bool {
+src/types.rs:121:            // Any type is compatible with everything
+src/types.rs:143:    /// Get the return type of a function, if this is a function type
+src/types.rs:144:    pub fn get_return_type(&self) -> Option<&Type> {
+src/types.rs:152:    pub fn get_param_types(&self) -> Option<&Vec<Type>> {
+src/types.rs:160:    pub fn function(params: Vec<Type>, return_type: Type) -> Self {
+src/types.rs:168:    pub fn array(element_type: Type) -> Self {
+src/types.rs:173:    pub fn optional(inner_type: Type) -> Self {
+src/types.rs:180:pub struct TypeEnv {
+src/types.rs:186:    pub fn new() -> Self {
+src/types.rs:194:    pub fn push_scope(&mut self) {
+src/types.rs:199:    pub fn pop_scope(&mut self) {
+src/types.rs:206:    pub fn bind(&mut self, name: String, ty: Type) {
+src/types.rs:213:    pub fn lookup(&self, name: &str) -> Option<&Type> {
+src/types.rs:222:    /// Generate a fresh type variable
+src/types.rs:223:    pub fn fresh_var(&mut self) -> Type {
+src/types.rs:236:/// Substitution for type variables
+src/types.rs:238:pub struct Substitution {
+src/types.rs:243:    pub fn new() -> Self {
+src/types.rs:249:    /// Add a substitution from type variable to type
+src/types.rs:250:    pub fn insert(&mut self, var: usize, ty: Type) {
+src/types.rs:255:    pub fn apply(&self, ty: &Type) -> Type {
+src/types.rs:267:            Type::Function { params, return_type } => Type::Function {
+src/types.rs:278:    pub fn compose(&self, other: &Substitution) -> Substitution {
+src/macros.rs:2:use crate::token::{Token, TokenKind};
+src/macros.rs:5:pub fn expand_component_macro(input: &[Token]) -> Result<Vec<Token>, String> {
+src/macros.rs:12:    let lparen = input.iter().position(|t| t.kind == TokenKind::LParen).unwrap_or(0);
+src/macros.rs:13:    let rparen = input.iter().position(|t| t.kind == TokenKind::RParen).unwrap_or(lparen);
+src/macros.rs:19:    output_tokens.push(Token::new(TokenKind::Struct, "struct".to_string(), 0, 0));
+src/macros.rs:20:    output_tokens.push(Token::new(TokenKind::Identifier, props_struct_name.clone(), 0, 0));
+src/macros.rs:21:    output_tokens.push(Token::new(TokenKind::LBrace, "{".to_string(), 0, 0));
+src/macros.rs:24:    output_tokens.push(Token::new(TokenKind::RBrace, "}".to_string(), 0, 0));
+src/macros.rs:25:    output_tokens.push(Token::new(TokenKind::Semicolon, ";".to_string(), 0, 0));
+src/macros.rs:28:    output_tokens.push(Token::new(TokenKind::Fn, "fn".to_string(), 0, 0));
+src/macros.rs:29:    output_tokens.push(Token::new(TokenKind::Identifier, component_name.clone(), 0, 0));
+src/macros.rs:30:    output_tokens.push(Token::new(TokenKind::LParen, "(".to_string(), 0, 0));
+src/macros.rs:31:    output_tokens.push(Token::new(TokenKind::Identifier, "props".to_string(), 0, 0));
+src/macros.rs:32:    output_tokens.push(Token::new(TokenKind::Colon, ":".to_string(), 0, 0));
+src/macros.rs:33:    output_tokens.push(Token::new(TokenKind::Identifier, props_struct_name, 0, 0));
+src/macros.rs:34:    output_tokens.push(Token::new(TokenKind::RParen, ")".to_string(), 0, 0));
+src/macros.rs:35:    output_tokens.push(Token::new(TokenKind::Arrow, "->".to_string(), 0, 0));
+src/macros.rs:36:    output_tokens.push(Token::new(TokenKind::Identifier, "VNode".to_string(), 0, 0));
+src/macros.rs:39:    let body_start = input.iter().position(|t| t.kind == TokenKind::LBrace).unwrap_or(0);
+src/stdlib/http.rs:10:pub enum HttpError {
+src/stdlib/http.rs:38:pub enum HttpMethod {
+src/stdlib/http.rs:49:    pub fn as_str(&self) -> &str {
+src/stdlib/http.rs:64:pub struct HttpRequest {
+src/stdlib/http.rs:65:    pub url: String,
+src/stdlib/http.rs:66:    pub method: HttpMethod,
+src/stdlib/http.rs:67:    pub headers: HashMap<String, String>,
+src/stdlib/http.rs:68:    pub body: Option<String>,
+src/stdlib/http.rs:73:    pub fn get(url: &str) -> Self {
+src/stdlib/http.rs:83:    pub fn post(url: &str) -> Self {
+src/stdlib/http.rs:93:    pub fn put(url: &str) -> Self {
+src/stdlib/http.rs:103:    pub fn delete(url: &str) -> Self {
+src/stdlib/http.rs:113:    pub fn header(mut self, key: String, value: String) -> Self {
+src/stdlib/http.rs:119:    pub fn json(mut self, body: String) -> Self {
+src/stdlib/http.rs:126:    pub fn body(mut self, body: String) -> Self {
+src/stdlib/http.rs:132:    pub async fn send(self) -> Result<HttpResponse, HttpError> {
+src/stdlib/http.rs:192:    pub fn send_blocking(self) -> Result<HttpResponse, HttpError> {
+src/stdlib/http.rs:252:pub struct HttpResponse {
+src/stdlib/http.rs:253:    pub status: u16,
+src/stdlib/http.rs:254:    pub status_text: String,
+src/stdlib/http.rs:255:    pub headers: HashMap<String, String>,
+src/stdlib/http.rs:256:    pub body: String,
+src/stdlib/http.rs:261:    pub fn new(status: u16, status_text: String) -> Self {
+src/stdlib/http.rs:271:    pub fn is_ok(&self) -> bool {
+src/stdlib/http.rs:276:    pub fn is_client_error(&self) -> bool {
+src/stdlib/http.rs:281:    pub fn is_server_error(&self) -> bool {
+src/stdlib/http.rs:286:    pub fn json(&self) -> Result<serde_json::Value, HttpError> {
+src/stdlib/http.rs:292:    pub fn json_as<T: serde::de::DeserializeOwned>(&self) -> Result<T, HttpError> {
+src/stdlib/http.rs:298:    pub fn text(&self) -> String {
+src/stdlib/http.rs:304:pub struct HttpClient {
+src/stdlib/http.rs:311:    pub fn new() -> Self {
+src/stdlib/http.rs:319:    pub fn with_base_url(mut self, url: String) -> Self {
+src/stdlib/http.rs:325:    pub fn with_header(mut self, key: String, value: String) -> Self {
+src/stdlib/http.rs:331:    pub fn get(&self, url: &str) -> HttpRequest {
+src/stdlib/http.rs:336:    pub fn post(&self, url: &str) -> HttpRequest {
+src/stdlib/http.rs:341:    pub fn put(&self, url: &str) -> HttpRequest {
+src/stdlib/http.rs:346:    pub fn delete(&self, url: &str) -> HttpRequest {
+src/stdlib/http.rs:377:pub async fn get(url: &str) -> Result<HttpResponse, HttpError> {
+src/stdlib/http.rs:382:pub fn get_blocking(url: &str) -> Result<HttpResponse, HttpError> {
+src/stdlib/http.rs:387:pub async fn post_json(url: &str, json: serde_json::Value) -> Result<HttpResponse, HttpError> {
+src/stdlib/http.rs:394:pub fn post_json_blocking(url: &str, json: serde_json::Value) -> Result<HttpResponse, HttpError> {
+src/stdlib/db.rs:11:pub enum ColumnType {
+src/stdlib/db.rs:22:    pub fn to_sql(&self) -> &str {
+src/stdlib/db.rs:37:pub struct Column {
+src/stdlib/db.rs:38:    pub name: String,
+src/stdlib/db.rs:39:    pub column_type: ColumnType,
+src/stdlib/db.rs:40:    pub nullable: bool,
+src/stdlib/db.rs:41:    pub primary_key: bool,
+src/stdlib/db.rs:42:    pub auto_increment: bool,
+src/stdlib/db.rs:43:    pub unique: bool,
+src/stdlib/db.rs:44:    pub default_value: Option<String>,
+src/stdlib/db.rs:48:    pub fn new(name: String, column_type: ColumnType) -> Self {
+src/stdlib/db.rs:60:    pub fn nullable(mut self) -> Self {
+src/stdlib/db.rs:65:    pub fn primary_key(mut self) -> Self {
+src/stdlib/db.rs:70:    pub fn auto_increment(mut self) -> Self {
+src/stdlib/db.rs:75:    pub fn unique(mut self) -> Self {
+src/stdlib/db.rs:80:    pub fn default(mut self, value: String) -> Self {
+src/stdlib/db.rs:85:    pub fn to_sql(&self) -> String {
+src/stdlib/db.rs:114:pub struct TableSchema {
+src/stdlib/db.rs:115:    pub name: String,
+src/stdlib/db.rs:116:    pub columns: Vec<Column>,
+src/stdlib/db.rs:117:    pub indexes: Vec<String>,
+src/stdlib/db.rs:121:    pub fn new(name: String) -> Self {
+src/stdlib/db.rs:129:    pub fn column(mut self, column: Column) -> Self {
+src/stdlib/db.rs:134:    pub fn index(mut self, index: String) -> Self {
+src/stdlib/db.rs:139:    pub fn to_create_table_sql(&self) -> String {
+src/stdlib/db.rs:154:pub enum QueryOp {
+src/stdlib/db.rs:169:    pub fn to_sql(&self) -> &str {
+src/stdlib/db.rs:188:pub struct WhereCondition {
+src/stdlib/db.rs:189:    pub column: String,
+src/stdlib/db.rs:190:    pub op: QueryOp,
+src/stdlib/db.rs:191:    pub value: Option<String>,
+src/stdlib/db.rs:195:    pub fn to_sql(&self) -> String {
+src/stdlib/db.rs:205:pub enum OrderDirection {
+src/stdlib/db.rs:211:    pub fn to_sql(&self) -> &str {
+src/stdlib/db.rs:221:pub struct QueryBuilder<T> {
+src/stdlib/db.rs:232:    pub fn new(table: String) -> Self {
+src/stdlib/db.rs:245:    pub fn select(mut self, columns: Vec<String>) -> Self {
+src/stdlib/db.rs:251:    pub fn where_eq(mut self, column: String, value: String) -> Self {
+src/stdlib/db.rs:261:    pub fn where_gt(mut self, column: String, value: String) -> Self {
+src/stdlib/db.rs:271:    pub fn where_lt(mut self, column: String, value: String) -> Self {
+src/stdlib/db.rs:281:    pub fn where_like(mut self, column: String, pattern: String) -> Self {
+src/stdlib/db.rs:291:    pub fn where_null(mut self, column: String) -> Self {
+src/stdlib/db.rs:301:    pub fn order_by(mut self, column: String, direction: OrderDirection) -> Self {
+src/stdlib/db.rs:307:    pub fn limit(mut self, limit: usize) -> Self {
+src/stdlib/db.rs:313:    pub fn offset(mut self, offset: usize) -> Self {
+src/stdlib/db.rs:319:    pub fn to_sql(&self) -> String {
+src/stdlib/db.rs:353:pub struct Table<T> {
+src/stdlib/db.rs:360:    pub fn new(name: String, schema: TableSchema) -> Self {
+src/stdlib/db.rs:369:    pub fn all(&self) -> QueryBuilder<T> {
+src/stdlib/db.rs:374:    pub fn find(&self, id: i32) -> QueryBuilder<T> {
+src/stdlib/db.rs:381:    pub fn where_eq(&self, column: String, value: String) -> QueryBuilder<T> {
+src/stdlib/db.rs:387:    pub fn create(&self, data: HashMap<String, String>) -> String {
+src/stdlib/db.rs:400:    pub fn update(&self, id: i32, data: HashMap<String, String>) -> String {
+src/stdlib/db.rs:414:    pub fn delete(&self, id: i32) -> String {
+src/stdlib/db.rs:419:    pub fn get_schema(&self) -> &TableSchema {
+src/stdlib/db.rs:425:pub struct Database {
+src/stdlib/db.rs:430:    pub fn new() -> Self {
+src/stdlib/db.rs:437:    pub fn register_table(&mut self, schema: TableSchema) {
+src/stdlib/db.rs:442:    pub fn table<T>(&self, name: &str) -> Option<Table<T>> {
+src/stdlib/db.rs:449:    pub fn generate_migrations(&self) -> Vec<String> {
+src/stdlib/mod.rs:5:pub mod reactive;
+src/stdlib/mod.rs:6:pub mod collections;
+src/stdlib/mod.rs:7:pub mod http;
+src/stdlib/mod.rs:8:pub mod db;
+src/stdlib/mod.rs:9:pub mod auth;
+src/stdlib/mod.rs:10:pub mod option;
+src/stdlib/mod.rs:11:pub mod result;
+src/stdlib/mod.rs:12:pub mod iterator;
+src/stdlib/mod.rs:13:pub mod vec;
+src/stdlib/mod.rs:14:pub mod json;
+src/stdlib/mod.rs:15:pub mod time;
+src/stdlib/mod.rs:16:pub mod hashmap;
+src/stdlib/mod.rs:17:pub mod string;
+src/stdlib/mod.rs:18:pub mod fs;
+src/stdlib/mod.rs:20:// Re-export commonly used items
+src/stdlib/mod.rs:21:pub use reactive::{Signal, Computed, Effect};
+src/stdlib/mod.rs:22:pub use collections::{RArray, RMap};
+src/stdlib/mod.rs:23:pub use http::{HttpClient, HttpRequest, HttpResponse, HttpMethod};
+src/stdlib/mod.rs:24:pub use db::{Database, Table, TableSchema, Column, ColumnType, QueryBuilder, OrderDirection};
+src/stdlib/mod.rs:25:pub use auth::{User, SafeUser, UserRole, AuthToken, Session, AuthService, Claims};
+src/stdlib/string.rs:1:/// Standard library String type with enhanced operations
+src/stdlib/string.rs:4:pub const STRING_DEFINITION: &str = r#"
+src/stdlib/collections.rs:19:pub struct RArray<T> {
+src/stdlib/collections.rs:24:    pub fn new() -> Self {
+src/stdlib/collections.rs:28:    pub fn with_capacity(capacity: usize) -> Self {
+src/stdlib/collections.rs:34:    pub fn push(&mut self, item: T) {
+src/stdlib/collections.rs:38:    pub fn pop(&mut self) -> Option<T> {
+src/stdlib/collections.rs:42:    pub fn len(&self) -> usize {
+src/stdlib/collections.rs:46:    pub fn is_empty(&self) -> bool {
+src/stdlib/collections.rs:50:    pub fn get(&self, index: usize) -> Option<&T> {
+src/stdlib/collections.rs:54:    pub fn iter(&self) -> std::slice::Iter<T> {
+src/stdlib/collections.rs:60:    pub fn map<U, F>(&self, f: F) -> RArray<U>
+src/stdlib/collections.rs:69:    pub fn filter<F>(&self, predicate: F) -> RArray<T>
+src/stdlib/collections.rs:83:    pub fn reduce<U, F>(&self, f: F, initial: U) -> U
+src/stdlib/collections.rs:102:pub struct RMap<K, V> {
+src/stdlib/collections.rs:107:    pub fn new() -> Self {
+src/stdlib/collections.rs:113:    pub fn with_capacity(capacity: usize) -> Self {
+src/stdlib/collections.rs:119:    pub fn set(&mut self, key: K, value: V) -> Option<V> {
+src/stdlib/collections.rs:123:    pub fn get(&self, key: &K) -> Option<&V> {
+src/stdlib/collections.rs:127:    pub fn remove(&mut self, key: &K) -> Option<V> {
+src/stdlib/collections.rs:131:    pub fn contains_key(&self, key: &K) -> bool {
+src/stdlib/collections.rs:135:    pub fn len(&self) -> usize {
+src/stdlib/collections.rs:139:    pub fn is_empty(&self) -> bool {
+src/stdlib/collections.rs:143:    pub fn keys(&self) -> impl Iterator<Item = &K> {
+src/stdlib/collections.rs:147:    pub fn values(&self) -> impl Iterator<Item = &V> {
+src/stdlib/reactive.rs:12:type SignalId = usize;
+src/stdlib/reactive.rs:40:pub struct Signal<T: Clone> {
+src/stdlib/reactive.rs:48:    pub fn new(initial: T) -> Self {
+src/stdlib/reactive.rs:57:    pub fn get(&self) -> T {
+src/stdlib/reactive.rs:68:    pub fn set(&self, new_value: T) {
+src/stdlib/reactive.rs:74:    pub fn update(&self, f: impl FnOnce(&mut T)) {
+src/stdlib/reactive.rs:80:    pub fn id(&self) -> SignalId {
+src/stdlib/reactive.rs:120:pub struct Computed<T: Clone> {
+src/stdlib/reactive.rs:128:    pub fn new<F>(compute: F) -> Self
+src/stdlib/reactive.rs:157:    pub fn get(&self) -> T {
+src/stdlib/reactive.rs:187:pub struct Effect {
+src/stdlib/reactive.rs:194:    pub fn new<F>(effect: F) -> Self
+src/stdlib/reactive.rs:226:    pub fn run(&self) {
+src/stdlib/reactive.rs:235:pub enum ReactiveMarker {
+src/stdlib/iterator.rs:1:/// Standard library Iterator trait definition
+src/stdlib/iterator.rs:4:pub const ITERATOR_DEFINITION: &str = r#"
+src/stdlib/iterator.rs:5:// The core Iterator trait
+src/stdlib/iterator.rs:6:// Types that implement this trait can be iterated over
+src/stdlib/iterator.rs:7:trait Iterator {
+src/stdlib/iterator.rs:8:    type Item;  // Associated type for the element type
+src/stdlib/iterator.rs:15:trait IntoIterator {
+src/stdlib/iterator.rs:16:    type Item;
+src/stdlib/iterator.rs:17:    type IntoIter: Iterator;  // The iterator type this converts to
+src/stdlib/iterator.rs:27:    type Item = T;
+src/stdlib/iterator.rs:28:    type IntoIter = ArrayIterator<T>;
+src/stdlib/iterator.rs:53:    type Item = T;
+src/stdlib/iterator.rs:68:    type Item = i32;
+src/stdlib/iterator.rs:82:    type Item = i32;
+src/stdlib/iterator.rs:83:    type IntoIter = Range;
+src/stdlib/iterator.rs:92:    type Item = T;
+src/stdlib/iterator.rs:93:    type IntoIter = OptionIterator<T>;
+src/stdlib/iterator.rs:105:    type Item = T;
+src/stdlib/iterator.rs:122:// Extension methods for Iterator trait
+src/stdlib/iterator.rs:204:    type Item = U;
+src/stdlib/iterator.rs:224:    type Item = I::Item;
+src/stdlib/iterator.rs:238:    type Item = I::Item;
+src/stdlib/iterator.rs:256:    type Item = I::Item;
+src/stdlib/iterator.rs:280:    fn test_iterator_definition_contains_trait() {
+src/stdlib/iterator.rs:281:        assert!(ITERATOR_DEFINITION.contains("trait Iterator"));
+src/stdlib/iterator.rs:286:        assert!(ITERATOR_DEFINITION.contains("trait IntoIterator"));
+src/stdlib/json.rs:4:pub const JSON_DEFINITION: &str = r#"
+src/stdlib/json.rs:7:enum JsonValue {
+src/stdlib/json.rs:568:        assert!(JSON_DEFINITION.contains("enum JsonValue"));
+src/stdlib/result.rs:1:/// Standard library Result<T, E> type implementation
+src/stdlib/result.rs:3:/// The Result type represents either success (Ok) or failure (Err). It's used for
+src/stdlib/result.rs:7:/// Result type definition in RavensOne syntax
+src/stdlib/result.rs:8:pub const RESULT_DEFINITION: &str = r#"
+src/stdlib/result.rs:9:// The Result type - a type that represents either success (Ok) or an error (Err)
+src/stdlib/result.rs:10:enum Result<T, E> {
+src/stdlib/result.rs:161:        assert!(RESULT_DEFINITION.contains("enum Result<T, E>"));
+src/stdlib/vec.rs:1:/// Standard library Vec<T> (growable array) type definition
+src/stdlib/vec.rs:4:pub const VEC_DEFINITION: &str = r#"
+src/stdlib/vec.rs:259:    type Item = T;
+src/stdlib/vec.rs:260:    type IntoIter = VecIterator<T>;
+src/stdlib/vec.rs:276:    type Item = T;
+src/stdlib/option.rs:1:/// Standard library Option<T> type implementation
+src/stdlib/option.rs:3:/// The Option type represents an optional value: every Option is either Some and contains a value,
+src/stdlib/option.rs:4:/// or None, and does not. This is similar to Rust's Option type and provides a type-safe way
+src/stdlib/option.rs:7:/// Option type definition in RavensOne syntax
+src/stdlib/option.rs:8:pub const OPTION_DEFINITION: &str = r#"
+src/stdlib/option.rs:9:// The Option type - a type that represents an optional value
+src/stdlib/option.rs:10:enum Option<T> {
+src/stdlib/option.rs:136:        assert!(OPTION_DEFINITION.contains("enum Option<T>"));
+src/stdlib/time.rs:4:pub const TIME_DEFINITION: &str = r#"
+src/stdlib/time.rs:282:enum TimeZone {
+src/stdlib/time.rs:526:        assert!(TIME_DEFINITION.contains("enum TimeZone"));
+src/stdlib/hashmap.rs:1:/// Standard library HashMap<K, V> type definition
+src/stdlib/hashmap.rs:4:pub const HASHMAP_DEFINITION: &str = r#"
+src/stdlib/hashmap.rs:300:    type Item = (K, V);
+src/stdlib/hashmap.rs:301:    type IntoIter = HashMapIterator<K, V>;
+src/stdlib/hashmap.rs:319:    type Item = (K, V);
+src/stdlib/auth.rs:10:pub struct User {
+src/stdlib/auth.rs:11:    pub id: i32,
+src/stdlib/auth.rs:12:    pub email: String,
+src/stdlib/auth.rs:13:    pub password_hash: String,
+src/stdlib/auth.rs:14:    pub name: String,
+src/stdlib/auth.rs:15:    pub role: UserRole,
+src/stdlib/auth.rs:16:    pub created_at: String,
+src/stdlib/auth.rs:17:    pub last_login: Option<String>,
+src/stdlib/auth.rs:21:    pub fn new(id: i32, email: String, name: String, password_hash: String) -> Self {
+src/stdlib/auth.rs:34:    pub fn has_role(&self, role: &UserRole) -> bool {
+src/stdlib/auth.rs:39:    pub fn to_safe(&self) -> SafeUser {
+src/stdlib/auth.rs:53:pub struct SafeUser {
+src/stdlib/auth.rs:54:    pub id: i32,
+src/stdlib/auth.rs:55:    pub email: String,
+src/stdlib/auth.rs:56:    pub name: String,
+src/stdlib/auth.rs:57:    pub role: UserRole,
+src/stdlib/auth.rs:58:    pub created_at: String,
+src/stdlib/auth.rs:59:    pub last_login: Option<String>,
+src/stdlib/auth.rs:64:pub enum UserRole {
+src/stdlib/auth.rs:71:    pub fn as_str(&self) -> &str {
+src/stdlib/auth.rs:79:    pub fn from_str(s: &str) -> Option<Self> {
+src/stdlib/auth.rs:91:pub struct Claims {
+src/stdlib/auth.rs:92:    pub sub: String,  // Subject (user ID)
+src/stdlib/auth.rs:93:    pub email: String,
+src/stdlib/auth.rs:94:    pub role: String,
+src/stdlib/auth.rs:95:    pub exp: i64,     // Expiration time
+src/stdlib/auth.rs:96:    pub iat: i64,     // Issued at
+src/stdlib/auth.rs:100:    pub fn new(user_id: i32, email: String, role: UserRole, expires_in_hours: i64) -> Self {
+src/stdlib/auth.rs:114:    pub fn is_expired(&self) -> bool {
+src/stdlib/auth.rs:120:    pub fn is_valid(&self, required_role: Option<&UserRole>) -> bool {
+src/stdlib/auth.rs:139:pub struct AuthToken {
+src/stdlib/auth.rs:140:    pub token: String,
+src/stdlib/auth.rs:141:    pub token_type: String,
+src/stdlib/auth.rs:142:    pub expires_in: i64,
+src/stdlib/auth.rs:143:    pub user: SafeUser,
+src/stdlib/auth.rs:147:    pub fn new(token: String, expires_in: i64, user: SafeUser) -> Self {
+src/stdlib/auth.rs:159:pub struct Session {
+src/stdlib/auth.rs:160:    pub session_id: String,
+src/stdlib/auth.rs:161:    pub user_id: i32,
+src/stdlib/auth.rs:162:    pub created_at: i64,
+src/stdlib/auth.rs:163:    pub expires_at: i64,
+src/stdlib/auth.rs:164:    pub data: HashMap<String, String>,
+src/stdlib/auth.rs:168:    pub fn new(session_id: String, user_id: i32, duration_hours: i64) -> Self {
+src/stdlib/auth.rs:179:    pub fn is_expired(&self) -> bool {
+src/stdlib/auth.rs:184:    pub fn set_data(&mut self, key: String, value: String) {
+src/stdlib/auth.rs:188:    pub fn get_data(&self, key: &str) -> Option<&String> {
+src/stdlib/auth.rs:194:pub struct AuthService {
+src/stdlib/auth.rs:201:    pub fn new(secret_key: String) -> Self {
+src/stdlib/auth.rs:209:    pub fn with_expiry(mut self, token_hours: i64, session_hours: i64) -> Self {
+src/stdlib/auth.rs:216:    pub fn hash_password(&self, password: &str) -> String {
+src/stdlib/auth.rs:223:    pub fn verify_password(&self, password: &str, hash: &str) -> bool {
+src/stdlib/auth.rs:230:    pub fn generate_token(&self, user: &User) -> String {
+src/stdlib/auth.rs:249:    pub fn verify_token(&self, token: &str) -> Result<Claims, String> {
+src/stdlib/auth.rs:270:    pub fn generate_session_id(&self) -> String {
+src/stdlib/auth.rs:276:    pub fn create_auth_token(&self, user: &User) -> AuthToken {
+src/stdlib/auth.rs:301:pub struct AuthMiddleware {
+src/stdlib/auth.rs:306:    pub fn new() -> Self {
+src/stdlib/auth.rs:312:    pub fn require_role(mut self, role: UserRole) -> Self {
+src/stdlib/auth.rs:317:    pub fn check(&self, claims: &Claims) -> Result<(), String> {
+src/stdlib/auth.rs:333:    pub struct Utc;
+src/stdlib/auth.rs:336:        pub fn now() -> DateTime {
+src/stdlib/auth.rs:341:    pub struct DateTime;
+src/stdlib/auth.rs:344:        pub fn timestamp(&self) -> i64 {
+src/stdlib/auth.rs:350:        pub fn to_rfc3339(&self) -> String {
+src/stdlib/fs.rs:4:pub const FS_DEFINITION: &str = r#"
+src/lsp/mod.rs:13:pub struct LanguageServer {
+src/lsp/mod.rs:19:pub struct Document {
+src/lsp/mod.rs:20:    pub uri: String,
+src/lsp/mod.rs:21:    pub content: String,
+src/lsp/mod.rs:22:    pub version: i32,
+src/lsp/mod.rs:23:    pub diagnostics: Vec<Diagnostic>,
+src/lsp/mod.rs:28:pub struct Position {
+src/lsp/mod.rs:29:    pub line: usize,
+src/lsp/mod.rs:30:    pub character: usize,
+src/lsp/mod.rs:35:pub struct Range {
+src/lsp/mod.rs:36:    pub start: Position,
+src/lsp/mod.rs:37:    pub end: Position,
+src/lsp/mod.rs:42:pub struct CompletionItem {
+src/lsp/mod.rs:43:    pub label: String,
+src/lsp/mod.rs:44:    pub kind: CompletionItemKind,
+src/lsp/mod.rs:45:    pub detail: Option<String>,
+src/lsp/mod.rs:46:    pub documentation: Option<String>,
+src/lsp/mod.rs:47:    pub insert_text: Option<String>,
+src/lsp/mod.rs:51:pub enum CompletionItemKind {
+src/lsp/mod.rs:63:pub struct Hover {
+src/lsp/mod.rs:64:    pub contents: String,
+src/lsp/mod.rs:65:    pub range: Option<Range>,
+src/lsp/mod.rs:69:    pub fn new() -> Self {
+src/lsp/mod.rs:77:    pub fn open_document(&mut self, uri: String, content: String, version: i32) {
+src/lsp/mod.rs:89:    pub fn change_document(&mut self, uri: &str, content: String, version: i32) {
+src/lsp/mod.rs:101:    pub fn close_document(&mut self, uri: &str) {
+src/lsp/mod.rs:106:    pub fn get_diagnostics(&self, uri: &str) -> Vec<Diagnostic> {
+src/lsp/mod.rs:155:    pub fn get_completions(&self, uri: &str, position: Position) -> Vec<CompletionItem> {
+src/lsp/mod.rs:176:    pub fn get_hover(&self, uri: &str, position: Position) -> Option<Hover> {
+src/lsp/mod.rs:390:pub struct StdlibDocs {
+src/lsp/mod.rs:395:pub struct FunctionDoc {
+src/lsp/mod.rs:396:    pub name: String,
+src/lsp/mod.rs:397:    pub signature: String,
+src/lsp/mod.rs:398:    pub description: String,
+src/lsp/mod.rs:399:    pub examples: Vec<String>,
+src/lsp/mod.rs:403:    pub fn new() -> Self {
+src/lsp/mod.rs:435:    pub fn get_completions(&self) -> Vec<CompletionItem> {
+src/lsp/mod.rs:448:    pub fn get_documentation(&self, name: &str) -> Option<String> {
+src/lexer.rs:1:use crate::token::{Token, TokenKind, KEYWORDS};
+src/lexer.rs:3:pub struct Lexer {
+src/lexer.rs:13:    pub fn new(input: String) -> Self {
+src/lexer.rs:26:    pub fn next_token(&mut self) -> Token {
+src/lexer.rs:34:                    return Token::new(TokenKind::DoubleColon, "::".to_string(), self.line, start_col);
+src/lexer.rs:36:                    Token::new(TokenKind::Colon, ":".to_string(), self.line, start_col)
+src/lexer.rs:43:                    return Token::new(TokenKind::FatArrow, "=>".to_string(), self.line, start_col);
+src/lexer.rs:47:                    return Token::new(TokenKind::Eq, "==".to_string(), self.line, start_col);
+src/lexer.rs:49:                    Token::new(TokenKind::Assign, "=".to_string(), self.line, start_col)
+src/lexer.rs:52:            ';' => Token::new(TokenKind::Semicolon, ";".to_string(), self.line, start_col),
+src/lexer.rs:53:            '|' => Token::new(TokenKind::Pipe, "|".to_string(), self.line, start_col),
+src/lexer.rs:54:            ',' => Token::new(TokenKind::Comma, ",".to_string(), self.line, start_col),
+src/lexer.rs:63:                        return Token::new(TokenKind::DotDotEq, "..=".to_string(), self.line, start_col);
+src/lexer.rs:66:                    return Token::new(TokenKind::DotDot, "..".to_string(), self.line, start_col);
+src/lexer.rs:68:                    Token::new(TokenKind::Dot, ".".to_string(), self.line, start_col)
+src/lexer.rs:71:            '+' => Token::new(TokenKind::Plus, "+".to_string(), self.line, start_col),
+src/lexer.rs:72:            '*' => Token::new(TokenKind::Star, "*".to_string(), self.line, start_col),
+src/lexer.rs:73:            '&' => Token::new(TokenKind::Ampersand, "&".to_string(), self.line, start_col),
+src/lexer.rs:74:            '?' => Token::new(TokenKind::Question, "?".to_string(), self.line, start_col),
+src/lexer.rs:79:                    return Token::new(TokenKind::NotEq, "!=".to_string(), self.line, start_col);
+src/lexer.rs:81:                    Token::new(TokenKind::Bang, "!".to_string(), self.line, start_col)
+src/lexer.rs:84:            '(' => Token::new(TokenKind::LParen, "(".to_string(), self.line, start_col),
+src/lexer.rs:85:            ')' => Token::new(TokenKind::RParen, ")".to_string(), self.line, start_col),
+src/lexer.rs:86:            '{' => Token::new(TokenKind::LBrace, "{".to_string(), self.line, start_col),
+src/lexer.rs:87:            '}' => Token::new(TokenKind::RBrace, "}".to_string(), self.line, start_col),
+src/lexer.rs:88:            '[' => Token::new(TokenKind::LBracket, "[".to_string(), self.line, start_col),
+src/lexer.rs:89:            ']' => Token::new(TokenKind::RBracket, "]".to_string(), self.line, start_col),
+src/lexer.rs:94:                    return Token::new(TokenKind::LtEq, "<=".to_string(), self.line, start_col);
+src/lexer.rs:96:                    Token::new(TokenKind::LAngle, "<".to_string(), self.line, start_col)
+src/lexer.rs:103:                    return Token::new(TokenKind::GtEq, ">=".to_string(), self.line, start_col);
+src/lexer.rs:105:                    Token::new(TokenKind::RAngle, ">".to_string(), self.line, start_col)
+src/lexer.rs:108:            '/' => Token::new(TokenKind::Slash, "/".to_string(), self.line, start_col),
+src/lexer.rs:113:                    return Token::new(TokenKind::Arrow, "->".to_string(), self.line, start_col);
+src/lexer.rs:115:                    Token::new(TokenKind::Minus, "-".to_string(), self.line, start_col)
+src/lexer.rs:118:            '@' => Token::new(TokenKind::At, "@".to_string(), self.line, start_col),
+src/lexer.rs:119:            '\0' => Token::new(TokenKind::Eof, "".to_string(), self.line, start_col),
+src/lexer.rs:127:                    Token::new(TokenKind::Illegal(self.ch), self.ch.to_string(), self.line, start_col)
+src/lexer.rs:136:                    Token::new(TokenKind::Illegal(self.ch), self.ch.to_string(), self.line, start_col)
+src/lexer.rs:192:            "true" => TokenKind::Bool(true),
+src/lexer.rs:193:            "false" => TokenKind::Bool(false),
+src/lexer.rs:194:            _ => KEYWORDS.get(literal.as_str()).cloned().unwrap_or(TokenKind::Identifier),
+src/lexer.rs:221:            Token::new(TokenKind::Float(literal.clone()), literal, self.line, start_col)
+src/lexer.rs:224:            Token::new(TokenKind::Integer(value), literal, self.line, start_col)
+src/lexer.rs:259:        let token = Token::new(TokenKind::String(result.clone()), result, self.line, start_col);
+src/lexer.rs:279:        Token::new(TokenKind::Lifetime(lifetime_name.clone()), literal, self.line, start_col)
+src/lexer.rs:293:        if let TokenKind::String(s) = token.kind {
+src/lexer.rs:306:        if let TokenKind::String(s) = token.kind {
+src/lexer.rs:319:        if let TokenKind::String(s) = token.kind {
+src/lexer.rs:332:        if let TokenKind::String(s) = token.kind {
+src/lexer.rs:345:        if let TokenKind::String(s) = token.kind {
+src/lexer.rs:358:        if let TokenKind::String(s) = token.kind {
+src/lexer.rs:371:        if let TokenKind::String(s) = token.kind {
+examples/result_usage.raven:1:// Test Result<T, E> type usage
+examples/result_usage.raven:2:// Demonstrates the standard library Result type for error handling
+examples/result_usage.raven:5:enum ParseError {
+examples/result_usage.raven:11:enum DivisionError {
+examples/result_usage.raven:15:enum FileError {
+src/rpc_generator.rs:10:pub struct RPCGenerator {
+src/rpc_generator.rs:11:    pub server_functions: Vec<FunctionDefinition>,
+src/rpc_generator.rs:15:    pub fn new(server_functions: Vec<FunctionDefinition>) -> Self {
+src/rpc_generator.rs:20:    pub fn generate_client_stubs(&self) -> String {
+src/rpc_generator.rs:44:            "export async function {}({}) {{\n\
+src/rpc_generator.rs:52:    pub fn generate_server_handlers(&self) -> String {
+src/rpc_generator.rs:118:    /// Formats a type annotation as a TypeScript/JavaScript type
+src/rpc_generator.rs:167:    /// Formats a type name for TypeScript
+src/rpc_generator.rs:177:    /// Generates TypeScript type definitions for server functions
+src/rpc_generator.rs:178:    pub fn generate_type_definitions(&self) -> String {
+src/rpc_generator.rs:181:        output.push_str("// Auto-generated TypeScript type definitions\n\n");
+src/rpc_generator.rs:187:            // Note: We'd need to track return types in the AST for this to be complete
+src/rpc_generator.rs:189:                "export function {}({}): Promise<any>;\n",
+src/rpc_generator.rs:198:    pub fn stats(&self) -> RPCStats {
+src/rpc_generator.rs:210:pub struct RPCStats {
+src/rpc_generator.rs:211:    pub server_functions: usize,
+src/rpc_generator.rs:212:    pub total_parameters: usize,
+src/rpc_generator.rs:242:            let is_eof = token.kind == crate::token::TokenKind::Eof;
+src/rpc_generator.rs:280:        let i32_type = TypeExpression::Named(Identifier { value: "i32".to_string() });
+src/rpc_generator.rs:283:        let string_type = TypeExpression::Named(Identifier { value: "String".to_string() });
+src/rpc_generator.rs:286:        let bool_type = TypeExpression::Named(Identifier { value: "bool".to_string() });
+examples/typed_let_test.raven:2:// Demonstrates the new type annotation syntax
+examples/typed_let_test.raven:11:    // Let without type annotation (for comparison)
+src/ai_generator.rs:7:pub struct GenerationRequest {
+src/ai_generator.rs:8:    pub project_description: String,
+src/ai_generator.rs:9:    pub project_name: String,
+src/ai_generator.rs:10:    pub features: Vec<String>,
+src/ai_generator.rs:14:pub struct GeneratedProject {
+src/ai_generator.rs:15:    pub files: Vec<GeneratedFile>,
+src/ai_generator.rs:16:    pub dependencies: Vec<String>,
+src/ai_generator.rs:20:pub struct GeneratedFile {
+src/ai_generator.rs:21:    pub path: String,
