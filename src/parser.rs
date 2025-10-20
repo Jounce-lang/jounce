@@ -688,7 +688,7 @@ impl Parser {
 
                 let mut expr = Expression::Identifier(ident);
 
-                // Check for postfix operations (function call, field access, array indexing, or try operator)
+                // Check for postfix operations (function call, field access, namespace resolution, array indexing, or try operator)
                 loop {
                     match self.current_token().kind {
                         TokenKind::LParen => {
@@ -701,6 +701,25 @@ impl Parser {
                                 object: Box::new(expr),
                                 field,
                             });
+                        }
+                        TokenKind::DoubleColon => {
+                            // Handle namespace resolution: console::log()
+                            self.next_token(); // consume the ::
+                            let next_ident = self.parse_identifier()?;
+
+                            // Build the full namespaced identifier
+                            if let Expression::Identifier(base_ident) = expr {
+                                let namespaced_name = Identifier {
+                                    value: format!("{}::{}", base_ident.value, next_ident.value)
+                                };
+                                expr = Expression::Identifier(namespaced_name);
+                            } else {
+                                // If the left side is not an identifier, treat it as field access for now
+                                expr = Expression::FieldAccess(FieldAccessExpression {
+                                    object: Box::new(expr),
+                                    field: next_ident,
+                                });
+                            }
                         }
                         TokenKind::LBracket => {
                             self.next_token(); // consume the [

@@ -1,0 +1,6 @@
+// Simple test without annotations - just verify :: parsing works
+
+fn test_parsing() {
+    let x = 42;
+    return x;
+}

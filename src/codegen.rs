@@ -1039,6 +1039,17 @@ impl CodeGenerator {
                     return Ok(());
                 }
                 _ => {
+                    // Check if this is a namespaced identifier (e.g., console::log, document::write)
+                    // Treat all namespaced identifiers as external imports
+                    if ident.value.contains("::") {
+                        // Try to get the import index
+                        // For now, we'll assume all :: functions are external and skip codegen
+                        // In a full implementation, we'd register these as imports
+                        return Err(CompileError::Generic(format!(
+                            "External function call '{}' - requires FFI import registration", ident.value
+                        )));
+                    }
+
                     // Look up user-defined function
                     if let Some(&func_idx) = self.func_symbols.funcs.get(&ident.value) {
                         f.instruction(&Instruction::Call(func_idx));
