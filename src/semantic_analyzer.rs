@@ -773,6 +773,16 @@ impl SemanticAnalyzer {
                 // returns a Result<T, E> type and extract the T type
                 self.analyze_expression_with_expected(&try_expr.expression, None)
             }
+            Expression::Ternary(ternary) => {
+                // Analyze all three parts
+                self.analyze_expression(&ternary.condition)?;
+                let true_type = self.analyze_expression_with_expected(&ternary.true_expr, expected)?;
+                let _false_type = self.analyze_expression_with_expected(&ternary.false_expr, expected)?;
+
+                // In a full implementation, we would verify that both branches have compatible types
+                // For now, just return the type of the true branch
+                Ok(true_type.clone())
+            }
             Expression::Await(await_expr) => {
                 // Analyze the inner expression and return its type
                 // In a full implementation, we would verify that the inner expression

@@ -589,6 +589,13 @@ impl JSEmitter {
                 let inner = self.generate_expression_js(&await_expr.expression);
                 format!("await {}", inner)
             }
+            Expression::Ternary(ternary) => {
+                // Generate JavaScript ternary expression: condition ? true_expr : false_expr
+                let condition = self.generate_expression_js(&ternary.condition);
+                let true_expr = self.generate_expression_js(&ternary.true_expr);
+                let false_expr = self.generate_expression_js(&ternary.false_expr);
+                format!("({} ? {} : {})", condition, true_expr, false_expr)
+            }
             Expression::Match(match_expr) => {
                 self.generate_match_expression_js(match_expr)
             }

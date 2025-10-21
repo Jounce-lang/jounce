@@ -1240,6 +1240,26 @@ impl CodeGenerator {
                     "// Try operator".to_string()
                 ));
             }
+            Expression::Ternary(ternary) => {
+                // Generate code for ternary expression: condition ? true_expr : false_expr
+                // This is an expression, so it must produce a value on the stack
+
+                // Generate the condition
+                self.generate_expression(&ternary.condition, f)?;
+
+                // Start if block with a result type (produces i32 value)
+                f.instruction(&Instruction::If(wasm_encoder::BlockType::Result(ValType::I32)));
+
+                // Generate the true branch
+                self.generate_expression(&ternary.true_expr, f)?;
+
+                // Generate the false branch
+                f.instruction(&Instruction::Else);
+                self.generate_expression(&ternary.false_expr, f)?;
+
+                // End if block
+                f.instruction(&Instruction::End);
+            }
             Expression::Await(await_expr) => {
                 // Await operator for async/await
                 // In a full implementation, this would:
@@ -1852,6 +1872,11 @@ impl CodeGenerator {
                     self.collect_lambdas_from_expression(else_expr);
                 }
             }
+            Expression::Ternary(ternary) => {
+                self.collect_lambdas_from_expression(&ternary.condition);
+                self.collect_lambdas_from_expression(&ternary.true_expr);
+                self.collect_lambdas_from_expression(&ternary.false_expr);
+            }
             Expression::Block(block) => {
                 for stmt in &block.statements {
                     self.collect_lambdas_from_statement(stmt);
@@ -2011,6 +2036,7 @@ impl CodeGenerator {
             | Expression::StringLiteral(_)
             | Expression::Range(_)
             | Expression::TryOperator(_)
+            | Expression::Ternary(_)
             | Expression::Await(_)
             | Expression::JsxElement(_) => {}
         }
