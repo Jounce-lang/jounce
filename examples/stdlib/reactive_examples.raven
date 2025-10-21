@@ -1,0 +1,374 @@
+// Reactive Standard Library Examples
+// Demonstrates Signal, Computed, and Effect primitives
+
+// ==================== SIGNAL BASICS ====================
+
+fn demo_signal_basics() {
+    println!("=== Signal Basics ===");
+
+    // Create a signal with initial value
+    let count = Signal::new(0);
+
+    // Get the current value
+    let current = count.get();
+    println!("Initial count: {}", current);
+
+    // Set a new value
+    count.set(5);
+    println!("After set(5): {}", count.get());
+
+    // Update based on current value
+    count.set(count.get() + 1);
+    println!("After increment: {}", count.get());
+}
+
+// ==================== COMPUTED VALUES ====================
+
+fn demo_computed() {
+    println!("\n=== Computed Values ===");
+
+    let count = Signal::new(10);
+
+    // Computed value automatically updates when dependencies change
+    let doubled = Computed::new(|| {
+        return count.get() * 2;
+    });
+
+    println!("count = {}, doubled = {}", count.get(), doubled.get());
+
+    // Update the signal
+    count.set(20);
+    println!("After count.set(20):");
+    println!("count = {}, doubled = {}", count.get(), doubled.get());
+
+    // Multiple computed values
+    let tripled = Computed::new(|| count.get() * 3);
+    let quadrupled = Computed::new(|| count.get() * 4);
+
+    println!("tripled = {}", tripled.get());
+    println!("quadrupled = {}", quadrupled.get());
+}
+
+// ==================== EFFECTS ====================
+
+fn demo_effects() {
+    println!("\n=== Effects (Side Effects) ===");
+
+    let name = Signal::new("Alice");
+    let count = Signal::new(0);
+
+    // Effect runs when dependencies change
+    create_effect(|| {
+        println!("[Effect] Name changed to: {}", name.get());
+    });
+
+    create_effect(|| {
+        println!("[Effect] Count is now: {}", count.get());
+    });
+
+    // Trigger effects by changing signals
+    name.set("Bob");
+    count.set(1);
+
+    name.set("Charlie");
+    count.set(2);
+}
+
+// ==================== REACTIVE COUNTER ====================
+
+fn demo_counter() {
+    println!("\n=== Reactive Counter ===");
+
+    // State
+    let count = Signal::new(0);
+
+    // Derived state
+    let is_even = Computed::new(|| {
+        return count.get() % 2 == 0;
+    });
+
+    let is_positive = Computed::new(|| {
+        return count.get() > 0;
+    });
+
+    // Side effect - logging
+    create_effect(|| {
+        let value = count.get();
+        let even_str = if is_even.get() { "even" } else { "odd" };
+        let sign_str = if is_positive.get() { "positive" } else { "non-positive" };
+        println!("Counter: {} ({}, {})", value, even_str, sign_str);
+    });
+
+    // Actions
+    fn increment(counter: Signal<i32>) {
+        counter.set(counter.get() + 1);
+    }
+
+    fn decrement(counter: Signal<i32>) {
+        counter.set(counter.get() - 1);
+    }
+
+    fn reset(counter: Signal<i32>) {
+        counter.set(0);
+    }
+
+    // Simulate user interactions
+    increment(count.clone());
+    increment(count.clone());
+    decrement(count.clone());
+    reset(count.clone());
+}
+
+// ==================== REACTIVE FORM ====================
+
+struct FormData {
+    username: String,
+    email: String,
+    age: i32,
+}
+
+fn demo_reactive_form() {
+    println!("\n=== Reactive Form ===");
+
+    // Form fields as signals
+    let username = Signal::new("");
+    let email = Signal::new("");
+    let age = Signal::new(0);
+
+    // Computed validation
+    let is_username_valid = Computed::new(|| {
+        let name = username.get();
+        return name.len() >= 3;
+    });
+
+    let is_email_valid = Computed::new(|| {
+        let email_val = email.get();
+        return email_val.contains("@");
+    });
+
+    let is_age_valid = Computed::new(|| {
+        let age_val = age.get();
+        return age_val >= 18 && age_val <= 120;
+    });
+
+    let is_form_valid = Computed::new(|| {
+        return is_username_valid.get() &&
+               is_email_valid.get() &&
+               is_age_valid.get();
+    });
+
+    // Effect: Show validation status
+    create_effect(|| {
+        println!("\n[Form Validation]");
+        println!("  Username valid: {}", is_username_valid.get());
+        println!("  Email valid: {}", is_email_valid.get());
+        println!("  Age valid: {}", is_age_valid.get());
+        println!("  Form valid: {}", is_form_valid.get());
+    });
+
+    // Simulate user input
+    println!("\nUser enters username:");
+    username.set("ab");  // Too short
+
+    println!("\nUser enters longer username:");
+    username.set("alice");  // Valid
+
+    println!("\nUser enters email:");
+    email.set("alice@example.com");  // Valid
+
+    println!("\nUser enters age:");
+    age.set(25);  // Valid
+
+    println!("\nFinal form state: {}",
+             if is_form_valid.get() { "VALID" } else { "INVALID" });
+}
+
+// ==================== REACTIVE LIST ====================
+
+fn demo_reactive_list() {
+    println!("\n=== Reactive List ===");
+
+    let items = ReactiveVec::new();
+
+    // Computed: list size
+    let item_count = Computed::new(|| {
+        return items.len();
+    });
+
+    // Effect: log changes
+    create_effect(|| {
+        println!("[List] {} items", item_count.get());
+    });
+
+    // Add items
+    items.push("Apple");
+    items.push("Banana");
+    items.push("Cherry");
+
+    // Remove item
+    items.remove(1);  // Remove "Banana"
+
+    // Clear list
+    items.clear();
+}
+
+// ==================== SHOPPING CART ====================
+
+struct CartItem {
+    id: i32,
+    name: String,
+    price: f64,
+    quantity: i32,
+}
+
+fn demo_shopping_cart() {
+    println!("\n=== Shopping Cart ===");
+
+    let cart_items = ReactiveVec::new();
+
+    // Computed: total price
+    let total_price = Computed::new(|| {
+        let mut total = 0.0;
+        for item in cart_items.iter() {
+            total = total + (item.price * (item.quantity as f64));
+        }
+        return total;
+    });
+
+    // Computed: item count
+    let total_items = Computed::new(|| {
+        let mut count = 0;
+        for item in cart_items.iter() {
+            count = count + item.quantity;
+        }
+        return count;
+    });
+
+    // Effect: display cart summary
+    create_effect(|| {
+        println!("\n[Cart Summary]");
+        println!("  Items: {}", total_items.get());
+        println!("  Total: ${:.2}", total_price.get());
+    });
+
+    // Add items to cart
+    cart_items.push(CartItem {
+        id: 1,
+        name: "Laptop",
+        price: 999.99,
+        quantity: 1,
+    });
+
+    cart_items.push(CartItem {
+        id: 2,
+        name: "Mouse",
+        price: 29.99,
+        quantity: 2,
+    });
+
+    cart_items.push(CartItem {
+        id: 3,
+        name: "Keyboard",
+        price: 79.99,
+        quantity: 1,
+    });
+
+    // Update quantity
+    let first_item = &mut cart_items[0];
+    first_item.quantity = 2;
+    cart_items.notify();  // Trigger reactivity
+}
+
+// ==================== REACTIVE SEARCH ====================
+
+fn demo_reactive_search() {
+    println!("\n=== Reactive Search ===");
+
+    let search_query = Signal::new("");
+    let all_products = vec!["Apple", "Banana", "Cherry", "Date", "Elderberry"];
+
+    // Computed: filtered results
+    let search_results = Computed::new(|| {
+        let query = search_query.get().to_lowercase();
+        if query == "" {
+            return all_products.clone();
+        }
+
+        let mut results = vec![];
+        for product in &all_products {
+            if product.to_lowercase().contains(&query) {
+                results.push(product.clone());
+            }
+        }
+        return results;
+    });
+
+    // Effect: display results
+    create_effect(|| {
+        let results = search_results.get();
+        println!("\n[Search: '{}']", search_query.get());
+        println!("Results ({}): {:?}", results.len(), results);
+    });
+
+    // Simulate search queries
+    search_query.set("a");
+    search_query.set("er");
+    search_query.set("");
+}
+
+// ==================== REACTIVE THEME ====================
+
+fn demo_reactive_theme() {
+    println!("\n=== Reactive Theme ===");
+
+    let is_dark_mode = Signal::new(false);
+
+    // Computed: theme colors
+    let background_color = Computed::new(|| {
+        if is_dark_mode.get() {
+            return "#1a1a1a";
+        } else {
+            return "#ffffff";
+        }
+    });
+
+    let text_color = Computed::new(|| {
+        if is_dark_mode.get() {
+            return "#ffffff";
+        } else {
+            return "#000000";
+        }
+    });
+
+    // Effect: apply theme
+    create_effect(|| {
+        println!("\n[Theme Update]");
+        println!("  Mode: {}",
+                 if is_dark_mode.get() { "Dark" } else { "Light" });
+        println!("  Background: {}", background_color.get());
+        println!("  Text: {}", text_color.get());
+    });
+
+    // Toggle theme
+    is_dark_mode.set(true);
+    is_dark_mode.set(false);
+    is_dark_mode.set(true);
+}
+
+// ==================== MAIN ====================
+
+fn main() {
+    println!("Reactive Standard Library Examples\n");
+
+    demo_signal_basics();
+    demo_computed();
+    demo_effects();
+    demo_counter();
+    demo_reactive_form();
+    demo_reactive_list();
+    demo_shopping_cart();
+    demo_reactive_search();
+    demo_reactive_theme();
+
+    println!("\n✅ All reactive examples completed!");
+}

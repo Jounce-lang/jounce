@@ -1,0 +1,281 @@
+// Math Standard Library Examples
+// Demonstrates all major categories of math functions
+
+// ==================== BASIC OPERATIONS ====================
+
+fn demo_basic_operations() {
+    println!("=== Basic Operations ===");
+
+    // Absolute value
+    let negative = -42.5;
+    let positive = Math::abs(negative);
+    println!("abs(-42.5) = {}", positive);
+
+    // Min and max
+    let a = 10.5;
+    let b = 20.3;
+    let minimum = Math::min(a, b);
+    let maximum = Math::max(a, b);
+    println!("min(10.5, 20.3) = {}", minimum);
+    println!("max(10.5, 20.3) = {}", maximum);
+
+    // Clamp - constrain value to range
+    let value = 150.0;
+    let clamped = Math::clamp(value, 0.0, 100.0);
+    println!("clamp(150, 0, 100) = {}", clamped);
+
+    // Sign - returns -1, 0, or 1
+    let sign_pos = Math::sign(42.0);
+    let sign_neg = Math::sign(-42.0);
+    let sign_zero = Math::sign(0.0);
+    println!("sign(42) = {}, sign(-42) = {}, sign(0) = {}",
+             sign_pos, sign_neg, sign_zero);
+}
+
+// ==================== POWERS & ROOTS ====================
+
+fn demo_powers_and_roots() {
+    println!("\n=== Powers & Roots ===");
+
+    // Power
+    let base = 2.0;
+    let exponent = 8.0;
+    let result = Math::pow(base, exponent);
+    println!("pow(2, 8) = {}", result);
+
+    // Square root
+    let sqrt_result = Math::sqrt(16.0);
+    println!("sqrt(16) = {}", sqrt_result);
+
+    // Cube root
+    let cbrt_result = Math::cbrt(27.0);
+    println!("cbrt(27) = {}", cbrt_result);
+
+    // Square and cube helpers
+    let squared = Math::square(5.0);
+    let cubed = Math::cube(3.0);
+    println!("square(5) = {}", squared);
+    println!("cube(3) = {}", cubed);
+
+    // Exponential
+    let exp_result = Math::exp(2.0);
+    println!("exp(2) = {}", exp_result);
+
+    // Power of 2
+    let exp2_result = Math::exp2(3.0);
+    println!("exp2(3) = 2^3 = {}", exp2_result);
+}
+
+// ==================== LOGARITHMS ====================
+
+fn demo_logarithms() {
+    println!("\n=== Logarithms ===");
+
+    // Natural logarithm (base e)
+    let ln_result = Math::ln(Math::E);
+    println!("ln(e) = {}", ln_result);
+
+    // Log base 2
+    let log2_result = Math::log2(8.0);
+    println!("log2(8) = {}", log2_result);
+
+    // Log base 10
+    let log10_result = Math::log10(100.0);
+    println!("log10(100) = {}", log10_result);
+
+    // Custom base logarithm
+    let log_result = Math::log(32.0, 2.0);
+    println!("log(32, base 2) = {}", log_result);
+}
+
+// ==================== ROUNDING ====================
+
+fn demo_rounding() {
+    println!("\n=== Rounding Functions ===");
+
+    let value = 3.7;
+
+    // Round to nearest integer
+    let rounded = Math::round(value);
+    println!("round(3.7) = {}", rounded);
+
+    // Floor - round down
+    let floored = Math::floor(value);
+    println!("floor(3.7) = {}", floored);
+
+    // Ceiling - round up
+    let ceiled = Math::ceil(value);
+    println!("ceil(3.7) = {}", ceiled);
+
+    // Truncate - remove decimal part
+    let truncated = Math::trunc(value);
+    println!("trunc(3.7) = {}", truncated);
+
+    // Fractional part
+    let fractional = Math::fract(value);
+    println!("fract(3.7) = {}", fractional);
+}
+
+// ==================== TRIGONOMETRY ====================
+
+fn demo_trigonometry() {
+    println!("\n=== Trigonometry ===");
+
+    // Convert degrees to radians
+    let degrees = 90.0;
+    let radians = Math::radians(degrees);
+    println!("{}° = {} radians", degrees, radians);
+
+    // Sine, Cosine, Tangent
+    let pi_val = Math::PI;
+    let angle = pi_val / 4.0;  // 45 degrees
+    let sin_result = Math::sin(angle);
+    let cos_result = Math::cos(angle);
+    let tan_result = Math::tan(angle);
+    println!("sin(π/4) = {}", sin_result);
+    println!("cos(π/4) = {}", cos_result);
+    println!("tan(π/4) = {}", tan_result);
+
+    // Inverse trig functions
+    let asin_result = Math::asin(0.5);
+    let acos_result = Math::acos(0.5);
+    let atan_result = Math::atan(1.0);
+    println!("asin(0.5) = {}", asin_result);
+    println!("acos(0.5) = {}", acos_result);
+    println!("atan(1.0) = {}", atan_result);
+
+    // Two-argument arctangent
+    let y = 1.0;
+    let x = 1.0;
+    let atan2_result = Math::atan2(y, x);
+    println!("atan2(1, 1) = {}", atan2_result);
+
+    // Hyperbolic functions
+    let sinh_result = Math::sinh(1.0);
+    let cosh_result = Math::cosh(1.0);
+    let tanh_result = Math::tanh(1.0);
+    println!("sinh(1) = {}", sinh_result);
+    println!("cosh(1) = {}", cosh_result);
+    println!("tanh(1) = {}", tanh_result);
+}
+
+// ==================== CONSTANTS ====================
+
+fn demo_constants() {
+    println!("\n=== Mathematical Constants ===");
+
+    println!("π (Pi) = {}", Math::PI);
+    println!("e (Euler's number) = {}", Math::E);
+    println!("τ (Tau, 2π) = {}", Math::TAU);
+    println!("√2 = {}", Math::SQRT_2);
+    println!("1/√2 = {}", Math::FRAC_1_SQRT_2);
+    println!("π/2 = {}", Math::FRAC_PI_2);
+    println!("π/4 = {}", Math::FRAC_PI_4);
+    println!("ln(2) = {}", Math::LN_2);
+    println!("ln(10) = {}", Math::LN_10);
+}
+
+// ==================== RANDOM NUMBERS ====================
+
+fn demo_random() {
+    println!("\n=== Random Numbers ===");
+
+    // Random float between 0 and 1
+    let rand1 = Math::random();
+    let rand2 = Math::random();
+    println!("random() = {}", rand1);
+    println!("random() = {}", rand2);
+
+    // Random in range
+    let rand_range = Math::random_range(10.0, 20.0);
+    println!("random_range(10, 20) = {}", rand_range);
+
+    // Random integer in range
+    let rand_int = Math::random_int(1, 100);
+    println!("random_int(1, 100) = {}", rand_int);
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+
+fn demo_utilities() {
+    println!("\n=== Utility Functions ===");
+
+    // Check for NaN
+    let nan = 0.0 / 0.0;
+    let is_nan = Math::is_nan(nan);
+    println!("is_nan(0/0) = {}", is_nan);
+
+    // Check for infinity
+    let inf = 1.0 / 0.0;
+    let is_inf = Math::is_infinite(inf);
+    println!("is_infinite(1/0) = {}", is_inf);
+
+    // Check if finite
+    let finite = Math::is_finite(42.0);
+    println!("is_finite(42) = {}", finite);
+}
+
+// ==================== PRACTICAL EXAMPLES ====================
+
+fn calculate_circle_area(radius: f64) -> f64 {
+    return Math::PI * Math::square(radius);
+}
+
+fn calculate_distance(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
+    let dx = x2 - x1;
+    let dy = y2 - y1;
+    return Math::sqrt(Math::square(dx) + Math::square(dy));
+}
+
+fn degrees_to_radians(degrees: f64) -> f64 {
+    let pi_val = Math::PI;
+    return degrees * pi_val / 180.0;
+}
+
+fn compound_interest(principal: f64, rate: f64, years: f64) -> f64 {
+    // A = P(1 + r)^t
+    return principal * Math::pow(1.0 + rate, years);
+}
+
+fn demo_practical_examples() {
+    println!("\n=== Practical Examples ===");
+
+    // Circle area
+    let radius = 5.0;
+    let area = calculate_circle_area(radius);
+    println!("Area of circle with radius {} = {}", radius, area);
+
+    // Distance between two points
+    let distance = calculate_distance(0.0, 0.0, 3.0, 4.0);
+    println!("Distance from (0,0) to (3,4) = {}", distance);
+
+    // Angle conversion
+    let deg = 180.0;
+    let rad = degrees_to_radians(deg);
+    println!("{}° = {} radians", deg, rad);
+
+    // Compound interest
+    let principal = 1000.0;
+    let rate = 0.05;  // 5%
+    let years = 10.0;
+    let final_amount = compound_interest(principal, rate, years);
+    println!("$1000 at 5% for 10 years = ${:.2}", final_amount);
+}
+
+// ==================== MAIN ====================
+
+fn main() {
+    println!("Math Standard Library Examples\n");
+
+    demo_constants();
+    demo_basic_operations();
+    demo_powers_and_roots();
+    demo_logarithms();
+    demo_rounding();
+    demo_trigonometry();
+    demo_random();
+    demo_utilities();
+    demo_practical_examples();
+
+    println!("\n✅ All math examples completed!");
+}
