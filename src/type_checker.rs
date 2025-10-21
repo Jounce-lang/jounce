@@ -97,19 +97,39 @@ impl TypeChecker {
             }
 
             Statement::Assignment(assign_stmt) => {
-                // Check that variable exists and clone the type
-                let var_type = self.env.lookup(&assign_stmt.target.value)
-                    .ok_or_else(|| CompileError::Generic(format!(
-                        "Cannot assign to undefined variable '{}'",
-                        assign_stmt.target.value
-                    )))?.clone();
+                // Infer the type of the target expression
+                let target_type = match &assign_stmt.target {
+                    Expression::Identifier(ident) => {
+                        // Check that variable exists and clone the type
+                        self.env.lookup(&ident.value)
+                            .ok_or_else(|| CompileError::Generic(format!(
+                                "Cannot assign to undefined variable '{}'",
+                                ident.value
+                            )))?.clone()
+                    }
+                    Expression::FieldAccess(_) | Expression::IndexAccess(_) => {
+                        // Infer the type of field access or index access
+                        self.infer_expression(&assign_stmt.target)?
+                    }
+                    _ => {
+                        return Err(CompileError::Generic(
+                            "Invalid assignment target".to_string()
+                        ));
+                    }
+                };
 
-                // Check that value type matches variable type
+                // Check that value type matches target type
                 let value_type = self.infer_expression(&assign_stmt.value)?;
-                if let Err(e) = self.unify(&value_type, &var_type) {
+                if let Err(e) = self.unify(&value_type, &target_type) {
+                    let target_desc = match &assign_stmt.target {
+                        Expression::Identifier(ident) => format!("'{}'", ident.value),
+                        Expression::FieldAccess(_) => "field".to_string(),
+                        Expression::IndexAccess(_) => "index".to_string(),
+                        _ => "target".to_string(),
+                    };
                     return Err(CompileError::Generic(format!(
-                        "Type mismatch in assignment to '{}': expected {}, got {}. {}",
-                        assign_stmt.target.value, var_type, value_type, e
+                        "Type mismatch in assignment to {}: expected {}, got {}. {}",
+                        target_desc, target_type, value_type, e
                     )));
                 }
 
@@ -502,6 +522,16 @@ impl TypeChecker {
                     last_type = self.check_statement(stmt)?;
                 }
                 Ok(last_type)
+            }
+
+            Expression::MacroCall(macro_call) => {
+                // Type-check all macro arguments
+                for arg in &macro_call.arguments {
+                    self.infer_expression(arg)?;
+                }
+                // For now, return Any type for macro calls
+                // In a full implementation, we'd expand the macro and infer its result type
+                Ok(Type::Any)
             }
         }
     }

@@ -35,13 +35,14 @@ pub struct UseStatement {
 #[derive(Debug, Clone)]
 pub struct LetStatement {
     pub name: Identifier,
+    pub mutable: bool,
     pub type_annotation: Option<TypeExpression>,
     pub value: Expression,
 }
 
 #[derive(Debug, Clone)]
 pub struct AssignmentStatement {
-    pub target: Identifier,
+    pub target: Expression,  // Can be Identifier, FieldAccess, IndexAccess, etc.
     pub value: Expression,
 }
 
@@ -156,6 +157,7 @@ pub enum Expression {
     IfExpression(IfExpression),  // if cond { then } else { else } as an expression
     JsxElement(JsxElement),
     FunctionCall(FunctionCall),
+    MacroCall(MacroCall),  // macro!(...) as an expression (vec!, println!, etc.)
     Lambda(LambdaExpression),
     Borrow(BorrowExpression),      // &x (create reference)
     MutableBorrow(MutableBorrowExpression),  // &mut x (create mutable reference)
@@ -484,6 +486,12 @@ impl JsxAttribute {
 #[derive(Debug, Clone)]
 pub struct FunctionCall {
     pub function: Box<Expression>,
+    pub arguments: Vec<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub struct MacroCall {
+    pub name: Identifier,
     pub arguments: Vec<Expression>,
 }
 

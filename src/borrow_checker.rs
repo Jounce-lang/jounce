@@ -79,12 +79,26 @@ impl BorrowChecker {
             Statement::Use(_) => Ok(()),
             Statement::Let(let_stmt) => self.check_let_statement(let_stmt),
             Statement::Assignment(assign_stmt) => {
-                // Check that the target variable exists
-                if self.symbols.lookup(&assign_stmt.target.value).is_none() {
-                    return Err(CompileError::Generic(format!(
-                        "Cannot assign to undefined variable '{}'",
-                        assign_stmt.target.value
-                    )));
+                // Check the target is valid
+                match &assign_stmt.target {
+                    Expression::Identifier(ident) => {
+                        // Check that the target variable exists
+                        if self.symbols.lookup(&ident.value).is_none() {
+                            return Err(CompileError::Generic(format!(
+                                "Cannot assign to undefined variable '{}'",
+                                ident.value
+                            )));
+                        }
+                    }
+                    Expression::FieldAccess(_) | Expression::IndexAccess(_) => {
+                        // Check the target expression
+                        self.check_expression(&assign_stmt.target)?;
+                    }
+                    _ => {
+                        return Err(CompileError::Generic(
+                            "Invalid assignment target".to_string()
+                        ));
+                    }
                 }
 
                 // Check the value expression
@@ -328,6 +342,13 @@ impl BorrowChecker {
                 // Check all statements in the block
                 for stmt in&block.statements {
                     self.check_statement(stmt)?;
+                }
+                Ok(ResolvedType::Unknown)
+            }
+            Expression::MacroCall(macro_call) => {
+                // Check all arguments recursively (similar to FunctionCall)
+                for arg in &macro_call.arguments {
+                    self.check_expression(arg)?;
                 }
                 Ok(ResolvedType::Unknown)
             }

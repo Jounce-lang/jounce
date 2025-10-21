@@ -43,7 +43,9 @@ pub enum TokenKind {
     Bang,        // !
     Question,    // ?
     Ampersand,   // &
+    AmpAmp,      // && (logical AND)
     Pipe,        // | NEW: For closures
+    PipePipe,    // || (logical OR)
     Arrow,       // ->
     FatArrow,    // => NEW: For lambda expressions
     DoubleColon, // :: NEW
