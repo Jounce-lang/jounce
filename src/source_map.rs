@@ -111,38 +111,67 @@ impl SourceMapBuilder {
     }
 
     /// Encode mappings using VLQ (Variable-Length Quantity) Base64
-    /// This is a simplified version - full implementation would use proper VLQ encoding
+    /// Full production-ready implementation of source map v3 mappings encoding
     fn encode_mappings(&self) -> String {
         // Sort mappings by generated position
         let mut sorted_mappings = self.mappings.clone();
         sorted_mappings.sort_by_key(|m| (m.generated_line, m.generated_column));
 
         let mut encoded = String::new();
-        let mut current_line = 0;
+        let mut current_gen_line = 0;
+        let mut prev_gen_col = 0;
+        let mut prev_source_idx = 0;
+        let mut prev_source_line = 0;
+        let mut prev_source_col = 0;
+        let mut prev_name_idx = 0;
 
         for mapping in &sorted_mappings {
             // Add semicolons for each new line
-            while current_line < mapping.generated_line {
+            while current_gen_line < mapping.generated_line {
                 encoded.push(';');
-                current_line += 1;
+                current_gen_line += 1;
+                prev_gen_col = 0;  // Reset column on new line
             }
 
-            // In a full implementation, this would use VLQ Base64 encoding
-            // For now, we'll use a simplified format
+            // Add comma separator between mappings on same line
             if !encoded.is_empty() && !encoded.ends_with(';') {
                 encoded.push(',');
             }
 
-            // Format: [gen_col, source_idx, source_line, source_col, name_idx]
-            // Simplified for demonstration - real implementation uses VLQ
-            let source_idx = self.sources.iter().position(|s| s == &mapping.source_file).unwrap_or(0);
-            encoded.push_str(&format!(
-                "{}:{}:{}:{}",
-                mapping.generated_column,
-                source_idx,
-                mapping.source_line,
-                mapping.source_column
-            ));
+            // Encode segment with 4 or 5 fields:
+            // 1. Generated column (relative to previous)
+            // 2. Source file index (relative to previous)
+            // 3. Source line (relative to previous)
+            // 4. Source column (relative to previous)
+            // 5. Name index (relative to previous) - optional
+
+            let source_idx = self.sources.iter()
+                .position(|s| s == &mapping.source_file)
+                .unwrap_or(0) as i32;
+
+            // Field 1: Generated column
+            vlq_encode(mapping.generated_column as i32 - prev_gen_col, &mut encoded);
+            prev_gen_col = mapping.generated_column as i32;
+
+            // Field 2: Source index
+            vlq_encode(source_idx - prev_source_idx, &mut encoded);
+            prev_source_idx = source_idx;
+
+            // Field 3: Source line
+            vlq_encode(mapping.source_line as i32 - prev_source_line, &mut encoded);
+            prev_source_line = mapping.source_line as i32;
+
+            // Field 4: Source column
+            vlq_encode(mapping.source_column as i32 - prev_source_col, &mut encoded);
+            prev_source_col = mapping.source_column as i32;
+
+            // Field 5: Name index (optional)
+            if let Some(name) = &mapping.name {
+                if let Some(name_idx) = self.names.iter().position(|n| n == name) {
+                    vlq_encode(name_idx as i32 - prev_name_idx, &mut encoded);
+                    prev_name_idx = name_idx as i32;
+                }
+            }
         }
 
         encoded
@@ -173,6 +202,38 @@ struct SourceMap {
     sources_content: Option<Vec<Option<String>>>,
     names: Vec<String>,
     mappings: String,
+}
+
+/// VLQ (Variable-Length Quantity) encoding for source maps
+/// Encodes signed integers using Base64 VLQ format
+fn vlq_encode(value: i32, output: &mut String) {
+    const VLQ_BASE64: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const VLQ_BASE: i32 = 32;
+    const VLQ_BASE_MASK: i32 = VLQ_BASE - 1;
+    const VLQ_CONTINUATION_BIT: i32 = VLQ_BASE;
+
+    // Convert to VLQ signed representation
+    let mut vlq = if value < 0 {
+        ((-value) << 1) | 1
+    } else {
+        value << 1
+    };
+
+    // Encode as VLQ Base64
+    loop {
+        let mut digit = vlq & VLQ_BASE_MASK;
+        vlq >>= 5;
+
+        if vlq > 0 {
+            digit |= VLQ_CONTINUATION_BIT;
+        }
+
+        output.push(VLQ_BASE64[digit as usize] as char);
+
+        if vlq == 0 {
+            break;
+        }
+    }
 }
 
 /// Simple base64 encoding (for inline source maps)
@@ -248,5 +309,47 @@ mod tests {
         let builder = SourceMapBuilder::new("app.js".to_string());
         let comment = builder.generate_reference_comment();
         assert_eq!(comment, "//# sourceMappingURL=app.js.map");
+    }
+
+    #[test]
+    fn test_vlq_encoding() {
+        // Test VLQ encoding with known values
+        let mut output = String::new();
+
+        // Test encoding 0
+        vlq_encode(0, &mut output);
+        assert_eq!(output, "A");  // 0 encodes to "A"
+
+        output.clear();
+        vlq_encode(1, &mut output);
+        assert_eq!(output, "C");  // 1 encodes to "C"
+
+        output.clear();
+        vlq_encode(-1, &mut output);
+        assert_eq!(output, "D");  // -1 encodes to "D"
+
+        output.clear();
+        vlq_encode(15, &mut output);
+        assert_eq!(output, "e");  // 15 encodes to "e"
+    }
+
+    #[test]
+    fn test_production_source_map() {
+        let mut builder = SourceMapBuilder::new("bundle.js".to_string());
+        builder.set_source_root("../src".to_string());
+
+        // Add mappings for a simple function
+        builder.add_mapping(0, 0, "main.raven", 0, 0, Some("main"));
+        builder.add_mapping(0, 13, "main.raven", 0, 3, Some("x"));
+        builder.add_mapping(1, 2, "main.raven", 1, 2, None);
+
+        let source_map = builder.generate();
+
+        // Verify structure
+        assert!(source_map.contains("\"version\": 3"));
+        assert!(source_map.contains("\"file\": \"bundle.js\""));
+        assert!(source_map.contains("\"source_root\": \"../src\""));
+        assert!(source_map.contains("main.raven"));
+        assert!(source_map.contains("\"mappings\""));
     }
 }

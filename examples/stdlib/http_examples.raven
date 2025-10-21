@@ -1,0 +1,428 @@
+// HTTP Standard Library Examples
+// Demonstrates HTTP client, requests, and responses
+
+// ==================== BASIC GET REQUEST ====================
+
+@server
+async fn demo_basic_get() {
+    println!("=== Basic GET Request ===");
+
+    let response = HttpRequest::get("https://api.example.com/users")
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) => {
+            println!("Status: {}", resp.status);
+            println!("Success: {}", resp.is_ok());
+            println!("Body length: {}", resp.body.len());
+        }
+        Err(error) => {
+            println!("Error: {}", error);
+        }
+    }
+}
+
+// ==================== POST REQUEST WITH JSON ====================
+
+@server
+async fn demo_post_json() {
+    println!("\n=== POST Request with JSON ===");
+
+    let user_data = json!({
+        "name": "Alice",
+        "email": "alice@example.com",
+        "age": 25
+    });
+
+    let response = HttpRequest::post("https://api.example.com/users")
+        .json(user_data)
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) => {
+            println!("Status: {}", resp.status);
+            println!("Created: {}", resp.is_success());
+
+            // Parse response JSON
+            let json_response = resp.json();
+            match json_response {
+                Ok(data) => {
+                    println!("Response: {:?}", data);
+                }
+                Err(err) => {
+                    println!("JSON parse error: {}", err);
+                }
+            }
+        }
+        Err(error) => {
+            println!("Error: {}", error);
+        }
+    }
+}
+
+// ==================== CUSTOM HEADERS ====================
+
+@server
+async fn demo_custom_headers() {
+    println!("\n=== Custom Headers ===");
+
+    let response = HttpRequest::get("https://api.example.com/protected")
+        .header("Authorization", "Bearer SECRET_TOKEN")
+        .header("X-API-Key", "my-api-key")
+        .header("User-Agent", "RavensOne/1.0")
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) => {
+            println!("Status: {}", resp.status);
+            println!("Headers sent successfully");
+        }
+        Err(error) => {
+            println!("Error: {}", error);
+        }
+    }
+}
+
+// ==================== HTTP CLIENT WITH BASE URL ====================
+
+@server
+async fn demo_http_client() {
+    println!("\n=== HTTP Client with Base URL ===");
+
+    // Create client with base URL and default headers
+    let client = HttpClient::new()
+        .with_base_url("https://api.github.com")
+        .with_header("Accept", "application/vnd.github.v3+json")
+        .with_header("User-Agent", "RavensOne");
+
+    // Make requests with relative URLs
+    let repo_response = client.get("/repos/octocat/Hello-World")
+        .send()
+        .await;
+
+    match repo_response {
+        Ok(resp) => {
+            println!("Repository info retrieved");
+            println!("Status: {}", resp.status);
+        }
+        Err(error) => {
+            println!("Error: {}", error);
+        }
+    }
+
+    // Another request to same API
+    let user_response = client.get("/users/octocat")
+        .send()
+        .await;
+
+    match user_response {
+        Ok(resp) => {
+            println!("User info retrieved");
+        }
+        Err(error) => {
+            println!("Error: {}", error);
+        }
+    }
+}
+
+// ==================== QUERY PARAMETERS ====================
+
+@server
+async fn demo_query_parameters() {
+    println!("\n=== Query Parameters ===");
+
+    let response = HttpRequest::get("https://api.example.com/search")
+        .query("q", "RavensOne")
+        .query("page", "1")
+        .query("limit", "10")
+        .send()
+        .await;
+
+    // Equivalent to: https://api.example.com/search?q=RavensOne&page=1&limit=10
+
+    match response {
+        Ok(resp) => {
+            println!("Search results retrieved");
+            println!("Status: {}", resp.status);
+        }
+        Err(error) => {
+            println!("Error: {}", error);
+        }
+    }
+}
+
+// ==================== FORM DATA ====================
+
+@server
+async fn demo_form_data() {
+    println!("\n=== Form Data ===");
+
+    let response = HttpRequest::post("https://api.example.com/login")
+        .form("username", "alice")
+        .form("password", "secret123")
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) => {
+            println!("Login response: {}", resp.status);
+        }
+        Err(error) => {
+            println!("Error: {}", error);
+        }
+    }
+}
+
+// ==================== ERROR HANDLING ====================
+
+@server
+async fn demo_error_handling() {
+    println!("\n=== Error Handling ===");
+
+    let response = HttpRequest::get("https://api.example.com/not-found")
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) => {
+            if resp.is_ok() {
+                println!("Success!");
+            } else if resp.is_client_error() {
+                println!("Client error (4xx): {}", resp.status);
+            } else if resp.is_server_error() {
+                println!("Server error (5xx): {}", resp.status);
+            }
+        }
+        Err(error) => {
+            println!("Network error: {}", error);
+        }
+    }
+}
+
+// ==================== TIMEOUT ====================
+
+@server
+async fn demo_timeout() {
+    println!("\n=== Request Timeout ===");
+
+    let response = HttpRequest::get("https://api.example.com/slow")
+        .timeout(5000)  // 5 seconds
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) => {
+            println!("Request completed within timeout");
+        }
+        Err(error) => {
+            println!("Request failed or timed out: {}", error);
+        }
+    }
+}
+
+// ==================== CONVENIENCE FUNCTIONS ====================
+
+@server
+async fn demo_convenience_functions() {
+    println!("\n=== Convenience Functions ===");
+
+    // Simple GET
+    let get_result = get("https://api.example.com/data").await;
+    match get_result {
+        Ok(resp) => println!("GET succeeded: {}", resp.status),
+        Err(err) => println!("GET failed: {}", err),
+    }
+
+    // Simple POST with JSON
+    let data = json!({"key": "value"});
+    let post_result = post_json("https://api.example.com/data", data).await;
+    match post_result {
+        Ok(resp) => println!("POST succeeded: {}", resp.status),
+        Err(err) => println!("POST failed: {}", err),
+    }
+}
+
+// ==================== BLOCKING REQUESTS ====================
+
+@server
+fn demo_blocking_requests() {
+    println!("\n=== Blocking Requests ===");
+
+    // Blocking GET (no async/await needed)
+    let response = get_blocking("https://api.example.com/data");
+
+    match response {
+        Ok(resp) => {
+            println!("Blocking GET succeeded");
+            println!("Status: {}", resp.status);
+        }
+        Err(error) => {
+            println!("Error: {}", error);
+        }
+    }
+
+    // Blocking POST with JSON
+    let data = json!({"message": "Hello"});
+    let post_response = post_json_blocking("https://api.example.com/messages", data);
+
+    match post_response {
+        Ok(resp) => {
+            println!("Blocking POST succeeded");
+        }
+        Err(error) => {
+            println!("Error: {}", error);
+        }
+    }
+}
+
+// ==================== PRACTICAL: FETCH USER DATA ====================
+
+struct User {
+    id: i32,
+    name: String,
+    email: String,
+}
+
+@server
+async fn fetch_user(user_id: i32) -> Result<User, String> {
+    let url = format!("https://api.example.com/users/{}", user_id);
+
+    let response = HttpRequest::get(&url)
+        .header("Authorization", "Bearer TOKEN")
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) => {
+            if !resp.is_ok() {
+                return Err(format!("HTTP {}", resp.status));
+            }
+
+            let json = resp.json();
+            match json {
+                Ok(data) => {
+                    let user = User {
+                        id: data["id"].as_i64().unwrap() as i32,
+                        name: data["name"].as_str().unwrap().to_string(),
+                        email: data["email"].as_str().unwrap().to_string(),
+                    };
+                    return Ok(user);
+                }
+                Err(err) => {
+                    return Err("Failed to parse JSON");
+                }
+            }
+        }
+        Err(error) => {
+            return Err(error);
+        }
+    }
+}
+
+// ==================== PRACTICAL: API CLIENT ====================
+
+struct ApiClient {
+    base_url: String,
+    api_key: String,
+}
+
+impl ApiClient {
+    @server
+    fn new(base_url: String, api_key: String) -> ApiClient {
+        return ApiClient {
+            base_url: base_url,
+            api_key: api_key,
+        };
+    }
+
+    @server
+    async fn get(&self, endpoint: String) -> Result<HttpResponse, String> {
+        let url = format!("{}{}", self.base_url, endpoint);
+
+        return HttpRequest::get(&url)
+            .header("X-API-Key", &self.api_key)
+            .send()
+            .await;
+    }
+
+    @server
+    async fn post(&self, endpoint: String, data: Value) -> Result<HttpResponse, String> {
+        let url = format!("{}{}", self.base_url, endpoint);
+
+        return HttpRequest::post(&url)
+            .header("X-API-Key", &self.api_key)
+            .json(data)
+            .send()
+            .await;
+    }
+
+    @server
+    async fn delete(&self, endpoint: String) -> Result<HttpResponse, String> {
+        let url = format!("{}{}", self.base_url, endpoint);
+
+        return HttpRequest::delete(&url)
+            .header("X-API-Key", &self.api_key)
+            .send()
+            .await;
+    }
+}
+
+@server
+async fn demo_api_client() {
+    println!("\n=== API Client Example ===");
+
+    let client = ApiClient::new(
+        "https://api.example.com".to_string(),
+        "my-secret-key".to_string()
+    );
+
+    // GET request
+    let users = client.get("/users").await;
+    match users {
+        Ok(resp) => println!("Fetched users: {}", resp.status),
+        Err(err) => println!("Error: {}", err),
+    }
+
+    // POST request
+    let new_user = json!({
+        "name": "Bob",
+        "email": "bob@example.com"
+    });
+
+    let create_result = client.post("/users", new_user).await;
+    match create_result {
+        Ok(resp) => println!("Created user: {}", resp.status),
+        Err(err) => println!("Error: {}", err),
+    }
+
+    // DELETE request
+    let delete_result = client.delete("/users/123").await;
+    match delete_result {
+        Ok(resp) => println!("Deleted user: {}", resp.status),
+        Err(err) => println!("Error: {}", err),
+    }
+}
+
+// ==================== MAIN ====================
+
+@server
+async fn main() {
+    println!("HTTP Standard Library Examples\n");
+
+    demo_basic_get().await;
+    demo_post_json().await;
+    demo_custom_headers().await;
+    demo_http_client().await;
+    demo_query_parameters().await;
+    demo_form_data().await;
+    demo_error_handling().await;
+    demo_timeout().await;
+    demo_convenience_functions().await;
+    demo_blocking_requests();
+    demo_api_client().await;
+
+    println!("\n✅ All HTTP examples completed!");
+}
