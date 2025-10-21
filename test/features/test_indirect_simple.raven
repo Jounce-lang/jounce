@@ -1,0 +1,8 @@
+fn add_ten(n: i32) -> i32 {
+    return n + 10;
+}
+
+fn main() -> i32 {
+    let f = add_ten;
+    return f(5);
+}

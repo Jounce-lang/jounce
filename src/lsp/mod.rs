@@ -1,12 +1,11 @@
 // Language Server Protocol implementation for RavensOne
 // Provides IDE features: autocomplete, hover, diagnostics, etc.
 
-use crate::diagnostics::{Diagnostic, DiagnosticCollector, SourceLocation};
+use crate::diagnostics::Diagnostic;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::semantic_analyzer::SemanticAnalyzer;
 use crate::type_checker::TypeChecker;
-use crate::{Compiler, BuildTarget, LexerExt};
 use std::collections::HashMap;
 
 /// LSP Server for RavensOne
@@ -114,19 +113,9 @@ impl LanguageServer {
     fn analyze_document(&self, content: &str) -> Vec<Diagnostic> {
         let mut diagnostics = Vec::new();
 
-        // Lexical analysis
+        // Lexical analysis and parsing
         let mut lexer = Lexer::new(content.to_string());
-        let tokens = match lexer.collect_tokens() {
-            Ok(t) => t,
-            Err(e) => {
-                // Convert compile error to diagnostic
-                diagnostics.push(Diagnostic::error(format!("{:?}", e)));
-                return diagnostics;
-            }
-        };
-
-        // Parse
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::new(&mut lexer);
         let ast = match parser.parse_program() {
             Ok(ast) => ast,
             Err(e) => {
@@ -152,6 +141,7 @@ impl LanguageServer {
     }
 
     /// Get completions at a position
+    #[allow(unused_variables)] // uri and position used in future context-aware completions
     pub fn get_completions(&self, uri: &str, position: Position) -> Vec<CompletionItem> {
         let mut completions = Vec::new();
 
@@ -331,12 +321,7 @@ impl LanguageServer {
 
         // Parse the document to extract local variables and functions
         let mut lexer = Lexer::new(content.to_string());
-        let tokens = match lexer.collect_tokens() {
-            Ok(t) => t,
-            Err(_) => return completions, // Return empty on parse error
-        };
-
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::new(&mut lexer);
         let ast = match parser.parse_program() {
             Ok(ast) => ast,
             Err(_) => return completions,

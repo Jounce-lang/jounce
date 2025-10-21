@@ -1,0 +1,65 @@
+// Math Library Demonstration
+// Shows comprehensive mathematical capabilities
+
+fn main() {
+    // Mathematical constants
+    let pi = Math::PI;
+    let e = Math::E;
+    let tau = Math::TAU;
+
+    // Basic operations
+    let abs_neg = Math::abs(-42.5);           // 42.5
+    let min_val = Math::min(10.0, 20.0);      // 10.0
+    let max_val = Math::max(10.0, 20.0);      // 20.0
+    let clamped = Math::clamp(150.0, 0.0, 100.0);  // 100.0
+
+    // Power and roots
+    let squared = Math::square(5.0);          // 25.0
+    let cubed = Math::cube(3.0);              // 27.0
+    let power = Math::pow(2.0, 10.0);         // 1024.0
+    let sqrt_val = Math::sqrt(16.0);          // 4.0
+    let cbrt_val = Math::cbrt(27.0);          // 3.0
+
+    // Exponential and logarithmic
+    let exp_val = Math::exp(1.0);             // e ≈ 2.718
+    let ln_val = Math::ln(e);                 // 1.0
+    let log2_val = Math::log2(8.0);           // 3.0
+    let log10_val = Math::log10(100.0);       // 2.0
+
+    // Trigonometric functions
+    let sin_val = Math::sin(pi / 2.0);        // 1.0
+    let cos_val = Math::cos(0.0);             // 1.0
+    let tan_val = Math::tan(pi / 4.0);        // 1.0
+
+    // Inverse trig
+    let asin_val = Math::asin(1.0);           // π/2
+    let acos_val = Math::acos(1.0);           // 0.0
+    let atan_val = Math::atan(1.0);           // π/4
+    let atan2_val = Math::atan2(1.0, 1.0);    // π/4
+
+    // Hyperbolic functions
+    let sinh_val = Math::sinh(1.0);
+    let cosh_val = Math::cosh(0.0);           // 1.0
+    let tanh_val = Math::tanh(0.0);           // 0.0
+
+    // Rounding
+    let rounded = Math::round(3.7);           // 4.0
+    let floored = Math::floor(3.7);           // 3.0
+    let ceiled = Math::ceil(3.2);             // 4.0
+    let truncated = Math::trunc(3.7);         // 3.0
+    let fractional = Math::fract(3.7);        // 0.7
+
+    // Angle conversion
+    let radians = Math::to_radians(180.0);    // π
+    let degrees = Math::to_degrees(pi);       // 180.0
+
+    // Utility functions
+    let hypotenuse = Math::hypot(3.0, 4.0);   // 5.0 (Pythagorean theorem)
+    let lerp_val = Math::lerp(0.0, 10.0, 0.5); // 5.0 (linear interpolation)
+
+    let is_equal = Math::approx_eq(3.14159, pi, 0.01);  // true
+    let is_nan = Math::is_nan(0.0 / 0.0);     // true
+    let is_inf = Math::is_infinite(1.0 / 0.0); // true
+
+    return 0;
+}

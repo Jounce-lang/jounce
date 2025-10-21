@@ -1,1 +1,63 @@
+# Build artifacts
 /target
+/dist
+*.wasm
+
+# Test outputs
+test-*.wasm
+test_*.wasm
+
+# Compiler output (keep in examples/ for testing)
+!/examples/**/*.wasm
+
+# Editor & IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary
+*.tmp
+*.bak
+*~
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Cargo
+Cargo.lock
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+aloha-shirts/dist/
+
+# Coverage
+coverage/
+*.profraw
+*.profdata

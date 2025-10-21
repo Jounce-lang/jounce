@@ -1,0 +1,5 @@
+fn main() {
+  let n = 10;
+  let f = |x| x + n;
+  return f(5);
+}

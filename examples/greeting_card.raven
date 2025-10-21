@@ -1,0 +1,22 @@
+// Greeting Card Component - Testing function calls within components
+
+fn get_greeting() -> String {
+    return "Hello";
+}
+
+fn format_name(first: String, last: String) -> String {
+    return first;
+}
+
+component GreetingCard() {
+    let greeting = get_greeting();
+    let user_first = "Alice";
+    let user_last = "Smith";
+    let full_name = format_name(user_first, user_last);
+
+    return <div>
+        <h1>Welcome Message</h1>
+        <p>Greetings from RavensOne</p>
+        <button>Say Hello</button>
+    </div>;
+}

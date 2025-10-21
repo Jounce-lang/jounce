@@ -1,0 +1,56 @@
+// Product Catalog Component - Testing arrays and index access
+
+fn get_discount_percentage(price: i32) -> i32 {
+    return 15;
+}
+
+fn format_price(price: i32) -> i32 {
+    return price;
+}
+
+component ProductCatalog() {
+    let store_name = "Tech Store";
+    let product_names = ["Laptop", "Mouse", "Keyboard"];
+    let product_prices = [999, 25, 75];
+    let featured_product = product_names[0];
+    let featured_price = product_prices[0];
+    let discount = get_discount_percentage(featured_price);
+    let total_products = 3;
+
+    return <div>
+        <header>
+            <h1>Tech Store</h1>
+            <p>Premium Computer Accessories</p>
+        </header>
+        <main>
+            <section>
+                <h2>Featured Product</h2>
+                <div>
+                    <h3>Laptop</h3>
+                    <p>High Performance Device</p>
+                    <button>Add to Cart</button>
+                </div>
+            </section>
+            <section>
+                <h2>All Products</h2>
+                <div>
+                    <article>
+                        <h3>Laptop</h3>
+                        <p>Premium laptop</p>
+                    </article>
+                    <article>
+                        <h3>Mouse</h3>
+                        <p>Wireless mouse</p>
+                    </article>
+                    <article>
+                        <h3>Keyboard</h3>
+                        <p>Mechanical keyboard</p>
+                    </article>
+                </div>
+            </section>
+        </main>
+        <footer>
+            <p>Total items available</p>
+        </footer>
+    </div>;
+}

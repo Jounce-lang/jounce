@@ -148,8 +148,10 @@ impl TypeChecker {
                     self.env.bind(param.name.value.clone(), Type::Any);
                 }
 
-                // Check body
-                let _body_type = self.infer_expression(&comp_def.body)?;
+                // Check body statements
+                for stmt in &comp_def.body.statements {
+                    self.check_statement(stmt)?;
+                }
 
                 self.env.pop_scope();
 
@@ -463,6 +465,13 @@ impl TypeChecker {
                 // In a full implementation, we would verify that the inner expression
                 // returns a Result<T, E> type and extract the T type
                 self.infer_expression(&try_expr.expression)
+            }
+
+            Expression::Await(await_expr) => {
+                // Process the inner expression recursively
+                // In a full implementation, we would verify that the inner expression
+                // returns a Future<T> type and extract the T type
+                self.infer_expression(&await_expr.expression)
             }
 
             Expression::IfExpression(if_expr) => {

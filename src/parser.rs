@@ -1,5 +1,6 @@
 use crate::ast::*;
 use crate::errors::CompileError;
+use crate::lexer::Lexer;
 use crate::token::{Token, TokenKind};
 use std::collections::HashMap;
 
@@ -28,14 +29,17 @@ lazy_static::lazy_static! {
     };
 }
 
-pub struct Parser {
-    tokens: Vec<Token>,
-    position: usize,
+pub struct Parser<'a> {
+    lexer: &'a mut Lexer,
+    current: Token,
+    peek: Token,
 }
 
-impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, position: 0 }
+impl<'a> Parser<'a> {
+    pub fn new(lexer: &'a mut Lexer) -> Self {
+        let current = lexer.next_token();
+        let peek = lexer.next_token();
+        Self { lexer, current, peek }
     }
 
     pub fn parse_program(&mut self) -> Result<Program, CompileError> {
@@ -55,18 +59,10 @@ impl Parser {
             TokenKind::Trait => self.parse_trait_definition().map(Statement::Trait),
             TokenKind::Component => self.parse_component_definition().map(Statement::Component),
             TokenKind::At => {
-                // Check if this is @client component or @server/@client function
-                let peek = self.peek_token().kind.clone();
-                if peek == TokenKind::Client && self.position + 2 < self.tokens.len() {
-                    let peek2 = self.tokens[self.position + 2].kind.clone();
-                    if peek2 == TokenKind::Component {
-                        self.parse_component_definition().map(Statement::Component)
-                    } else {
-                        self.parse_function_definition().map(Statement::Function)
-                    }
-                } else {
-                    self.parse_function_definition().map(Statement::Function)
-                }
+                // Annotations can be on functions or components
+                // Try parsing as function first, which handles @server/@client fn
+                // Components are marked with "component" keyword, not @client
+                self.parse_function_definition().map(Statement::Function)
             }
             TokenKind::Fn | TokenKind::Server | TokenKind::Client | TokenKind::Async => self.parse_function_definition().map(Statement::Function),
             TokenKind::Let => self.parse_let_statement().map(Statement::Let),
@@ -92,7 +88,7 @@ impl Parser {
             }
             _ => self.parse_expression_statement().map(Statement::Expression),
         }?;
-        if self.consume_if_matches(&TokenKind::Semicolon) {}
+        self.consume_if_matches(&TokenKind::Semicolon);
         Ok(stmt)
     }
 
@@ -144,7 +140,7 @@ impl Parser {
             if !self.consume_if_matches(&TokenKind::Comma) { break; }
         }
         self.expect_and_consume(&TokenKind::RBrace)?;
-        Ok(StructDefinition { name, lifetime_params: Vec::new(), type_params, fields })
+        Ok(StructDefinition { name, lifetime_params: Vec::new(), type_params, fields, derives: Vec::new() })
     }
 
     fn parse_enum_definition(&mut self) -> Result<EnumDefinition, CompileError> {
@@ -200,7 +196,7 @@ impl Parser {
         }
         self.expect_and_consume(&TokenKind::RBrace)?;
 
-        Ok(EnumDefinition { name, lifetime_params: Vec::new(), type_params, variants })
+        Ok(EnumDefinition { name, lifetime_params: Vec::new(), type_params, variants, derives: Vec::new() })
     }
 
     fn parse_impl_block(&mut self) -> Result<ImplBlock, CompileError> {
@@ -363,17 +359,18 @@ impl Parser {
         self.expect_and_consume(&TokenKind::RParen)?;
         self.expect_and_consume(&TokenKind::LBrace)?;
 
-        // Consume optional 'return' keyword inside component body
-        self.consume_if_matches(&TokenKind::Return);
-
-        let body = self.parse_expression(Precedence::Lowest)?;
-        self.consume_if_matches(&TokenKind::Semicolon);
+        // Parse component body as a block of statements
+        let mut statements = Vec::new();
+        while self.current_token().kind != TokenKind::RBrace {
+            statements.push(self.parse_statement()?);
+        }
         self.expect_and_consume(&TokenKind::RBrace)?;
+
         Ok(ComponentDefinition {
             name,
             parameters,
             is_client,
-            body: Box::new(body),
+            body: BlockStatement { statements },
         })
     }
 
@@ -671,6 +668,7 @@ impl Parser {
         self.parse_expression(Precedence::Lowest)
     }
     
+    #[allow(dead_code)] // For future macro support
     fn parse_macro_invocation(&mut self) -> Result<Statement, CompileError> {
         let macro_token = self.current_token().clone();
         self.next_token();
@@ -809,6 +807,14 @@ impl Parser {
                 self.next_token();
                 let expression = self.parse_expression(Precedence::Product)?; // High precedence for prefix ops
                 Ok(Expression::Dereference(DereferenceExpression {
+                    expression: Box::new(expression),
+                }))
+            },
+            TokenKind::Await => {
+                // Parse await expression: await future_expr
+                self.next_token();
+                let expression = self.parse_expression(Precedence::Product)?; // High precedence for prefix ops
+                Ok(Expression::Await(AwaitExpression {
                     expression: Box::new(expression),
                 }))
             },
@@ -1215,11 +1221,24 @@ impl Parser {
         self.expect_and_consume(&TokenKind::LAngle)?;
         let name = self.parse_identifier()?;
         let mut attributes = vec![];
-        while self.current_token().kind != TokenKind::RAngle && self.current_token().kind != TokenKind::Slash {
+        while self.current_token().kind != TokenKind::RAngle &&
+              self.current_token().kind != TokenKind::Slash &&
+              self.current_token().kind != TokenKind::JsxSelfClose {
             attributes.push(self.parse_jsx_attribute()?);
         }
-        let self_closing = self.consume_if_matches(&TokenKind::Slash);
-        self.expect_and_consume(&TokenKind::RAngle)?;
+        // Check for self-closing tag />
+        let self_closing = if self.consume_if_matches(&TokenKind::JsxSelfClose) {
+            // Self-closing tag doesn't enter JSX mode
+            true
+        } else if self.consume_if_matches(&TokenKind::Slash) {
+            // Self-closing with separate / and >
+            self.expect_and_consume(&TokenKind::RAngle)?;
+            true
+        } else {
+            // Regular opening tag
+            self.expect_and_consume(&TokenKind::RAngle)?;
+            false
+        };
         Ok(JsxOpeningTag { name, attributes, self_closing })
     }
     
@@ -1228,12 +1247,16 @@ impl Parser {
         self.expect_and_consume(&TokenKind::Assign)?;
 
         // Check if value is wrapped in curly braces for expression interpolation
-        if self.consume_if_matches(&TokenKind::LBrace) {
+        if self.consume_if_matches(&TokenKind::JsxOpenBrace) || self.consume_if_matches(&TokenKind::LBrace) {
             let value = self.parse_expression(Precedence::Lowest)?;
-            self.expect_and_consume(&TokenKind::RBrace)?;
+            if !self.consume_if_matches(&TokenKind::JsxCloseBrace) {
+                self.expect_and_consume(&TokenKind::RBrace)?;
+            }
             Ok(JsxAttribute { name, value })
         } else {
-            let value = self.parse_expression(Precedence::Lowest)?;
+            // Parse just the prefix (string literal, identifier, etc.) without infix operators
+            // This prevents treating > or / as operators
+            let value = self.parse_prefix()?;
             Ok(JsxAttribute { name, value })
         }
     }
@@ -1251,10 +1274,39 @@ impl Parser {
                 return Err(self.error("Unclosed JSX element"));
             }
 
-            // Check for {expr} interpolation
-            if self.consume_if_matches(&TokenKind::LBrace) {
+            // Check for JSX text - any content that's not a tag or expression
+            // This handles string literals and potentially other tokens as text
+            match &self.current_token().kind {
+                TokenKind::JsxText(text) => {
+                    if !text.is_empty() {
+                        children.push(JsxChild::Text(text.clone()));
+                    }
+                    self.next_token();
+                    continue;
+                }
+                TokenKind::String(text) => {
+                    // String literals in JSX are treated as text
+                    children.push(JsxChild::Text(text.clone()));
+                    self.next_token();
+                    continue;
+                }
+                TokenKind::Identifier | TokenKind::Bang | TokenKind::Comma => {
+                    // Various tokens in JSX children position are text content
+                    // This handles words, punctuation, etc.
+                    let text = self.current_token().lexeme.clone();
+                    children.push(JsxChild::Text(text));
+                    self.next_token();
+                    continue;
+                }
+                _ => {}
+            }
+
+            // Check for {expr} interpolation with JSX-aware braces
+            if self.consume_if_matches(&TokenKind::JsxOpenBrace) || self.consume_if_matches(&TokenKind::LBrace) {
                 let expr = self.parse_expression(Precedence::Lowest)?;
-                self.expect_and_consume(&TokenKind::RBrace)?;
+                if !self.consume_if_matches(&TokenKind::JsxCloseBrace) {
+                    self.expect_and_consume(&TokenKind::RBrace)?;
+                }
                 children.push(JsxChild::Expression(Box::new(expr)));
                 continue;
             }
@@ -1265,48 +1317,19 @@ impl Parser {
                 if self.peek_token().kind == TokenKind::Slash {
                     break; // This is actually the closing tag, exit
                 }
-                // This is a nested element, parse it
-                let child_expr = self.parse_expression(Precedence::Lowest)?;
+                // This is a nested element
+                let child_expr = self.parse_jsx_element()?;
                 if let Expression::JsxElement(el) = child_expr {
                     children.push(JsxChild::Element(Box::new(el)));
                 }
                 continue;
             }
 
-            // Collect bare text content
-            let text = self.collect_jsx_text()?;
-            if !text.is_empty() {
-                children.push(JsxChild::Text(text));
-            }
+            // If we get here and haven't matched anything, break
+            break;
         }
 
         Ok(children)
-    }
-
-    /// Collect consecutive tokens as JSX text until we hit <, {, or }
-    fn collect_jsx_text(&mut self) -> Result<String, CompileError> {
-        let mut text = String::new();
-
-        loop {
-            let token = self.current_token();
-
-            // Stop at JSX delimiters
-            match &token.kind {
-                TokenKind::LAngle | TokenKind::LBrace | TokenKind::RBrace | TokenKind::Eof => {
-                    break;
-                }
-                _ => {}
-            }
-
-            // Append token content
-            if !text.is_empty() && !token.lexeme.is_empty() {
-                text.push(' '); // Add spacing between tokens
-            }
-            text.push_str(&token.lexeme);
-            self.next_token();
-        }
-
-        Ok(text.trim().to_string())
     }
 
     fn parse_jsx_closing_tag(&mut self) -> Result<Identifier, CompileError> {
@@ -1314,6 +1337,7 @@ impl Parser {
         self.expect_and_consume(&TokenKind::Slash)?;
         let name = self.parse_identifier()?;
         self.expect_and_consume(&TokenKind::RAngle)?;
+        // Note: JSX mode is already exited in parse_jsx_children before we get here
         Ok(name)
     }
 
@@ -1328,10 +1352,19 @@ impl Parser {
         }
     }
 
-    fn current_token(&self) -> &Token { &self.tokens[self.position] }
-    fn peek_token(&self) -> &Token { self.tokens.get(self.position + 1).unwrap_or(self.tokens.last().unwrap()) }
+    fn current_token(&self) -> &Token { &self.current }
+    fn peek_token(&self) -> &Token { &self.peek }
     fn current_precedence(&self) -> Precedence { PRECEDENCES.get(&self.current_token().kind).cloned().unwrap_or(Precedence::Lowest) }
-    fn next_token(&mut self) { if self.position < self.tokens.len() - 1 { self.position += 1; } }
+    fn next_token(&mut self) {
+        self.current = self.peek.clone();
+        self.peek = self.lexer.next_token();
+    }
+
+    // Re-fetch the peek token after changing lexer state (e.g., jsx_mode)
+    #[allow(dead_code)] // For future JSX mode switching
+    fn refresh_peek(&mut self) {
+        self.peek = self.lexer.next_token();
+    }
 
     fn expect_and_consume(&mut self, expected: &TokenKind) -> Result<(), CompileError> {
         if &self.current_token().kind == expected {
@@ -1354,5 +1387,191 @@ impl Parser {
     fn error(&self, message: &str) -> CompileError {
         let t = self.current_token();
         CompileError::ParserError { message: message.to_string(), line: t.line, column: t.column }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse_expr(source: &str) -> Result<Expression, CompileError> {
+        let mut lexer = Lexer::new(source.to_string());
+        let mut parser = Parser::new(&mut lexer);
+        parser.parse_expression(Precedence::Lowest)
+    }
+
+    #[test]
+    fn test_jsx_empty_element() {
+        let expr = parse_expr("<div></div>").unwrap();
+        match expr {
+            Expression::JsxElement(jsx) => {
+                assert_eq!(jsx.opening_tag.name.value, "div");
+                assert_eq!(jsx.children.len(), 0);
+                assert_eq!(jsx.closing_tag.as_ref().unwrap().value, "div");
+                assert!(!jsx.opening_tag.self_closing);
+            }
+            _ => panic!("Expected JsxElement"),
+        }
+    }
+
+    #[test]
+    fn test_jsx_self_closing() {
+        let expr = parse_expr("<img />").unwrap();
+        match expr {
+            Expression::JsxElement(jsx) => {
+                assert_eq!(jsx.opening_tag.name.value, "img");
+                assert_eq!(jsx.children.len(), 0);
+                assert!(jsx.closing_tag.is_none());
+                assert!(jsx.opening_tag.self_closing);
+            }
+            _ => panic!("Expected JsxElement"),
+        }
+    }
+
+    #[test]
+    fn test_jsx_with_text() {
+        let expr = parse_expr("<div>Hello World</div>").unwrap();
+        match expr {
+            Expression::JsxElement(jsx) => {
+                // Text may be split into multiple tokens
+                assert!(jsx.children.len() >= 1);
+                // Verify we have text children
+                for child in &jsx.children {
+                    match child {
+                        JsxChild::Text(_) => {},
+                        _ => panic!("Expected text child"),
+                    }
+                }
+            }
+            _ => panic!("Expected JsxElement"),
+        }
+    }
+
+    #[test]
+    fn test_jsx_with_single_attribute() {
+        let expr = parse_expr(r#"<div class="container"></div>"#).unwrap();
+        match expr {
+            Expression::JsxElement(jsx) => {
+                assert_eq!(jsx.opening_tag.attributes.len(), 1);
+                let attr = &jsx.opening_tag.attributes[0];
+                assert_eq!(attr.name.value, "class");
+                match &attr.value {
+                    Expression::StringLiteral(s) => assert_eq!(s, "container"),
+                    _ => panic!("Expected string literal"),
+                }
+            }
+            _ => panic!("Expected JsxElement"),
+        }
+    }
+
+    #[test]
+    fn test_jsx_with_multiple_attributes() {
+        let expr = parse_expr(r#"<div class="container" id="app"></div>"#).unwrap();
+        match expr {
+            Expression::JsxElement(jsx) => {
+                assert_eq!(jsx.opening_tag.attributes.len(), 2);
+                assert_eq!(jsx.opening_tag.attributes[0].name.value, "class");
+                assert_eq!(jsx.opening_tag.attributes[1].name.value, "id");
+            }
+            _ => panic!("Expected JsxElement"),
+        }
+    }
+
+    #[test]
+    fn test_jsx_self_closing_with_attribute() {
+        let expr = parse_expr(r#"<img src="photo.jpg" />"#).unwrap();
+        match expr {
+            Expression::JsxElement(jsx) => {
+                assert!(jsx.opening_tag.self_closing);
+                assert_eq!(jsx.opening_tag.attributes.len(), 1);
+                assert_eq!(jsx.opening_tag.attributes[0].name.value, "src");
+            }
+            _ => panic!("Expected JsxElement"),
+        }
+    }
+
+    #[test]
+    fn test_jsx_nested_element() {
+        let expr = parse_expr("<div><span>Hello</span></div>").unwrap();
+        match expr {
+            Expression::JsxElement(jsx) => {
+                assert_eq!(jsx.children.len(), 1);
+                match &jsx.children[0] {
+                    JsxChild::Element(child) => {
+                        assert_eq!(child.opening_tag.name.value, "span");
+                        assert_eq!(child.children.len(), 1);
+                    }
+                    _ => panic!("Expected element child"),
+                }
+            }
+            _ => panic!("Expected JsxElement"),
+        }
+    }
+
+    #[test]
+    fn test_jsx_with_expression() {
+        let expr = parse_expr("<div>Hello {name}!</div>").unwrap();
+        match expr {
+            Expression::JsxElement(jsx) => {
+                // Should have at least text, expression, text
+                assert!(jsx.children.len() >= 3);
+                // Find the expression child
+                let has_expr = jsx.children.iter().any(|child| {
+                    matches!(child, JsxChild::Expression(e) if matches!(e.as_ref(), Expression::Identifier(id) if id.value == "name"))
+                });
+                assert!(has_expr, "Should contain expression with identifier 'name'");
+            }
+            _ => panic!("Expected JsxElement"),
+        }
+    }
+
+    #[test]
+    fn test_jsx_multiple_children() {
+        let expr = parse_expr("<div><span>A</span><span>B</span></div>").unwrap();
+        match expr {
+            Expression::JsxElement(jsx) => {
+                assert_eq!(jsx.children.len(), 2);
+                match (&jsx.children[0], &jsx.children[1]) {
+                    (JsxChild::Element(a), JsxChild::Element(b)) => {
+                        assert_eq!(a.opening_tag.name.value, "span");
+                        assert_eq!(b.opening_tag.name.value, "span");
+                    }
+                    _ => panic!("Expected element children"),
+                }
+            }
+            _ => panic!("Expected JsxElement"),
+        }
+    }
+
+    #[test]
+    fn test_jsx_mismatched_tags() {
+        let result = parse_expr("<div></span>");
+        assert!(result.is_err());
+        if let Err(CompileError::ParserError { message, .. }) = result {
+            assert!(message.contains("Mismatched"));
+        }
+    }
+
+    #[test]
+    fn test_jsx_deeply_nested() {
+        let expr = parse_expr("<div><section><article>Text</article></section></div>").unwrap();
+        match expr {
+            Expression::JsxElement(jsx) => {
+                assert_eq!(jsx.opening_tag.name.value, "div");
+                match &jsx.children[0] {
+                    JsxChild::Element(section) => {
+                        assert_eq!(section.opening_tag.name.value, "section");
+                        match &section.children[0] {
+                            JsxChild::Element(article) => {
+                                assert_eq!(article.opening_tag.name.value, "article");
+                            }
+                            _ => panic!("Expected element"),
+                        }
+                    }
+                    _ => panic!("Expected element"),
+                }
+            }
+            _ => panic!("Expected JsxElement"),
+        }
     }
 }

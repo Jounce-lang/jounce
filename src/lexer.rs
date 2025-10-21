@@ -7,6 +7,9 @@ pub struct Lexer {
     ch: char,
     line: usize,
     column: usize,
+    jsx_mode: bool,           // Track if we're in JSX context
+    jsx_depth: usize,         // Track nesting depth of JSX elements
+    brace_depth: usize,       // Track braces in JSX expressions
 }
 
 impl Lexer {
@@ -18,12 +21,20 @@ impl Lexer {
             ch: '\0',
             line: 1,
             column: 0,
+            jsx_mode: false,
+            jsx_depth: 0,
+            brace_depth: 0,
         };
         lexer.read_char();
         lexer
     }
 
     pub fn next_token(&mut self) -> Token {
+        // In JSX mode, handle text content differently
+        if self.jsx_mode && self.brace_depth == 0 && self.ch != '<' && self.ch != '{' && self.ch != '\0' {
+            return self.read_jsx_text();
+        }
+
         self.skip_whitespace();
         let start_col = self.column;
         let token = match self.ch {
@@ -83,8 +94,24 @@ impl Lexer {
             }
             '(' => Token::new(TokenKind::LParen, "(".to_string(), self.line, start_col),
             ')' => Token::new(TokenKind::RParen, ")".to_string(), self.line, start_col),
-            '{' => Token::new(TokenKind::LBrace, "{".to_string(), self.line, start_col),
-            '}' => Token::new(TokenKind::RBrace, "}".to_string(), self.line, start_col),
+            '{' => {
+                // Track brace depth for JSX expressions
+                if self.jsx_mode {
+                    self.brace_depth += 1;
+                    Token::new(TokenKind::JsxOpenBrace, "{".to_string(), self.line, start_col)
+                } else {
+                    Token::new(TokenKind::LBrace, "{".to_string(), self.line, start_col)
+                }
+            }
+            '}' => {
+                // Track brace depth for JSX expressions
+                if self.jsx_mode && self.brace_depth > 0 {
+                    self.brace_depth -= 1;
+                    Token::new(TokenKind::JsxCloseBrace, "}".to_string(), self.line, start_col)
+                } else {
+                    Token::new(TokenKind::RBrace, "}".to_string(), self.line, start_col)
+                }
+            }
             '[' => Token::new(TokenKind::LBracket, "[".to_string(), self.line, start_col),
             ']' => Token::new(TokenKind::RBracket, "]".to_string(), self.line, start_col),
             '<' => {
@@ -93,6 +120,9 @@ impl Lexer {
                     self.read_char();
                     return Token::new(TokenKind::LtEq, "<=".to_string(), self.line, start_col);
                 } else {
+                    // Check if this might be JSX: < followed by an alphabetic character or uppercase
+                    // This handles <div>, <Component>, etc.
+                    // We DON'T enter JSX mode yet - we'll enter it when we see the >
                     Token::new(TokenKind::LAngle, "<".to_string(), self.line, start_col)
                 }
             }
@@ -105,7 +135,20 @@ impl Lexer {
                     Token::new(TokenKind::RAngle, ">".to_string(), self.line, start_col)
                 }
             }
-            '/' => Token::new(TokenKind::Slash, "/".to_string(), self.line, start_col),
+            '/' => {
+                // Check for self-closing JSX tag />
+                if self.peek() == '>' && self.jsx_mode {
+                    self.read_char();
+                    self.read_char();
+                    self.jsx_depth -= 1;
+                    if self.jsx_depth == 0 {
+                        self.jsx_mode = false;
+                    }
+                    return Token::new(TokenKind::JsxSelfClose, "/>".to_string(), self.line, start_col);
+                } else {
+                    Token::new(TokenKind::Slash, "/".to_string(), self.line, start_col)
+                }
+            }
             '-' => {
                 if self.peek() == '>' {
                     self.read_char();
@@ -130,7 +173,7 @@ impl Lexer {
             _ => {
                 if self.ch.is_alphabetic() || self.ch == '_' {
                     return self.read_identifier();
-                } else if self.ch.is_digit(10) {
+                } else if self.ch.is_ascii_digit() {
                     return self.read_number();
                 } else {
                     Token::new(TokenKind::Illegal(self.ch), self.ch.to_string(), self.line, start_col)
@@ -202,15 +245,15 @@ impl Lexer {
         let start_col = self.column;
         let mut is_float = false;
 
-        while self.ch.is_digit(10) {
+        while self.ch.is_ascii_digit() {
             self.read_char();
         }
 
         // Check for decimal point
-        if self.ch == '.' && self.peek().is_digit(10) {
+        if self.ch == '.' && self.peek().is_ascii_digit() {
             is_float = true;
             self.read_char(); // consume '.'
-            while self.ch.is_digit(10) {
+            while self.ch.is_ascii_digit() {
                 self.read_char();
             }
         }
@@ -277,6 +320,41 @@ impl Lexer {
         let lifetime_name = literal[1..].to_string();
 
         Token::new(TokenKind::Lifetime(lifetime_name.clone()), literal, self.line, start_col)
+    }
+
+    fn read_jsx_text(&mut self) -> Token {
+        let start_col = self.column;
+        let mut result = String::new();
+
+        // Read text until we hit < (tag start), { (expression start), or end of input
+        while self.ch != '<' && self.ch != '{' && self.ch != '\0' {
+            result.push(self.ch);
+            self.read_char();
+        }
+
+        // Trim the result to remove extra whitespace (but preserve intentional spacing)
+        let trimmed = result.trim().to_string();
+
+        Token::new(TokenKind::JsxText(trimmed.clone()), trimmed, self.line, start_col)
+    }
+
+    // Public methods for parser to manage JSX mode
+    pub fn enter_jsx_mode(&mut self) {
+        self.jsx_mode = true;
+        self.jsx_depth += 1;
+    }
+
+    pub fn exit_jsx_mode(&mut self) {
+        if self.jsx_depth > 0 {
+            self.jsx_depth -= 1;
+        }
+        if self.jsx_depth == 0 {
+            self.jsx_mode = false;
+        }
+    }
+
+    pub fn is_jsx_mode(&self) -> bool {
+        self.jsx_mode
     }
 }
 
@@ -373,5 +451,240 @@ mod tests {
         } else {
             panic!("Expected String token, got {:?}", token.kind);
         }
+    }
+
+    // JSX Lexer Tests
+
+    #[test]
+    fn test_jsx_simple_text() {
+        let input = "Hello World".to_string();
+        let mut lexer = Lexer::new(input);
+
+        // Manually enter JSX mode (parser would do this)
+        lexer.enter_jsx_mode();
+
+        let token = lexer.next_token();
+        assert_eq!(token.kind, TokenKind::JsxText("Hello World".to_string()));
+    }
+
+    #[test]
+    fn test_jsx_text_with_whitespace() {
+        let input = "  Hello World  ".to_string();
+        let mut lexer = Lexer::new(input);
+
+        lexer.enter_jsx_mode();
+
+        let token = lexer.next_token();
+        // JSX text is trimmed
+        assert_eq!(token.kind, TokenKind::JsxText("Hello World".to_string()));
+    }
+
+    #[test]
+    fn test_jsx_mode_entry_exit() {
+        let mut lexer = Lexer::new("test".to_string());
+
+        assert!(!lexer.is_jsx_mode());
+
+        lexer.enter_jsx_mode();
+        assert!(lexer.is_jsx_mode());
+
+        lexer.exit_jsx_mode();
+        assert!(!lexer.is_jsx_mode());
+    }
+
+    #[test]
+    fn test_jsx_nested_mode() {
+        let mut lexer = Lexer::new("test".to_string());
+
+        // Enter JSX mode twice (nested elements)
+        lexer.enter_jsx_mode();
+        lexer.enter_jsx_mode();
+        assert!(lexer.is_jsx_mode());
+
+        // Exit once - should still be in JSX mode
+        lexer.exit_jsx_mode();
+        assert!(lexer.is_jsx_mode());
+
+        // Exit again - now should be out
+        lexer.exit_jsx_mode();
+        assert!(!lexer.is_jsx_mode());
+    }
+
+    #[test]
+    fn test_jsx_slash_gt_in_code_mode() {
+        // Self-closing /> should be recognized when NOT in JSX text mode
+        // Parser enters JSX mode only AFTER the opening >, not during attributes
+        let input = "/>".to_string();
+        let mut lexer = Lexer::new(input);
+
+        // NOT in JSX mode - just reading regular tokens
+        let token = lexer.next_token();
+
+        // Without JSX mode, /> is just two separate tokens
+        assert_eq!(token.kind, TokenKind::Slash);
+
+        let token2 = lexer.next_token();
+        assert_eq!(token2.kind, TokenKind::RAngle);
+    }
+
+    #[test]
+    fn test_jsx_expression_braces() {
+        let input = "{ name }".to_string();
+        let mut lexer = Lexer::new(input);
+
+        lexer.enter_jsx_mode();
+
+        // Opening brace
+        let token1 = lexer.next_token();
+        assert_eq!(token1.kind, TokenKind::JsxOpenBrace);
+
+        // Identifier inside expression
+        let token2 = lexer.next_token();
+        assert_eq!(token2.kind, TokenKind::Identifier);
+        assert_eq!(token2.lexeme, "name");
+
+        // Closing brace
+        let token3 = lexer.next_token();
+        assert_eq!(token3.kind, TokenKind::JsxCloseBrace);
+    }
+
+    #[test]
+    fn test_jsx_text_stops_at_tag() {
+        let input = "Hello<div".to_string();
+        let mut lexer = Lexer::new(input);
+
+        lexer.enter_jsx_mode();
+
+        // Should read "Hello" and stop at <
+        let token1 = lexer.next_token();
+        assert_eq!(token1.kind, TokenKind::JsxText("Hello".to_string()));
+
+        // Next token should be <
+        let token2 = lexer.next_token();
+        assert_eq!(token2.kind, TokenKind::LAngle);
+    }
+
+    #[test]
+    fn test_jsx_text_stops_at_expression() {
+        let input = "Hello{name".to_string();
+        let mut lexer = Lexer::new(input);
+
+        lexer.enter_jsx_mode();
+
+        // Should read "Hello" and stop at {
+        let token1 = lexer.next_token();
+        assert_eq!(token1.kind, TokenKind::JsxText("Hello".to_string()));
+
+        // Next token should be {
+        let token2 = lexer.next_token();
+        assert_eq!(token2.kind, TokenKind::JsxOpenBrace);
+    }
+
+    #[test]
+    fn test_jsx_angle_brackets_in_code_mode() {
+        let input = "a < b".to_string();
+        let mut lexer = Lexer::new(input);
+
+        // NOT in JSX mode - should treat < as comparison operator
+        let token1 = lexer.next_token();
+        assert_eq!(token1.kind, TokenKind::Identifier);
+
+        let token2 = lexer.next_token();
+        assert_eq!(token2.kind, TokenKind::LAngle);
+
+        let token3 = lexer.next_token();
+        assert_eq!(token3.kind, TokenKind::Identifier);
+    }
+
+    #[test]
+    fn test_jsx_braces_in_code_mode() {
+        let input = "{ let x = 1; }".to_string();
+        let mut lexer = Lexer::new(input);
+
+        // NOT in JSX mode - should treat { } as regular braces
+        let token1 = lexer.next_token();
+        assert_eq!(token1.kind, TokenKind::LBrace);
+
+        lexer.next_token(); // let
+        lexer.next_token(); // x
+        lexer.next_token(); // =
+        lexer.next_token(); // 1
+        lexer.next_token(); // ;
+
+        let token_close = lexer.next_token();
+        assert_eq!(token_close.kind, TokenKind::RBrace);
+    }
+
+    #[test]
+    fn test_jsx_nested_expressions() {
+        let input = "{ { nested } }".to_string();
+        let mut lexer = Lexer::new(input);
+
+        lexer.enter_jsx_mode();
+
+        // First { - JSX expression open
+        let token1 = lexer.next_token();
+        assert_eq!(token1.kind, TokenKind::JsxOpenBrace);
+
+        // Inner { - still JSX brace because brace_depth was incremented
+        let token2 = lexer.next_token();
+        // The lexer treats nested braces in JSX mode as JSX braces
+        // This is actually correct behavior - all braces in JSX expressions are JSX braces
+        assert_eq!(token2.kind, TokenKind::JsxOpenBrace);
+
+        // Identifier
+        let token3 = lexer.next_token();
+        assert_eq!(token3.kind, TokenKind::Identifier);
+
+        // Inner } - JSX close brace
+        let token4 = lexer.next_token();
+        assert_eq!(token4.kind, TokenKind::JsxCloseBrace);
+
+        // Outer } - JSX close brace
+        let token5 = lexer.next_token();
+        assert_eq!(token5.kind, TokenKind::JsxCloseBrace);
+    }
+
+    #[test]
+    fn test_jsx_closing_tag_detected() {
+        // Simulates being inside JSX content and hitting a closing tag
+        // <div> [we're here] </div>
+        let input = "</div>".to_string();
+        let mut lexer = Lexer::new(input);
+
+        // Parser entered JSX mode after reading <div>
+        lexer.enter_jsx_mode();
+
+        // When JSX text reading checks ch, it sees '<' so it doesn't read text
+        // Instead it returns to normal token matching
+        let token1 = lexer.next_token();
+        assert_eq!(token1.kind, TokenKind::LAngle);
+
+        // IMPORTANT: Parser would exit JSX mode here after seeing < in JSX content
+        // because it indicates either a child element or closing tag
+        lexer.exit_jsx_mode();
+
+        // Now not in JSX mode, / is a regular token
+        let token2 = lexer.next_token();
+        assert_eq!(token2.kind, TokenKind::Slash);
+
+        // div is an identifier
+        let token3 = lexer.next_token();
+        assert_eq!(token3.kind, TokenKind::Identifier);
+
+        // >
+        let token4 = lexer.next_token();
+        assert_eq!(token4.kind, TokenKind::RAngle);
+    }
+
+    #[test]
+    fn test_jsx_multiline_text() {
+        let input = "Line 1\nLine 2\nLine 3".to_string();
+        let mut lexer = Lexer::new(input);
+
+        lexer.enter_jsx_mode();
+
+        let token = lexer.next_token();
+        assert_eq!(token.kind, TokenKind::JsxText("Line 1\nLine 2\nLine 3".to_string()));
     }
 }

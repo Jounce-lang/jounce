@@ -223,7 +223,7 @@ impl AuthService {
     pub fn verify_password(&self, password: &str, hash: &str) -> bool {
         // In a real implementation, this would use bcrypt.verify
         // For now, simple comparison
-        hash == &format!("$bcrypt$hash${}", password)
+        hash == format!("$bcrypt$hash${}", password)
     }
 
     /// Generate JWT token

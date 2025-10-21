@@ -11,11 +11,11 @@ use std::collections::HashSet;
 /// Unique identifier for reactive values
 type SignalId = usize;
 
-/// Global reactive context
+// Global reactive context
 thread_local! {
-    static SIGNAL_COUNTER: RefCell<usize> = RefCell::new(0);
-    static CURRENT_OBSERVER: RefCell<Option<SignalId>> = RefCell::new(None);
-    static DEPENDENCIES: RefCell<Vec<(SignalId, HashSet<SignalId>)>> = RefCell::new(Vec::new());
+    static SIGNAL_COUNTER: RefCell<usize> = const { RefCell::new(0) };
+    static CURRENT_OBSERVER: RefCell<Option<SignalId>> = const { RefCell::new(None) };
+    static DEPENDENCIES: RefCell<Vec<(SignalId, HashSet<SignalId>)>> = const { RefCell::new(Vec::new()) };
     static EFFECT_REGISTRY: RefCell<std::collections::HashMap<SignalId, Rc<dyn Fn()>>> = RefCell::new(std::collections::HashMap::new());
 }
 
@@ -185,6 +185,7 @@ impl<T: Clone + 'static> Computed<T> {
 /// });
 /// ```
 pub struct Effect {
+    #[allow(dead_code)] // Used in future effect cleanup and debugging
     id: SignalId,
     effect: Rc<dyn Fn()>,
 }

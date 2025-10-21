@@ -1,0 +1,1022 @@
+// 🌐 SocialWave - Full-Stack Social Media Platform
+// Demonstrates: Real-time Updates, Complex State, Routing, Server Functions, Rich JSX
+
+use raven_router::{Router, Route, Link, useRouter, useParams};
+use raven_store::{Store, create_store, Signal, computed, Effect};
+use raven_http::{HttpClient, get, post};
+
+// ==================== TYPE DEFINITIONS ====================
+
+struct User {
+    id: i32,
+    username: String,
+    display_name: String,
+    bio: String,
+    avatar_url: String,
+    followers_count: i32,
+    following_count: i32,
+    posts_count: i32,
+    created_at: String,
+}
+
+struct Post {
+    id: i32,
+    author_id: i32,
+    author: User,
+    content: String,
+    image_url: Option<String>,
+    likes_count: i32,
+    comments_count: i32,
+    shares_count: i32,
+    created_at: String,
+    is_liked: bool,
+}
+
+struct Comment {
+    id: i32,
+    post_id: i32,
+    author_id: i32,
+    author: User,
+    content: String,
+    likes_count: i32,
+    created_at: String,
+    is_liked: bool,
+}
+
+struct Notification {
+    id: i32,
+    user_id: i32,
+    notification_type: String,  // "like", "comment", "follow", "mention"
+    actor: User,
+    post_id: Option<i32>,
+    message: String,
+    is_read: bool,
+    created_at: String,
+}
+
+struct AppState {
+    current_user: Option<User>,
+    feed_posts: Vec<Post>,
+    notifications: Vec<Notification>,
+    unread_count: i32,
+    is_authenticated: bool,
+}
+
+// ==================== SERVER FUNCTIONS ====================
+
+@server
+fn get_current_user() -> Option<User> {
+    // In real app: Get from session/JWT
+    println!("[Server] Getting current user");
+
+    return Some(User {
+        id: 1,
+        username: "johndoe",
+        display_name: "John Doe",
+        bio: "Full-stack developer | RavensOne enthusiast",
+        avatar_url: "/avatars/john.jpg",
+        followers_count: 1234,
+        following_count: 567,
+        posts_count: 89,
+        created_at: "2024-01-15",
+    });
+}
+
+@server
+fn get_feed_posts(page: i32, limit: i32) -> Vec<Post> {
+    println!("[Server] Fetching feed posts - page: {}, limit: {}", page, limit);
+
+    let demo_user_1 = User {
+        id: 2,
+        username: "janedoe",
+        display_name: "Jane Doe",
+        bio: "Designer & Creative",
+        avatar_url: "/avatars/jane.jpg",
+        followers_count: 2345,
+        following_count: 432,
+        posts_count: 156,
+        created_at: "2024-02-20",
+    };
+
+    let demo_user_2 = User {
+        id: 3,
+        username: "techguru",
+        display_name: "Tech Guru",
+        bio: "Technology enthusiast",
+        avatar_url: "/avatars/guru.jpg",
+        followers_count: 5678,
+        following_count: 234,
+        posts_count: 342,
+        created_at: "2023-11-10",
+    };
+
+    return vec![
+        Post {
+            id: 1,
+            author_id: 2,
+            author: demo_user_1.clone(),
+            content: "Just shipped a new feature with RavensOne! The reactive programming model makes complex UIs so much easier. 🚀",
+            image_url: Some("/posts/feature-screenshot.jpg"),
+            likes_count: 42,
+            comments_count: 8,
+            shares_count: 3,
+            created_at: "2025-10-21 10:30",
+            is_liked: false,
+        },
+        Post {
+            id: 2,
+            author_id: 3,
+            author: demo_user_2.clone(),
+            content: "Hot take: WebAssembly is the future of web development. RavensOne proves it! What do you think?",
+            image_url: None,
+            likes_count: 156,
+            comments_count: 23,
+            shares_count: 12,
+            created_at: "2025-10-21 09:15",
+            is_liked: true,
+        },
+        Post {
+            id: 3,
+            author_id: 2,
+            author: demo_user_1.clone(),
+            content: "Morning coffee and coding. Perfect combination! ☕💻",
+            image_url: Some("/posts/coffee.jpg"),
+            likes_count: 89,
+            comments_count: 15,
+            shares_count: 2,
+            created_at: "2025-10-21 08:00",
+            is_liked: true,
+        },
+        Post {
+            id: 4,
+            author_id: 3,
+            author: demo_user_2,
+            content: "Check out my latest blog post about full-stack development with RavensOne. Link in bio!",
+            image_url: None,
+            likes_count: 234,
+            comments_count: 45,
+            shares_count: 18,
+            created_at: "2025-10-20 20:45",
+            is_liked: false,
+        },
+    ];
+}
+
+@server
+fn get_post_by_id(post_id: i32) -> Option<Post> {
+    println!("[Server] Fetching post {}", post_id);
+
+    let posts = get_feed_posts(1, 10);
+    for post in posts {
+        if post.id == post_id {
+            return Some(post);
+        }
+    }
+    return None;
+}
+
+@server
+fn get_post_comments(post_id: i32) -> Vec<Comment> {
+    println!("[Server] Fetching comments for post {}", post_id);
+
+    let demo_user = User {
+        id: 4,
+        username: "commenter",
+        display_name: "Active User",
+        bio: "I love commenting!",
+        avatar_url: "/avatars/commenter.jpg",
+        followers_count: 123,
+        following_count: 456,
+        posts_count: 789,
+        created_at: "2024-03-01",
+    };
+
+    return vec![
+        Comment {
+            id: 1,
+            post_id: post_id,
+            author_id: 4,
+            author: demo_user.clone(),
+            content: "This is amazing! Great work!",
+            likes_count: 12,
+            created_at: "2025-10-21 11:00",
+            is_liked: false,
+        },
+        Comment {
+            id: 2,
+            post_id: post_id,
+            author_id: 4,
+            author: demo_user.clone(),
+            content: "I totally agree with this take. WebAssembly + RavensOne = 🔥",
+            likes_count: 8,
+            created_at: "2025-10-21 11:15",
+            is_liked: true,
+        },
+        Comment {
+            id: 3,
+            post_id: post_id,
+            author_id: 4,
+            author: demo_user,
+            content: "Thanks for sharing! Very helpful.",
+            likes_count: 5,
+            created_at: "2025-10-21 11:30",
+            is_liked: false,
+        },
+    ];
+}
+
+@server
+fn get_user_by_id(user_id: i32) -> Option<User> {
+    println!("[Server] Fetching user {}", user_id);
+
+    if user_id == 1 {
+        return get_current_user();
+    }
+
+    return Some(User {
+        id: user_id,
+        username: "user" + user_id.to_string(),
+        display_name: "User " + user_id.to_string(),
+        bio: "This is a demo user profile",
+        avatar_url: "/avatars/default.jpg",
+        followers_count: 100 + user_id,
+        following_count: 50 + user_id,
+        posts_count: 20 + user_id,
+        created_at: "2024-06-01",
+    });
+}
+
+@server
+fn get_user_posts(user_id: i32) -> Vec<Post> {
+    println!("[Server] Fetching posts for user {}", user_id);
+
+    let user_option = get_user_by_id(user_id);
+    match user_option {
+        Some(user) => {
+            return vec![
+                Post {
+                    id: 100 + user_id,
+                    author_id: user_id,
+                    author: user.clone(),
+                    content: "My first post on SocialWave!",
+                    image_url: None,
+                    likes_count: 45,
+                    comments_count: 3,
+                    shares_count: 1,
+                    created_at: "2025-10-19 14:00",
+                    is_liked: false,
+                },
+                Post {
+                    id: 101 + user_id,
+                    author_id: user_id,
+                    author: user,
+                    content: "Having a great day coding!",
+                    image_url: Some("/posts/coding.jpg"),
+                    likes_count: 67,
+                    comments_count: 5,
+                    shares_count: 2,
+                    created_at: "2025-10-18 10:30",
+                    is_liked: false,
+                },
+            ];
+        }
+        None => {
+            return vec![];
+        }
+    }
+}
+
+@server
+fn create_post(content: String, image_url: Option<String>) -> Result<Post, String> {
+    println!("[Server] Creating new post");
+
+    if content.trim() == "" {
+        return Err("Post content cannot be empty");
+    }
+
+    let current_user = get_current_user();
+    match current_user {
+        Some(user) => {
+            let new_post = Post {
+                id: 999,  // In real app: Generate from database
+                author_id: user.id,
+                author: user,
+                content: content,
+                image_url: image_url,
+                likes_count: 0,
+                comments_count: 0,
+                shares_count: 0,
+                created_at: "2025-10-21 12:00",
+                is_liked: false,
+            };
+
+            println!("[Server] Post created successfully");
+            return Ok(new_post);
+        }
+        None => {
+            return Err("User not authenticated");
+        }
+    }
+}
+
+@server
+fn create_comment(post_id: i32, content: String) -> Result<Comment, String> {
+    println!("[Server] Creating comment on post {}", post_id);
+
+    if content.trim() == "" {
+        return Err("Comment cannot be empty");
+    }
+
+    let current_user = get_current_user();
+    match current_user {
+        Some(user) => {
+            let new_comment = Comment {
+                id: 999,  // In real app: Generate from database
+                post_id: post_id,
+                author_id: user.id,
+                author: user,
+                content: content,
+                likes_count: 0,
+                created_at: "2025-10-21 12:00",
+                is_liked: false,
+            };
+
+            println!("[Server] Comment created successfully");
+            return Ok(new_comment);
+        }
+        None => {
+            return Err("User not authenticated");
+        }
+    }
+}
+
+@server
+fn toggle_like_post(post_id: i32, is_liked: bool) -> Result<i32, String> {
+    println!("[Server] Toggle like on post {} - {}", post_id, is_liked);
+
+    // In real app: Update database
+    if is_liked {
+        return Ok(-1);  // Unlike: decrement
+    } else {
+        return Ok(1);   // Like: increment
+    }
+}
+
+@server
+fn toggle_like_comment(comment_id: i32, is_liked: bool) -> Result<i32, String> {
+    println!("[Server] Toggle like on comment {} - {}", comment_id, is_liked);
+
+    if is_liked {
+        return Ok(-1);
+    } else {
+        return Ok(1);
+    }
+}
+
+@server
+fn get_notifications(user_id: i32) -> Vec<Notification> {
+    println!("[Server] Fetching notifications for user {}", user_id);
+
+    let actor = User {
+        id: 5,
+        username: "follower",
+        display_name: "New Follower",
+        bio: "Just joined!",
+        avatar_url: "/avatars/follower.jpg",
+        followers_count: 50,
+        following_count: 100,
+        posts_count: 25,
+        created_at: "2025-10-15",
+    };
+
+    return vec![
+        Notification {
+            id: 1,
+            user_id: user_id,
+            notification_type: "like",
+            actor: actor.clone(),
+            post_id: Some(1),
+            message: "liked your post",
+            is_read: false,
+            created_at: "2025-10-21 11:45",
+        },
+        Notification {
+            id: 2,
+            user_id: user_id,
+            notification_type: "comment",
+            actor: actor.clone(),
+            post_id: Some(2),
+            message: "commented on your post",
+            is_read: false,
+            created_at: "2025-10-21 10:30",
+        },
+        Notification {
+            id: 3,
+            user_id: user_id,
+            notification_type: "follow",
+            actor: actor,
+            post_id: None,
+            message: "started following you",
+            is_read: true,
+            created_at: "2025-10-20 18:20",
+        },
+    ];
+}
+
+// ==================== GLOBAL STATE ====================
+
+fn create_app_store() -> Store<AppState> {
+    let initial_state = AppState {
+        current_user: None,
+        feed_posts: vec![],
+        notifications: vec![],
+        unread_count: 0,
+        is_authenticated: false,
+    };
+
+    return create_store(initial_state);
+}
+
+fn initialize_app(store: Store<AppState>) {
+    // Load current user
+    let user = get_current_user();
+    match user {
+        Some(u) => {
+            let mut state = store.get_state();
+            state.current_user = Some(u.clone());
+            state.is_authenticated = true;
+            store.set_state(state);
+
+            // Load notifications
+            let notifs = get_notifications(u.id);
+            let unread = notifs.iter().filter(|n| !n.is_read).count() as i32;
+
+            let mut new_state = store.get_state();
+            new_state.notifications = notifs;
+            new_state.unread_count = unread;
+            store.set_state(new_state);
+        }
+        None => {
+            let mut state = store.get_state();
+            state.is_authenticated = false;
+            store.set_state(state);
+        }
+    }
+
+    // Load feed posts
+    let posts = get_feed_posts(1, 20);
+    let mut final_state = store.get_state();
+    final_state.feed_posts = posts;
+    store.set_state(final_state);
+}
+
+// ==================== COMPONENTS ====================
+
+// Header/Navigation
+component Header(store: Store<AppState>) {
+    let state = store.get_state();
+    let show_notifications = Signal::new(false);
+
+    return <header class="header">
+        <div class="container">
+            <Link to="/" class="logo">
+                <h1>SocialWave</h1>
+            </Link>
+
+            {state.is_authenticated ? (
+                <nav class="nav">
+                    <Link to="/feed" class="nav-link">Feed</Link>
+                    <Link to="/explore" class="nav-link">Explore</Link>
+
+                    <button
+                        class="notifications-btn"
+                        onclick={() => show_notifications.set(!show_notifications.get())}
+                    >
+                        <span>🔔</span>
+                        {state.unread_count > 0 && (
+                            <span class="notification-badge">{state.unread_count}</span>
+                        )}
+                    </button>
+
+                    {show_notifications.get() && (
+                        <NotificationsDropdown
+                            notifications={state.notifications}
+                            onClose={() => show_notifications.set(false)}
+                        />
+                    )}
+
+                    <Link to={"/profile/" + state.current_user.unwrap().id.to_string()} class="profile-link">
+                        <img
+                            src={state.current_user.unwrap().avatar_url}
+                            alt="Profile"
+                            class="avatar-small"
+                        />
+                    </Link>
+                </nav>
+            ) : (
+                <div class="auth-buttons">
+                    <Link to="/login" class="btn btn-secondary">Login</Link>
+                    <Link to="/signup" class="btn btn-primary">Sign Up</Link>
+                </div>
+            )}
+        </div>
+    </header>;
+}
+
+// Notifications Dropdown
+component NotificationsDropdown(notifications: Vec<Notification>, onClose: fn()) {
+    return <div class="notifications-dropdown">
+        <div class="notifications-header">
+            <h3>Notifications</h3>
+            <button onclick={onClose} class="close-btn">×</button>
+        </div>
+
+        <div class="notifications-list">
+            {notifications.len() == 0 ? (
+                <div class="empty-state">
+                    <p>No notifications yet</p>
+                </div>
+            ) : (
+                notifications.iter().map(|notif| {
+                    <div class={notif.is_read ? "notification-item read" : "notification-item unread"}>
+                        <img src={notif.actor.avatar_url} alt={notif.actor.username} class="avatar-small" />
+                        <div class="notification-content">
+                            <p>
+                                <strong>{notif.actor.display_name}</strong>
+                                {" " + notif.message}
+                            </p>
+                            <span class="notification-time">{notif.created_at}</span>
+                        </div>
+                    </div>
+                })
+            )}
+        </div>
+    </div>;
+}
+
+// Post Card
+component PostCard(post: Post, onUpdate: fn(Post)) {
+    let likes_count = Signal::new(post.likes_count);
+    let is_liked = Signal::new(post.is_liked);
+    let comments_count = Signal::new(post.comments_count);
+
+    let handle_like = || {
+        let result = toggle_like_post(post.id, is_liked.get());
+        match result {
+            Ok(delta) => {
+                likes_count.set(likes_count.get() + delta);
+                is_liked.set(!is_liked.get());
+            }
+            Err(err) => {
+                println!("Error liking post: {}", err);
+            }
+        }
+    };
+
+    return <article class="post-card">
+        <div class="post-header">
+            <Link to={"/profile/" + post.author.id.to_string()} class="author-info">
+                <img src={post.author.avatar_url} alt={post.author.username} class="avatar" />
+                <div class="author-details">
+                    <div class="author-name">{post.author.display_name}</div>
+                    <div class="author-username">@{post.author.username}</div>
+                </div>
+            </Link>
+            <div class="post-time">{post.created_at}</div>
+        </div>
+
+        <div class="post-content">
+            <p>{post.content}</p>
+            {post.image_url.is_some() && (
+                <img src={post.image_url.unwrap()} alt="Post image" class="post-image" />
+            )}
+        </div>
+
+        <div class="post-actions">
+            <button
+                class={is_liked.get() ? "action-btn liked" : "action-btn"}
+                onclick={handle_like}
+            >
+                <span>{is_liked.get() ? "❤️" : "🤍"}</span>
+                <span>{likes_count.get()}</span>
+            </button>
+
+            <Link to={"/post/" + post.id.to_string()} class="action-btn">
+                <span>💬</span>
+                <span>{comments_count.get()}</span>
+            </Link>
+
+            <button class="action-btn">
+                <span>🔄</span>
+                <span>{post.shares_count}</span>
+            </button>
+        </div>
+    </article>;
+}
+
+// Create Post Composer
+component PostComposer(onPostCreated: fn(Post)) {
+    let content = Signal::new("");
+    let is_submitting = Signal::new(false);
+    let error = Signal::new("");
+
+    let handle_submit = || {
+        if content.get().trim() == "" {
+            error.set("Post cannot be empty");
+            return;
+        }
+
+        is_submitting.set(true);
+        error.set("");
+
+        let result = create_post(content.get(), None);
+        match result {
+            Ok(new_post) => {
+                content.set("");
+                is_submitting.set(false);
+                onPostCreated(new_post);
+            }
+            Err(err_msg) => {
+                error.set(err_msg);
+                is_submitting.set(false);
+            }
+        }
+    };
+
+    return <div class="post-composer">
+        <textarea
+            class="composer-textarea"
+            placeholder="What's on your mind?"
+            value={content.get()}
+            oninput={(e) => content.set(e.target.value)}
+            rows="3"
+        />
+
+        {error.get() != "" && (
+            <div class="alert alert-error">{error.get()}</div>
+        )}
+
+        <div class="composer-actions">
+            <button class="btn btn-secondary">📷 Photo</button>
+            <button class="btn btn-secondary">🎥 Video</button>
+            <button class="btn btn-secondary">😊 Emoji</button>
+
+            <button
+                class="btn btn-primary"
+                onclick={handle_submit}
+                disabled={content.get().trim() == "" || is_submitting.get()}
+            >
+                {is_submitting.get() ? "Posting..." : "Post"}
+            </button>
+        </div>
+    </div>;
+}
+
+// Feed Page
+component FeedPage(store: Store<AppState>) {
+    let state = store.get_state();
+    let posts = Signal::new(state.feed_posts.clone());
+
+    let handle_post_created = (new_post: Post) => {
+        let mut current_posts = posts.get();
+        current_posts.insert(0, new_post);
+        posts.set(current_posts);
+    };
+
+    return <div class="feed-page">
+        <div class="container">
+            <div class="feed-layout">
+                <aside class="sidebar-left">
+                    {state.is_authenticated && state.current_user.is_some() ? (
+                        let user = state.current_user.unwrap();
+                        <div class="profile-widget">
+                            <Link to={"/profile/" + user.id.to_string()}>
+                                <img src={user.avatar_url} alt={user.username} class="avatar-large" />
+                                <h3>{user.display_name}</h3>
+                                <p class="username">@{user.username}</p>
+                            </Link>
+                            <div class="stats">
+                                <div class="stat">
+                                    <strong>{user.posts_count}</strong>
+                                    <span>Posts</span>
+                                </div>
+                                <div class="stat">
+                                    <strong>{user.followers_count}</strong>
+                                    <span>Followers</span>
+                                </div>
+                                <div class="stat">
+                                    <strong>{user.following_count}</strong>
+                                    <span>Following</span>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div></div>
+                    )}
+                </aside>
+
+                <main class="feed-main">
+                    {state.is_authenticated && (
+                        <PostComposer onPostCreated={handle_post_created} />
+                    )}
+
+                    <div class="posts-feed">
+                        {posts.get().iter().map(|post| {
+                            <PostCard post={post} onUpdate={(updated_post) => {}} />
+                        })}
+                    </div>
+                </main>
+
+                <aside class="sidebar-right">
+                    <div class="trending-widget">
+                        <h3>Trending</h3>
+                        <div class="trending-item">
+                            <span class="trend-tag">#RavensOne</span>
+                            <span class="trend-count">1.2K posts</span>
+                        </div>
+                        <div class="trending-item">
+                            <span class="trend-tag">#WebAssembly</span>
+                            <span class="trend-count">856 posts</span>
+                        </div>
+                        <div class="trending-item">
+                            <span class="trend-tag">#FullStack</span>
+                            <span class="trend-count">643 posts</span>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>;
+}
+
+// Post Detail Page
+component PostDetailPage() {
+    let params = useParams();
+    let post_id = params.get("id").parse::<i32>().unwrap_or(0);
+
+    let post = Signal::new(None);
+    let comments = Signal::new(vec![]);
+    let loading = Signal::new(true);
+
+    let comment_text = Signal::new("");
+    let is_submitting = Signal::new(false);
+
+    create_effect(|| {
+        let fetched_post = get_post_by_id(post_id);
+        post.set(fetched_post);
+
+        let fetched_comments = get_post_comments(post_id);
+        comments.set(fetched_comments);
+
+        loading.set(false);
+    });
+
+    let handle_submit_comment = || {
+        if comment_text.get().trim() == "" {
+            return;
+        }
+
+        is_submitting.set(true);
+
+        let result = create_comment(post_id, comment_text.get());
+        match result {
+            Ok(new_comment) => {
+                let mut current_comments = comments.get();
+                current_comments.push(new_comment);
+                comments.set(current_comments);
+                comment_text.set("");
+                is_submitting.set(false);
+            }
+            Err(err) => {
+                println!("Error: {}", err);
+                is_submitting.set(false);
+            }
+        }
+    };
+
+    return <div class="post-detail-page">
+        <div class="container">
+            {loading.get() ? (
+                <div class="loading">Loading...</div>
+            ) : (
+                match post.get() {
+                    Some(p) => {
+                        <div class="post-detail">
+                            <PostCard post={p} onUpdate={(updated) => {}} />
+
+                            <div class="comments-section">
+                                <h2>Comments ({comments.get().len()})</h2>
+
+                                <div class="comment-composer">
+                                    <textarea
+                                        placeholder="Write a comment..."
+                                        value={comment_text.get()}
+                                        oninput={(e) => comment_text.set(e.target.value)}
+                                        rows="2"
+                                    />
+                                    <button
+                                        class="btn btn-primary"
+                                        onclick={handle_submit_comment}
+                                        disabled={comment_text.get().trim() == "" || is_submitting.get()}
+                                    >
+                                        {is_submitting.get() ? "Posting..." : "Comment"}
+                                    </button>
+                                </div>
+
+                                <div class="comments-list">
+                                    {comments.get().iter().map(|comment| {
+                                        <div class="comment">
+                                            <img src={comment.author.avatar_url} class="avatar" />
+                                            <div class="comment-content">
+                                                <div class="comment-header">
+                                                    <strong>{comment.author.display_name}</strong>
+                                                    <span class="username">@{comment.author.username}</span>
+                                                    <span class="time">{comment.created_at}</span>
+                                                </div>
+                                                <p>{comment.content}</p>
+                                                <div class="comment-actions">
+                                                    <button class="action-btn-small">
+                                                        {comment.is_liked ? "❤️" : "🤍"} {comment.likes_count}
+                                                    </button>
+                                                    <button class="action-btn-small">Reply</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    None => {
+                        <div class="not-found">
+                            <h1>Post Not Found</h1>
+                            <Link to="/feed" class="btn btn-primary">Back to Feed</Link>
+                        </div>
+                    }
+                }
+            )}
+        </div>
+    </div>;
+}
+
+// User Profile Page
+component ProfilePage() {
+    let params = useParams();
+    let user_id = params.get("id").parse::<i32>().unwrap_or(0);
+
+    let user = Signal::new(None);
+    let posts = Signal::new(vec![]);
+    let loading = Signal::new(true);
+
+    create_effect(|| {
+        let fetched_user = get_user_by_id(user_id);
+        user.set(fetched_user);
+
+        let fetched_posts = get_user_posts(user_id);
+        posts.set(fetched_posts);
+
+        loading.set(false);
+    });
+
+    return <div class="profile-page">
+        <div class="container">
+            {loading.get() ? (
+                <div class="loading">Loading...</div>
+            ) : (
+                match user.get() {
+                    Some(u) => {
+                        <div class="profile-content">
+                            <div class="profile-header">
+                                <img src={u.avatar_url} alt={u.username} class="profile-avatar" />
+                                <div class="profile-info">
+                                    <h1>{u.display_name}</h1>
+                                    <p class="username">@{u.username}</p>
+                                    <p class="bio">{u.bio}</p>
+                                    <div class="profile-stats">
+                                        <div class="stat">
+                                            <strong>{u.posts_count}</strong>
+                                            <span>Posts</span>
+                                        </div>
+                                        <div class="stat">
+                                            <strong>{u.followers_count}</strong>
+                                            <span>Followers</span>
+                                        </div>
+                                        <div class="stat">
+                                            <strong>{u.following_count}</strong>
+                                            <span>Following</span>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary">Follow</button>
+                                </div>
+                            </div>
+
+                            <div class="profile-posts">
+                                <h2>Posts</h2>
+                                {posts.get().iter().map(|post| {
+                                    <PostCard post={post} onUpdate={(updated) => {}} />
+                                })}
+                            </div>
+                        </div>
+                    }
+                    None => {
+                        <div class="not-found">
+                            <h1>User Not Found</h1>
+                            <Link to="/feed" class="btn btn-primary">Back to Feed</Link>
+                        </div>
+                    }
+                }
+            )}
+        </div>
+    </div>;
+}
+
+// Home/Landing Page
+component HomePage() {
+    return <div class="home-page">
+        <div class="hero">
+            <div class="container">
+                <h1>Welcome to SocialWave</h1>
+                <p>Connect with friends, share your thoughts, and discover new ideas</p>
+                <div class="hero-actions">
+                    <Link to="/signup" class="btn btn-primary btn-large">Get Started</Link>
+                    <Link to="/feed" class="btn btn-secondary btn-large">Explore</Link>
+                </div>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="container">
+                <div class="feature-grid">
+                    <div class="feature">
+                        <div class="feature-icon">💬</div>
+                        <h3>Real-time Updates</h3>
+                        <p>Stay connected with instant notifications and live feeds</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Privacy First</h3>
+                        <p>Your data is secure and never shared without permission</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Lightning Fast</h3>
+                        <p>Built with WebAssembly for incredible performance</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>;
+}
+
+// ==================== MAIN APP ====================
+
+component App() {
+    let store = create_app_store();
+
+    // Initialize app state
+    create_effect(|| {
+        initialize_app(store);
+    });
+
+    return <div class="app">
+        <Router>
+            <Header store={store} />
+
+            <main class="main-content">
+                <Route path="/" exact>
+                    <HomePage />
+                </Route>
+
+                <Route path="/feed">
+                    <FeedPage store={store} />
+                </Route>
+
+                <Route path="/post/:id">
+                    <PostDetailPage />
+                </Route>
+
+                <Route path="/profile/:id">
+                    <ProfilePage />
+                </Route>
+
+                <Route path="/explore">
+                    <div class="container">
+                        <h1>Explore</h1>
+                        <p>Discover new people and posts</p>
+                    </div>
+                </Route>
+            </main>
+
+            <footer class="footer">
+                <div class="container">
+                    <p>&copy; 2025 SocialWave. Built with RavensOne.</p>
+                </div>
+            </footer>
+        </Router>
+    </div>;
+}
+
+// Entry point
+fn main() {
+    mount(App(), "#app");
+}

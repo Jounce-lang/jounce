@@ -4,6 +4,7 @@
 // 1. Client-side stubs: Functions that make HTTP calls to server functions
 // 2. Server-side handlers: Express-style route handlers for RPC endpoints
 
+#[allow(unused_imports)] // Identifier is used in tests
 use crate::ast::{FunctionDefinition, FunctionParameter, TypeExpression, Identifier};
 
 #[derive(Debug, Clone)]
@@ -236,15 +237,7 @@ mod tests {
 
         // Parse and split
         let mut lexer = Lexer::new(source.to_string());
-        let mut tokens = Vec::new();
-        loop {
-            let token = lexer.next_token();
-            let is_eof = token.kind == crate::token::TokenKind::Eof;
-            tokens.push(token);
-            if is_eof { break; }
-        }
-
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::new(&mut lexer);
         let program = parser.parse_program().expect("Parse failed");
 
         let mut splitter = CodeSplitter::new();

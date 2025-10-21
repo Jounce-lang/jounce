@@ -1,0 +1,14 @@
+// Test file with intentional errors to showcase beautiful diagnostics
+
+fn main() {
+    let x = 10;
+    let y = "hello";
+
+    // Type error: can't add int and string
+    let z = x + y;
+
+    // Use of undefined variable
+    let result = unknown_var + 5;
+
+    return x;
+}

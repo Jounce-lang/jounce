@@ -1,0 +1,7 @@
+fn add_ten(n) {
+  return n + 10;
+}
+
+fn main() {
+  return add_ten(5);
+}

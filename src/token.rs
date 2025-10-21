@@ -66,6 +66,12 @@ pub enum TokenKind {
     RAngle,      // >
     Slash,       // /
 
+    // JSX-specific tokens
+    JsxText(String),       // Text content between JSX tags
+    JsxSelfClose,          // />
+    JsxOpenBrace,          // { in JSX context (for expressions)
+    JsxCloseBrace,         // } in JSX context
+
     // Meta
     Eof,
     Illegal(char),

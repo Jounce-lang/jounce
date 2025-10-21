@@ -160,7 +160,7 @@ impl Form {
     /// Submit the form
     pub fn submit<F>(&self, handler: F)
     where
-        F: FnOnce() -> (),
+        F: FnOnce(),
     {
         // Mark all fields as touched
         self.mark_all_touched();
@@ -191,7 +191,7 @@ impl Default for Form {
 
 /// Common validators
 pub mod validators {
-    use super::*;
+    
 
     /// Required field validator
     pub fn required() -> impl Fn(&String) -> Result<(), String> {

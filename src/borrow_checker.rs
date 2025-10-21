@@ -39,11 +39,27 @@ impl BorrowSymbolTable {
         }
         None
     }
+
+    fn enter_scope(&mut self) {
+        self.scopes.push(HashMap::new());
+    }
+
+    fn exit_scope(&mut self) {
+        if self.scopes.len() > 1 {
+            self.scopes.pop();
+        }
+    }
 }
 
 /// Traverses a type-checked AST to enforce ownership rules.
 pub struct BorrowChecker {
     symbols: BorrowSymbolTable,
+}
+
+impl Default for BorrowChecker {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BorrowChecker {
@@ -92,7 +108,26 @@ impl BorrowChecker {
             Statement::For(for_stmt) => self.check_for_statement(for_stmt),
             Statement::ForIn(for_in_stmt) => self.check_for_in_statement(for_in_stmt),
             Statement::MacroInvocation(_) => Ok(()),
-            Statement::Function(_) => Ok(()),
+            Statement::Function(func_def) => {
+                // Enter new scope for function body
+                self.symbols.enter_scope();
+
+                // Define function parameters in the new scope
+                for param in &func_def.parameters {
+                    // Parameters get Unknown type since borrow checker doesn't do full type inference
+                    self.symbols.define(param.name.value.clone(), ResolvedType::Unknown);
+                }
+
+                // Check function body
+                for stmt in &func_def.body.statements {
+                    self.check_statement(stmt)?;
+                }
+
+                // Exit function scope
+                self.symbols.exit_scope();
+
+                Ok(())
+            }
             Statement::Component(_) => Ok(()),
             Statement::ExternBlock(_) => Ok(()),
             Statement::Struct(_) => Ok(()),
@@ -272,6 +307,10 @@ impl BorrowChecker {
             }
             Expression::TryOperator(try_expr) => {
                 self.check_expression(&try_expr.expression)?;
+                Ok(ResolvedType::Unknown)
+            }
+            Expression::Await(await_expr) => {
+                self.check_expression(&await_expr.expression)?;
                 Ok(ResolvedType::Unknown)
             }
             Expression::IfExpression(if_expr) => {

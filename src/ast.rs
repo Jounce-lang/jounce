@@ -90,6 +90,7 @@ pub struct StructDefinition {
     pub lifetime_params: Vec<Lifetime>,  // Lifetime parameters like <'a, 'b>
     pub type_params: Vec<Identifier>,  // Generic type parameters like <T, U>
     pub fields: Vec<(Identifier, TypeExpression)>,
+    pub derives: Vec<String>,  // Derive macros: #[derive(Debug, Clone, etc.)]
 }
 
 #[derive(Debug, Clone)]
@@ -98,6 +99,7 @@ pub struct EnumDefinition {
     pub lifetime_params: Vec<Lifetime>,  // Lifetime parameters like <'a, 'b>
     pub type_params: Vec<Identifier>,  // Generic type parameters like <T, U>
     pub variants: Vec<EnumVariant>,
+    pub derives: Vec<String>,  // Derive macros: #[derive(Debug, Clone, etc.)]
 }
 
 #[derive(Debug, Clone)]
@@ -160,6 +162,7 @@ pub enum Expression {
     Dereference(DereferenceExpression),  // *x (dereference)
     Range(RangeExpression),  // start..end or start..=end
     TryOperator(TryOperatorExpression),  // expr? (error propagation)
+    Await(AwaitExpression),  // await expr (async/await)
     Block(BlockStatement),  // { statements... } as an expression (for match arms, etc.)
 }
 
@@ -212,6 +215,11 @@ pub struct RangeExpression {
 #[derive(Debug, Clone)]
 pub struct TryOperatorExpression {
     pub expression: Box<Expression>,  // The expression being tried (must return Result<T, E>)
+}
+
+#[derive(Debug, Clone)]
+pub struct AwaitExpression {
+    pub expression: Box<Expression>,  // The expression being awaited (must return Future<T>)
 }
 
 #[derive(Debug, Clone)]
@@ -291,6 +299,23 @@ pub enum TypeExpression {
 }
 
 // --- JSX AST Nodes ---
+
+/// Represents a complete JSX element: `<tag attr="value">children</tag>` or `<tag />`
+///
+/// # Examples
+/// - Regular element: `<div class="container">Hello</div>`
+/// - Self-closing: `<img src="photo.jpg" />`
+/// - Nested: `<div><span>nested</span></div>`
+/// - With expressions: `<div>{variable}</div>`
+///
+/// # Fields
+/// - `opening_tag`: The opening tag with name, attributes, and self-closing flag
+/// - `children`: Child elements, text nodes, or expressions
+/// - `closing_tag`: The closing tag name (None for self-closing tags)
+///
+/// # Parser Notes
+/// The parser should ensure closing_tag matches opening_tag.name for regular elements.
+/// For self-closing elements (opening_tag.self_closing = true), closing_tag should be None.
 #[derive(Debug, Clone)]
 pub struct JsxElement {
     pub opening_tag: JsxOpeningTag,
@@ -298,6 +323,17 @@ pub struct JsxElement {
     pub closing_tag: Option<Identifier>,
 }
 
+/// Represents the opening tag of a JSX element
+///
+/// # Examples
+/// - `<div>` → name="div", attributes=[], self_closing=false
+/// - `<img src="x.jpg" />` → name="img", attributes=[...], self_closing=true
+/// - `<Button onClick={handler}>` → name="Button", attributes=[...], self_closing=false
+///
+/// # Fields
+/// - `name`: Tag name (lowercase for HTML elements, PascalCase for components)
+/// - `attributes`: List of attributes/props
+/// - `self_closing`: True if tag ends with `/>`
 #[derive(Debug, Clone)]
 pub struct JsxOpeningTag {
     pub name: Identifier,
@@ -305,17 +341,144 @@ pub struct JsxOpeningTag {
     pub self_closing: bool,
 }
 
+/// Represents a child node within JSX content
+///
+/// JSX children can be:
+/// - **Element**: A nested JSX element `<child>`
+/// - **Text**: Plain text content between tags
+/// - **Expression**: An interpolated expression `{variable}` or `{expr + 1}`
+///
+/// # Examples
+/// ```jsx
+/// <div>
+///   Hello          // Text("Hello")
+///   <span>world</span>  // Element(...)
+///   {name}         // Expression(Identifier)
+/// </div>
+/// ```
+///
+/// # Parser Notes
+/// Text is read automatically by the lexer when in JSX mode.
+/// Expressions are enclosed in {} and can be any valid expression.
 #[derive(Debug, Clone)]
 pub enum JsxChild {
+    /// A nested JSX element
     Element(Box<JsxElement>),
+    /// Plain text content (automatically read by lexer in JSX mode)
     Text(String),
-    Expression(Box<Expression>), // For {expr} interpolation
+    /// An expression interpolation: {expr}
+    Expression(Box<Expression>),
 }
 
+/// Represents a JSX attribute (HTML attribute or React prop)
+///
+/// # Examples
+/// - String attribute: `class="container"` → name="class", value=StringLiteral("container")
+/// - Expression attribute: `value={count}` → name="value", value=Identifier(count)
+/// - Event handler: `onClick={handleClick}` → name="onClick", value=Identifier(handleClick)
+/// - Boolean shorthand: `disabled` → name="disabled", value=BoolLiteral(true)
+///
+/// # Attribute Types
+/// - String literals: `attr="value"`
+/// - Expressions: `attr={expr}`
+/// - Event handlers: `onClick={handler}` (Expression containing function/lambda)
+/// - Boolean: `disabled` → implicitly true
+///
+/// # Parser Notes
+/// - For `attr="value"`, value is StringLiteral
+/// - For `attr={expr}`, value is the expression inside {}
+/// - For `attr` alone (no =), value should be BoolLiteral(true)
 #[derive(Debug, Clone)]
 pub struct JsxAttribute {
     pub name: Identifier,
     pub value: Expression,
+}
+
+impl JsxElement {
+    /// Creates a new JSX element with the given tag name and empty children
+    pub fn new(tag_name: String) -> Self {
+        JsxElement {
+            opening_tag: JsxOpeningTag {
+                name: Identifier { value: tag_name.clone() },
+                attributes: Vec::new(),
+                self_closing: false,
+            },
+            children: Vec::new(),
+            closing_tag: Some(Identifier { value: tag_name }),
+        }
+    }
+
+    /// Creates a new self-closing JSX element
+    pub fn new_self_closing(tag_name: String) -> Self {
+        JsxElement {
+            opening_tag: JsxOpeningTag {
+                name: Identifier { value: tag_name },
+                attributes: Vec::new(),
+                self_closing: true,
+            },
+            children: Vec::new(),
+            closing_tag: None,
+        }
+    }
+
+    /// Returns true if this is a self-closing element
+    pub fn is_self_closing(&self) -> bool {
+        self.opening_tag.self_closing
+    }
+
+    /// Returns the tag name
+    pub fn tag_name(&self) -> &str {
+        &self.opening_tag.name.value
+    }
+
+    /// Adds a child to this element
+    pub fn add_child(&mut self, child: JsxChild) {
+        self.children.push(child);
+    }
+
+    /// Adds a text child to this element
+    pub fn add_text(&mut self, text: String) {
+        self.children.push(JsxChild::Text(text));
+    }
+
+    /// Adds an attribute to this element
+    pub fn add_attribute(&mut self, name: String, value: Expression) {
+        self.opening_tag.attributes.push(JsxAttribute {
+            name: Identifier { value: name },
+            value,
+        });
+    }
+}
+
+impl JsxAttribute {
+    /// Creates a new JSX attribute with a string literal value
+    pub fn new_string(name: String, value: String) -> Self {
+        JsxAttribute {
+            name: Identifier { value: name },
+            value: Expression::StringLiteral(value),
+        }
+    }
+
+    /// Creates a new JSX attribute with an expression value
+    pub fn new_expr(name: String, value: Expression) -> Self {
+        JsxAttribute {
+            name: Identifier { value: name },
+            value,
+        }
+    }
+
+    /// Creates a new boolean attribute (just the name, implicitly true)
+    pub fn new_bool(name: String) -> Self {
+        JsxAttribute {
+            name: Identifier { value: name },
+            value: Expression::BoolLiteral(true),
+        }
+    }
+
+    /// Returns true if this is an event handler attribute (starts with "on")
+    pub fn is_event_handler(&self) -> bool {
+        self.name.value.starts_with("on")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -349,7 +512,7 @@ pub struct ComponentDefinition {
     pub name: Identifier,
     pub parameters: Vec<FunctionParameter>,
     pub is_client: bool,  // Components are client-side by default
-    pub body: Box<Expression>,
+    pub body: BlockStatement,  // Component body contains statements
 }
 
 #[derive(Debug, Clone)]

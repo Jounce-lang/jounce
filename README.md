@@ -40,6 +40,7 @@ raven compile app.raven
 - **Code splitting** - Compiler automatically separates server/client bundles
 
 ### **Batteries Included**
+- ✅ **JSX Support** - Full JSX syntax with components and expressions
 - ✅ HTTP client with REST support
 - ✅ Database ORM with type-safe queries
 - ✅ Authentication with JWT & RBAC
@@ -278,9 +279,9 @@ Live at: **https://ravensone-registry.fly.dev**
 ## 🎓 Learning Resources
 
 ### Documentation
+- **[Getting Started Guide](GETTING_STARTED.md)** - Complete beginner tutorial with examples
 - **[Full-Stack Guide](FULLSTACK_GUIDE.md)** - Complete annotation-based development guide
 - **[Project Status](STATUS.md)** - Current progress and roadmap
-- **[Getting Started](docs/GETTING_STARTED.md)** - Step-by-step tutorials
 
 ### Examples
 
@@ -377,7 +378,8 @@ ravensone/
 ### Run Compiler Tests
 ```bash
 cargo test
-# Expected: 178 tests passing (100% pass rate)
+# Expected: 211 tests passing (9 HTTP test failures due to external service)
+# Includes 24 JSX tests (13 lexer + 11 parser)
 ```
 
 ### Test Full Compiler Bridge

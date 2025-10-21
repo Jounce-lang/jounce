@@ -1,0 +1,20 @@
+[package]
+name = "socialwave"
+version = "1.0.0"
+description = "Full-stack social media platform built with RavensOne"
+authors = ["RavensOne Team"]
+license = "MIT"
+
+[dependencies]
+raven-router = "^0.1.0"
+raven-store = "^0.1.0"
+raven-http = "^0.1.0"
+
+[build]
+target = ["client", "server", "wasm"]
+optimize = true
+minify = true
+
+[dev]
+port = 3000
+hot_reload = true

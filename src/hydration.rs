@@ -191,7 +191,7 @@ impl HydrationScheduler {
 
         // Find next component whose dependencies are satisfied
         for i in 0..self.pending.len() {
-            let (component_id, plan) = &self.pending[i];
+            let (_component_id, plan) = &self.pending[i]; // component_id used in future hydration tracking
             let deps_satisfied = plan.dependencies.iter()
                 .all(|dep| self.hydrated.contains(dep));
 
