@@ -1,9 +1,7 @@
 // Enhanced Diagnostics and Error Reporting for RavensOne
 // Beautiful, helpful error messages with colors, context, and suggestions
 
-use crate::errors::CompileError;
 use crate::token::Token;
-use std::fmt;
 
 /// ANSI color codes for terminal output
 pub mod colors {
@@ -53,7 +51,7 @@ impl Severity {
 }
 
 /// Source location for error reporting
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SourceLocation {
     pub file: String,
     pub line: usize,

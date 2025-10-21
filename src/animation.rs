@@ -332,6 +332,7 @@ impl Default for Spring {
 pub struct AnimatedValue {
     pub current: Signal<f64>,
     target: f64,
+    #[allow(dead_code)] // Used in future physics-based animations
     velocity: f64,
     animation: Option<Animation>,
 }

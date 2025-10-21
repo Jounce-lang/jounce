@@ -1,0 +1,15 @@
+fn add_ten(n: i32) -> i32 {
+    return n + 10;
+}
+
+fn test_typed_let() -> i32 {
+    let x: i32 = 42;
+    let adder = add_ten;
+    let y: i32 = 100;
+    return x + y;
+}
+
+fn main() -> i32 {
+    let result = test_typed_let();
+    return result;
+}

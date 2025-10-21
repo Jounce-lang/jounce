@@ -16,6 +16,7 @@ pub mod time;
 pub mod hashmap;
 pub mod string;
 pub mod fs;
+pub mod math;
 
 // Re-export commonly used items
 pub use reactive::{Signal, Computed, Effect};

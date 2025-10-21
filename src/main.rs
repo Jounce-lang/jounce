@@ -143,7 +143,7 @@ fn main() {
             use ravensone_compiler::parser::Parser;
             use ravensone_compiler::js_emitter::JSEmitter;
             use ravensone_compiler::js_minifier::JSMinifier;
-            use ravensone_compiler::LexerExt;
+            
 
             println!("🔥 Compiling full-stack application: {}", path.display());
             if minify {
@@ -163,15 +163,7 @@ fn main() {
             // Parse the source
             println!("   Parsing...");
             let mut lexer = Lexer::new(source_code.clone());
-            let tokens = match lexer.collect_tokens() {
-                Ok(t) => t,
-                Err(e) => {
-                    eprintln!("❌ Lexing failed: {}", e);
-                    return;
-                }
-            };
-
-            let mut parser = Parser::new(tokens);
+            let mut parser = Parser::new(&mut lexer);
             let program = match parser.parse_program() {
                 Ok(p) => {
                     println!("   ✓ Parsed {} statements", p.statements.len());
@@ -222,7 +214,9 @@ fn main() {
                     bytes
                 }
                 Err(e) => {
-                    eprintln!("❌ WASM compilation failed: {}", e);
+                    eprintln!("\n❌ Compilation failed:\n");
+                    let diagnostic_output = Compiler::display_error(&e, Some(&source_code), &path.to_string_lossy());
+                    eprintln!("{}", diagnostic_output);
                     return;
                 }
             };

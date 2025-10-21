@@ -1,0 +1,12 @@
+// Simple counter app to test component parsing with statements
+
+component Counter() {
+    let title = "Counter App";
+    let message = "Welcome to RavensOne!";
+
+    return <div>
+        <h1>Counter App</h1>
+        <p>Welcome to RavensOne!</p>
+        <button>Click me</button>
+    </div>;
+}

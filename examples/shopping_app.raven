@@ -1,0 +1,223 @@
+// E-Commerce Shopping Application
+
+// Helper functions
+fn calculate_discount(price: i32, percent: i32) -> i32 {
+    return price;
+}
+
+fn format_currency(amount: i32) -> String {
+    return "USD";
+}
+
+fn get_stock_status(quantity: i32) -> bool {
+    return quantity > 0;
+}
+
+fn calculate_total(price: i32, quantity: i32) -> i32 {
+    return price + quantity;
+}
+
+// Store Header Component
+component StoreHeader() {
+    let store_name = "TechStore";
+    let cart_count = 3;
+    let is_logged_in = true;
+
+    return <header>
+        <div>
+            <h1>TechStore</h1>
+            <p>Premium Electronics</p>
+        </div>
+        <nav>
+            <a>Products</a>
+            <a>Cart</a>
+            <a>Account</a>
+        </nav>
+    </header>;
+}
+
+// Product Card Component
+component ProductCard() {
+    let product_id = 101;
+    let product_name = "Wireless Mouse";
+    let price = 29;
+    let original_price = 39;
+    let discount = 10;
+    let stock_quantity = 15;
+    let in_stock = get_stock_status(stock_quantity);
+    let rating = 4;
+
+    return <div>
+        <article>
+            <div>
+                <h3>Wireless Mouse</h3>
+                <p>Ergonomic design with precision tracking</p>
+            </div>
+            <div>
+                <div>
+                    <span>Price</span>
+                    <del>Original</del>
+                </div>
+                <div>
+                    <span>Rating</span>
+                    <span>In Stock</span>
+                </div>
+            </div>
+            <div>
+                <button>Add to Cart</button>
+                <button>View Details</button>
+            </div>
+        </article>
+    </div>;
+}
+
+// Shopping Cart Component
+component ShoppingCart() {
+    let cart_items = ["Mouse", "Keyboard", "Monitor"];
+    let item_count = 3;
+    let subtotal = 299;
+    let tax = 25;
+    let shipping = 10;
+    let total = calculate_total(subtotal, tax);
+    let has_items = item_count > 0;
+
+    return <div>
+        <section>
+            <h2>Shopping Cart</h2>
+            <p>Your shopping cart</p>
+        </section>
+        <div>
+            <div>
+                <h4>Cart Items</h4>
+                <ul>
+                    <li>Wireless Mouse</li>
+                    <li>Mechanical Keyboard</li>
+                    <li>Monitor</li>
+                </ul>
+            </div>
+            <div>
+                <h4>Order Summary</h4>
+                <div>
+                    <div>
+                        <span>Subtotal</span>
+                    </div>
+                    <div>
+                        <span>Tax</span>
+                    </div>
+                    <div>
+                        <span>Shipping</span>
+                    </div>
+                    <div>
+                        <strong>Total</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div>
+            <button>Continue Shopping</button>
+            <button>Checkout</button>
+        </div>
+    </div>;
+}
+
+// Product Grid Component
+component ProductGrid() {
+    let products = ["Mouse", "Keyboard", "Monitor", "Headset"];
+    let total_products = 4;
+    let category = "Electronics";
+    let sort_by = "price";
+
+    return <div>
+        <section>
+            <div>
+                <h2>Featured Products</h2>
+                <p>Browse our premium electronics</p>
+            </div>
+            <div>
+                <select>
+                    <option>Sort by Price</option>
+                    <option>Sort by Name</option>
+                    <option>Sort by Rating</option>
+                </select>
+            </div>
+        </section>
+        <div>
+            <div>
+                <h3>Electronics Category</h3>
+                <p>Showing items</p>
+            </div>
+        </div>
+    </div>;
+}
+
+// Checkout Component
+component Checkout() {
+    let customer_name = "John Smith";
+    let email = "john@example.com";
+    let shipping_address = "Main Street";
+    let payment_method = "Credit Card";
+    let order_total = 334;
+    let processing = false;
+
+    return <div>
+        <section>
+            <h2>Checkout</h2>
+            <p>Complete your purchase</p>
+        </section>
+        <div>
+            <div>
+                <h3>Shipping Information</h3>
+                <div>
+                    <label>Full Name</label>
+                    <input></input>
+                </div>
+                <div>
+                    <label>Email</label>
+                    <input></input>
+                </div>
+                <div>
+                    <label>Address</label>
+                    <input></input>
+                </div>
+            </div>
+            <div>
+                <h3>Payment Method</h3>
+                <div>
+                    <label>Card Number</label>
+                    <input></input>
+                </div>
+                <div>
+                    <label>Expiry Date</label>
+                    <input></input>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div>
+                <h3>Order Summary</h3>
+                <p>Review your order</p>
+            </div>
+            <button>Place Order</button>
+        </div>
+    </div>;
+}
+
+// Main Shopping App
+component ShopApp() {
+    let app_name = "TechStore Shopping";
+    let current_view = "products";
+    let cart_total = 334;
+    let items_in_cart = 3;
+
+    return <div>
+        <main>
+            <section>
+                <h1>Welcome to TechStore</h1>
+                <p>Find the best electronics</p>
+            </section>
+            <div>
+                <p>Your shopping experience starts here</p>
+            </div>
+        </main>
+    </div>;
+}

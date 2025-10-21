@@ -5,7 +5,7 @@ use crate::token::{Token, TokenKind};
 pub fn expand_component_macro(input: &[Token]) -> Result<Vec<Token>, String> {
     // A simple parser to extract name and props.
     // A real macro system would have more robust tools for this.
-    let component_name = &input.get(0).ok_or("Expected component name")?.lexeme;
+    let component_name = &input.first().ok_or("Expected component name")?.lexeme;
     let props_struct_name = format!("{}Props", component_name);
     
     // Find the tokens inside the `(...)` for props.

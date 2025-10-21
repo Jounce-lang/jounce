@@ -78,6 +78,16 @@ impl SymbolTable {
         }
         None
     }
+
+    fn enter_scope(&mut self) {
+        self.scopes.push(HashMap::new());
+    }
+
+    fn exit_scope(&mut self) {
+        if self.scopes.len() > 1 {
+            self.scopes.pop();
+        }
+    }
 }
 
 /// Stores struct definitions for type checking
@@ -101,6 +111,7 @@ impl StructTable {
             .cloned()
     }
 
+    #[allow(dead_code)] // For future struct validation
     fn exists(&self, struct_name: &str) -> bool {
         self.structs.contains_key(struct_name)
     }
@@ -124,6 +135,7 @@ impl EnumTable {
         self.enums.get(enum_name)
     }
 
+    #[allow(dead_code)] // Used in future enum validation
     fn exists(&self, enum_name: &str) -> bool {
         self.enums.contains_key(enum_name)
     }
@@ -136,6 +148,12 @@ pub struct SemanticAnalyzer {
     enums: EnumTable,  // Track enum definitions
     in_component: bool,  // Track if we're inside a component
     reactive_variables: HashSet<String>,  // Track reactive variable names
+}
+
+impl Default for SemanticAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SemanticAnalyzer {
@@ -270,14 +288,35 @@ impl SemanticAnalyzer {
             Statement::For(for_stmt) => self.analyze_for_statement(for_stmt),
             Statement::ForIn(for_in_stmt) => self.analyze_for_in_statement(for_in_stmt),
             Statement::MacroInvocation(_) => Ok(ResolvedType::Unit),
-            Statement::Function(_) => Ok(ResolvedType::Unit),
+            Statement::Function(func_def) => {
+                // Enter a new scope for the function body
+                self.symbols.enter_scope();
+
+                // Register function parameters in the new scope
+                for param in &func_def.parameters {
+                    let param_type = self.type_expression_to_resolved_type(&param.type_annotation);
+                    self.symbols.define(param.name.value.clone(), param_type);
+                }
+
+                // Analyze the function body
+                for stmt in &func_def.body.statements {
+                    self.analyze_statement(stmt)?;
+                }
+
+                // Exit the function scope
+                self.symbols.exit_scope();
+
+                Ok(ResolvedType::Unit)
+            }
             Statement::Component(comp) => {
                 // Mark that we're inside a component
                 let was_in_component = self.in_component;
                 self.in_component = true;
 
-                // Analyze component body
-                self.analyze_expression(&comp.body)?;
+                // Analyze component body statements
+                for stmt in &comp.body.statements {
+                    self.analyze_statement(stmt)?;
+                }
 
                 self.in_component = was_in_component;
                 Ok(ResolvedType::Component)
@@ -653,6 +692,12 @@ impl SemanticAnalyzer {
                 // returns a Result<T, E> type and extract the T type
                 self.analyze_expression_with_expected(&try_expr.expression, None)
             }
+            Expression::Await(await_expr) => {
+                // Analyze the inner expression and return its type
+                // In a full implementation, we would verify that the inner expression
+                // returns a Future<T> type and extract the T type
+                self.analyze_expression(&await_expr.expression)
+            }
             Expression::IfExpression(if_expr) => {
                 // Analyze the condition
                 let cond_type =
@@ -701,10 +746,29 @@ impl SemanticAnalyzer {
         let left_type = self.analyze_expression(&expr.left)?;
         let right_type = self.analyze_expression(&expr.right)?;
 
-        if left_type == ResolvedType::Integer && right_type == ResolvedType::Integer {
-            Ok(ResolvedType::Integer)
-        } else {
-            Err(CompileError::Generic(format!(
+        // Handle Unknown and ComplexType gracefully - allow them through
+        match (&left_type, &right_type) {
+            // If either side is Unknown or ComplexType, return Integer (common case)
+            (ResolvedType::Unknown, _) | (_, ResolvedType::Unknown) => Ok(ResolvedType::Integer),
+            (ResolvedType::ComplexType, _) | (_, ResolvedType::ComplexType) => Ok(ResolvedType::Integer),
+            // Both sides are Integer - valid operation
+            (ResolvedType::Integer, ResolvedType::Integer) => Ok(ResolvedType::Integer),
+            // Both sides are Float - valid operation
+            (ResolvedType::Float, ResolvedType::Float) => Ok(ResolvedType::Float),
+            // Mixed Integer/Float - promote to Float
+            (ResolvedType::Integer, ResolvedType::Float) | (ResolvedType::Float, ResolvedType::Integer) => {
+                Ok(ResolvedType::Float)
+            }
+            // String concatenation
+            (ResolvedType::String, ResolvedType::String) if expr.operator.lexeme == "+" => {
+                Ok(ResolvedType::String)
+            }
+            // Comparison operators return Bool
+            _ if matches!(expr.operator.lexeme.as_str(), "==" | "!=" | "<" | ">" | "<=" | ">=") => {
+                Ok(ResolvedType::Bool)
+            }
+            // Invalid operation
+            _ => Err(CompileError::Generic(format!(
                 "Cannot apply operator '{}' to types '{}' and '{}'",
                 expr.operator.lexeme, left_type, right_type
             )))

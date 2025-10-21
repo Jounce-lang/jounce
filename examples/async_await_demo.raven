@@ -1,0 +1,39 @@
+// Async/Await Example
+// Demonstrates basic async/await support in RavensOne
+
+// Async function that simulates fetching user data
+async fn fetch_user(id: i32) -> String {
+    // In a real implementation, this would make an HTTP request
+    // For now, we'll just return a mock value
+    return "User Data";
+}
+
+// Async function that processes data
+async fn process_data(data: String) -> i32 {
+    // Simulate some asynchronous processing
+    return 42;
+}
+
+// Regular async function demonstrating await
+async fn load_and_process_user(user_id: i32) -> i32 {
+    // Use await to wait for the async operation to complete
+    let user_data = await fetch_user(user_id);
+
+    // Use await again for the next async operation
+    let result = await process_data(user_data);
+
+    return result;
+}
+
+// Main function (synchronous)
+fn main() {
+    // Note: In a full implementation, we would need an async runtime
+    // to execute async functions from sync context
+
+    // For now, this is just a syntax demonstration
+    // In production, you would need something like:
+    // let runtime = create_async_runtime();
+    // let result = runtime.block_on(load_and_process_user(123));
+
+    return 0;
+}

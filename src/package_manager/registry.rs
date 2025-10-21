@@ -14,6 +14,12 @@ pub struct RegistryClient {
     credentials_path: PathBuf,
 }
 
+impl Default for RegistryClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RegistryClient {
     /// Create a new registry client
     pub fn new() -> Self {
@@ -469,7 +475,7 @@ impl RegistryClient {
 
         // Add manifest
         archive
-            .append_path_with_name(&package_dir.join("raven.toml"), "raven.toml")
+            .append_path_with_name(package_dir.join("raven.toml"), "raven.toml")
             .map_err(|e| RegistryError::IoError(e.to_string()))?;
 
         // Add README if exists

@@ -8,7 +8,7 @@ use std::rc::Rc;
 /// Unique ID for reactive nodes
 type NodeId = usize;
 
-/// Global reactive context
+// Global reactive context
 thread_local! {
     static REACTIVE_CONTEXT: RefCell<ReactiveContext> = RefCell::new(ReactiveContext::new());
 }
@@ -45,7 +45,7 @@ impl ReactiveContext {
         if let Some(effect_id) = self.current_effect {
             self.dependencies
                 .entry(signal_id)
-                .or_insert_with(HashSet::new)
+                .or_default()
                 .insert(effect_id);
         }
     }
