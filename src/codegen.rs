@@ -551,18 +551,38 @@ impl CodeGenerator {
                 f.instruction(&Instruction::LocalSet(local_index));
             }
             Statement::Assignment(assign_stmt) => {
-                // Generate the value expression
-                self.generate_expression(&assign_stmt.value, f)?;
+                match &assign_stmt.target {
+                    Expression::Identifier(ident) => {
+                        // Generate the value expression
+                        self.generate_expression(&assign_stmt.value, f)?;
 
-                // Get the local index of the target variable
-                let local_index = *self.local_symbol_table.get(&assign_stmt.target.value)
-                    .ok_or_else(|| CompileError::Generic(format!(
-                        "Codegen: undefined variable '{}' in assignment",
-                        assign_stmt.target.value
-                    )))?;
+                        // Get the local index of the target variable
+                        let local_index = *self.local_symbol_table.get(&ident.value)
+                            .ok_or_else(|| CompileError::Generic(format!(
+                                "Codegen: undefined variable '{}' in assignment",
+                                ident.value
+                            )))?;
 
-                // Set the local variable
-                f.instruction(&Instruction::LocalSet(local_index));
+                        // Set the local variable
+                        f.instruction(&Instruction::LocalSet(local_index));
+                    }
+                    Expression::FieldAccess(_) | Expression::IndexAccess(_) => {
+                        // For field access and index access assignments, we need to:
+                        // 1. Evaluate the target expression to get the memory location
+                        // 2. Evaluate the value expression
+                        // 3. Store the value at the memory location
+                        // This is complex and requires memory/heap support
+                        // For now, return an error
+                        return Err(CompileError::Generic(
+                            "Field and index assignments not yet implemented in WASM codegen".to_string()
+                        ));
+                    }
+                    _ => {
+                        return Err(CompileError::Generic(
+                            "Invalid assignment target in WASM codegen".to_string()
+                        ));
+                    }
+                }
             }
             Statement::Return(return_stmt) => {
                 // Generate the return value
@@ -884,6 +904,8 @@ impl CodeGenerator {
                     TokenKind::RAngle => { f.instruction(&Instruction::I32GtS); }
                     TokenKind::LtEq => { f.instruction(&Instruction::I32LeS); }
                     TokenKind::GtEq => { f.instruction(&Instruction::I32GeS); }
+                    TokenKind::AmpAmp => { f.instruction(&Instruction::I32And); }  // Logical AND (works for booleans as 0/1)
+                    TokenKind::PipePipe => { f.instruction(&Instruction::I32Or); }  // Logical OR (works for booleans as 0/1)
                     _ => return Err(CompileError::Generic(format!(
                         "Unsupported operator: {:?}", infix.operator.kind
                     ))),
@@ -1258,6 +1280,15 @@ impl CodeGenerator {
                 for stmt in &block.statements {
                     self.generate_statement(stmt, f)?;
                 }
+            }
+            Expression::MacroCall(macro_call) => {
+                // Process macro arguments recursively (similar to FunctionCall)
+                for arg in &macro_call.arguments {
+                    self.generate_expression(arg, f)?;
+                }
+                // For now, push a placeholder value
+                // In a full implementation, we'd expand the macro here
+                f.instruction(&Instruction::I32Const(0));
             }
         }
         Ok(())
@@ -1840,6 +1871,12 @@ impl CodeGenerator {
                     }
                 }
             }
+            Expression::MacroCall(macro_call) => {
+                // Collect lambdas from macro arguments
+                for arg in &macro_call.arguments {
+                    self.collect_lambdas_from_expression(arg);
+                }
+            }
             // Base cases - no nested expressions to search
             Expression::IntegerLiteral(_)
             | Expression::FloatLiteral(_)
@@ -1961,6 +1998,12 @@ impl CodeGenerator {
             Expression::Lambda(_) => {
                 // Don't traverse into nested lambdas - they have their own scope
             }
+            Expression::MacroCall(macro_call) => {
+                // Collect variable references from macro arguments
+                for arg in &macro_call.arguments {
+                    self.collect_variable_references(arg, vars);
+                }
+            }
             // Base cases - no variable references
             Expression::IntegerLiteral(_)
             | Expression::FloatLiteral(_)
@@ -1981,7 +2024,9 @@ impl CodeGenerator {
                 self.collect_variable_references(&let_stmt.value, vars);
             }
             Statement::Assignment(assign_stmt) => {
-                vars.insert(assign_stmt.target.value.clone());
+                // Collect variable references from the target
+                self.collect_variable_references(&assign_stmt.target, vars);
+                // Collect variable references from the value
                 self.collect_variable_references(&assign_stmt.value, vars);
             }
             Statement::Return(return_stmt) => {

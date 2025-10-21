@@ -61,7 +61,15 @@ impl Lexer {
                 }
             }
             ';' => Token::new(TokenKind::Semicolon, ";".to_string(), self.line, start_col),
-            '|' => Token::new(TokenKind::Pipe, "|".to_string(), self.line, start_col),
+            '|' => {
+                if self.peek() == '|' {
+                    self.read_char();
+                    self.read_char();
+                    return Token::new(TokenKind::PipePipe, "||".to_string(), self.line, start_col);
+                } else {
+                    Token::new(TokenKind::Pipe, "|".to_string(), self.line, start_col)
+                }
+            }
             ',' => Token::new(TokenKind::Comma, ",".to_string(), self.line, start_col),
             '.' => {
                 // Check for .. or ..=
@@ -82,7 +90,15 @@ impl Lexer {
             '+' => Token::new(TokenKind::Plus, "+".to_string(), self.line, start_col),
             '*' => Token::new(TokenKind::Star, "*".to_string(), self.line, start_col),
             '%' => Token::new(TokenKind::Percent, "%".to_string(), self.line, start_col),
-            '&' => Token::new(TokenKind::Ampersand, "&".to_string(), self.line, start_col),
+            '&' => {
+                if self.peek() == '&' {
+                    self.read_char();
+                    self.read_char();
+                    return Token::new(TokenKind::AmpAmp, "&&".to_string(), self.line, start_col);
+                } else {
+                    Token::new(TokenKind::Ampersand, "&".to_string(), self.line, start_col)
+                }
+            }
             '?' => Token::new(TokenKind::Question, "?".to_string(), self.line, start_col),
             '!' => {
                 if self.peek() == '=' {

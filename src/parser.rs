@@ -4,9 +4,11 @@ use crate::lexer::Lexer;
 use crate::token::{Token, TokenKind};
 use std::collections::HashMap;
 
-#[derive(PartialEq, PartialOrd, Clone, Copy)]
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 enum Precedence {
     Lowest,
+    LogicalOr,   // ||
+    LogicalAnd,  // &&
     Equals,      // == !=
     LessGreater, // < > <= >=
     Sum,         // + -
@@ -16,6 +18,8 @@ enum Precedence {
 lazy_static::lazy_static! {
     static ref PRECEDENCES: HashMap<TokenKind, Precedence> = {
         let mut m = HashMap::new();
+        m.insert(TokenKind::PipePipe, Precedence::LogicalOr);  // ||
+        m.insert(TokenKind::AmpAmp, Precedence::LogicalAnd);   // &&
         m.insert(TokenKind::Eq, Precedence::Equals);
         m.insert(TokenKind::NotEq, Precedence::Equals);
         m.insert(TokenKind::LAngle, Precedence::LessGreater);
@@ -81,11 +85,23 @@ impl<'a> Parser<'a> {
                 }
             },
             TokenKind::Identifier => {
-                // Check if this is an assignment
-                if self.peek_token().kind == TokenKind::Assign {
-                    self.parse_assignment_statement().map(Statement::Assignment)
+                // Parse as expression first, then check if it's actually an assignment
+                // This handles both simple assignments (x = 5) and complex ones (obj.field = 5, arr[0] = 5)
+                let expr = self.parse_expression(Precedence::Lowest)?;
+
+                // Check if this is followed by an assignment operator
+                if self.current_token().kind == TokenKind::Assign {
+                    self.next_token(); // consume =
+                    let value = self.parse_expression(Precedence::Lowest)?;
+                    let stmt = Statement::Assignment(AssignmentStatement {
+                        target: expr,
+                        value,
+                    });
+                    // Don't return early - let the semicolon be consumed below
+                    Ok(stmt)
                 } else {
-                    self.parse_expression_statement().map(Statement::Expression)
+                    // Otherwise it's just an expression statement
+                    Ok(Statement::Expression(expr))
                 }
             }
             _ => self.parse_expression_statement().map(Statement::Expression),
@@ -498,6 +514,10 @@ impl<'a> Parser<'a> {
 
     fn parse_let_statement(&mut self) -> Result<LetStatement, CompileError> {
         self.expect_and_consume(&TokenKind::Let)?;
+
+        // Check for optional mut keyword: let mut x = ...
+        let mutable = self.consume_if_matches(&TokenKind::Mut);
+
         let name = self.parse_identifier()?;
 
         // Parse optional type annotation: let x: Type = value
@@ -509,7 +529,7 @@ impl<'a> Parser<'a> {
 
         self.expect_and_consume(&TokenKind::Assign)?;
         let value = self.parse_expression(Precedence::Lowest)?;
-        Ok(LetStatement { name, type_annotation, value })
+        Ok(LetStatement { name, mutable, type_annotation, value })
     }
 
     fn parse_return_statement(&mut self) -> Result<ReturnStatement, CompileError> {
@@ -529,7 +549,9 @@ impl<'a> Parser<'a> {
 
     fn parse_if_statement(&mut self) -> Result<IfStatement, CompileError> {
         self.expect_and_consume(&TokenKind::If)?;
-        let condition = self.parse_expression(Precedence::Lowest)?;
+        // Disable struct literal parsing in if conditions to avoid ambiguity with the then block
+        // Example: `if x { }` should parse `x` as condition and `{ }` as block, not `x {}` as struct literal
+        let condition = self.parse_expression_no_struct_literals()?;
         self.expect_and_consume(&TokenKind::LBrace)?;
 
         // Parse then branch
@@ -642,10 +664,13 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::In)?;
 
         // Parse iterator expression
-        let iterator = self.parse_expression(Precedence::Lowest)?;
+        // Disable struct literal parsing to avoid ambiguity with the loop body
+        // Example: `for x in list { }` should parse `list` as iterator and `{ }` as body, not `list {}` as struct literal
+        let iterator = self.parse_expression_no_struct_literals()?;
 
         // Parse loop body
         self.expect_and_consume(&TokenKind::LBrace)?;
+
         let mut body_statements = Vec::new();
         while self.current_token().kind != TokenKind::RBrace {
             body_statements.push(self.parse_statement()?);
@@ -660,7 +685,9 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_assignment_statement(&mut self) -> Result<AssignmentStatement, CompileError> {
-        let target = self.parse_identifier()?;
+        // This function is no longer used - assignment parsing is now integrated into parse_statement
+        // Keeping it for backwards compatibility
+        let target = Expression::Identifier(self.parse_identifier()?);
         self.expect_and_consume(&TokenKind::Assign)?;
         let value = self.parse_expression(Precedence::Lowest)?;
         Ok(AssignmentStatement { target, value })
@@ -698,7 +725,15 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, CompileError> {
-        let mut left_expr = self.parse_prefix()?;
+        self.parse_expression_internal(precedence, true)
+    }
+
+    fn parse_expression_no_struct_literals(&mut self) -> Result<Expression, CompileError> {
+        self.parse_expression_internal(Precedence::Lowest, false)
+    }
+
+    fn parse_expression_internal(&mut self, precedence: Precedence, allow_struct_literals: bool) -> Result<Expression, CompileError> {
+        let mut left_expr = self.parse_prefix_internal(allow_struct_literals)?;
         while self.current_token().kind != TokenKind::Semicolon && precedence < self.current_precedence() {
             left_expr = self.parse_infix(left_expr)?;
         }
@@ -706,6 +741,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_prefix(&mut self) -> Result<Expression, CompileError> {
+        self.parse_prefix_internal(true)
+    }
+
+    fn parse_prefix_internal(&mut self, allow_struct_literals: bool) -> Result<Expression, CompileError> {
         let token = self.current_token().clone();
         match &token.kind {
             TokenKind::Identifier => {
@@ -713,7 +752,11 @@ impl<'a> Parser<'a> {
                 let ident = Identifier { value: token.lexeme };
 
                 // Check if this is a struct literal (Identifier { field: value, ... })
-                if self.current_token().kind == TokenKind::LBrace {
+                // A struct literal must have { followed by either:
+                // - } (empty struct)
+                // - Identifier (field name)
+                // If we see { followed by keywords like if/while/for/let/return, it's a block, not a struct literal
+                if allow_struct_literals && self.current_token().kind == TokenKind::LBrace && self.is_struct_literal_ahead() {
                     return self.parse_struct_literal(ident);
                 }
 
@@ -766,6 +809,15 @@ impl<'a> Parser<'a> {
                             expr = Expression::TryOperator(TryOperatorExpression {
                                 expression: Box::new(expr),
                             });
+                        }
+                        TokenKind::Bang => {
+                            // Handle macro invocation: vec![], println!(), etc.
+                            // expr should be an Identifier at this point
+                            if let Expression::Identifier(macro_name) = expr {
+                                expr = self.parse_macro_call(macro_name)?;
+                            } else {
+                                return Err(self.error("Macro invocation must follow an identifier"));
+                            }
                         }
                         _ => break,
                     }
@@ -888,6 +940,34 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::RParen)?;
         Ok(Expression::FunctionCall(FunctionCall {
             function: Box::new(function),
+            arguments,
+        }))
+    }
+
+    fn parse_macro_call(&mut self, name: Identifier) -> Result<Expression, CompileError> {
+        // Consume the ! token
+        self.expect_and_consume(&TokenKind::Bang)?;
+
+        // Macros can use (), [], or {} delimiters
+        let (open_delimiter, close_delimiter) = match self.current_token().kind {
+            TokenKind::LParen => (TokenKind::LParen, TokenKind::RParen),
+            TokenKind::LBracket => (TokenKind::LBracket, TokenKind::RBracket),
+            TokenKind::LBrace => (TokenKind::LBrace, TokenKind::RBrace),
+            _ => return Err(self.error("Expected (, [, or { after macro name!")),
+        };
+
+        self.expect_and_consume(&open_delimiter)?;
+        let mut arguments = Vec::new();
+
+        while self.current_token().kind != close_delimiter {
+            arguments.push(self.parse_expression(Precedence::Lowest)?);
+            if !self.consume_if_matches(&TokenKind::Comma) { break; }
+        }
+
+        self.expect_and_consume(&close_delimiter)?;
+
+        Ok(Expression::MacroCall(MacroCall {
+            name,
             arguments,
         }))
     }
@@ -1383,6 +1463,20 @@ impl<'a> Parser<'a> {
             true
         } else {
             false
+        }
+    }
+
+    // Check if the tokens ahead look like a struct literal
+    // A struct literal after { must have either:
+    // - } (empty struct)
+    // - Identifier (field name)
+    // Keywords like if/while/for/let/return indicate a block, not a struct literal
+    fn is_struct_literal_ahead(&self) -> bool {
+        // Current token should be {, peek token tells us what's inside
+        match self.peek_token().kind {
+            TokenKind::RBrace => true,  // Empty struct literal: Name {}
+            TokenKind::Identifier => true,  // Field name: Name { field: value }
+            _ => false,  // Keywords or other tokens: not a struct literal
         }
     }
 

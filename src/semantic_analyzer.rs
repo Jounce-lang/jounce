@@ -276,12 +276,26 @@ impl SemanticAnalyzer {
             Statement::Use(use_stmt) => self.analyze_use_statement(use_stmt),
             Statement::Let(let_stmt) => self.analyze_let_statement(let_stmt),
             Statement::Assignment(assign_stmt) => {
-                // Check that variable exists
-                if self.symbols.lookup(&assign_stmt.target.value).is_none() {
-                    return Err(CompileError::Generic(format!(
-                        "Cannot assign to undefined variable '{}'",
-                        assign_stmt.target.value
-                    )));
+                // Check that the target is a valid assignment target
+                match &assign_stmt.target {
+                    Expression::Identifier(ident) => {
+                        // Check that variable exists
+                        if self.symbols.lookup(&ident.value).is_none() {
+                            return Err(CompileError::Generic(format!(
+                                "Cannot assign to undefined variable '{}'",
+                                ident.value
+                            )));
+                        }
+                    }
+                    Expression::FieldAccess(_) | Expression::IndexAccess(_) => {
+                        // For field access and index access, analyze the target expression
+                        self.analyze_expression(&assign_stmt.target)?;
+                    }
+                    _ => {
+                        return Err(CompileError::Generic(
+                            "Invalid assignment target".to_string()
+                        ));
+                    }
                 }
 
                 // Analyze the value expression
@@ -806,6 +820,15 @@ impl SemanticAnalyzer {
                 }
                 Ok(last_type)
             }
+            Expression::MacroCall(macro_call) => {
+                // Analyze all macro arguments
+                for arg in &macro_call.arguments {
+                    self.analyze_expression_with_expected(arg, None)?;
+                }
+                // For now, return Unknown type for macro calls
+                // In a full implementation, we'd expand the macro and analyze its result
+                Ok(ResolvedType::Unknown)
+            }
         }
     }
 
@@ -829,6 +852,10 @@ impl SemanticAnalyzer {
             // String concatenation
             (ResolvedType::String, ResolvedType::String) if expr.operator.lexeme == "+" => {
                 Ok(ResolvedType::String)
+            }
+            // Logical operators (&&, ||) with Bool operands
+            (ResolvedType::Bool, ResolvedType::Bool) if matches!(expr.operator.lexeme.as_str(), "&&" | "||") => {
+                Ok(ResolvedType::Bool)
             }
             // Comparison operators return Bool
             _ if matches!(expr.operator.lexeme.as_str(), "==" | "!=" | "<" | ">" | "<=" | ">=") => {
