@@ -735,7 +735,7 @@ impl<'a> Parser<'a> {
     fn parse_expression_internal(&mut self, precedence: Precedence, allow_struct_literals: bool) -> Result<Expression, CompileError> {
         let mut left_expr = self.parse_prefix_internal(allow_struct_literals)?;
         while self.current_token().kind != TokenKind::Semicolon && precedence < self.current_precedence() {
-            left_expr = self.parse_infix(left_expr)?;
+            left_expr = self.parse_infix(left_expr, allow_struct_literals)?;
         }
         Ok(left_expr)
     }
@@ -746,98 +746,33 @@ impl<'a> Parser<'a> {
 
     fn parse_prefix_internal(&mut self, allow_struct_literals: bool) -> Result<Expression, CompileError> {
         let token = self.current_token().clone();
-        match &token.kind {
+
+        // Step 1: Parse the base/atomic expression
+        let mut expr = match &token.kind {
             TokenKind::Identifier => {
                 self.next_token();
                 let ident = Identifier { value: token.lexeme };
 
                 // Check if this is a struct literal (Identifier { field: value, ... })
-                // A struct literal must have { followed by either:
-                // - } (empty struct)
-                // - Identifier (field name)
-                // If we see { followed by keywords like if/while/for/let/return, it's a block, not a struct literal
                 if allow_struct_literals && self.current_token().kind == TokenKind::LBrace && self.is_struct_literal_ahead() {
                     return self.parse_struct_literal(ident);
                 }
 
-                let mut expr = Expression::Identifier(ident);
-
-                // Check for postfix operations (function call, field access, namespace resolution, array indexing, or try operator)
-                loop {
-                    match self.current_token().kind {
-                        TokenKind::LParen => {
-                            expr = self.parse_function_call(expr)?;
-                        }
-                        TokenKind::Dot => {
-                            self.next_token(); // consume the dot
-                            let field = self.parse_identifier()?;
-                            expr = Expression::FieldAccess(FieldAccessExpression {
-                                object: Box::new(expr),
-                                field,
-                            });
-                        }
-                        TokenKind::DoubleColon => {
-                            // Handle namespace resolution: console::log()
-                            self.next_token(); // consume the ::
-                            let next_ident = self.parse_identifier()?;
-
-                            // Build the full namespaced identifier
-                            if let Expression::Identifier(base_ident) = expr {
-                                let namespaced_name = Identifier {
-                                    value: format!("{}::{}", base_ident.value, next_ident.value)
-                                };
-                                expr = Expression::Identifier(namespaced_name);
-                            } else {
-                                // If the left side is not an identifier, treat it as field access for now
-                                expr = Expression::FieldAccess(FieldAccessExpression {
-                                    object: Box::new(expr),
-                                    field: next_ident,
-                                });
-                            }
-                        }
-                        TokenKind::LBracket => {
-                            self.next_token(); // consume the [
-                            let index = self.parse_expression(Precedence::Lowest)?;
-                            self.expect_and_consume(&TokenKind::RBracket)?;
-                            expr = Expression::IndexAccess(IndexExpression {
-                                array: Box::new(expr),
-                                index: Box::new(index),
-                            });
-                        }
-                        TokenKind::Question => {
-                            self.next_token(); // consume the ?
-                            expr = Expression::TryOperator(TryOperatorExpression {
-                                expression: Box::new(expr),
-                            });
-                        }
-                        TokenKind::Bang => {
-                            // Handle macro invocation: vec![], println!(), etc.
-                            // expr should be an Identifier at this point
-                            if let Expression::Identifier(macro_name) = expr {
-                                expr = self.parse_macro_call(macro_name)?;
-                            } else {
-                                return Err(self.error("Macro invocation must follow an identifier"));
-                            }
-                        }
-                        _ => break,
-                    }
-                }
-
-                Ok(expr)
+                Expression::Identifier(ident)
             },
-            TokenKind::Integer(val) => { self.next_token(); Ok(Expression::IntegerLiteral(*val)) },
-            TokenKind::Float(val) => { self.next_token(); Ok(Expression::FloatLiteral(val.clone())) },
-            TokenKind::String(val) => { self.next_token(); Ok(Expression::StringLiteral(val.clone())) },
-            TokenKind::Bool(val) => { self.next_token(); Ok(Expression::BoolLiteral(*val)) },
+            TokenKind::Integer(val) => { self.next_token(); Expression::IntegerLiteral(*val) },
+            TokenKind::Float(val) => { self.next_token(); Expression::FloatLiteral(val.clone()) },
+            TokenKind::String(val) => { self.next_token(); Expression::StringLiteral(val.clone()) },
+            TokenKind::Bool(val) => { self.next_token(); Expression::BoolLiteral(*val) },
             TokenKind::Minus | TokenKind::Bang => {
                 // Parse prefix expressions: -x or !x
                 let operator = token.clone();
                 self.next_token();
                 let right = self.parse_expression(Precedence::Product)?; // High precedence for prefix ops
-                Ok(Expression::Prefix(PrefixExpression {
+                Expression::Prefix(PrefixExpression {
                     operator,
                     right: Box::new(right),
-                }))
+                })
             },
             TokenKind::Ampersand => {
                 // Parse borrow expression: &x or &mut x
@@ -845,38 +780,38 @@ impl<'a> Parser<'a> {
                 // Check for &mut x (mutable borrow)
                 if self.consume_if_matches(&TokenKind::Mut) {
                     let expression = self.parse_expression(Precedence::Product)?;
-                    Ok(Expression::MutableBorrow(MutableBorrowExpression {
+                    Expression::MutableBorrow(MutableBorrowExpression {
                         expression: Box::new(expression),
-                    }))
+                    })
                 } else {
                     // Otherwise it's &x (immutable borrow)
                     let expression = self.parse_expression(Precedence::Product)?;
-                    Ok(Expression::Borrow(BorrowExpression {
+                    Expression::Borrow(BorrowExpression {
                         expression: Box::new(expression),
-                    }))
+                    })
                 }
             },
             TokenKind::Star => {
                 // Parse dereference expression: *x
                 self.next_token();
                 let expression = self.parse_expression(Precedence::Product)?; // High precedence for prefix ops
-                Ok(Expression::Dereference(DereferenceExpression {
+                Expression::Dereference(DereferenceExpression {
                     expression: Box::new(expression),
-                }))
+                })
             },
             TokenKind::Await => {
                 // Parse await expression: await future_expr
                 self.next_token();
                 let expression = self.parse_expression(Precedence::Product)?; // High precedence for prefix ops
-                Ok(Expression::Await(AwaitExpression {
+                Expression::Await(AwaitExpression {
                     expression: Box::new(expression),
-                }))
+                })
             },
-            TokenKind::LParen => self.parse_lambda_or_grouped(),
-            TokenKind::LAngle => self.parse_jsx_element(),
-            TokenKind::Pipe => self.parse_lambda_with_pipes(),
-            TokenKind::LBracket => self.parse_array_literal(),
-            TokenKind::Match => self.parse_match_expression(),
+            TokenKind::LParen => self.parse_lambda_or_grouped()?,
+            TokenKind::LAngle => self.parse_jsx_element()?,
+            TokenKind::Pipe => self.parse_lambda_with_pipes()?,
+            TokenKind::LBracket => self.parse_array_literal()?,
+            TokenKind::Match => self.parse_match_expression()?,
             TokenKind::If => {
                 // Parse if-expression: if cond { then_expr } else { else_expr }
                 self.next_token(); // consume if
@@ -910,11 +845,11 @@ impl<'a> Parser<'a> {
                     None
                 };
 
-                Ok(Expression::IfExpression(IfExpression {
+                Expression::IfExpression(IfExpression {
                     condition,
                     then_expr,
                     else_expr,
-                }))
+                })
             },
             TokenKind::LBrace => {
                 // Parse block as expression: { statements... }
@@ -924,13 +859,119 @@ impl<'a> Parser<'a> {
                     statements.push(self.parse_statement()?);
                 }
                 self.expect_and_consume(&TokenKind::RBrace)?;
-                Ok(Expression::Block(BlockStatement { statements }))
+                Expression::Block(BlockStatement { statements })
             },
-            _ => Err(self.error(&format!("No prefix parse function for {:?}", token.kind))),
+            _ => return Err(self.error(&format!("No prefix parse function for {:?}", token.kind))),
+        };
+
+        // Step 2: Apply postfix operations (function call, field access, namespace resolution, array indexing, try operator)
+        loop {
+            match self.current_token().kind {
+                TokenKind::LParen => {
+                    expr = self.parse_function_call(expr, None)?;
+                }
+                TokenKind::Dot => {
+                    self.next_token(); // consume the dot
+                    let field = self.parse_identifier()?;
+                    expr = Expression::FieldAccess(FieldAccessExpression {
+                        object: Box::new(expr),
+                        field,
+                    });
+                }
+                TokenKind::DoubleColon => {
+                    self.next_token(); // consume the ::
+
+                    // Check for turbofish syntax: ::<T>
+                    if self.current_token().kind == TokenKind::LAngle {
+                        self.next_token(); // consume <
+                        let mut type_params = Vec::new();
+
+                        // Parse type parameters
+                        while self.current_token().kind != TokenKind::RAngle {
+                            type_params.push(self.parse_type_expression()?);
+                            if !self.consume_if_matches(&TokenKind::Comma) { break; }
+                        }
+                        self.expect_and_consume(&TokenKind::RAngle)?;
+
+                        // After turbofish, we must have a function call
+                        expr = self.parse_function_call(expr, Some(type_params))?;
+                    } else {
+                        // Handle namespace resolution: console::log()
+                        let next_ident = self.parse_identifier()?;
+
+                        // Build the full namespaced identifier
+                        if let Expression::Identifier(base_ident) = expr {
+                            let namespaced_name = Identifier {
+                                value: format!("{}::{}", base_ident.value, next_ident.value)
+                            };
+                            expr = Expression::Identifier(namespaced_name);
+                        } else {
+                            // If the left side is not an identifier, treat it as field access for now
+                            expr = Expression::FieldAccess(FieldAccessExpression {
+                                object: Box::new(expr),
+                                field: next_ident,
+                            });
+                        }
+                    }
+                }
+                TokenKind::LBracket => {
+                    self.next_token(); // consume the [
+                    let index = self.parse_expression(Precedence::Lowest)?;
+                    self.expect_and_consume(&TokenKind::RBracket)?;
+                    expr = Expression::IndexAccess(IndexExpression {
+                        array: Box::new(expr),
+                        index: Box::new(index),
+                    });
+                }
+                TokenKind::Question => {
+                    self.next_token(); // consume the ?
+
+                    // Distinguish between try operator (x?) and ternary (x ? y : z)
+                    // Try operator: ? is followed by semicolon, comma, closing brace/paren, or end of statement
+                    // Ternary: ? is followed by an expression
+                    match self.current_token().kind {
+                        TokenKind::Semicolon | TokenKind::Comma | TokenKind::RBrace |
+                        TokenKind::RParen | TokenKind::RBracket | TokenKind::Eof => {
+                            // Try operator
+                            expr = Expression::TryOperator(TryOperatorExpression {
+                                expression: Box::new(expr),
+                            });
+                        }
+                        _ => {
+                            // Ternary operator - parse true branch
+                            let true_expr = Box::new(self.parse_expression(Precedence::Lowest)?);
+
+                            // Expect colon
+                            self.expect_and_consume(&TokenKind::Colon)?;
+
+                            // Parse false branch
+                            let false_expr = Box::new(self.parse_expression(Precedence::Lowest)?);
+
+                            expr = Expression::Ternary(TernaryExpression {
+                                condition: Box::new(expr),
+                                true_expr,
+                                false_expr,
+                            });
+                        }
+                    }
+                }
+                TokenKind::Bang => {
+                    // Handle macro invocation: vec![], println!(), etc.
+                    // expr should be an Identifier at this point
+                    if let Expression::Identifier(macro_name) = expr {
+                        expr = self.parse_macro_call(macro_name)?;
+                    } else {
+                        return Err(self.error("Macro invocation must follow an identifier"));
+                    }
+                }
+                _ => break,
+            }
         }
+
+        Ok(expr)
     }
 
-    fn parse_function_call(&mut self, function: Expression) -> Result<Expression, CompileError> {
+    fn parse_function_call(&mut self, function: Expression, type_params: Option<Vec<TypeExpression>>) -> Result<Expression, CompileError> {
         self.expect_and_consume(&TokenKind::LParen)?;
         let mut arguments = Vec::new();
         while self.current_token().kind != TokenKind::RParen {
@@ -941,6 +982,7 @@ impl<'a> Parser<'a> {
         Ok(Expression::FunctionCall(FunctionCall {
             function: Box::new(function),
             arguments,
+            type_params,
         }))
     }
 
@@ -1121,7 +1163,7 @@ impl<'a> Parser<'a> {
                 loop {
                     match self.current_token().kind {
                         TokenKind::LParen => {
-                            expr = self.parse_function_call(expr)?;
+                            expr = self.parse_function_call(expr, None)?;
                         }
                         TokenKind::Dot => {
                             self.next_token();
@@ -1281,11 +1323,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_infix(&mut self, left: Expression) -> Result<Expression, CompileError> {
+    fn parse_infix(&mut self, left: Expression, allow_struct_literals: bool) -> Result<Expression, CompileError> {
         let operator = self.current_token().clone();
         let precedence = self.current_precedence();
         self.next_token();
-        let right = self.parse_expression(precedence)?;
+        let right = self.parse_expression_internal(precedence, allow_struct_literals)?;
         Ok(Expression::Infix(InfixExpression { left: Box::new(left), operator, right: Box::new(right) }))
     }
 

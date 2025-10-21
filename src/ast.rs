@@ -164,6 +164,7 @@ pub enum Expression {
     Dereference(DereferenceExpression),  // *x (dereference)
     Range(RangeExpression),  // start..end or start..=end
     TryOperator(TryOperatorExpression),  // expr? (error propagation)
+    Ternary(TernaryExpression),  // condition ? true_expr : false_expr
     Await(AwaitExpression),  // await expr (async/await)
     Block(BlockStatement),  // { statements... } as an expression (for match arms, etc.)
 }
@@ -217,6 +218,13 @@ pub struct RangeExpression {
 #[derive(Debug, Clone)]
 pub struct TryOperatorExpression {
     pub expression: Box<Expression>,  // The expression being tried (must return Result<T, E>)
+}
+
+#[derive(Debug, Clone)]
+pub struct TernaryExpression {
+    pub condition: Box<Expression>,     // The condition to test
+    pub true_expr: Box<Expression>,     // Expression if condition is true
+    pub false_expr: Box<Expression>,    // Expression if condition is false
 }
 
 #[derive(Debug, Clone)]
@@ -487,6 +495,7 @@ impl JsxAttribute {
 pub struct FunctionCall {
     pub function: Box<Expression>,
     pub arguments: Vec<Expression>,
+    pub type_params: Option<Vec<TypeExpression>>,  // For turbofish syntax: func::<T>()
 }
 
 #[derive(Debug, Clone)]
