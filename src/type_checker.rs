@@ -487,6 +487,17 @@ impl TypeChecker {
                 self.infer_expression(&try_expr.expression)
             }
 
+            Expression::Ternary(ternary) => {
+                // Infer types of all three parts
+                let _condition_type = self.infer_expression(&ternary.condition)?;
+                let true_type = self.infer_expression(&ternary.true_expr)?;
+                let _false_type = self.infer_expression(&ternary.false_expr)?;
+
+                // In a full implementation, we'd verify both branches have compatible types
+                // For now, return the true branch type
+                Ok(true_type)
+            }
+
             Expression::Await(await_expr) => {
                 // Process the inner expression recursively
                 // In a full implementation, we would verify that the inner expression

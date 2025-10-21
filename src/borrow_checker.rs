@@ -196,10 +196,19 @@ impl BorrowChecker {
         // Check the iterator expression
         self.check_expression(&stmt.iterator)?;
 
+        // Enter a new scope for the loop body
+        self.symbols.enter_scope();
+
+        // Register the loop variable in the symbol table
+        self.symbols.define(stmt.variable.value.clone(), ResolvedType::Unknown);
+
         // Check body statements
         for s in &stmt.body.statements {
             self.check_statement(s)?;
         }
+
+        // Exit the loop scope
+        self.symbols.exit_scope();
 
         Ok(())
     }
@@ -322,6 +331,13 @@ impl BorrowChecker {
             Expression::TryOperator(try_expr) => {
                 self.check_expression(&try_expr.expression)?;
                 Ok(ResolvedType::Unknown)
+            }
+            Expression::Ternary(ternary) => {
+                self.check_expression(&ternary.condition)?;
+                let true_type = self.check_expression(&ternary.true_expr)?;
+                self.check_expression(&ternary.false_expr)?;
+                // In a full implementation, we'd check that both branches have the same type
+                Ok(true_type)
             }
             Expression::Await(await_expr) => {
                 self.check_expression(&await_expr.expression)?;
