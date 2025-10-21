@@ -1,0 +1,1028 @@
+// 📋 TaskBoard - Project Management & Collaboration Platform
+// Demonstrates: Kanban Boards, Task Management, Team Collaboration, Forms, Complex State
+
+use raven_router::{Router, Route, Link, useRouter, useParams};
+use raven_store::{Store, create_store, Signal, computed, persist};
+use raven_forms::{use_form, required, minLength, maxLength};
+
+// ==================== TYPE DEFINITIONS ====================
+
+struct User {
+    id: i32,
+    name: String,
+    email: String,
+    avatar_url: String,
+    role: String,
+}
+
+struct Project {
+    id: i32,
+    name: String,
+    description: String,
+    color: String,
+    icon: String,
+    members: Vec<User>,
+    created_at: String,
+    owner_id: i32,
+}
+
+struct Task {
+    id: i32,
+    project_id: i32,
+    title: String,
+    description: String,
+    status: TaskStatus,  // Backlog, Todo, InProgress, Review, Done
+    priority: TaskPriority,  // Low, Medium, High, Urgent
+    assignee: Option<User>,
+    tags: Vec<String>,
+    due_date: Option<String>,
+    created_at: String,
+    updated_at: String,
+    created_by: User,
+}
+
+enum TaskStatus {
+    Backlog,
+    Todo,
+    InProgress,
+    Review,
+    Done,
+}
+
+enum TaskPriority {
+    Low,
+    Medium,
+    High,
+    Urgent,
+}
+
+struct Comment {
+    id: i32,
+    task_id: i32,
+    author: User,
+    content: String,
+    created_at: String,
+}
+
+struct AppState {
+    current_user: Option<User>,
+    projects: Vec<Project>,
+    selected_project_id: Option<i32>,
+    tasks: Vec<Task>,
+    comments: HashMap<i32, Vec<Comment>>,
+}
+
+// ==================== SERVER FUNCTIONS ====================
+
+@server
+fn get_current_user() -> Option<User> {
+    println!("[Server] Getting current user");
+
+    return Some(User {
+        id: 1,
+        name: "Alex Johnson",
+        email: "alex@example.com",
+        avatar_url: "/avatars/alex.jpg",
+        role: "Project Manager",
+    });
+}
+
+@server
+fn get_projects() -> Vec<Project> {
+    println!("[Server] Fetching projects");
+
+    let user1 = User {
+        id: 1,
+        name: "Alex Johnson",
+        email: "alex@example.com",
+        avatar_url: "/avatars/alex.jpg",
+        role: "Project Manager",
+    };
+
+    let user2 = User {
+        id: 2,
+        name: "Sarah Chen",
+        email: "sarah@example.com",
+        avatar_url: "/avatars/sarah.jpg",
+        role: "Developer",
+    };
+
+    let user3 = User {
+        id: 3,
+        name: "Mike Torres",
+        email: "mike@example.com",
+        avatar_url: "/avatars/mike.jpg",
+        role: "Designer",
+    };
+
+    return vec![
+        Project {
+            id: 1,
+            name: "Website Redesign",
+            description: "Complete redesign of company website with new branding",
+            color: "#3b82f6",
+            icon: "🎨",
+            members: vec![user1.clone(), user2.clone(), user3.clone()],
+            created_at: "2025-10-01",
+            owner_id: 1,
+        },
+        Project {
+            id: 2,
+            name: "Mobile App Launch",
+            description: "Launch MVP of mobile application for iOS and Android",
+            color: "#10b981",
+            icon: "📱",
+            members: vec![user1.clone(), user2.clone()],
+            created_at: "2025-09-15",
+            owner_id: 1,
+        },
+        Project {
+            id: 3,
+            name: "API Integration",
+            description: "Integrate third-party payment and analytics APIs",
+            color: "#f59e0b",
+            icon: "🔌",
+            members: vec![user2.clone()],
+            created_at: "2025-10-10",
+            owner_id: 2,
+        },
+    ];
+}
+
+@server
+fn get_tasks_by_project(project_id: i32) -> Vec<Task> {
+    println!("[Server] Fetching tasks for project {}", project_id);
+
+    let user1 = User {
+        id: 1,
+        name: "Alex Johnson",
+        email: "alex@example.com",
+        avatar_url: "/avatars/alex.jpg",
+        role: "Project Manager",
+    };
+
+    let user2 = User {
+        id: 2,
+        name: "Sarah Chen",
+        email: "sarah@example.com",
+        avatar_url: "/avatars/sarah.jpg",
+        role: "Developer",
+    };
+
+    let user3 = User {
+        id: 3,
+        name: "Mike Torres",
+        email: "mike@example.com",
+        avatar_url: "/avatars/mike.jpg",
+        role: "Designer",
+    };
+
+    return vec![
+        Task {
+            id: 1,
+            project_id: project_id,
+            title: "Design new homepage layout",
+            description: "Create wireframes and mockups for the new homepage design",
+            status: TaskStatus::Done,
+            priority: TaskPriority::High,
+            assignee: Some(user3.clone()),
+            tags: vec!["design", "ui"],
+            due_date: Some("2025-10-25"),
+            created_at: "2025-10-15",
+            updated_at: "2025-10-20",
+            created_by: user1.clone(),
+        },
+        Task {
+            id: 2,
+            project_id: project_id,
+            title: "Implement responsive navigation",
+            description: "Build mobile-friendly navigation with hamburger menu",
+            status: TaskStatus::InProgress,
+            priority: TaskPriority::High,
+            assignee: Some(user2.clone()),
+            tags: vec!["development", "frontend"],
+            due_date: Some("2025-10-28"),
+            created_at: "2025-10-16",
+            updated_at: "2025-10-21",
+            created_by: user1.clone(),
+        },
+        Task {
+            id: 3,
+            project_id: project_id,
+            title: "Set up contact form",
+            description: "Create contact form with validation and email integration",
+            status: TaskStatus::Todo,
+            priority: TaskPriority::Medium,
+            assignee: Some(user2.clone()),
+            tags: vec!["development", "backend"],
+            due_date: Some("2025-10-30"),
+            created_at: "2025-10-17",
+            updated_at: "2025-10-17",
+            created_by: user1.clone(),
+        },
+        Task {
+            id: 4,
+            project_id: project_id,
+            title: "Optimize images for web",
+            description: "Compress and convert images to modern formats (WebP)",
+            status: TaskStatus::Todo,
+            priority: TaskPriority::Low,
+            assignee: None,
+            tags: vec!["design", "optimization"],
+            due_date: None,
+            created_at: "2025-10-18",
+            updated_at: "2025-10-18",
+            created_by: user3,
+        },
+        Task {
+            id: 5,
+            project_id: project_id,
+            title: "Write unit tests for API",
+            description: "Add comprehensive test coverage for all API endpoints",
+            status: TaskStatus::Backlog,
+            priority: TaskPriority::Medium,
+            assignee: None,
+            tags: vec!["testing", "backend"],
+            due_date: Some("2025-11-05"),
+            created_at: "2025-10-19",
+            updated_at: "2025-10-19",
+            created_by: user1,
+        },
+        Task {
+            id: 6,
+            project_id: project_id,
+            title: "Review pull request #42",
+            description: "Code review for navigation component implementation",
+            status: TaskStatus::Review,
+            priority: TaskPriority::Urgent,
+            assignee: Some(user1),
+            tags: vec!["review"],
+            due_date: Some("2025-10-22"),
+            created_at: "2025-10-20",
+            updated_at: "2025-10-21",
+            created_by: user2,
+        },
+    ];
+}
+
+@server
+fn create_task(task: Task) -> Result<Task, String> {
+    println!("[Server] Creating new task: {}", task.title);
+
+    if task.title.trim() == "" {
+        return Err("Task title cannot be empty");
+    }
+
+    if task.title.len() > 100 {
+        return Err("Task title too long (max 100 chars)");
+    }
+
+    // In real app: Save to database
+    println!("[Server] Task created successfully!");
+
+    return Ok(task);
+}
+
+@server
+fn update_task_status(task_id: i32, new_status: TaskStatus) -> Result<TaskStatus, String> {
+    println!("[Server] Updating task {} status to {:?}", task_id, new_status);
+
+    // In real app: Update database
+    return Ok(new_status);
+}
+
+@server
+fn update_task(task: Task) -> Result<Task, String> {
+    println!("[Server] Updating task {}", task.id);
+
+    if task.title.trim() == "" {
+        return Err("Task title cannot be empty");
+    }
+
+    // In real app: Update database
+    return Ok(task);
+}
+
+@server
+fn delete_task(task_id: i32) -> Result<bool, String> {
+    println!("[Server] Deleting task {}", task_id);
+
+    // In real app: Delete from database
+    return Ok(true);
+}
+
+@server
+fn get_task_comments(task_id: i32) -> Vec<Comment> {
+    println!("[Server] Fetching comments for task {}", task_id);
+
+    let user1 = User {
+        id: 1,
+        name: "Alex Johnson",
+        email: "alex@example.com",
+        avatar_url: "/avatars/alex.jpg",
+        role: "Project Manager",
+    };
+
+    let user2 = User {
+        id: 2,
+        name: "Sarah Chen",
+        email: "sarah@example.com",
+        avatar_url: "/avatars/sarah.jpg",
+        role: "Developer",
+    };
+
+    return vec![
+        Comment {
+            id: 1,
+            task_id: task_id,
+            author: user1.clone(),
+            content: "Great progress on this! Let's aim to finish by end of week.",
+            created_at: "2025-10-20 10:30",
+        },
+        Comment {
+            id: 2,
+            task_id: task_id,
+            author: user2,
+            content: "Working on it now. Should be done by tomorrow.",
+            created_at: "2025-10-20 11:45",
+        },
+    ];
+}
+
+@server
+fn create_comment(task_id: i32, content: String) -> Result<Comment, String> {
+    println!("[Server] Creating comment on task {}", task_id);
+
+    if content.trim() == "" {
+        return Err("Comment cannot be empty");
+    }
+
+    let user = get_current_user();
+    match user {
+        Some(u) => {
+            return Ok(Comment {
+                id: 999,
+                task_id: task_id,
+                author: u,
+                content: content,
+                created_at: "2025-10-21 12:00",
+            });
+        }
+        None => {
+            return Err("User not authenticated");
+        }
+    }
+}
+
+// ==================== GLOBAL STATE ====================
+
+fn create_app_store() -> Store<AppState> {
+    let initial_state = AppState {
+        current_user: None,
+        projects: vec![],
+        selected_project_id: None,
+        tasks: vec![],
+        comments: HashMap::new(),
+    };
+
+    let store = create_store(initial_state);
+
+    // Persist selected project
+    persist(store, "taskboard_state");
+
+    return store;
+}
+
+fn initialize_app(store: Store<AppState>) {
+    // Load current user
+    let user = get_current_user();
+    let mut state = store.get_state();
+    state.current_user = user;
+    store.set_state(state);
+
+    // Load projects
+    let projects = get_projects();
+    let mut new_state = store.get_state();
+    new_state.projects = projects;
+
+    // Select first project by default
+    if new_state.projects.len() > 0 && new_state.selected_project_id.is_none() {
+        new_state.selected_project_id = Some(new_state.projects[0].id);
+    }
+
+    store.set_state(new_state);
+
+    // Load tasks for selected project
+    match store.get_state().selected_project_id {
+        Some(project_id) => {
+            let tasks = get_tasks_by_project(project_id);
+            let mut final_state = store.get_state();
+            final_state.tasks = tasks;
+            store.set_state(final_state);
+        }
+        None => {}
+    }
+}
+
+fn select_project(store: Store<AppState>, project_id: i32) {
+    let mut state = store.get_state();
+    state.selected_project_id = Some(project_id);
+    store.set_state(state);
+
+    // Load tasks for this project
+    let tasks = get_tasks_by_project(project_id);
+    let mut new_state = store.get_state();
+    new_state.tasks = tasks;
+    store.set_state(new_state);
+}
+
+// ==================== HELPER FUNCTIONS ====================
+
+fn status_to_string(status: TaskStatus) -> String {
+    match status {
+        TaskStatus::Backlog => "Backlog",
+        TaskStatus::Todo => "To Do",
+        TaskStatus::InProgress => "In Progress",
+        TaskStatus::Review => "Review",
+        TaskStatus::Done => "Done",
+    }
+}
+
+fn priority_to_string(priority: TaskPriority) -> String {
+    match priority {
+        TaskPriority::Low => "Low",
+        TaskPriority::Medium => "Medium",
+        TaskPriority::High => "High",
+        TaskPriority::Urgent => "Urgent",
+    }
+}
+
+fn priority_to_color(priority: TaskPriority) -> String {
+    match priority {
+        TaskPriority::Low => "#10b981",
+        TaskPriority::Medium => "#3b82f6",
+        TaskPriority::High => "#f59e0b",
+        TaskPriority::Urgent => "#ef4444",
+    }
+}
+
+// ==================== COMPONENTS ====================
+
+// Header with project selector
+component Header(store: Store<AppState>) {
+    let state = store.get_state();
+
+    return <header class="header">
+        <div class="container">
+            <Link to="/" class="logo">
+                <h1>📋 TaskBoard</h1>
+            </Link>
+
+            <div class="project-selector">
+                {state.selected_project_id.is_some() ? (
+                    let selected = state.projects.iter()
+                        .find(|p| p.id == state.selected_project_id.unwrap());
+
+                    match selected {
+                        Some(project) => {
+                            <div class="current-project">
+                                <span class="project-icon">{project.icon}</span>
+                                <span class="project-name">{project.name}</span>
+                            </div>
+                        }
+                        None => {
+                            <div>Select a project</div>
+                        }
+                    }
+                ) : (
+                    <div>No project selected</div>
+                )}
+            </div>
+
+            <nav class="nav">
+                <Link to="/board" class="nav-link">Board</Link>
+                <Link to="/list" class="nav-link">List</Link>
+                <Link to="/calendar" class="nav-link">Calendar</Link>
+
+                {state.current_user.is_some() && (
+                    let user = state.current_user.unwrap();
+                    <div class="user-menu">
+                        <img src={user.avatar_url} alt={user.name} class="avatar-small" />
+                        <span>{user.name}</span>
+                    </div>
+                )}
+            </nav>
+        </div>
+    </header>;
+}
+
+// Sidebar with project list
+component Sidebar(store: Store<AppState>) {
+    let state = store.get_state();
+    let show_new_project = Signal::new(false);
+
+    return <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Projects</h2>
+            <button
+                class="btn-icon"
+                onclick={() => show_new_project.set(true)}
+                title="New Project"
+            >
+                +
+            </button>
+        </div>
+
+        <div class="projects-list">
+            {state.projects.iter().map(|project| {
+                let is_selected = state.selected_project_id.is_some() &&
+                                state.selected_project_id.unwrap() == project.id;
+
+                <div
+                    class={is_selected ? "project-item active" : "project-item"}
+                    onclick={() => select_project(store, project.id)}
+                >
+                    <span class="project-icon">{project.icon}</span>
+                    <div class="project-info">
+                        <div class="project-name">{project.name}</div>
+                        <div class="project-members">{project.members.len()} members</div>
+                    </div>
+                    <div
+                        class="project-color"
+                        style={"background-color: " + project.color}
+                    />
+                </div>
+            })}
+        </div>
+
+        {show_new_project.get() && (
+            <NewProjectModal
+                store={store}
+                onClose={() => show_new_project.set(false)}
+            />
+        )}
+    </aside>;
+}
+
+// New Project Modal
+component NewProjectModal(store: Store<AppState>, onClose: fn()) {
+    let name = Signal::new("");
+    let description = Signal::new("");
+    let color = Signal::new("#3b82f6");
+    let icon = Signal::new("📁");
+
+    let handle_submit = || {
+        // In real app: Create project via server function
+        onClose();
+    };
+
+    return <div class="modal-overlay" onclick={onClose}>
+        <div class="modal" onclick={(e) => e.stopPropagation()}>
+            <div class="modal-header">
+                <h2>Create New Project</h2>
+                <button class="btn-close" onclick={onClose}>×</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input
+                        type="text"
+                        value={name.get()}
+                        oninput={(e) => name.set(e.target.value)}
+                        placeholder="e.g., Website Redesign"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea
+                        value={description.get()}
+                        oninput={(e) => description.set(e.target.value)}
+                        placeholder="What's this project about?"
+                        rows="3"
+                    />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Icon</label>
+                        <input
+                            type="text"
+                            value={icon.get()}
+                            oninput={(e) => icon.set(e.target.value)}
+                            placeholder="📁"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Color</label>
+                        <input
+                            type="color"
+                            value={color.get()}
+                            oninput={(e) => color.set(e.target.value)}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick={onClose}>
+                    Cancel
+                </button>
+                <button
+                    class="btn btn-primary"
+                    onclick={handle_submit}
+                    disabled={name.get().trim() == ""}
+                >
+                    Create Project
+                </button>
+            </div>
+        </div>
+    </div>;
+}
+
+// Task Card
+component TaskCard(task: Task, onUpdate: fn(Task), onDelete: fn()) {
+    let is_expanded = Signal::new(false);
+
+    return <div class="task-card" onclick={() => is_expanded.set(true)}>
+        <div class="task-header">
+            <h4 class="task-title">{task.title}</h4>
+            <div
+                class="priority-badge"
+                style={"background-color: " + priority_to_color(task.priority)}
+            >
+                {priority_to_string(task.priority)}
+            </div>
+        </div>
+
+        {task.description != "" && (
+            <p class="task-description">{task.description}</p>
+        )}
+
+        {task.tags.len() > 0 && (
+            <div class="task-tags">
+                {task.tags.iter().map(|tag| {
+                    <span class="tag">{tag}</span>
+                })}
+            </div>
+        )}
+
+        <div class="task-footer">
+            {task.assignee.is_some() ? (
+                let assignee = task.assignee.unwrap();
+                <img src={assignee.avatar_url} alt={assignee.name} class="avatar-tiny" />
+            ) : (
+                <div class="unassigned">Unassigned</div>
+            )}
+
+            {task.due_date.is_some() && (
+                <div class="due-date">📅 {task.due_date.unwrap()}</div>
+            )}
+        </div>
+
+        {is_expanded.get() && (
+            <TaskDetailModal
+                task={task}
+                onClose={() => is_expanded.set(false)}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+            />
+        )}
+    </div>;
+}
+
+// Task Detail Modal
+component TaskDetailModal(task: Task, onClose: fn(), onUpdate: fn(Task), onDelete: fn()) {
+    let comments = Signal::new(vec![]);
+    let comment_text = Signal::new("");
+    let loading = Signal::new(true);
+
+    create_effect(|| {
+        let fetched = get_task_comments(task.id);
+        comments.set(fetched);
+        loading.set(false);
+    });
+
+    let handle_add_comment = || {
+        if comment_text.get().trim() == "" {
+            return;
+        }
+
+        let result = create_comment(task.id, comment_text.get());
+        match result {
+            Ok(comment) => {
+                let mut current = comments.get();
+                current.push(comment);
+                comments.set(current);
+                comment_text.set("");
+            }
+            Err(err) => {
+                println!("Error: {}", err);
+            }
+        }
+    };
+
+    let handle_delete = || {
+        if confirm("Are you sure you want to delete this task?") {
+            onDelete();
+            onClose();
+        }
+    };
+
+    return <div class="modal-overlay" onclick={onClose}>
+        <div class="modal modal-large" onclick={(e) => e.stopPropagation()}>
+            <div class="modal-header">
+                <h2>{task.title}</h2>
+                <button class="btn-close" onclick={onClose}>×</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="task-detail-content">
+                    <div class="detail-section">
+                        <h3>Description</h3>
+                        <p>{task.description != "" ? task.description : "No description provided"}</p>
+                    </div>
+
+                    <div class="detail-meta">
+                        <div class="meta-item">
+                            <strong>Status:</strong> {status_to_string(task.status)}
+                        </div>
+                        <div class="meta-item">
+                            <strong>Priority:</strong>
+                            <span
+                                class="priority-badge"
+                                style={"background-color: " + priority_to_color(task.priority)}
+                            >
+                                {priority_to_string(task.priority)}
+                            </span>
+                        </div>
+                        {task.assignee.is_some() && (
+                            let assignee = task.assignee.unwrap();
+                            <div class="meta-item">
+                                <strong>Assignee:</strong>
+                                <div class="assignee-info">
+                                    <img src={assignee.avatar_url} class="avatar-small" />
+                                    <span>{assignee.name}</span>
+                                </div>
+                            </div>
+                        )}
+                        {task.due_date.is_some() && (
+                            <div class="meta-item">
+                                <strong>Due Date:</strong> {task.due_date.unwrap()}
+                            </div>
+                        )}
+                    </div>
+
+                    {task.tags.len() > 0 && (
+                        <div class="detail-section">
+                            <h3>Tags</h3>
+                            <div class="task-tags">
+                                {task.tags.iter().map(|tag| {
+                                    <span class="tag">{tag}</span>
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    <div class="detail-section">
+                        <h3>Comments</h3>
+
+                        {loading.get() ? (
+                            <div class="loading">Loading comments...</div>
+                        ) : (
+                            <div>
+                                <div class="comments-list">
+                                    {comments.get().iter().map(|comment| {
+                                        <div class="comment">
+                                            <img src={comment.author.avatar_url} class="avatar" />
+                                            <div class="comment-content">
+                                                <div class="comment-header">
+                                                    <strong>{comment.author.name}</strong>
+                                                    <span class="time">{comment.created_at}</span>
+                                                </div>
+                                                <p>{comment.content}</p>
+                                            </div>
+                                        </div>
+                                    })}
+                                </div>
+
+                                <div class="comment-composer">
+                                    <textarea
+                                        placeholder="Add a comment..."
+                                        value={comment_text.get()}
+                                        oninput={(e) => comment_text.set(e.target.value)}
+                                        rows="2"
+                                    />
+                                    <button
+                                        class="btn btn-primary btn-sm"
+                                        onclick={handle_add_comment}
+                                        disabled={comment_text.get().trim() == ""}
+                                    >
+                                        Add Comment
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick={handle_delete}>
+                    Delete Task
+                </button>
+                <div class="spacer"></div>
+                <button class="btn btn-secondary" onclick={onClose}>
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>;
+}
+
+// Kanban Column
+component KanbanColumn(title: String, tasks: Vec<Task>, onTaskUpdate: fn(Task), onTaskDelete: fn(i32)) {
+    let task_count = tasks.len();
+
+    return <div class="kanban-column">
+        <div class="column-header">
+            <h3>{title}</h3>
+            <span class="task-count">{task_count}</span>
+        </div>
+
+        <div class="column-tasks">
+            {tasks.iter().map(|task| {
+                <TaskCard
+                    task={task}
+                    onUpdate={onTaskUpdate}
+                    onDelete={() => onTaskDelete(task.id)}
+                />
+            })}
+        </div>
+
+        <button class="btn-add-task">
+            + Add Task
+        </button>
+    </div>;
+}
+
+// Kanban Board View
+component BoardView(store: Store<AppState>) {
+    let state = store.get_state();
+    let tasks = state.tasks;
+
+    // Group tasks by status
+    let backlog_tasks = tasks.iter().filter(|t| matches!(t.status, TaskStatus::Backlog)).collect::<Vec<_>>();
+    let todo_tasks = tasks.iter().filter(|t| matches!(t.status, TaskStatus::Todo)).collect::<Vec<_>>();
+    let inprogress_tasks = tasks.iter().filter(|t| matches!(t.status, TaskStatus::InProgress)).collect::<Vec<_>>();
+    let review_tasks = tasks.iter().filter(|t| matches!(t.status, TaskStatus::Review)).collect::<Vec<_>>();
+    let done_tasks = tasks.iter().filter(|t| matches!(t.status, TaskStatus::Done)).collect::<Vec<_>>();
+
+    let handle_task_update = (task: Task) => {
+        // Update task in state
+        let result = update_task(task);
+        match result {
+            Ok(_) => {
+                // Refresh tasks
+                match state.selected_project_id {
+                    Some(id) => {
+                        let updated_tasks = get_tasks_by_project(id);
+                        let mut new_state = store.get_state();
+                        new_state.tasks = updated_tasks;
+                        store.set_state(new_state);
+                    }
+                    None => {}
+                }
+            }
+            Err(err) => {
+                println!("Error updating task: {}", err);
+            }
+        }
+    };
+
+    let handle_task_delete = (task_id: i32) => {
+        let result = delete_task(task_id);
+        match result {
+            Ok(_) => {
+                // Remove from state
+                let mut new_state = store.get_state();
+                new_state.tasks = new_state.tasks.iter()
+                    .filter(|t| t.id != task_id)
+                    .collect();
+                store.set_state(new_state);
+            }
+            Err(err) => {
+                println!("Error deleting task: {}", err);
+            }
+        }
+    };
+
+    return <div class="board-view">
+        <div class="kanban-board">
+            <KanbanColumn
+                title="Backlog"
+                tasks={backlog_tasks}
+                onTaskUpdate={handle_task_update}
+                onTaskDelete={handle_task_delete}
+            />
+            <KanbanColumn
+                title="To Do"
+                tasks={todo_tasks}
+                onTaskUpdate={handle_task_update}
+                onTaskDelete={handle_task_delete}
+            />
+            <KanbanColumn
+                title="In Progress"
+                tasks={inprogress_tasks}
+                onTaskUpdate={handle_task_update}
+                onTaskDelete={handle_task_delete}
+            />
+            <KanbanColumn
+                title="Review"
+                tasks={review_tasks}
+                onTaskUpdate={handle_task_update}
+                onTaskDelete={handle_task_delete}
+            />
+            <KanbanColumn
+                title="Done"
+                tasks={done_tasks}
+                onTaskUpdate={handle_task_update}
+                onTaskDelete={handle_task_delete}
+            />
+        </div>
+    </div>;
+}
+
+// Home Page
+component HomePage() {
+    return <div class="home-page">
+        <div class="hero">
+            <h1>Welcome to TaskBoard</h1>
+            <p>Manage your projects and tasks with ease</p>
+            <Link to="/board" class="btn btn-primary btn-large">
+                Go to Board
+            </Link>
+        </div>
+    </div>;
+}
+
+// ==================== MAIN APP ====================
+
+component App() {
+    let store = create_app_store();
+
+    create_effect(|| {
+        initialize_app(store);
+    });
+
+    let state = store.get_state();
+
+    return <div class="app">
+        <Router>
+            <Header store={store} />
+
+            <div class="app-layout">
+                {state.selected_project_id.is_some() && (
+                    <Sidebar store={store} />
+                )}
+
+                <main class="main-content">
+                    <Route path="/" exact>
+                        <HomePage />
+                    </Route>
+
+                    <Route path="/board">
+                        <BoardView store={store} />
+                    </Route>
+
+                    <Route path="/list">
+                        <div class="container">
+                            <h1>List View</h1>
+                            <p>Task list view coming soon...</p>
+                        </div>
+                    </Route>
+
+                    <Route path="/calendar">
+                        <div class="container">
+                            <h1>Calendar View</h1>
+                            <p>Calendar view coming soon...</p>
+                        </div>
+                    </Route>
+                </main>
+            </div>
+
+            <footer class="footer">
+                <div class="container">
+                    <p>&copy; 2025 TaskBoard. Built with RavensOne.</p>
+                </div>
+            </footer>
+        </Router>
+    </div>;
+}
+
+// Entry point
+fn main() {
+    mount(App(), "#app");
+}

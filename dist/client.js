@@ -12,27 +12,93 @@ const client = new RPCClient(window.location.origin + '/_rpc');
 
 // Client function implementations
 // Shared utility functions
-export function test_typed_let() {
-  let x = 42;
-  let adder = add_ten;
-  let y = 100;
-  return (x + y);
+export function calculate_discount(price, percent) {
+  return price;
 
 }
 
-export function add_ten(n) {
-  return (n + 10);
+export function format_currency(amount) {
+  return "USD";
 
 }
 
-export function main() {
-  let result = test_typed_let();
-  return result;
+export function get_stock_status(quantity) {
+  return (quantity > 0);
+
+}
+
+export function calculate_total(price, quantity) {
+  return (price + quantity);
 
 }
 
 // UI Components
+export function StoreHeader() {
+  let store_name = "TechStore";
+  let cart_count = 3;
+  let is_logged_in = true;
+  return h('header', h('div', h('h1', "TechStore"), h('p', "Premium", "Electronics")), h('nav', h('a', "Products"), h('a', "Cart"), h('a', "Account")));
+
+}
+
+export function ProductCard() {
+  let product_id = 101;
+  let product_name = "Wireless Mouse";
+  let price = 29;
+  let original_price = 39;
+  let discount = 10;
+  let stock_quantity = 15;
+  let in_stock = get_stock_status(stock_quantity);
+  let rating = 4;
+  return h('div', h('article', h('div', h('h3', "Wireless", "Mouse"), h('p', "Ergonomic", "design", "with", "precision", "tracking")), h('div', h('div', h('span', "Price"), h('del', "Original")), h('div', h('span', "Rating"), h('span', "In", "Stock"))), h('div', h('button', "Add", "to", "Cart"), h('button', "View", "Details"))));
+
+}
+
+export function ShoppingCart() {
+  let cart_items = ["Mouse", "Keyboard", "Monitor"];
+  let item_count = 3;
+  let subtotal = 299;
+  let tax = 25;
+  let shipping = 10;
+  let total = calculate_total(subtotal, tax);
+  let has_items = (item_count > 0);
+  return h('div', h('section', h('h2', "Shopping", "Cart"), h('p', "Your", "shopping", "cart")), h('div', h('div', h('h4', "Cart", "Items"), h('ul', h('li', "Wireless", "Mouse"), h('li', "Mechanical", "Keyboard"), h('li', "Monitor"))), h('div', h('h4', "Order", "Summary"), h('div', h('div', h('span', "Subtotal")), h('div', h('span', "Tax")), h('div', h('span', "Shipping")), h('div', h('strong', "Total"))))), h('div', h('button', "Continue", "Shopping"), h('button', "Checkout")));
+
+}
+
+export function ProductGrid() {
+  let products = ["Mouse", "Keyboard", "Monitor", "Headset"];
+  let total_products = 4;
+  let category = "Electronics";
+  let sort_by = "price";
+  return h('div', h('section', h('div', h('h2', "Featured", "Products"), h('p', "Browse", "our", "premium", "electronics")), h('div', h('select', h('option', "Sort", "by", "Price"), h('option', "Sort", "by", "Name"), h('option', "Sort", "by", "Rating")))), h('div', h('div', h('h3', "Electronics", "Category"), h('p', "Showing", "items"))));
+
+}
+
+export function Checkout() {
+  let customer_name = "John Smith";
+  let email = "john@example.com";
+  let shipping_address = "Main Street";
+  let payment_method = "Credit Card";
+  let order_total = 334;
+  let processing = false;
+  return h('div', h('section', h('h2', "Checkout"), h('p', "Complete", "your", "purchase")), h('div', h('div', h('h3', "Shipping", "Information"), h('div', h('label', "Full", "Name"), h('input', null)), h('div', h('label', "Email"), h('input', null)), h('div', h('label', "Address"), h('input', null))), h('div', h('h3', "Payment", "Method"), h('div', h('label', "Card", "Number"), h('input', null)), h('div', h('label', "Expiry", "Date"), h('input', null)))), h('div', h('div', h('h3', "Order", "Summary"), h('p', "Review", "your", "order")), h('button', "Place", "Order")));
+
+}
+
+export function ShopApp() {
+  let app_name = "TechStore Shopping";
+  let current_view = "products";
+  let cart_total = 334;
+  let items_in_cart = 3;
+  return h('div', h('main', h('section', h('h1', "Welcome", "to", "TechStore"), h('p', "Find", "the", "best", "electronics")), h('div', h('p', "Your", "shopping", "experience", "starts", "here"))));
+
+}
+
 // Initialize application
 window.addEventListener('DOMContentLoaded', () => {
   console.log('RavensOne client initialized');
+  mountComponent(StoreHeader, document.getElementById('app'));
 });
+
+//# sourceMappingURL=client.js.map

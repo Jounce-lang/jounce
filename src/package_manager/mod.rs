@@ -783,6 +783,7 @@ impl PackageManager {
     }
 
     /// Save build cache
+    #[allow(dead_code)] // Used in future incremental compilation
     fn save_build_cache(&self, cache: &BuildCache) -> Result<(), PackageError> {
         fs::create_dir_all(&self.cache_dir)
             .map_err(|e| PackageError::IoError(e.to_string()))?;
@@ -798,6 +799,7 @@ impl PackageManager {
     }
 
     /// Calculate hash of package source
+    #[allow(dead_code)] // Used in future incremental compilation
     fn calculate_source_hash(&self, package_path: &Path) -> Result<String, PackageError> {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
@@ -806,15 +808,13 @@ impl PackageManager {
 
         // Hash all .raven files in the package
         if package_path.exists() {
-            for entry in fs::read_dir(package_path)
-                .map_err(|e| PackageError::IoError(e.to_string()))?
+            for entry in (fs::read_dir(package_path)
+                .map_err(|e| PackageError::IoError(e.to_string()))?).flatten()
             {
-                if let Ok(entry) = entry {
-                    let path = entry.path();
-                    if path.extension().map_or(false, |ext| ext == "raven") {
-                        if let Ok(content) = fs::read_to_string(&path) {
-                            content.hash(&mut hasher);
-                        }
+                let path = entry.path();
+                if path.extension().is_some_and(|ext| ext == "raven") {
+                    if let Ok(content) = fs::read_to_string(&path) {
+                        content.hash(&mut hasher);
                     }
                 }
             }
@@ -824,6 +824,7 @@ impl PackageManager {
     }
 
     /// Check if package is cached and valid
+    #[allow(dead_code)] // Used in future incremental compilation
     fn is_cached(&self, package_name: &str, package_version: &str) -> Option<PathBuf> {
         let cache = self.load_build_cache();
         let cache_key = format!("{}@{}", package_name, package_version);

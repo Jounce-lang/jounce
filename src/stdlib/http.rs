@@ -435,7 +435,10 @@ mod tests {
     }
 
     // Integration tests (require network access)
+    // Run with: cargo test -- --ignored
+    // Note: These tests depend on httpbin.org being available
     #[tokio::test]
+    #[ignore = "requires external service (httpbin.org)"]
     async fn test_get_request() {
         let resp = HttpRequest::get("https://httpbin.org/get")
             .send()
@@ -448,6 +451,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires external service (httpbin.org)"]
     async fn test_post_json() {
         let json_body = serde_json::json!({
             "name": "RavensOne",
@@ -470,6 +474,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires external service (httpbin.org)"]
     async fn test_custom_headers() {
         let resp = HttpRequest::get("https://httpbin.org/headers")
             .header("X-Custom-Header".to_string(), "RavensOne".to_string())
@@ -487,6 +492,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires external service (httpbin.org)"]
     async fn test_convenience_get() {
         let resp = get("https://httpbin.org/get")
             .await
@@ -496,6 +502,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires external service (httpbin.org)"]
     fn test_blocking_get() {
         let resp = get_blocking("https://httpbin.org/get")
             .expect("Failed to make blocking GET request");
@@ -505,6 +512,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires external service (httpbin.org)"]
     fn test_blocking_post_json() {
         let json_data = serde_json::json!({
             "test": "data"
@@ -517,6 +525,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires external service (httpbin.org)"]
     async fn test_http_client_with_base_url() {
         let client = HttpClient::new()
             .with_base_url("https://httpbin.org".to_string());
@@ -530,6 +539,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires external service (httpbin.org)"]
     async fn test_404_error() {
         let resp = HttpRequest::get("https://httpbin.org/status/404")
             .send()
@@ -542,6 +552,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires external service (httpbin.org)"]
     async fn test_json_parsing() {
         let resp = HttpRequest::get("https://httpbin.org/json")
             .send()

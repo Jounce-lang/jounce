@@ -1,94 +1,43 @@
 # RavensOne Documentation Index
 
-Welcome to the RavensOne documentation! This directory contains all technical documentation organized by category.
+Welcome to the RavensOne documentation! This index helps you navigate all available documentation.
 
 ---
 
-## Getting Started
+## 📚 Getting Started
 
-New to RavensOne? Start here:
+**Start here if you're new to RavensOne:**
 
-- **[Quick Start Guide](guides/QUICKSTART.md)** - Get up and running in 5 minutes
-- **[Compiler Guide](guides/COMPILER-GUIDE.md)** - Learn how to use the RavensOne compiler
-- **[Package Manager Guide](guides/PACKAGE_MANAGER_GUIDE.md)** - Managing dependencies with `raven pkg`
-
----
-
-## API Reference
-
-Complete API specifications and contracts:
-
-- **[Registry API Specification](api/REGISTRY_API_SPEC.md)** - Package registry REST API (25 endpoints)
-- **[Package Manifest Specification](api/PACKAGE_MANIFEST_SPEC.md)** - raven.toml format and options
+- [Main README](../README.md) - Project overview and quick start
+- [Getting Started Guide](../GETTING_STARTED.md) - Step-by-step tutorial
+- [Production Ready Summary](../PRODUCTION_READY_SUMMARY.md) - Overall project status
 
 ---
 
-## Architecture & Design
+## 📖 User Guides
 
-Technical implementation details and design documents:
-
-- **[Standard Library Design](architecture/STDLIB_DESIGN.md)** - stdlib architecture and patterns
-- **[Reactivity Implementation](architecture/REACTIVITY_IMPLEMENTATION.md)** - Signal/Effect system design
-- **[HTTP Client Design](architecture/HTTP_CLIENT_DESIGN.md)** - HTTP client architecture
-- **[Compiler Pipeline Status](architecture/COMPILER_PIPELINE_STATUS.md)** - Compilation stages and status
-
----
-
-## Archived Documentation
-
-Historical documents preserved for reference:
-
-Located in [archived/](archived/) - Contains early phase documentation, test reports, and implementation summaries that have been superseded but remain valuable for historical context.
+- [Full-Stack Development Guide](guides/FULLSTACK_GUIDE.md)
+- [JSX Lexer Usage](guides/JSX_LEXER_USAGE.md)
+- [JSX AST Guide](guides/JSX_AST_GUIDE.md)
+- [Parser Limitations](guides/PARSER_LIMITATIONS.md)
+- [Closure Implementation](guides/CLOSURE_IMPLEMENTATION_SUMMARY.md)
+- [Double Colon Operator](guides/DOUBLE_COLON_OPERATOR.md)
 
 ---
 
-## Core Project Documentation
+## 🛠️ Development Progress
 
-Essential documentation remains in the repository root:
-
-- **[README.md](../README.md)** - Main project overview and quick start
-- **[ROADMAP_Q1_2026.md](../ROADMAP_Q1_2026.md)** - Strategic roadmap and priorities
-- **[PROJECT_TRACKING.md](../PROJECT_TRACKING.md)** - Comprehensive project tracking and history
-- **[MISSION.md](../MISSION.md)** - Core mission and philosophy
+- [Day 1-7 Progress Reports](development/) - Daily development logs
 
 ---
 
-## Contributing to Documentation
+## 🔧 Technical Documentation
 
-When adding new documentation:
-
-1. **Guides** → `docs/guides/` - User-facing tutorials and how-tos
-2. **API Specs** → `docs/api/` - API contracts and specifications
-3. **Architecture** → `docs/architecture/` - Technical design documents
-4. **Archived** → `docs/archived/` - Historical documents (when superseded)
+- [Codegen Progress](technical/CODEGEN_PROGRESS_SUMMARY.md)
+- [Standard Library Completion](technical/STDLIB_COMPLETION_SUMMARY.md)
+- [Deployment Summary](technical/DEPLOYMENT_SUMMARY.md)
+- [Annotation Status](technical/CURRENT_ANNOTATION_STATUS.md)
 
 ---
 
-## Documentation Standards
-
-- Use clear, concise language
-- Include code examples where relevant
-- Keep documents up-to-date with implementations
-- Link to related documentation
-- Use consistent formatting (Markdown)
-
----
-
-## Quick Links
-
-| Category | Files | Description |
-|----------|-------|-------------|
-| Guides | 3 | User-facing documentation |
-| API Reference | 2 | Complete API specifications |
-| Architecture | 4 | Technical design documents |
-| Archived | 11 | Historical context |
-
----
-
-**Last Updated**: October 19, 2025
-**Total Documents**: 20+ markdown files
-**Organization**: Professional and maintainable
-
----
-
-*For questions or improvements, please open an issue or pull request.*
+**Last Updated**: 2025-10-21

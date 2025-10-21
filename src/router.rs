@@ -1,10 +1,8 @@
 // Router System for RavensOne
 // Client-side routing with history API, dynamic routes, and nested routing
 
-use crate::reactive::{Signal, create_effect};
+use crate::reactive::Signal;
 use std::collections::HashMap;
-use std::rc::Rc;
-use std::cell::RefCell;
 
 /// Route parameter type
 pub type RouteParams = HashMap<String, String>;
@@ -197,9 +195,8 @@ impl Router {
         let mut params = HashMap::new();
 
         for (pattern_seg, path_seg) in pattern_segments.iter().zip(path_segments.iter()) {
-            if pattern_seg.starts_with(':') {
+            if let Some(param_name) = pattern_seg.strip_prefix(':') {
                 // Dynamic segment - extract parameter
-                let param_name = &pattern_seg[1..];
                 params.insert(param_name.to_string(), path_seg.to_string());
             } else if pattern_seg != path_seg {
                 // Static segment doesn't match

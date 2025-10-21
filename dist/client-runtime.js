@@ -463,7 +463,6 @@ if (typeof window !== 'undefined') {
     console.log('[Client] Runtime initialized');
 }
 
-// Export for module systems
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ClientRuntime;
-}
+// Export for ES6 modules
+const RPCClient = ClientRuntime;
+export { ClientRuntime, RPCClient };

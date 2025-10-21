@@ -1,0 +1,38 @@
+// User Profile Component - Testing arithmetic and string operations
+
+fn calculate_age(birth_year: i32) -> i32 {
+    return 2024 - birth_year;
+}
+
+fn is_adult(age: i32) -> bool {
+    return age >= 18;
+}
+
+component UserProfile() {
+    let name = "Sarah Johnson";
+    let birth_year = 1995;
+    let age = calculate_age(birth_year);
+    let is_verified = true;
+    let follower_count = 1250;
+
+    return <div>
+        <header>
+            <h1>User Profile</h1>
+            <h2>Sarah Johnson</h2>
+        </header>
+        <section>
+            <div>
+                <p>Profile Information</p>
+                <p>Status Active</p>
+            </div>
+            <div>
+                <p>Followers</p>
+                <p>Following users</p>
+            </div>
+        </section>
+        <footer>
+            <button>Follow</button>
+            <button>Message</button>
+        </footer>
+    </div>;
+}

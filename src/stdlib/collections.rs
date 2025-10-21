@@ -20,6 +20,12 @@ pub struct RArray<T> {
     items: Vec<T>,
 }
 
+impl<T> Default for RArray<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> RArray<T> {
     pub fn new() -> Self {
         RArray { items: Vec::new() }
@@ -51,7 +57,7 @@ impl<T> RArray<T> {
         self.items.get(index)
     }
 
-    pub fn iter(&self) -> std::slice::Iter<T> {
+    pub fn iter(&self) -> std::slice::Iter<'_, T> {
         self.items.iter()
     }
 }
@@ -101,6 +107,12 @@ where
 #[derive(Clone, Debug)]
 pub struct RMap<K, V> {
     map: HashMap<K, V>,
+}
+
+impl<K: Eq + Hash, V> Default for RMap<K, V> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<K: Eq + Hash, V> RMap<K, V> {

@@ -57,18 +57,19 @@ fn main() {
     // ===== STEP 1: LEXING =====
     println!("=== Step 1: Lexing ===");
     let mut lexer = Lexer::new(source.to_string());
-    let mut tokens = Vec::new();
+    let mut token_count = 0;
     loop {
         let token = lexer.next_token();
         let is_eof = token.kind == TokenKind::Eof;
-        tokens.push(token);
+        token_count += 1;
         if is_eof { break; }
     }
-    println!("✓ Generated {} tokens\n", tokens.len());
+    println!("✓ Generated {} tokens\n", token_count);
 
     // ===== STEP 2: PARSING =====
     println!("=== Step 2: Parsing ===");
-    let mut parser = Parser::new(tokens);
+    let mut lexer = Lexer::new(source.to_string());
+    let mut parser = Parser::new(&mut lexer);
     let program = match parser.parse_program() {
         Ok(p) => {
             println!("✓ Parsed {} statements\n", p.statements.len());

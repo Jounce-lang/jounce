@@ -3,9 +3,8 @@
 
 use crate::{Compiler, BuildTarget, errors::CompileError};
 use notify::{Watcher, RecursiveMode, Result as NotifyResult, Event, EventKind};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use std::collections::HashMap;
 use tokio::sync::mpsc;
 use futures_util::{StreamExt, SinkExt};
 use tokio_tungstenite::tungstenite::Message;

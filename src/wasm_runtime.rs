@@ -46,9 +46,10 @@ impl RuntimeImports {
         RuntimeImports { imports }
     }
 
+    #[allow(unused_variables)] // types used in future function table implementation (Issue #2)
     pub fn add_to_import_section(&self, section: &mut ImportSection, types: &TypeSection) {
         for (module, name, entity_type) in &self.imports {
-            section.import(module, name, entity_type.clone());
+            section.import(module, name, *entity_type);
         }
     }
 

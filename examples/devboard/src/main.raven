@@ -1,0 +1,233 @@
+// DevBoard - Simple Developer Portfolio
+// A minimal RavensOne showcase demonstrating full-stack capabilities
+
+// Data Models
+struct Project {
+    id: i32,
+    name: String,
+    description: String,
+    stars: i32,
+}
+
+struct ContactMessage {
+    name: String,
+    email: String,
+    message: String,
+}
+
+// Server Functions
+@server
+fn get_projects() -> Vec<Project> {
+    println!("[Server] Fetching projects");
+
+    let project1_name = "RavensOne Compiler";
+    let project1_desc = "Full-stack reactive language compiling to WebAssembly";
+    let project2_name = "DevBoard";
+    let project2_desc = "Developer dashboard and portfolio showcase";
+    let project3_name = "TaskWave";
+    let project3_desc = "Minimal task manager with AI suggestions";
+
+    return vec![
+        Project {
+            id: 1,
+            name: project1_name,
+            description: project1_desc,
+            stars: 156,
+        },
+        Project {
+            id: 2,
+            name: project2_name,
+            description: project2_desc,
+            stars: 42,
+        },
+        Project {
+            id: 3,
+            name: project3_name,
+            description: project3_desc,
+            stars: 89,
+        },
+    ];
+}
+
+@server
+fn send_contact_message(message: ContactMessage) -> Result<String, String> {
+    println!("[Server] Contact from: {}", message.email);
+    println!("[Server] Message: {}", message.message);
+
+    // Validate - simplified for parser compatibility
+    if message.name == "" {
+        return Err("Name is required");
+    }
+    if message.email == "" {
+        return Err("Email is required");
+    }
+    if message.message == "" {
+        return Err("Message is required");
+    }
+
+    return Ok("Message sent successfully!");
+}
+
+// Components
+component ProjectCard(project: Project) {
+    return <div class="project-card">
+        <h3 class="project-name">{project.name}</h3>
+        <p class="project-description">{project.description}</p>
+        <div class="project-stats">
+            <span class="stars">{project.stars} stars</span>
+        </div>
+    </div>;
+}
+
+component ContactForm() {
+    let name = Signal::new("");
+    let email = Signal::new("");
+    let message_text = Signal::new("");
+    let status = Signal::new("");
+    let is_loading = Signal::new(false);
+
+    let handle_submit = || {
+        is_loading.set(true);
+        status.set("");
+
+        let msg = ContactMessage {
+            name: name.get(),
+            email: email.get(),
+            message: message_text.get(),
+        };
+
+        match send_contact_message(msg) {
+            Ok(success_msg) => {
+                status.set(success_msg);
+                name.set("");
+                email.set("");
+                message_text.set("");
+            }
+            Err(error_msg) => {
+                let error_text = "Error: " + error_msg;
+                status.set(error_text);
+            }
+        }
+
+        is_loading.set(false);
+    };
+
+    return <div class="contact-form">
+        <h2>Get in Touch</h2>
+        <p>Have a project in mind? Let's build something together!</p>
+
+        <form onsubmit={(e) => { e.preventDefault(); handle_submit(); }}>
+            <div class="form-group">
+                <label>Name</label>
+                <input
+                    type="text"
+                    value={name.get()}
+                    oninput={(e) => name.set(e.target.value)}
+                    placeholder="Your name"
+                    required
+                />
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input
+                    type="email"
+                    value={email.get()}
+                    oninput={(e) => email.set(e.target.value)}
+                    placeholder="your.email@example.com"
+                    required
+                />
+            </div>
+
+            <div class="form-group">
+                <label>Message</label>
+                <textarea
+                    value={message_text.get()}
+                    oninput={(e) => message_text.set(e.target.value)}
+                    placeholder="Tell me about your project..."
+                    rows="6"
+                    required
+                />
+            </div>
+
+            {status.get() != "" && (
+                <div class={status.get().starts_with("Error") ? "alert-error" : "alert-success"}>
+                    {status.get()}
+                </div>
+            )}
+
+            <button
+                type="submit"
+                class="btn-primary"
+                disabled={is_loading.get()}
+            >
+                {is_loading.get() ? "Sending..." : "Send Message"}
+            </button>
+        </form>
+    </div>;
+}
+
+// Main App Component
+component DevBoard() {
+    let projects = Signal::new(Vec::new());
+    let active_section = Signal::new("projects");
+
+    // Load projects on mount
+    create_effect(|| {
+        let fetched_projects = get_projects();
+        projects.set(fetched_projects);
+    });
+
+    return <div class="devboard-app">
+        <header class="navbar">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <h1>DevBoard</h1>
+                </div>
+
+                <div class="nav-links">
+                    <a onclick={() => active_section.set("projects")}
+                       class={active_section.get() == "projects" ? "active" : ""}>
+                        Projects
+                    </a>
+                    <a onclick={() => active_section.set("contact")}
+                       class={active_section.get() == "contact" ? "active" : ""}>
+                        Contact
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <main class="container">
+            {active_section.get() == "projects" && (
+                <section class="section">
+                    <h2 class="section-title">Featured Projects</h2>
+                    <div class="projects-grid">
+                        {projects.get().iter().map(|project| {
+                            <ProjectCard project={project} />
+                        })}
+                    </div>
+                </section>
+            )}
+
+            {active_section.get() == "contact" && (
+                <section class="section">
+                    <h2 class="section-title">Contact Me</h2>
+                    <div class="contact-container">
+                        <ContactForm />
+                    </div>
+                </section>
+            )}
+        </main>
+
+        <footer class="footer">
+            <p>Built with RavensOne</p>
+            <p>2025 DevBoard. All rights reserved.</p>
+        </footer>
+    </div>;
+}
+
+// Entry point
+fn main() {
+    mount(DevBoard(), "#app");
+}

@@ -1,0 +1,68 @@
+// Optimizer Demo
+// Demonstrates WASM optimization passes:
+// 1. Dead Code Elimination - Removes unused functions
+// 2. Constant Folding - Evaluates constants at compile time
+// 3. Function Inlining - Inlines small functions
+
+// Example 1: Constant Folding
+// The optimizer will fold these constants at compile time
+fn calculate_constants() -> i32 {
+    let a = 10 + 20;        // Folded to 30
+    let b = a * 2;          // Folded to 60
+    let c = 100 - 40;       // Folded to 60
+    return b + c;           // Folded to 120
+}
+
+// Example 2: Function Inlining
+// Small functions like these will be inlined at call sites
+fn add(x: i32, y: i32) -> i32 {
+    return x + y;
+}
+
+fn multiply(x: i32, y: i32) -> i32 {
+    return x * y;
+}
+
+// This function will have add() and multiply() inlined
+fn use_inline_functions() -> i32 {
+    let sum = add(5, 10);        // Inlined
+    let product = multiply(3, 4); // Inlined
+    return sum + product;         // 15 + 12 = 27
+}
+
+// Example 3: Dead Code Elimination
+// This function is never called, so it will be removed
+fn unused_function() -> i32 {
+    return 42;
+}
+
+// This function is also unused
+fn another_unused_function(x: i32) -> i32 {
+    return x * 2;
+}
+
+// Example 4: Combined Optimizations
+fn optimized_example() -> i32 {
+    let x = 5 + 10;              // Constant folded to 15
+    let y = add(x, 20);          // add() inlined, then folded to 35
+    let z = multiply(y, 2);      // multiply() inlined, then folded to 70
+    return z;
+}
+
+// Main function (this will NOT be removed as it's the entry point)
+fn main() {
+    let result1 = calculate_constants();     // 120
+    let result2 = use_inline_functions();    // 27
+    let result3 = optimized_example();       // 70
+
+    return 0;
+}
+
+// These helper functions ARE used, so they won't be removed
+fn helper_used() -> i32 {
+    return 100;
+}
+
+fn call_helper() -> i32 {
+    return helper_used();
+}

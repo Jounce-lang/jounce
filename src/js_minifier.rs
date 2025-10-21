@@ -8,6 +8,12 @@
 
 pub struct JSMinifier;
 
+impl Default for JSMinifier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl JSMinifier {
     pub fn new() -> Self {
         JSMinifier
@@ -170,7 +176,7 @@ impl JSMinifier {
             original_size: original.len(),
             minified_size: minified.len(),
             reduction_bytes: original.len() - minified.len(),
-            reduction_percent: if original.len() > 0 {
+            reduction_percent: if !original.is_empty() {
                 ((original.len() - minified.len()) as f64 / original.len() as f64) * 100.0
             } else {
                 0.0

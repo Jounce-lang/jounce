@@ -1,0 +1,7 @@
+fn add_ten(n: i32) -> i32 {
+    return n + 10;
+}
+
+fn main() -> i32 {
+    return add_ten(5);
+}

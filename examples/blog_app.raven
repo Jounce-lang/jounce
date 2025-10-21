@@ -1,0 +1,144 @@
+// Complete Blog Application - Multiple components working together
+
+// Helper functions
+fn format_date(year: i32, month: i32, day: i32) -> String {
+    return "2024-01-15";
+}
+
+fn get_reading_time(word_count: i32) -> i32 {
+    return 6;
+}
+
+fn is_featured(post_id: i32) -> bool {
+    return post_id == 1;
+}
+
+// Header Component
+component BlogHeader() {
+    let site_name = "Tech Blog";
+    let tagline = "Insights on Web Development";
+
+    return <header>
+        <div>
+            <h1>Tech Blog</h1>
+            <p>Insights on Web Development</p>
+        </div>
+        <nav>
+            <a>Home</a>
+            <a>Articles</a>
+            <a>About</a>
+        </nav>
+    </header>;
+}
+
+// Article Card Component
+component ArticleCard() {
+    let post_id = 1;
+    let title = "Introduction to RavensOne";
+    let author = "John Developer";
+    let word_count = 1200;
+    let reading_time = get_reading_time(word_count);
+    let is_popular = is_featured(post_id);
+    let excerpt = "Learn about reactive programming";
+
+    return <article>
+        <div>
+            <h2>Introduction to RavensOne</h2>
+            <div>
+                <span>By John Developer</span>
+                <span>Reading time mins</span>
+            </div>
+        </div>
+        <p>Learn about reactive programming</p>
+        <div>
+            <button>Read More</button>
+            <button>Share</button>
+        </div>
+    </article>;
+}
+
+// Sidebar Component
+component Sidebar() {
+    let categories = ["Web Development", "Programming", "Tutorials"];
+    let popular_tags = ["JavaScript", "Rust", "WebAssembly"];
+    let featured_category = categories[0];
+    let top_tag = popular_tags[0];
+
+    return <aside>
+        <section>
+            <h3>Categories</h3>
+            <ul>
+                <li>Web Development</li>
+                <li>Programming</li>
+                <li>Tutorials</li>
+            </ul>
+        </section>
+        <section>
+            <h3>Popular Tags</h3>
+            <div>
+                <span>JavaScript</span>
+                <span>Rust</span>
+                <span>WebAssembly</span>
+            </div>
+        </section>
+        <section>
+            <h3>About</h3>
+            <p>A blog about modern web technologies</p>
+        </section>
+    </aside>;
+}
+
+// Footer Component
+component BlogFooter() {
+    let current_year = 2024;
+    let post_count = 42;
+    let subscriber_count = 1500;
+
+    return <footer>
+        <div>
+            <div>
+                <h4>Stay Connected</h4>
+                <p>Subscribe to our newsletter</p>
+                <input></input>
+                <button>Subscribe</button>
+            </div>
+            <div>
+                <h4>Quick Links</h4>
+                <ul>
+                    <li>Privacy Policy</li>
+                    <li>Terms of Service</li>
+                    <li>Contact Us</li>
+                </ul>
+            </div>
+        </div>
+        <div>
+            <p>Copyright Tech Blog</p>
+        </div>
+    </footer>;
+}
+
+// Main Blog Application Component
+component BlogApp() {
+    let app_title = "Tech Blog Platform";
+    let total_posts = 42;
+    let is_loading = false;
+    let current_page = 1;
+
+    return <div>
+        <main>
+            <section>
+                <h2>Latest Articles</h2>
+                <div>
+                    <p>Discover our latest posts</p>
+                </div>
+            </section>
+            <div>
+                <section>
+                    <div>
+                        <p>Featured articles will appear here</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>;
+}

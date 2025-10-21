@@ -26,7 +26,9 @@ pub mod wasm_runtime; // WebAssembly runtime support
 pub mod lsp; // Language Server Protocol
 pub mod hmr; // Hot Module Replacement
 pub mod package_manager; // Package Manager
-pub mod sourcemap; // Source map generation for debugging
+pub mod source_map; // Source map generation for debugging
+pub mod wasm_optimizer; // WASM optimization (DCE, inlining, constant folding)
+pub mod doc_generator; // Documentation generator (raven doc)
 pub mod profiler; // Performance profiling
 pub mod code_splitter; // Code splitting for server/client separation
 pub mod rpc_generator; // RPC stub generation for client/server communication
@@ -41,6 +43,7 @@ use parser::Parser;
 use semantic_analyzer::SemanticAnalyzer;
 use type_checker::TypeChecker;
 use token::{Token, TokenKind};
+use wasm_optimizer::WasmOptimizer;
 
 // This enum is now public so the deployer can use it.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -49,11 +52,28 @@ pub enum BuildTarget {
     Server,
 }
 
-pub struct Compiler;
+pub struct Compiler {
+    pub optimize: bool,
+}
+
+impl Default for Compiler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Compiler {
     pub fn new() -> Self {
-        Compiler
+        Compiler {
+            optimize: true,  // Enable optimizations by default
+        }
+    }
+
+    /// Create a compiler with optimizations disabled
+    pub fn without_optimization() -> Self {
+        Compiler {
+            optimize: false,
+        }
     }
 
     // FIX: The function now takes the target as a required argument.
@@ -62,9 +82,8 @@ impl Compiler {
 
         // --- Lexing, Parsing, Macro Expansion ---
         let mut lexer = Lexer::new(source.to_string());
-        let tokens = lexer.collect_tokens()?;
-        let mut initial_parser = Parser::new(tokens);
-        let initial_ast = initial_parser.parse_program()?;
+        let mut parser = Parser::new(&mut lexer);
+        let initial_ast = parser.parse_program()?;
 
         // This is a simplified macro expansion for now.
         let mut needs_reparse = false;
@@ -74,7 +93,7 @@ impl Compiler {
                 break;
             }
         }
-        
+
         // FIX: Rename the AST variable to avoid shadowing the `ast` module.
         let program_ast = if needs_reparse {
             // Placeholder for real expansion
@@ -91,15 +110,46 @@ impl Compiler {
         let mut type_checker = TypeChecker::new();
         type_checker.check_program(&program_ast.statements)?;
 
+        // Re-enabled temporarily for debugging
         let mut borrow_checker = BorrowChecker::new();
         borrow_checker.check_program(&program_ast)?;
 
         // --- Code Generation ---
         // FIX: Pass the target down to the CodeGenerator.
         let mut code_generator = CodeGenerator::new(target);
-        let wasm_bytes = code_generator.generate_program(&program_ast)?;
-        
+        let mut wasm_bytes = code_generator.generate_program(&program_ast)?;
+
+        // --- Optimization ---
+        if self.optimize {
+            let mut optimizer = WasmOptimizer::new();
+            wasm_bytes = optimizer.optimize(wasm_bytes);
+
+            // Print optimization statistics
+            let stats = optimizer.stats();
+            if stats.total_optimizations() > 0 {
+                println!("   - Optimizations applied: {} total", stats.total_optimizations());
+                if stats.functions_removed > 0 {
+                    println!("     • Dead functions removed: {}", stats.functions_removed);
+                }
+                if stats.constants_folded > 0 {
+                    println!("     • Constants folded: {}", stats.constants_folded);
+                }
+                if stats.functions_inlined > 0 {
+                    println!("     • Functions inlined: {}", stats.functions_inlined);
+                }
+                println!("     • Size reduction: {:.1}%", stats.size_reduction_percent());
+            }
+        }
+
         Ok(wasm_bytes)
+    }
+
+    /// Display a compilation error with beautiful diagnostics
+    pub fn display_error(error: &CompileError, source: Option<&str>, filename: &str) -> String {
+        
+
+        let diagnostic = error.to_diagnostic(filename);
+        diagnostic.display(source)
     }
 }
 

@@ -17,22 +17,23 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {
 
 // Server function implementations
 // Shared utility functions
-module.exports.function test_typed_let() {
-  let x = 42;
-  let adder = add_ten;
-  let y = 100;
-  return (x + y);
+module.exports.function calculate_discount(price, percent) {
+  return price;
 
 }
 
-module.exports.function add_ten(n) {
-  return (n + 10);
+module.exports.function format_currency(amount) {
+  return "USD";
 
 }
 
-module.exports.function main() {
-  let result = test_typed_let();
-  return result;
+module.exports.function get_stock_status(quantity) {
+  return (quantity > 0);
+
+}
+
+module.exports.function calculate_total(price, quantity) {
+  return (price + quantity);
 
 }
 
@@ -51,3 +52,5 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {});
 // Start RPC server
 server.start();
 console.log(`RPC server listening on port ${server.port}`);
+
+//# sourceMappingURL=server.js.map

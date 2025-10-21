@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use wasm_encoder::{
     CodeSection, ExportKind, ExportSection, Function, FunctionSection, ImportSection, Instruction,
     Module, TypeSection, ValType, EntityType, MemoryType, MemorySection,
+    TableSection, TableType, RefType, ElementSection, Elements, ConstExpr,
 };
 
 /// A symbol table to track function indices.
@@ -84,18 +85,54 @@ impl StructTable {
     }
 }
 
+/// Tracks lambda expressions for conversion to anonymous functions
+#[derive(Debug, Clone)]
+struct LambdaInfo {
+    func_index: u32,                    // Function index in WASM
+    type_index: u32,                    // Type signature index
+    parameters: Vec<Identifier>,        // Parameter names
+    body: Box<Expression>,              // Lambda body expression
+    captured_vars: Vec<String>,         // Variables captured from enclosing scope
+}
+
+/// Lambda table to track all lambdas for conversion
+struct LambdaTable {
+    lambdas: Vec<LambdaInfo>,           // All collected lambdas
+}
+
+impl LambdaTable {
+    fn new() -> Self {
+        Self { lambdas: Vec::new() }
+    }
+
+    fn add_lambda(&mut self, info: LambdaInfo) -> usize {
+        let id = self.lambdas.len();
+        self.lambdas.push(info);
+        id
+    }
+
+    fn get_lambda(&self, id: usize) -> Option<&LambdaInfo> {
+        self.lambdas.get(id)
+    }
+}
+
 
 /// The code generator, responsible for emitting Wasm bytecode.
 pub struct CodeGenerator {
 
     func_symbols: FuncSymbolTable,
     struct_table: StructTable,
+    lambda_table: LambdaTable,  // Tracks all lambda expressions for conversion
     // Per-function state
     local_symbol_table: HashMap<String, u32>,
     local_type_table: HashMap<String, String>,  // variable_name -> struct_type_name
     local_count: u32,
     heap_pointer: u32,  // Tracks the next available heap address
     target: BuildTarget,
+    // Lambda expression counter (used to match lambdas during code generation)
+    lambda_encounter_counter: usize,
+    // Current lambda context (Some(lambda_index) when generating a lambda body, None otherwise)
+    current_lambda_context: Option<usize>,
 }
 
 impl CodeGenerator {
@@ -105,11 +142,14 @@ impl CodeGenerator {
             //module: Module::new(),
             func_symbols: FuncSymbolTable::new(),
             struct_table: StructTable::new(),
+            lambda_table: LambdaTable::new(),
             local_symbol_table: HashMap::new(),
             local_type_table: HashMap::new(),
             local_count: 0,
             heap_pointer: 0,  // Start heap at address 0
             target,
+            lambda_encounter_counter: 0,
+            current_lambda_context: None,
         }
     }
 
@@ -137,15 +177,10 @@ impl CodeGenerator {
             }
         }
 
-        // Add memory section (1 page = 64KB initially, can grow)
-        let mut memory = MemorySection::new();
-        memory.memory(MemoryType {
-            minimum: 1,
-            maximum: Some(10),
-            memory64: false,
-            shared: false,
-        });
-        module.section(&memory);
+        // --- Pass 0.5: Collect Lambda Expressions ---
+        // Walk the AST and collect all lambda expressions before generating code
+        // This allows us to generate anonymous functions for them
+        self.collect_lambdas_from_program(program);
 
         // --- First Pass: Signatures and Imports ---
         // This pass collects all function signatures and builds the import table.
@@ -189,6 +224,40 @@ impl CodeGenerator {
             }
         }
 
+        // --- Pass 1.5: Register Lambda Function Signatures ---
+        // For each collected lambda, create a type signature and register a function
+        for i in 0..self.lambda_table.lambdas.len() {
+            let lambda = &self.lambda_table.lambdas[i];
+
+            // Create type signature for this lambda
+            // For lambdas WITH captured variables, add an environment pointer as the first parameter
+            let type_index = types.len();
+            let mut param_types: Vec<ValType> = Vec::new();
+
+            // If lambda has captured variables, add environment pointer as first parameter
+            if !lambda.captured_vars.is_empty() {
+                param_types.push(ValType::I32);  // Environment pointer (i32)
+            }
+
+            // Add the lambda's declared parameters
+            param_types.extend(lambda.parameters.iter().map(|_| ValType::I32));
+
+            types.function(param_types, vec![ValType::I32]);
+
+            // Register as a function
+            functions.function(type_index);
+
+            // Update the lambda info with the correct indices
+            // We need to do this mutably, so we'll update it after the loop
+            let func_index = func_index_counter;
+            func_index_counter += 1;
+
+            // Store the indices back into the lambda table
+            // (we have to do this carefully because we're borrowing self)
+            self.lambda_table.lambdas[i].func_index = func_index;
+            self.lambda_table.lambdas[i].type_index = type_index;
+        }
+
         // --- Second Pass: Code Generation ---
         // This pass generates the actual instruction bodies for the functions.
         for stmt in &program.statements {
@@ -229,10 +298,54 @@ impl CodeGenerator {
             }
         }
 
+        // --- Pass 2.5: Generate Lambda Function Bodies ---
+        // For each collected lambda, generate its function body
+        for i in 0..self.lambda_table.lambdas.len() {
+            code.function(&self.generate_lambda(i)?);
+        }
+
+        // Assemble the WASM module sections in the correct order
         module.section(&types);
         module.section(&imports);
         module.section(&functions);
+
+        // Add function table for indirect calls (closures, higher-order functions)
+        let mut tables = TableSection::new();
+        tables.table(TableType {
+            element_type: RefType::FUNCREF,
+            minimum: 10,  // Start with space for 10 function references
+            maximum: Some(100),  // Can grow up to 100 functions
+        });
+        module.section(&tables);
+
+        // Add memory section (1 page = 64KB initially, can grow)
+        let mut memory = MemorySection::new();
+        memory.memory(MemoryType {
+            minimum: 1,
+            maximum: Some(10),
+            memory64: false,
+            shared: false,
+        });
+        module.section(&memory);
+
         module.section(&exports);
+
+        // Populate function table with all defined functions
+        // This allows indirect calls via call_indirect instruction
+        // Element section must come after Export section and before Code section
+        if func_index_counter > 0 {
+            let mut elements = ElementSection::new();
+            // Collect all function indices (starting after imports)
+            // For now, we'll populate the table starting at offset 0
+            let func_indices: Vec<u32> = (0..func_index_counter).collect();
+            elements.active(
+                None,  // Table index 0 (default table)
+                &ConstExpr::i32_const(0),  // Start at offset 0 in the table
+                Elements::Functions(&func_indices),
+            );
+            module.section(&elements);
+        }
+
         module.section(&code);
 
         Ok(module.finish())
@@ -243,6 +356,7 @@ impl CodeGenerator {
         self.local_symbol_table.clear();
         self.local_type_table.clear();
         self.local_count = 0;
+        self.lambda_encounter_counter = 0;  // Reset lambda counter for this function
 
         // Register function parameters as locals (they start at index 0)
         for param in &func.parameters {
@@ -329,20 +443,77 @@ impl CodeGenerator {
     /// Generates a component as a WASM function
     fn generate_component(&mut self, comp: &ComponentDefinition) -> Result<Function, CompileError> {
         self.local_symbol_table.clear();
+        self.local_type_table.clear();
+        self.local_count = 0;
+        self.lambda_encounter_counter = 0;  // Reset lambda counter for this component
+
+        // Register component parameters as locals (they start at index 0)
+        for param in &comp.parameters {
+            self.local_symbol_table.insert(param.name.value.clone(), self.local_count);
+            self.local_count += 1;
+        }
+
+        // Count locals needed for the component body
+        let local_count = self.count_required_locals(&comp.body.statements);
+        let local_types: Vec<ValType> = (0..local_count).map(|_| ValType::I32).collect();
+        let mut f = Function::new_with_locals_types(local_types);
+
+        // Generate all statements in the component body
+        for stmt in &comp.body.statements {
+            self.generate_statement(stmt, &mut f)?;
+        }
+
+        // Components should return their final expression value
+        // If the last statement is not a return, push a default value
+        f.instruction(&Instruction::I32Const(0));
+        f.instruction(&Instruction::End);
+        Ok(f)
+    }
+
+    /// Generates a WASM function for a lambda expression
+    /// Similar to generate_function but simpler - lambdas only have an expression body
+    fn generate_lambda(&mut self, lambda_index: usize) -> Result<Function, CompileError> {
+        // Clear local state for this lambda function
+        self.local_symbol_table.clear();
+        self.local_type_table.clear();
         self.local_count = 0;
 
-        // Components just return their JSX body
-        // For now, we'll generate a simple function that returns 0
-        // In a full implementation, this would:
-        // 1. Initialize reactive state (Signal<T> for each let binding)
-        // 2. Set up effects for automatic re-rendering
-        // 3. Generate and return the VDOM structure
+        // Get the lambda info from the lambda table
+        let lambda = self.lambda_table.get_lambda(lambda_index)
+            .ok_or_else(|| CompileError::Generic(format!(
+                "Codegen: Lambda index {} not found in lambda table", lambda_index
+            )))?
+            .clone();
 
+        // Set the current lambda context so generate_expression knows which lambda we're in
+        self.current_lambda_context = Some(lambda_index);
+
+        // If lambda has captured variables, the first parameter (local 0) is the environment pointer
+        if !lambda.captured_vars.is_empty() {
+            // Register environment pointer as local 0
+            // We use a special name "__env" that won't conflict with user variables
+            self.local_symbol_table.insert("__env".to_string(), self.local_count);
+            self.local_count += 1;
+        }
+
+        // Register lambda parameters as locals (they start after the environment pointer if present)
+        for param in &lambda.parameters {
+            self.local_symbol_table.insert(param.value.clone(), self.local_count);
+            self.local_count += 1;
+        }
+
+        // Lambda bodies are expressions, not statement blocks
+        // We don't need to count locals for the body since lambdas can't have let statements
+        // Create the function with no additional locals (only parameters)
         let mut f = Function::new(vec![]);
 
-        // Generate the component body
-        self.generate_expression(&comp.body, &mut f)?;
+        // Generate the lambda body expression
+        self.generate_expression(&lambda.body, &mut f)?;
 
+        // Clear the lambda context
+        self.current_lambda_context = None;
+
+        // End the function
         f.instruction(&Instruction::End);
         Ok(f)
     }
@@ -354,7 +525,7 @@ impl CodeGenerator {
         // 1. Serialize arguments into a buffer.
         // 2. Call a generic `_rpc_call` FFI function.
         // 3. Await and deserialize the result.
-        
+
         // For now, it just returns a dummy value (e.g., -1 for an i32) to indicate it's a stub.
         f.instruction(&Instruction::I32Const(-1));
         f.instruction(&Instruction::End);
@@ -394,8 +565,14 @@ impl CodeGenerator {
                 f.instruction(&Instruction::LocalSet(local_index));
             }
             Statement::Return(return_stmt) => {
+                // Generate the return value
+                // Note: We don't add an End instruction here because the function's
+                // generate_function() method will add it at the end
+                // The Return instruction in WASM is implicit - we just leave the value on the stack
                 self.generate_expression(&return_stmt.value, f)?;
-                f.instruction(&Instruction::End);
+                // After generating the return value, we need to return from the function
+                // In WASM, we use 'return' instruction to exit early
+                f.instruction(&Instruction::Return);
             }
             Statement::Expression(expr) => {
                 self.generate_expression(expr, f)?;
@@ -625,14 +802,49 @@ impl CodeGenerator {
                 f.instruction(&Instruction::I32Const(if *val { 1 } else { 0 }));
             }
             Expression::Identifier(ident) => {
+                // Check if we're in a lambda and this identifier is a captured variable
+                if let Some(lambda_index) = self.current_lambda_context {
+                    if let Some(lambda_info) = self.lambda_table.get_lambda(lambda_index) {
+                        // Check if this variable is in the captured_vars list
+                        if let Some(capture_index) = lambda_info.captured_vars.iter().position(|v| v == &ident.value) {
+                            // This is a captured variable! Load it from the environment
+                            // Environment layout with RC: [ref_count: i32] [var0: i32] [var1: i32] [var2: i32] ...
+                            // ref_count is at offset 0 (4 bytes)
+                            // Variables start at offset 4
+                            // Each variable is at offset (4 + capture_index * 4)
+
+                            // Get the environment pointer (local 0, registered as "__env")
+                            let env_local = *self.local_symbol_table.get("__env")
+                                .ok_or_else(|| CompileError::Generic(
+                                    "Codegen: Environment pointer not found in lambda with captured variables".to_string()
+                                ))?;
+
+                            // Load environment pointer
+                            f.instruction(&Instruction::LocalGet(env_local));
+
+                            // Load the captured variable from environment
+                            // Offset = 4 (skip ref_count) + capture_index * 4
+                            f.instruction(&Instruction::I32Load(wasm_encoder::MemArg {
+                                offset: 4 + (capture_index as u64) * 4,
+                                align: 2,  // 4-byte alignment for i32
+                                memory_index: 0,
+                            }));
+                            return Ok(());
+                        }
+                    }
+                }
+
+                // Not a captured variable - try regular lookup
                 // Try to get as a local variable first
                 if let Some(&local_index) = self.local_symbol_table.get(&ident.value) {
                     f.instruction(&Instruction::LocalGet(local_index));
+                } else if let Some(&func_idx) = self.func_symbols.funcs.get(&ident.value) {
+                    // This is a function name used as a value - push its table index
+                    // This enables: let f = some_func;
+                    f.instruction(&Instruction::I32Const(func_idx as i32));
                 } else {
-                    // If not found as local, it might be:
-                    // 1. A function name being used incorrectly as an identifier
-                    // 2. A forward reference or parsing issue
-                    // For now, push a dummy value to avoid breaking WASM generation
+                    // If not found as local or function, push dummy value
+                    // This might be a forward reference or parsing issue
                     // TODO: Improve parsing/semantic analysis to catch these issues earlier
                     f.instruction(&Instruction::I32Const(0));
                 }
@@ -675,11 +887,92 @@ impl CodeGenerator {
                     ))),
                 }
             }
-            Expression::Lambda(lambda) => {
-                // For now, lambdas are compiled inline as code blocks
-                // In a full implementation, they would be compiled to function table entries
-                // For simple cases like `() => count + 1`, we just generate the body
-                self.generate_expression(&lambda.body, f)?;
+            Expression::Lambda(_lambda) => {
+                // Lambda expressions are converted to anonymous functions with reference-counted environments
+                // Closures are represented as a pair: [func_index, env_ptr]
+                //
+                // For lambdas with NO captured variables:
+                //   Return just the function index (simpler, no environment needed)
+                //
+                // For lambdas WITH captured variables:
+                //   1. Allocate environment struct in heap with ref count
+                //   2. Initialize ref count to 1
+                //   3. Store captured variable values in environment
+                //   4. Return a closure tuple [func_index, env_ptr]
+                //
+                // Environment layout with reference counting:
+                //   [ref_count: i32 (4 bytes)] [var0: i32] [var1: i32] [var2: i32] ...
+
+                // Get the current lambda's index from the encounter counter
+                let lambda_id = self.lambda_encounter_counter;
+                self.lambda_encounter_counter += 1;
+
+                // Look up the lambda info
+                let lambda_info = self.lambda_table.get_lambda(lambda_id)
+                    .ok_or_else(|| CompileError::Generic(format!(
+                        "Codegen: Lambda {} not found in lambda table (total: {})",
+                        lambda_id, self.lambda_table.lambdas.len()
+                    )))?
+                    .clone();
+
+                if lambda_info.captured_vars.is_empty() {
+                    // Simple case: No captured variables
+                    // Just return the function index
+                    f.instruction(&Instruction::I32Const(lambda_info.func_index as i32));
+                } else {
+                    // Complex case: Lambda has captured variables
+                    // We need to allocate a reference-counted closure environment
+
+                    // Calculate environment size: 4 bytes for ref_count + 4 bytes per captured variable
+                    let env_size = 4 + (lambda_info.captured_vars.len() as u32) * 4;
+
+                    // Allocate environment struct on the heap
+                    let env_ptr = self.heap_pointer;
+                    self.heap_pointer += env_size;
+
+                    // Initialize reference count to 1 (this is the first reference)
+                    f.instruction(&Instruction::I32Const(env_ptr as i32));
+                    f.instruction(&Instruction::I32Const(1));
+                    f.instruction(&Instruction::I32Store(wasm_encoder::MemArg {
+                        offset: 0,  // ref_count is at offset 0
+                        align: 2,
+                        memory_index: 0,
+                    }));
+
+                    // Store each captured variable value into the environment
+                    // Variables start at offset 4 (after the ref_count field)
+                    for (i, var_name) in lambda_info.captured_vars.iter().enumerate() {
+                        // Get the local index of the captured variable
+                        if let Some(&local_index) = self.local_symbol_table.get(var_name) {
+                            // Push environment pointer
+                            f.instruction(&Instruction::I32Const(env_ptr as i32));
+
+                            // Load the captured variable value
+                            f.instruction(&Instruction::LocalGet(local_index));
+
+                            // Store it in the environment at offset (4 + i * 4)
+                            // Offset 0-3: ref_count
+                            // Offset 4+: captured variables
+                            f.instruction(&Instruction::I32Store(wasm_encoder::MemArg {
+                                offset: (4 + (i as u64) * 4),  // +4 to skip ref_count
+                                align: 2,  // 4-byte alignment for i32
+                                memory_index: 0,
+                            }));
+                        }
+                        // If variable not found in local scope, skip (shouldn't happen with proper capture analysis)
+                    }
+
+                    // For now, return just the function index
+                    // TODO: Full closure implementation should return tuple [func_index, env_ptr]
+                    // and update lambda signatures to accept env_ptr as first parameter
+                    f.instruction(&Instruction::I32Const(lambda_info.func_index as i32));
+
+                    // Store env_ptr for potential future use
+                    // In a complete implementation, we'd:
+                    // 1. Allocate a closure struct: [func_index, env_ptr]
+                    // 2. Return pointer to this closure struct
+                    // 3. Update call sites to extract func_index and env_ptr when calling
+                }
             }
             Expression::FunctionCall(call) => {
                 // Generate function call
@@ -923,6 +1216,16 @@ impl CodeGenerator {
                     "// Try operator".to_string()
                 ));
             }
+            Expression::Await(await_expr) => {
+                // Await operator for async/await
+                // In a full implementation, this would:
+                // 1. Evaluate the inner expression (which should return Future<T>)
+                // 2. Suspend the current execution
+                // 3. Wait for the future to resolve
+                // 4. Resume execution with the resolved value
+                // For now, just evaluate the inner expression directly
+                self.generate_expression(&await_expr.expression, f)?;
+            }
             Expression::IfExpression(if_expr) => {
                 // Generate code for if-expression: if cond { then_expr } else { else_expr }
                 // This is an expression, so it must produce a value on the stack
@@ -1008,9 +1311,10 @@ impl CodeGenerator {
         Ok(VNode::Element { tag, attrs, children })
     }
 
+    #[allow(unused_variables)] // content used in future JSX implementation
     fn generate_vnode(&mut self, vnode: &VNode, f: &mut Function) -> Result<(), CompileError> {
         match vnode {
-            VNode::Element { tag, attrs, children } => {
+            VNode::Element { tag: _, attrs: _, children: _ } => {
                 // Call createElement(tag) -> elementId
                 // For now, we'll just push a dummy element ID
                 f.instruction(&Instruction::I32Const(0)); // dummy element ID
@@ -1076,7 +1380,26 @@ impl CodeGenerator {
                         )));
                     }
 
-                    // Look up user-defined function
+                    // Check if this identifier is a local variable (function stored in a variable)
+                    // If so, use call_indirect instead of direct call
+                    if let Some(&local_index) = self.local_symbol_table.get(&ident.value) {
+                        // This is a function stored in a variable - use call_indirect
+                        // The function table index is stored in the local variable
+                        f.instruction(&Instruction::LocalGet(local_index));
+
+                        // Generate call_indirect instruction
+                        // For now, we assume all functions take i32 params and return i32
+                        // Type index 0 is typically fn(i32) -> i32, but we need the correct type
+                        // TODO: Track function signatures to use the correct type index
+                        let type_index = 0;  // Placeholder - should match function signature
+                        f.instruction(&Instruction::CallIndirect {
+                            ty: type_index,
+                            table: 0,  // Table index (we only have one table)
+                        });
+                        return Ok(());
+                    }
+
+                    // Look up user-defined function (direct call)
                     if let Some(&func_idx) = self.func_symbols.funcs.get(&ident.value) {
                         f.instruction(&Instruction::Call(func_idx));
                     } else {
@@ -1091,6 +1414,7 @@ impl CodeGenerator {
         Ok(())
     }
 
+    #[allow(unused_variables)] // arguments used in future method implementations
     fn generate_method_call(
         &mut self,
         field_access: &FieldAccessExpression,
@@ -1279,6 +1603,7 @@ impl CodeGenerator {
 
     /// Recursively generates WASM code for a single match arm
     /// This creates a nested if/else structure
+    #[allow(unused_variables)] // name and fields used in future enum matching implementation
     fn generate_match_arm(
         &mut self,
         arms: &[MatchArm],
@@ -1346,5 +1671,357 @@ impl CodeGenerator {
         }
 
         Ok(())
+    }
+
+    // --- Lambda Collection Methods ---
+
+    /// Collects all lambda expressions from a program for conversion to anonymous functions
+    fn collect_lambdas_from_program(&mut self, program: &Program) {
+        for stmt in &program.statements {
+            self.collect_lambdas_from_statement(stmt);
+        }
+    }
+
+    /// Recursively collects lambda expressions from a statement
+    fn collect_lambdas_from_statement(&mut self, stmt: &Statement) {
+        match stmt {
+            Statement::Let(let_stmt) => {
+                self.collect_lambdas_from_expression(&let_stmt.value);
+            }
+            Statement::Assignment(assign_stmt) => {
+                self.collect_lambdas_from_expression(&assign_stmt.value);
+            }
+            Statement::Return(return_stmt) => {
+                self.collect_lambdas_from_expression(&return_stmt.value);
+            }
+            Statement::Expression(expr) => {
+                self.collect_lambdas_from_expression(expr);
+            }
+            Statement::If(if_stmt) => {
+                self.collect_lambdas_from_expression(&if_stmt.condition);
+                for s in &if_stmt.then_branch.statements {
+                    self.collect_lambdas_from_statement(s);
+                }
+                if let Some(else_stmt) = &if_stmt.else_branch {
+                    self.collect_lambdas_from_statement(else_stmt);
+                }
+            }
+            Statement::While(while_stmt) => {
+                self.collect_lambdas_from_expression(&while_stmt.condition);
+                for s in &while_stmt.body.statements {
+                    self.collect_lambdas_from_statement(s);
+                }
+            }
+            Statement::For(for_stmt) => {
+                if let Some(init) = &for_stmt.init {
+                    self.collect_lambdas_from_statement(init);
+                }
+                self.collect_lambdas_from_expression(&for_stmt.condition);
+                for s in &for_stmt.body.statements {
+                    self.collect_lambdas_from_statement(s);
+                }
+                if let Some(update) = &for_stmt.update {
+                    self.collect_lambdas_from_statement(update);
+                }
+            }
+            Statement::ForIn(for_in_stmt) => {
+                self.collect_lambdas_from_expression(&for_in_stmt.iterator);
+                for s in &for_in_stmt.body.statements {
+                    self.collect_lambdas_from_statement(s);
+                }
+            }
+            Statement::Function(func_def) => {
+                for s in &func_def.body.statements {
+                    self.collect_lambdas_from_statement(s);
+                }
+            }
+            Statement::Component(comp) => {
+                for s in &comp.body.statements {
+                    self.collect_lambdas_from_statement(s);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Recursively collects lambda expressions from an expression
+    fn collect_lambdas_from_expression(&mut self, expr: &Expression) {
+        match expr {
+            Expression::Lambda(lambda) => {
+                // Found a lambda! Add it to the lambda table
+                // For now, we'll assign placeholder indices - these will be updated later
+                let lambda_info = LambdaInfo {
+                    func_index: 0,  // Will be set during Pass 1.5
+                    type_index: 0,  // Will be set during Pass 1.5
+                    parameters: lambda.parameters.clone(),
+                    body: lambda.body.clone(),
+                    captured_vars: Vec::new(),  // TODO: Implement capture analysis
+                };
+                self.lambda_table.add_lambda(lambda_info);
+
+                // Also collect lambdas from the lambda body
+                self.collect_lambdas_from_expression(&lambda.body);
+            }
+            Expression::Prefix(prefix) => {
+                self.collect_lambdas_from_expression(&prefix.right);
+            }
+            Expression::Infix(infix) => {
+                self.collect_lambdas_from_expression(&infix.left);
+                self.collect_lambdas_from_expression(&infix.right);
+            }
+            Expression::FunctionCall(call) => {
+                self.collect_lambdas_from_expression(&call.function);
+                for arg in &call.arguments {
+                    self.collect_lambdas_from_expression(arg);
+                }
+            }
+            Expression::ArrayLiteral(array_lit) => {
+                for elem in &array_lit.elements {
+                    self.collect_lambdas_from_expression(elem);
+                }
+            }
+            Expression::StructLiteral(struct_lit) => {
+                for (_, field_value) in &struct_lit.fields {
+                    self.collect_lambdas_from_expression(field_value);
+                }
+            }
+            Expression::FieldAccess(field_access) => {
+                self.collect_lambdas_from_expression(&field_access.object);
+            }
+            Expression::Match(match_expr) => {
+                self.collect_lambdas_from_expression(&match_expr.scrutinee);
+                for arm in &match_expr.arms {
+                    self.collect_lambdas_from_expression(&arm.body);
+                }
+            }
+            Expression::IndexAccess(index_expr) => {
+                self.collect_lambdas_from_expression(&index_expr.array);
+                self.collect_lambdas_from_expression(&index_expr.index);
+            }
+            Expression::TupleLiteral(tuple_lit) => {
+                for elem in &tuple_lit.elements {
+                    self.collect_lambdas_from_expression(elem);
+                }
+            }
+            Expression::Borrow(borrow_expr) => {
+                self.collect_lambdas_from_expression(&borrow_expr.expression);
+            }
+            Expression::MutableBorrow(borrow_expr) => {
+                self.collect_lambdas_from_expression(&borrow_expr.expression);
+            }
+            Expression::Dereference(deref_expr) => {
+                self.collect_lambdas_from_expression(&deref_expr.expression);
+            }
+            Expression::IfExpression(if_expr) => {
+                self.collect_lambdas_from_expression(&if_expr.condition);
+                self.collect_lambdas_from_expression(&if_expr.then_expr);
+                if let Some(else_expr) = &if_expr.else_expr {
+                    self.collect_lambdas_from_expression(else_expr);
+                }
+            }
+            Expression::Block(block) => {
+                for stmt in &block.statements {
+                    self.collect_lambdas_from_statement(stmt);
+                }
+            }
+            Expression::JsxElement(jsx) => {
+                // Collect lambdas from JSX attributes (event handlers)
+                for attr in &jsx.opening_tag.attributes {
+                    self.collect_lambdas_from_expression(&attr.value);
+                }
+                // Collect lambdas from JSX children
+                for child in &jsx.children {
+                    if let JsxChild::Expression(expr) = child {
+                        self.collect_lambdas_from_expression(expr);
+                    } else if let JsxChild::Element(child_jsx) = child {
+                        self.collect_lambdas_from_expression(&Expression::JsxElement(*child_jsx.clone()));
+                    }
+                }
+            }
+            // Base cases - no nested expressions to search
+            Expression::IntegerLiteral(_)
+            | Expression::FloatLiteral(_)
+            | Expression::BoolLiteral(_)
+            | Expression::StringLiteral(_)
+            | Expression::Identifier(_)
+            | Expression::Range(_)
+            | Expression::TryOperator(_)
+            | Expression::Await(_) => {}
+        }
+    }
+
+    // --- Capture Analysis Methods ---
+    // These methods are for future closure capture implementation (Issue #3)
+
+    /// Analyzes a lambda expression to identify captured variables
+    /// Returns a list of variable names that are referenced but not parameters
+    #[allow(dead_code)]
+    fn analyze_captures(&self, lambda: &LambdaExpression, enclosing_scope: &HashMap<String, u32>) -> Vec<String> {
+        use std::collections::HashSet;
+
+        // Collect all variable references in the lambda body
+        let mut referenced_vars = HashSet::new();
+        self.collect_variable_references(&lambda.body, &mut referenced_vars);
+
+        // Build a set of parameter names for quick lookup
+        let param_names: HashSet<String> = lambda.parameters
+            .iter()
+            .map(|p| p.value.clone())
+            .collect();
+
+        // Filter out parameters and function names - only keep variables from enclosing scope
+        let mut captured: Vec<String> = referenced_vars
+            .into_iter()
+            .filter(|var_name| {
+                // Not a parameter
+                !param_names.contains(var_name) &&
+                // Not a function name
+                !self.func_symbols.funcs.contains_key(var_name) &&
+                // Is in enclosing scope
+                enclosing_scope.contains_key(var_name)
+            })
+            .collect();
+
+        // Sort for deterministic output
+        captured.sort();
+        captured
+    }
+
+    /// Recursively collects all variable references (identifiers) in an expression
+    #[allow(dead_code)]
+    fn collect_variable_references(&self, expr: &Expression, vars: &mut std::collections::HashSet<String>) {
+        match expr {
+            Expression::Identifier(ident) => {
+                vars.insert(ident.value.clone());
+            }
+            Expression::Prefix(prefix) => {
+                self.collect_variable_references(&prefix.right, vars);
+            }
+            Expression::Infix(infix) => {
+                self.collect_variable_references(&infix.left, vars);
+                self.collect_variable_references(&infix.right, vars);
+            }
+            Expression::FunctionCall(call) => {
+                self.collect_variable_references(&call.function, vars);
+                for arg in &call.arguments {
+                    self.collect_variable_references(arg, vars);
+                }
+            }
+            Expression::ArrayLiteral(array_lit) => {
+                for elem in &array_lit.elements {
+                    self.collect_variable_references(elem, vars);
+                }
+            }
+            Expression::StructLiteral(struct_lit) => {
+                for (_, field_value) in &struct_lit.fields {
+                    self.collect_variable_references(field_value, vars);
+                }
+            }
+            Expression::FieldAccess(field_access) => {
+                self.collect_variable_references(&field_access.object, vars);
+            }
+            Expression::Match(match_expr) => {
+                self.collect_variable_references(&match_expr.scrutinee, vars);
+                for arm in &match_expr.arms {
+                    self.collect_variable_references(&arm.body, vars);
+                }
+            }
+            Expression::IndexAccess(index_expr) => {
+                self.collect_variable_references(&index_expr.array, vars);
+                self.collect_variable_references(&index_expr.index, vars);
+            }
+            Expression::TupleLiteral(tuple_lit) => {
+                for elem in &tuple_lit.elements {
+                    self.collect_variable_references(elem, vars);
+                }
+            }
+            Expression::Borrow(borrow_expr) => {
+                self.collect_variable_references(&borrow_expr.expression, vars);
+            }
+            Expression::MutableBorrow(borrow_expr) => {
+                self.collect_variable_references(&borrow_expr.expression, vars);
+            }
+            Expression::Dereference(deref_expr) => {
+                self.collect_variable_references(&deref_expr.expression, vars);
+            }
+            Expression::IfExpression(if_expr) => {
+                self.collect_variable_references(&if_expr.condition, vars);
+                self.collect_variable_references(&if_expr.then_expr, vars);
+                if let Some(else_expr) = &if_expr.else_expr {
+                    self.collect_variable_references(else_expr, vars);
+                }
+            }
+            Expression::Block(block) => {
+                for stmt in &block.statements {
+                    self.collect_variable_references_from_statement(stmt, vars);
+                }
+            }
+            Expression::Lambda(_) => {
+                // Don't traverse into nested lambdas - they have their own scope
+            }
+            // Base cases - no variable references
+            Expression::IntegerLiteral(_)
+            | Expression::FloatLiteral(_)
+            | Expression::BoolLiteral(_)
+            | Expression::StringLiteral(_)
+            | Expression::Range(_)
+            | Expression::TryOperator(_)
+            | Expression::Await(_)
+            | Expression::JsxElement(_) => {}
+        }
+    }
+
+    /// Recursively collects variable references from a statement
+    #[allow(dead_code)]
+    fn collect_variable_references_from_statement(&self, stmt: &Statement, vars: &mut std::collections::HashSet<String>) {
+        match stmt {
+            Statement::Let(let_stmt) => {
+                self.collect_variable_references(&let_stmt.value, vars);
+            }
+            Statement::Assignment(assign_stmt) => {
+                vars.insert(assign_stmt.target.value.clone());
+                self.collect_variable_references(&assign_stmt.value, vars);
+            }
+            Statement::Return(return_stmt) => {
+                self.collect_variable_references(&return_stmt.value, vars);
+            }
+            Statement::Expression(expr) => {
+                self.collect_variable_references(expr, vars);
+            }
+            Statement::If(if_stmt) => {
+                self.collect_variable_references(&if_stmt.condition, vars);
+                for s in &if_stmt.then_branch.statements {
+                    self.collect_variable_references_from_statement(s, vars);
+                }
+                if let Some(else_stmt) = &if_stmt.else_branch {
+                    self.collect_variable_references_from_statement(else_stmt, vars);
+                }
+            }
+            Statement::While(while_stmt) => {
+                self.collect_variable_references(&while_stmt.condition, vars);
+                for s in &while_stmt.body.statements {
+                    self.collect_variable_references_from_statement(s, vars);
+                }
+            }
+            Statement::For(for_stmt) => {
+                if let Some(init) = &for_stmt.init {
+                    self.collect_variable_references_from_statement(init, vars);
+                }
+                self.collect_variable_references(&for_stmt.condition, vars);
+                for s in &for_stmt.body.statements {
+                    self.collect_variable_references_from_statement(s, vars);
+                }
+                if let Some(update) = &for_stmt.update {
+                    self.collect_variable_references_from_statement(update, vars);
+                }
+            }
+            Statement::ForIn(for_in_stmt) => {
+                self.collect_variable_references(&for_in_stmt.iterator, vars);
+                for s in &for_in_stmt.body.statements {
+                    self.collect_variable_references_from_statement(s, vars);
+                }
+            }
+            _ => {}
+        }
     }
 }

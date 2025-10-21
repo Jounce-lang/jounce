@@ -12,7 +12,7 @@ fn main() {
     println!("Source code:\n{}\n", source);
 
     // Lexing
-    let mut lexer = Lexer::new(source);
+    let mut lexer = Lexer::new(source.clone());
     let mut tokens = Vec::new();
     loop {
         let token = lexer.next_token();
@@ -27,7 +27,8 @@ fn main() {
     }
 
     // Parsing
-    let mut parser = Parser::new(tokens);
+    let mut lexer = Lexer::new(source);
+    let mut parser = Parser::new(&mut lexer);
     match parser.parse_program() {
         Ok(program) => {
             println!("\n=== AST ===");

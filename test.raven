@@ -1,3 +1,8 @@
-let my_app = <div class="container">
-    <h1>"Hello, JSX!"</h1>
-</div>;
+function add_ten(n) {
+  return n + 10;
+}
+
+function main() {
+  let f = add_ten;
+  return f(5);
+}

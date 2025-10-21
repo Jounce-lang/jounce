@@ -16,6 +16,12 @@ pub struct CodeSplitter {
     pub client_components: Vec<ComponentDefinition>,
 }
 
+impl Default for CodeSplitter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CodeSplitter {
     pub fn new() -> Self {
         CodeSplitter {
@@ -128,15 +134,7 @@ mod tests {
 
         // Parse the code
         let mut lexer = Lexer::new(source.to_string());
-        let mut tokens = Vec::new();
-        loop {
-            let token = lexer.next_token();
-            let is_eof = token.kind == crate::token::TokenKind::Eof;
-            tokens.push(token);
-            if is_eof { break; }
-        }
-
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::new(&mut lexer);
         let program = parser.parse_program().expect("Parse failed");
 
         // Split the code
@@ -173,15 +171,7 @@ mod tests {
         "#;
 
         let mut lexer = Lexer::new(source.to_string());
-        let mut tokens = Vec::new();
-        loop {
-            let token = lexer.next_token();
-            let is_eof = token.kind == crate::token::TokenKind::Eof;
-            tokens.push(token);
-            if is_eof { break; }
-        }
-
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::new(&mut lexer);
         let program = parser.parse_program().expect("Parse failed");
 
         let mut splitter = CodeSplitter::new();

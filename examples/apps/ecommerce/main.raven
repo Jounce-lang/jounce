@@ -1,0 +1,926 @@
+// 🛍️ ShopOne - Full-Stack E-Commerce Application
+// Demonstrates: Routing, State Management, Forms, Server Functions, Complex JSX
+
+use raven_router::{Router, Route, Link, useRouter, useParams};
+use raven_store::{Store, create_store, Signal, computed, persist};
+use raven_forms::{use_form, required, email, minLength, Form};
+
+// ==================== TYPE DEFINITIONS ====================
+
+struct Product {
+    id: i32,
+    name: String,
+    description: String,
+    price: f64,
+    image_url: String,
+    category: String,
+    stock: i32,
+    rating: f64,
+}
+
+struct CartItem {
+    product_id: i32,
+    product: Product,
+    quantity: i32,
+}
+
+struct Customer {
+    name: String,
+    email: String,
+    address: String,
+    city: String,
+    postal_code: String,
+}
+
+struct Order {
+    id: String,
+    customer: Customer,
+    items: Vec<CartItem>,
+    total: f64,
+    status: String,
+}
+
+struct CartState {
+    items: Vec<CartItem>,
+    total: f64,
+    item_count: i32,
+}
+
+// ==================== SERVER FUNCTIONS ====================
+
+@server
+fn get_products() -> Vec<Product> {
+    println!("[Server] Fetching product catalog");
+
+    return vec![
+        Product {
+            id: 1,
+            name: "Wireless Bluetooth Headphones",
+            description: "Premium noise-canceling headphones with 30-hour battery life",
+            price: 199.99,
+            image_url: "/images/headphones.jpg",
+            category: "Electronics",
+            stock: 45,
+            rating: 4.8,
+        },
+        Product {
+            id: 2,
+            name: "Mechanical Gaming Keyboard",
+            description: "RGB backlit keyboard with Cherry MX switches",
+            price: 149.99,
+            image_url: "/images/keyboard.jpg",
+            category: "Electronics",
+            stock: 32,
+            rating: 4.6,
+        },
+        Product {
+            id: 3,
+            name: "Ergonomic Office Chair",
+            description: "Adjustable lumbar support with breathable mesh back",
+            price: 299.99,
+            image_url: "/images/chair.jpg",
+            category: "Furniture",
+            stock: 18,
+            rating: 4.7,
+        },
+        Product {
+            id: 4,
+            name: "4K Webcam",
+            description: "Ultra HD webcam with auto-focus and built-in microphone",
+            price: 89.99,
+            image_url: "/images/webcam.jpg",
+            category: "Electronics",
+            stock: 67,
+            rating: 4.5,
+        },
+        Product {
+            id: 5,
+            name: "Standing Desk Converter",
+            description: "Height-adjustable desk riser for ergonomic workspace",
+            price: 179.99,
+            image_url: "/images/desk.jpg",
+            category: "Furniture",
+            stock: 23,
+            rating: 4.4,
+        },
+        Product {
+            id: 6,
+            name: "Wireless Mouse",
+            description: "Precision optical mouse with customizable buttons",
+            price: 49.99,
+            image_url: "/images/mouse.jpg",
+            category: "Electronics",
+            stock: 89,
+            rating: 4.3,
+        },
+    ];
+}
+
+@server
+fn get_product_by_id(id: i32) -> Option<Product> {
+    println!("[Server] Fetching product {}", id);
+
+    let products = get_products();
+    for product in products {
+        if product.id == id {
+            return Some(product);
+        }
+    }
+    return None;
+}
+
+@server
+fn submit_order(order: Order) -> Result<String, String> {
+    println!("[Server] Processing order {}", order.id);
+    println!("[Server] Customer: {}", order.customer.email);
+    println!("[Server] Total: ${:.2}", order.total);
+
+    // Validate order
+    if order.items.len() == 0 {
+        return Err("Cart is empty");
+    }
+
+    if order.total <= 0.0 {
+        return Err("Invalid order total");
+    }
+
+    // In real app: Save to database, process payment, send emails
+    println!("[Server] Order placed successfully!");
+
+    return Ok(order.id);
+}
+
+// ==================== GLOBAL STORE ====================
+
+fn create_cart_store() -> Store<CartState> {
+    let initial_state = CartState {
+        items: vec![],
+        total: 0.0,
+        item_count: 0,
+    };
+
+    let store = create_store(initial_state);
+
+    // Persist cart to localStorage
+    persist(store, "shopone_cart");
+
+    return store;
+}
+
+// Cart actions
+fn add_to_cart(store: Store<CartState>, product: Product, quantity: i32) {
+    let current_state = store.get_state();
+    let mut items = current_state.items;
+
+    // Check if product already in cart
+    let mut found = false;
+    for item in items.iter_mut() {
+        if item.product_id == product.id {
+            item.quantity = item.quantity + quantity;
+            found = true;
+            break;
+        }
+    }
+
+    if !found {
+        let new_item = CartItem {
+            product_id: product.id,
+            product: product,
+            quantity: quantity,
+        };
+        items.push(new_item);
+    }
+
+    // Recalculate totals
+    let total = calculate_cart_total(&items);
+    let item_count = items.len() as i32;
+
+    store.set_state(CartState {
+        items: items,
+        total: total,
+        item_count: item_count,
+    });
+}
+
+fn remove_from_cart(store: Store<CartState>, product_id: i32) {
+    let current_state = store.get_state();
+    let mut items = vec![];
+
+    for item in current_state.items {
+        if item.product_id != product_id {
+            items.push(item);
+        }
+    }
+
+    let total = calculate_cart_total(&items);
+    let item_count = items.len() as i32;
+
+    store.set_state(CartState {
+        items: items,
+        total: total,
+        item_count: item_count,
+    });
+}
+
+fn update_quantity(store: Store<CartState>, product_id: i32, quantity: i32) {
+    if quantity <= 0 {
+        remove_from_cart(store, product_id);
+        return;
+    }
+
+    let current_state = store.get_state();
+    let mut items = current_state.items;
+
+    for item in items.iter_mut() {
+        if item.product_id == product_id {
+            item.quantity = quantity;
+            break;
+        }
+    }
+
+    let total = calculate_cart_total(&items);
+
+    store.set_state(CartState {
+        items: items,
+        total: total,
+        item_count: current_state.item_count,
+    });
+}
+
+fn clear_cart(store: Store<CartState>) {
+    store.set_state(CartState {
+        items: vec![],
+        total: 0.0,
+        item_count: 0,
+    });
+}
+
+fn calculate_cart_total(items: &Vec<CartItem>) -> f64 {
+    let mut total = 0.0;
+    for item in items {
+        total = total + (item.product.price * (item.quantity as f64));
+    }
+    return total;
+}
+
+// ==================== COMPONENTS ====================
+
+// Header with cart icon
+component Header(cart_store: Store<CartState>) {
+    let cart_state = cart_store.get_state();
+    let item_count = cart_state.item_count;
+
+    return <header class="header">
+        <div class="container">
+            <Link to="/" class="logo">
+                <h1>ShopOne</h1>
+            </Link>
+
+            <nav class="nav">
+                <Link to="/" class="nav-link">Home</Link>
+                <Link to="/products" class="nav-link">Products</Link>
+                <Link to="/cart" class="nav-link cart-link">
+                    <span>Cart</span>
+                    {item_count > 0 && (
+                        <span class="cart-badge">{item_count}</span>
+                    )}
+                </Link>
+            </nav>
+        </div>
+    </header>;
+}
+
+// Product Card Component
+component ProductCard(product: Product, cart_store: Store<CartState>) {
+    let is_adding = Signal::new(false);
+
+    let handle_add_to_cart = || {
+        is_adding.set(true);
+        add_to_cart(cart_store, product.clone(), 1);
+
+        // Show feedback
+        setTimeout(|| {
+            is_adding.set(false);
+        }, 1000);
+    };
+
+    let in_stock = product.stock > 0;
+
+    return <div class="product-card">
+        <Link to={"/products/" + product.id.to_string()} class="product-image">
+            <img src={product.image_url} alt={product.name} />
+            {!in_stock && (
+                <div class="out-of-stock-badge">Out of Stock</div>
+            )}
+        </Link>
+
+        <div class="product-info">
+            <h3 class="product-name">
+                <Link to={"/products/" + product.id.to_string()}>
+                    {product.name}
+                </Link>
+            </h3>
+
+            <p class="product-description">{product.description}</p>
+
+            <div class="product-meta">
+                <div class="rating">
+                    <span class="stars">{"★".repeat((product.rating as i32))}</span>
+                    <span class="rating-value">{product.rating}</span>
+                </div>
+                <div class="stock">
+                    {in_stock ?
+                        <span class="in-stock">{product.stock} in stock</span> :
+                        <span class="out-of-stock">Out of stock</span>
+                    }
+                </div>
+            </div>
+
+            <div class="product-footer">
+                <div class="price">${product.price}</div>
+                <button
+                    class="btn btn-primary"
+                    onclick={handle_add_to_cart}
+                    disabled={!in_stock || is_adding.get()}
+                >
+                    {is_adding.get() ? "Added!" : "Add to Cart"}
+                </button>
+            </div>
+        </div>
+    </div>;
+}
+
+// Product Grid Page
+component ProductsPage(cart_store: Store<CartState>) {
+    let products = Signal::new(vec![]);
+    let loading = Signal::new(true);
+    let category_filter = Signal::new("All");
+
+    create_effect(|| {
+        let fetched = get_products();
+        products.set(fetched);
+        loading.set(false);
+    });
+
+    let filtered_products = computed(|| {
+        let all_products = products.get();
+        let filter = category_filter.get();
+
+        if filter == "All" {
+            return all_products;
+        }
+
+        let mut filtered = vec![];
+        for product in all_products {
+            if product.category == filter {
+                filtered.push(product);
+            }
+        }
+        return filtered;
+    });
+
+    return <div class="products-page">
+        <div class="container">
+            <div class="page-header">
+                <h1>Our Products</h1>
+                <p>Discover our curated collection of premium products</p>
+            </div>
+
+            <div class="filters">
+                <button
+                    class={category_filter.get() == "All" ? "filter-btn active" : "filter-btn"}
+                    onclick={() => category_filter.set("All")}
+                >
+                    All
+                </button>
+                <button
+                    class={category_filter.get() == "Electronics" ? "filter-btn active" : "filter-btn"}
+                    onclick={() => category_filter.set("Electronics")}
+                >
+                    Electronics
+                </button>
+                <button
+                    class={category_filter.get() == "Furniture" ? "filter-btn active" : "filter-btn"}
+                    onclick={() => category_filter.set("Furniture")}
+                >
+                    Furniture
+                </button>
+            </div>
+
+            {loading.get() ? (
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading products...</p>
+                </div>
+            ) : (
+                <div class="products-grid">
+                    {filtered_products.get().iter().map(|product| {
+                        <ProductCard product={product} cart_store={cart_store} />
+                    })}
+                </div>
+            )}
+        </div>
+    </div>;
+}
+
+// Product Detail Page
+component ProductDetailPage(cart_store: Store<CartState>) {
+    let params = useParams();
+    let product_id = params.get("id").parse::<i32>().unwrap_or(0);
+
+    let product = Signal::new(None);
+    let loading = Signal::new(true);
+    let quantity = Signal::new(1);
+
+    create_effect(|| {
+        let fetched = get_product_by_id(product_id);
+        product.set(fetched);
+        loading.set(false);
+    });
+
+    let handle_add_to_cart = || {
+        match product.get() {
+            Some(p) => {
+                add_to_cart(cart_store, p, quantity.get());
+                quantity.set(1);
+            }
+            None => {}
+        }
+    };
+
+    return <div class="product-detail-page">
+        <div class="container">
+            {loading.get() ? (
+                <div class="loading">Loading...</div>
+            ) : (
+                match product.get() {
+                    Some(p) => {
+                        <div class="product-detail">
+                            <div class="product-images">
+                                <img src={p.image_url} alt={p.name} class="main-image" />
+                            </div>
+
+                            <div class="product-details">
+                                <h1>{p.name}</h1>
+                                <div class="rating-section">
+                                    <span class="stars">{"★".repeat((p.rating as i32))}</span>
+                                    <span class="rating-value">{p.rating} / 5.0</span>
+                                </div>
+
+                                <div class="price-section">
+                                    <div class="price">${p.price}</div>
+                                    <div class="stock-info">
+                                        {p.stock > 0 ?
+                                            <span class="in-stock">{p.stock} in stock</span> :
+                                            <span class="out-of-stock">Out of stock</span>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="description">
+                                    <h2>Description</h2>
+                                    <p>{p.description}</p>
+                                </div>
+
+                                <div class="add-to-cart-section">
+                                    <div class="quantity-selector">
+                                        <button
+                                            onclick={() => {
+                                                if quantity.get() > 1 {
+                                                    quantity.set(quantity.get() - 1);
+                                                }
+                                            }}
+                                            disabled={quantity.get() <= 1}
+                                        >
+                                            -
+                                        </button>
+                                        <input
+                                            type="number"
+                                            value={quantity.get().to_string()}
+                                            min="1"
+                                            max={p.stock.to_string()}
+                                            readonly
+                                        />
+                                        <button
+                                            onclick={() => {
+                                                if quantity.get() < p.stock {
+                                                    quantity.set(quantity.get() + 1);
+                                                }
+                                            }}
+                                            disabled={quantity.get() >= p.stock}
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+
+                                    <button
+                                        class="btn btn-primary btn-large"
+                                        onclick={handle_add_to_cart}
+                                        disabled={p.stock <= 0}
+                                    >
+                                        Add to Cart
+                                    </button>
+                                </div>
+
+                                <div class="product-meta">
+                                    <div class="meta-item">
+                                        <strong>Category:</strong> {p.category}
+                                    </div>
+                                    <div class="meta-item">
+                                        <strong>SKU:</strong> PROD-{p.id}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    None => {
+                        <div class="not-found">
+                            <h1>Product Not Found</h1>
+                            <p>The product you're looking for doesn't exist.</p>
+                            <Link to="/products" class="btn btn-primary">
+                                Back to Products
+                            </Link>
+                        </div>
+                    }
+                }
+            )}
+        </div>
+    </div>;
+}
+
+// Cart Page
+component CartPage(cart_store: Store<CartState>) {
+    let cart_state = cart_store.get_state();
+
+    let handle_update_quantity = (product_id: i32, new_quantity: i32) => {
+        update_quantity(cart_store, product_id, new_quantity);
+    };
+
+    let handle_remove = (product_id: i32) => {
+        remove_from_cart(cart_store, product_id);
+    };
+
+    return <div class="cart-page">
+        <div class="container">
+            <h1>Shopping Cart</h1>
+
+            {cart_state.items.len() == 0 ? (
+                <div class="empty-cart">
+                    <h2>Your cart is empty</h2>
+                    <p>Add some products to get started!</p>
+                    <Link to="/products" class="btn btn-primary">
+                        Browse Products
+                    </Link>
+                </div>
+            ) : (
+                <div class="cart-content">
+                    <div class="cart-items">
+                        {cart_state.items.iter().map(|item| {
+                            let subtotal = item.product.price * (item.quantity as f64);
+
+                            <div class="cart-item">
+                                <img src={item.product.image_url} alt={item.product.name} class="item-image" />
+
+                                <div class="item-details">
+                                    <h3>{item.product.name}</h3>
+                                    <p class="item-price">${item.product.price}</p>
+                                </div>
+
+                                <div class="item-quantity">
+                                    <button
+                                        onclick={() => handle_update_quantity(item.product_id, item.quantity - 1)}
+                                        disabled={item.quantity <= 1}
+                                    >
+                                        -
+                                    </button>
+                                    <span>{item.quantity}</span>
+                                    <button
+                                        onclick={() => handle_update_quantity(item.product_id, item.quantity + 1)}
+                                        disabled={item.quantity >= item.product.stock}
+                                    >
+                                        +
+                                    </button>
+                                </div>
+
+                                <div class="item-subtotal">
+                                    <strong>${subtotal}</strong>
+                                </div>
+
+                                <button
+                                    class="btn-remove"
+                                    onclick={() => handle_remove(item.product_id)}
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        })}
+                    </div>
+
+                    <div class="cart-summary">
+                        <h2>Order Summary</h2>
+
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span>${cart_state.total}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Shipping</span>
+                            <span>Free</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Tax</span>
+                            <span>${(cart_state.total * 0.1)}</span>
+                        </div>
+                        <div class="summary-row total">
+                            <strong>Total</strong>
+                            <strong>${(cart_state.total * 1.1)}</strong>
+                        </div>
+
+                        <Link to="/checkout" class="btn btn-primary btn-block">
+                            Proceed to Checkout
+                        </Link>
+
+                        <Link to="/products" class="btn btn-secondary btn-block">
+                            Continue Shopping
+                        </Link>
+                    </div>
+                </div>
+            )}
+        </div>
+    </div>;
+}
+
+// Checkout Page with Form
+component CheckoutPage(cart_store: Store<CartState>) {
+    let router = useRouter();
+    let cart_state = cart_store.get_state();
+
+    let submitting = Signal::new(false);
+    let error = Signal::new("");
+
+    let form = use_form({
+        name: {
+            initial_value: "",
+            validators: [required("Name is required"), minLength(2, "Name too short")],
+        },
+        email: {
+            initial_value: "",
+            validators: [required("Email is required"), email("Invalid email")],
+        },
+        address: {
+            initial_value: "",
+            validators: [required("Address is required")],
+        },
+        city: {
+            initial_value: "",
+            validators: [required("City is required")],
+        },
+        postal_code: {
+            initial_value: "",
+            validators: [required("Postal code is required")],
+        },
+    });
+
+    let handle_submit = (e: Event) => {
+        e.preventDefault();
+
+        if !form.is_valid() {
+            return;
+        }
+
+        submitting.set(true);
+        error.set("");
+
+        let customer = Customer {
+            name: form.get_value("name"),
+            email: form.get_value("email"),
+            address: form.get_value("address"),
+            city: form.get_value("city"),
+            postal_code: form.get_value("postal_code"),
+        };
+
+        let order = Order {
+            id: "ORD-" + Date.now().to_string(),
+            customer: customer,
+            items: cart_state.items.clone(),
+            total: cart_state.total * 1.1,
+            status: "pending",
+        };
+
+        match submit_order(order) {
+            Ok(order_id) => {
+                clear_cart(cart_store);
+                router.navigate("/success?order=" + order_id);
+            }
+            Err(err_msg) => {
+                error.set(err_msg);
+                submitting.set(false);
+            }
+        }
+    };
+
+    if cart_state.items.len() == 0 {
+        return <div class="checkout-page">
+            <div class="container">
+                <div class="empty-cart">
+                    <h2>Your cart is empty</h2>
+                    <Link to="/products" class="btn btn-primary">
+                        Browse Products
+                    </Link>
+                </div>
+            </div>
+        </div>;
+    }
+
+    return <div class="checkout-page">
+        <div class="container">
+            <h1>Checkout</h1>
+
+            <div class="checkout-content">
+                <div class="checkout-form">
+                    <h2>Shipping Information</h2>
+
+                    <form onsubmit={handle_submit}>
+                        <Form form={form}>
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <Field name="name" placeholder="John Doe" />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Email</label>
+                                <Field name="email" type="email" placeholder="john@example.com" />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Address</label>
+                                <Field name="address" placeholder="123 Main St" />
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>City</label>
+                                    <Field name="city" placeholder="New York" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Postal Code</label>
+                                    <Field name="postal_code" placeholder="10001" />
+                                </div>
+                            </div>
+
+                            {error.get() != "" && (
+                                <div class="alert alert-error">
+                                    {error.get()}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-block"
+                                disabled={!form.is_valid() || submitting.get()}
+                            >
+                                {submitting.get() ? "Processing..." : "Place Order"}
+                            </button>
+                        </Form>
+                    </form>
+                </div>
+
+                <div class="order-summary">
+                    <h2>Order Summary</h2>
+
+                    <div class="summary-items">
+                        {cart_state.items.iter().map(|item| {
+                            <div class="summary-item">
+                                <span>{item.product.name} x {item.quantity}</span>
+                                <span>${item.product.price * (item.quantity as f64)}</span>
+                            </div>
+                        })}
+                    </div>
+
+                    <div class="summary-totals">
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span>${cart_state.total}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Tax (10%)</span>
+                            <span>${(cart_state.total * 0.1)}</span>
+                        </div>
+                        <div class="summary-row total">
+                            <strong>Total</strong>
+                            <strong>${(cart_state.total * 1.1)}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>;
+}
+
+// Success Page
+component SuccessPage() {
+    let query = useQuery();
+    let order_id = query.get("order").unwrap_or("UNKNOWN");
+
+    return <div class="success-page">
+        <div class="container">
+            <div class="success-message">
+                <div class="success-icon">✓</div>
+                <h1>Order Placed Successfully!</h1>
+                <p>Your order has been received and is being processed.</p>
+                <div class="order-info">
+                    <strong>Order ID:</strong> {order_id}
+                </div>
+                <p class="email-note">
+                    A confirmation email has been sent to your email address.
+                </p>
+                <Link to="/products" class="btn btn-primary">
+                    Continue Shopping
+                </Link>
+            </div>
+        </div>
+    </div>;
+}
+
+// Home Page
+component HomePage(cart_store: Store<CartState>) {
+    return <div class="home-page">
+        <div class="hero">
+            <div class="container">
+                <h1>Welcome to ShopOne</h1>
+                <p>Discover premium products for your home and office</p>
+                <Link to="/products" class="btn btn-primary btn-large">
+                    Shop Now
+                </Link>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="container">
+                <div class="feature">
+                    <h3>Free Shipping</h3>
+                    <p>On all orders over $50</p>
+                </div>
+                <div class="feature">
+                    <h3>Secure Payment</h3>
+                    <p>100% secure transactions</p>
+                </div>
+                <div class="feature">
+                    <h3>Easy Returns</h3>
+                    <p>30-day return policy</p>
+                </div>
+            </div>
+        </div>
+    </div>;
+}
+
+// ==================== MAIN APP ====================
+
+component App() {
+    // Initialize cart store
+    let cart_store = create_cart_store();
+
+    return <div class="app">
+        <Router>
+            <Header cart_store={cart_store} />
+
+            <main class="main-content">
+                <Route path="/" exact>
+                    <HomePage cart_store={cart_store} />
+                </Route>
+
+                <Route path="/products" exact>
+                    <ProductsPage cart_store={cart_store} />
+                </Route>
+
+                <Route path="/products/:id">
+                    <ProductDetailPage cart_store={cart_store} />
+                </Route>
+
+                <Route path="/cart">
+                    <CartPage cart_store={cart_store} />
+                </Route>
+
+                <Route path="/checkout">
+                    <CheckoutPage cart_store={cart_store} />
+                </Route>
+
+                <Route path="/success">
+                    <SuccessPage />
+                </Route>
+            </main>
+
+            <footer class="footer">
+                <div class="container">
+                    <p>&copy; 2025 ShopOne. Built with RavensOne.</p>
+                </div>
+            </footer>
+        </Router>
+    </div>;
+}
+
+// Entry point
+fn main() {
+    mount(App(), "#app");
+}
