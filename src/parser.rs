@@ -10,7 +10,7 @@ enum Precedence {
     Equals,      // == !=
     LessGreater, // < > <= >=
     Sum,         // + -
-    Product,     // * /
+    Product,     // * / %
 }
 
 lazy_static::lazy_static! {
@@ -25,6 +25,8 @@ lazy_static::lazy_static! {
         m.insert(TokenKind::Plus, Precedence::Sum);
         m.insert(TokenKind::Minus, Precedence::Sum);
         m.insert(TokenKind::Star, Precedence::Product);
+        m.insert(TokenKind::Slash, Precedence::Product);
+        m.insert(TokenKind::Percent, Precedence::Product);
         m
     };
 }

@@ -1,0 +1,117 @@
+// Collections demonstration - HashMap, HashSet, and Vec iterator methods
+
+fn demo_hashmap() {
+    // Create a new HashMap
+    let scores = HashMap::new();
+
+    // Insert key-value pairs
+    scores.insert("Alice", 95);
+    scores.insert("Bob", 87);
+    scores.insert("Charlie", 92);
+
+    // Get a value
+    match scores.get("Alice") {
+        Some(score) => println!("Alice's score: {}", score),
+        None => println!("Not found"),
+    }
+
+    // Check if key exists
+    if scores.contains_key("Bob") {
+        println!("Bob is in the scores");
+    }
+
+    // Iterate over entries
+    for entry in scores.entries() {
+        let (name, score) = entry;
+        println!("{}: {}", name, score);
+    }
+}
+
+fn demo_hashset() {
+    // Create a new HashSet
+    let fruits = HashSet::new();
+
+    // Insert values
+    fruits.insert("apple");
+    fruits.insert("banana");
+    fruits.insert("orange");
+    fruits.insert("apple"); // Duplicate - won't be added
+
+    // Check membership
+    if fruits.contains("banana") {
+        println!("We have bananas!");
+    }
+
+    // Set operations
+    let veggies = HashSet::new();
+    veggies.insert("carrot");
+    veggies.insert("lettuce");
+
+    let all_food = fruits.union(&veggies);
+    println!("Total unique foods: {}", all_food.len());
+}
+
+fn demo_vec_iterators() {
+    let numbers = [1, 2, 3, 4, 5];
+
+    // Map: Transform each element
+    let doubled = numbers.map(|x| x * 2);
+    // Result: [2, 4, 6, 8, 10]
+
+    // Filter: Keep only matching elements
+    let evens = numbers.filter(|x| x % 2 == 0);
+    // Result: [2, 4]
+
+    // Reduce: Combine into single value
+    let sum = numbers.reduce(0, |acc, x| acc + x);
+    println!("Sum: {}", sum); // 15
+
+    // Find: Get first matching element
+    match numbers.find(|x| x > 3) {
+        Some(value) => println!("Found: {}", value), // 4
+        None => println!("Not found"),
+    }
+
+    // Any: Check if any element matches
+    let has_big = numbers.any(|x| x > 10);
+    println!("Has number > 10: {}", has_big); // false
+
+    // All: Check if all elements match
+    let all_positive = numbers.all(|x| x > 0);
+    println!("All positive: {}", all_positive); // true
+
+    // Take: Get first n elements
+    let first_three = numbers.take(3);
+    // Result: [1, 2, 3]
+
+    // Skip: Skip first n elements
+    let last_two = numbers.skip(3);
+    // Result: [4, 5]
+
+    // Zip: Combine two arrays
+    let letters = ["a", "b", "c"];
+    let pairs = numbers.zip(&letters);
+    // Result: [(1, "a"), (2, "b"), (3, "c")]
+
+    // Enumerate: Get (index, value) pairs
+    let indexed = numbers.enumerate();
+    // Result: [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]
+
+    // Chain multiple operations
+    let result = numbers
+        .filter(|x| x % 2 == 0)
+        .map(|x| x * 10)
+        .take(2);
+    // Result: [20, 40]
+}
+
+fn main() {
+    println!("=== HashMap Demo ===");
+    demo_hashmap();
+
+    println!("\n=== HashSet Demo ===");
+    demo_hashset();
+
+    println!("\n=== Vec Iterator Methods Demo ===");
+    demo_vec_iterators();
+}

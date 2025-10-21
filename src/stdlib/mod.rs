@@ -14,6 +14,7 @@ pub mod vec;
 pub mod json;
 pub mod time;
 pub mod hashmap;
+pub mod hashset;
 pub mod string;
 pub mod fs;
 pub mod math;

@@ -10,7 +10,7 @@
 // - server.js: Server-side code with HTTP server and RPC handlers
 // - client.js: Client-side code with RPC stubs and UI components
 
-use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement};
+use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern};
 use crate::code_splitter::CodeSplitter;
 use crate::rpc_generator::RPCGenerator;
 use crate::source_map::SourceMapBuilder;
@@ -460,8 +460,46 @@ impl JSEmitter {
                 let body = self.generate_block_js(&while_stmt.body);
                 format!("while ({}) {{\n{}\n  }}", condition, body)
             }
+            Statement::Enum(enum_def) => {
+                self.generate_enum_js(enum_def)
+            }
             _ => "// Unsupported statement".to_string(),
         }
+    }
+
+    /// Generates JavaScript helper functions for enum variants
+    fn generate_enum_js(&self, enum_def: &crate::ast::EnumDefinition) -> String {
+        let mut code = String::new();
+        code.push_str(&format!("// Enum: {}\n", enum_def.name.value));
+
+        for variant in &enum_def.variants {
+            let variant_name = &variant.name.value;
+
+            if let Some(fields) = &variant.fields {
+                // Variant with data - generate constructor function
+                if fields.len() == 1 {
+                    // Single field - simple constructor
+                    code.push_str(&format!(
+                        "function {}(data) {{ return {{ variant: \"{}\", data: data }}; }}\n",
+                        variant_name, variant_name
+                    ));
+                } else {
+                    // Multiple fields - use spread/array
+                    code.push_str(&format!(
+                        "function {}(...data) {{ return {{ variant: \"{}\", data: data }}; }}\n",
+                        variant_name, variant_name
+                    ));
+                }
+            } else {
+                // Unit variant - no data
+                code.push_str(&format!(
+                    "const {} = {{ variant: \"{}\" }};\n",
+                    variant_name, variant_name
+                ));
+            }
+        }
+
+        code
     }
 
     /// Generates JavaScript code for an expression
@@ -534,7 +572,101 @@ impl JSEmitter {
                 let inner = self.generate_expression_js(&await_expr.expression);
                 format!("await {}", inner)
             }
+            Expression::Match(match_expr) => {
+                self.generate_match_expression_js(match_expr)
+            }
             _ => "/* Unsupported expression */".to_string(),
+        }
+    }
+
+    /// Generates JavaScript code for a match expression
+    /// Enums are represented as: { variant: "VariantName", data: value }
+    fn generate_match_expression_js(&self, match_expr: &crate::ast::MatchExpression) -> String {
+        let scrutinee = self.generate_expression_js(&match_expr.scrutinee);
+
+        // Generate an IIFE (Immediately Invoked Function Expression) for the match
+        let mut code = format!("(() => {{\n");
+        code.push_str(&format!("  const __match_value = {};\n", scrutinee));
+
+        // Generate nested if-else for each arm
+        for (i, arm) in match_expr.arms.iter().enumerate() {
+            let condition = self.generate_pattern_condition_js(&arm.pattern, "__match_value");
+            let body = self.generate_pattern_body_js(&arm.pattern, "__match_value", &arm.body);
+
+            if i == 0 {
+                code.push_str(&format!("  if ({}) {{\n", condition));
+            } else if matches!(arm.pattern, Pattern::Wildcard | Pattern::Identifier(_)) {
+                // Wildcard or identifier patterns - no condition needed (always matches)
+                code.push_str("  else {\n");
+            } else {
+                code.push_str(&format!("  else if ({}) {{\n", condition));
+            }
+
+            code.push_str(&format!("    return {};\n", body));
+            code.push_str("  }\n");
+        }
+
+        code.push_str("})()");
+        code
+    }
+
+    /// Generates the condition for a pattern match
+    fn generate_pattern_condition_js(&self, pattern: &Pattern, scrutinee_var: &str) -> String {
+        match pattern {
+            Pattern::Wildcard | Pattern::Identifier(_) => {
+                // Wildcards and identifiers always match
+                "true".to_string()
+            }
+            Pattern::Literal(expr) => {
+                // Compare with literal value
+                let literal_val = self.generate_expression_js(expr);
+                format!("{} === {}", scrutinee_var, literal_val)
+            }
+            Pattern::EnumVariant { name, .. } => {
+                // Extract the variant name (after :: if present)
+                let variant_name = if name.value.contains("::") {
+                    name.value.split("::").last().unwrap_or(&name.value)
+                } else {
+                    &name.value
+                };
+                format!("{}.variant === \"{}\"", scrutinee_var, variant_name)
+            }
+        }
+    }
+
+    /// Generates the body for a pattern match, including variable bindings
+    fn generate_pattern_body_js(&self, pattern: &Pattern, scrutinee_var: &str, body_expr: &Expression) -> String {
+        match pattern {
+            Pattern::Identifier(ident) => {
+                // Bind the scrutinee to the identifier
+                let body = self.generate_expression_js(body_expr);
+                format!("(() => {{ const {} = {}; return {}; }})()", ident.value, scrutinee_var, body)
+            }
+            Pattern::EnumVariant { fields: Some(field_patterns), .. } => {
+                // Extract fields from enum variant
+                let mut bindings = Vec::new();
+                for (i, field_pattern) in field_patterns.iter().enumerate() {
+                    if let Pattern::Identifier(ident) = field_pattern {
+                        // For tuple-style variants, data is a single value or array
+                        if field_patterns.len() == 1 {
+                            bindings.push(format!("const {} = {}.data", ident.value, scrutinee_var));
+                        } else {
+                            bindings.push(format!("const {} = {}.data[{}]", ident.value, scrutinee_var, i));
+                        }
+                    }
+                }
+
+                let body = self.generate_expression_js(body_expr);
+                if bindings.is_empty() {
+                    body
+                } else {
+                    format!("(() => {{ {}; return {}; }})()", bindings.join("; "), body)
+                }
+            }
+            _ => {
+                // No bindings needed, just generate the body
+                self.generate_expression_js(body_expr)
+            }
         }
     }
 
