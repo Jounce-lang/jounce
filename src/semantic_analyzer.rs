@@ -387,7 +387,26 @@ impl SemanticAnalyzer {
     }
 
     fn analyze_let_statement(&mut self, stmt: &LetStatement) -> Result<ResolvedType, CompileError> {
-        let mut value_type = self.analyze_expression(&stmt.value)?;
+        let annotation_type = stmt
+            .type_annotation
+            .as_ref()
+            .map(|ty| self.type_expression_to_resolved_type(ty));
+
+        let mut value_type = if let Some(expected) = annotation_type.as_ref() {
+            self.analyze_expression_with_expected(&stmt.value, Some(expected))?
+        } else {
+            self.analyze_expression(&stmt.value)?
+        };
+
+        if let Some(expected_type) = annotation_type {
+            if !self.types_compatible(&expected_type, &value_type) {
+                return Err(CompileError::Generic(format!(
+                    "Type mismatch in let binding '{}': expected '{}', found '{}'",
+                    stmt.name.value, expected_type, value_type
+                )));
+            }
+            value_type = expected_type;
+        }
 
         // Auto-wrap in Signal<T> if inside a component and type is simple
         if self.in_component && self.should_be_reactive(&value_type) {
@@ -416,6 +435,14 @@ impl SemanticAnalyzer {
     }
 
     fn analyze_expression(&mut self, expr: &Expression) -> Result<ResolvedType, CompileError> {
+        self.analyze_expression_with_expected(expr, None)
+    }
+
+    fn analyze_expression_with_expected(
+        &mut self,
+        expr: &Expression,
+        expected: Option<&ResolvedType>,
+    ) -> Result<ResolvedType, CompileError> {
         match expr {
             Expression::IntegerLiteral(_) => Ok(ResolvedType::Integer),
             Expression::FloatLiteral(_) => Ok(ResolvedType::Float),
@@ -429,29 +456,56 @@ impl SemanticAnalyzer {
                 }
             }
             Expression::Prefix(prefix_expr) => {
-                self.analyze_expression(&prefix_expr.right)?;
+                self.analyze_expression_with_expected(&prefix_expr.right, None)?;
                 Ok(ResolvedType::Integer)
             }
             Expression::Infix(infix_expr) => self.analyze_infix_expression(infix_expr),
             Expression::ArrayLiteral(array_lit) => {
-                if array_lit.elements.is_empty() {
-                    // Empty array - we don't know the element type yet
-                    Ok(ResolvedType::Array(Box::new(ResolvedType::Unknown)))
-                } else {
-                    // Infer type from first element
-                    let first_type = self.analyze_expression(&array_lit.elements[0])?;
-                    // TODO: Verify all elements have the same type
-                    for elem in &array_lit.elements[1..] {
-                        self.analyze_expression(elem)?;
+                let mut expected_element_type = match expected {
+                    Some(ResolvedType::Array(inner)) => Some((**inner).clone()),
+                    Some(other) => {
+                        return Err(CompileError::Generic(format!(
+                            "Expected type '{}' does not match array literal",
+                            other
+                        )));
                     }
-                    Ok(ResolvedType::Array(Box::new(first_type)))
+                    None => None,
+                };
+
+                if array_lit.elements.is_empty() {
+                    return Ok(ResolvedType::Array(Box::new(
+                        expected_element_type.unwrap_or(ResolvedType::Unknown),
+                    )));
                 }
+
+                for (index, elem) in array_lit.elements.iter().enumerate() {
+                    let elem_type = self.analyze_expression_with_expected(
+                        elem,
+                        expected_element_type.as_ref(),
+                    )?;
+                    if let Some(expected_ty) = &expected_element_type {
+                        if !self.types_compatible(expected_ty, &elem_type) {
+                            return Err(CompileError::Generic(format!(
+                                "Array element type mismatch at index {}: expected '{}', found '{}'",
+                                index,
+                                expected_ty,
+                                elem_type
+                            )));
+                        }
+                    } else {
+                        expected_element_type = Some(elem_type.clone());
+                    }
+                }
+
+                Ok(ResolvedType::Array(Box::new(
+                    expected_element_type.unwrap_or(ResolvedType::Unknown),
+                )))
             }
             Expression::TupleLiteral(tuple_lit) => {
                 // Infer type for each element
                 let mut element_types = Vec::new();
                 for elem in &tuple_lit.elements {
-                    let elem_type = self.analyze_expression(elem)?;
+                    let elem_type = self.analyze_expression_with_expected(elem, None)?;
                     element_types.push(elem_type);
                 }
                 Ok(ResolvedType::Tuple(element_types))
@@ -467,10 +521,13 @@ impl SemanticAnalyzer {
 
                 // Analyze all field values and check types
                 for (field_name, field_value) in &struct_lit.fields {
-                    let value_type = self.analyze_expression(field_value)?;
+                    let _value_type =
+                        self.analyze_expression_with_expected(field_value, None)?;
 
                     // Look up expected field type
-                    if let Some(expected_type) = self.structs.get_field_type(&struct_lit.name.value, &field_name.value) {
+                    if let Some(_expected_type) =
+                        self.structs.get_field_type(&struct_lit.name.value, &field_name.value)
+                    {
                         // TODO: Add type compatibility checking here
                         // For now, just accept any type
                     } else {
@@ -487,12 +544,15 @@ impl SemanticAnalyzer {
             }
             Expression::FieldAccess(field_access) => {
                 // Analyze the object expression to get its type
-                let object_type = self.analyze_expression(&field_access.object)?;
+                let object_type =
+                    self.analyze_expression_with_expected(&field_access.object, None)?;
 
                 // If it's a struct type, look up the field
                 match object_type {
                     ResolvedType::Struct(struct_name) => {
-                        if let Some(field_type) = self.structs.get_field_type(&struct_name, &field_access.field.value) {
+                        if let Some(field_type) =
+                            self.structs.get_field_type(&struct_name, &field_access.field.value)
+                        {
                             Ok(field_type)
                         } else {
                             Err(CompileError::Generic(format!(
@@ -510,10 +570,12 @@ impl SemanticAnalyzer {
             }
             Expression::IndexAccess(index_expr) => {
                 // Analyze the array expression
-                let array_type = self.analyze_expression(&index_expr.array)?;
+                let array_type =
+                    self.analyze_expression_with_expected(&index_expr.array, None)?;
 
                 // Analyze the index expression (should be integer)
-                let index_type = self.analyze_expression(&index_expr.index)?;
+                let index_type =
+                    self.analyze_expression_with_expected(&index_expr.index, None)?;
                 if index_type != ResolvedType::Integer && index_type != ResolvedType::Unknown {
                     return Err(CompileError::Generic(format!(
                         "Array index must be an integer, got '{}'",
@@ -533,7 +595,8 @@ impl SemanticAnalyzer {
             }
             Expression::Match(match_expr) => {
                 // Analyze the scrutinee to get its type
-                let scrutinee_type = self.analyze_expression(&match_expr.scrutinee)?;
+                let scrutinee_type =
+                    self.analyze_expression_with_expected(&match_expr.scrutinee, None)?;
 
                 // Check exhaustiveness if matching on an enum
                 self.check_match_exhaustiveness(match_expr, &scrutinee_type)?;
@@ -544,17 +607,19 @@ impl SemanticAnalyzer {
                 }
 
                 // Get the type of the first arm's body
-                let first_arm_type = self.analyze_expression(&match_expr.arms[0].body)?;
+                let first_arm_type =
+                    self.analyze_expression_with_expected(&match_expr.arms[0].body, None)?;
 
                 // Verify all other arms return the same type
                 for arm in &match_expr.arms[1..] {
-                    let arm_type = self.analyze_expression(&arm.body)?;
+                    let arm_type = self.analyze_expression_with_expected(&arm.body, None)?;
 
                     // Check type compatibility
                     if !self.types_compatible(&arm_type, &first_arm_type) {
                         return Err(CompileError::Generic(format!(
                             "Match arms have incompatible types: expected '{}', found '{}'",
-                            first_arm_type, arm_type
+                            first_arm_type,
+                            arm_type
                         )));
                     }
                 }
@@ -566,15 +631,15 @@ impl SemanticAnalyzer {
             Expression::FunctionCall(_) => Ok(ResolvedType::Unknown),
             Expression::Lambda(_) => Ok(ResolvedType::Unknown),
             Expression::Borrow(borrow_expr) => {
-                self.analyze_expression(&borrow_expr.expression)?;
+                self.analyze_expression_with_expected(&borrow_expr.expression, None)?;
                 Ok(ResolvedType::Unknown)
             }
             Expression::MutableBorrow(borrow_expr) => {
-                self.analyze_expression(&borrow_expr.expression)?;
+                self.analyze_expression_with_expected(&borrow_expr.expression, None)?;
                 Ok(ResolvedType::Unknown)
             }
             Expression::Dereference(deref_expr) => {
-                self.analyze_expression(&deref_expr.expression)?;
+                self.analyze_expression_with_expected(&deref_expr.expression, None)?;
                 Ok(ResolvedType::Unknown)
             }
             Expression::Range(_range_expr) => {
@@ -586,12 +651,15 @@ impl SemanticAnalyzer {
                 // Analyze the inner expression and return its type
                 // In a full implementation, we would verify that the inner expression
                 // returns a Result<T, E> type and extract the T type
-                self.analyze_expression(&try_expr.expression)
+                self.analyze_expression_with_expected(&try_expr.expression, None)
             }
             Expression::IfExpression(if_expr) => {
                 // Analyze the condition
-                let cond_type = self.analyze_expression(&if_expr.condition)?;
-                if cond_type != ResolvedType::Bool && cond_type != ResolvedType::Integer && cond_type != ResolvedType::Unknown {
+                let cond_type =
+                    self.analyze_expression_with_expected(&if_expr.condition, None)?;
+                if cond_type != ResolvedType::Bool && cond_type != ResolvedType::Integer
+                    && cond_type != ResolvedType::Unknown
+                {
                     return Err(CompileError::Generic(format!(
                         "If condition must be bool or integer, got '{}'",
                         cond_type
@@ -599,16 +667,19 @@ impl SemanticAnalyzer {
                 }
 
                 // Analyze then expression
-                let then_type = self.analyze_expression(&if_expr.then_expr)?;
+                let then_type =
+                    self.analyze_expression_with_expected(&if_expr.then_expr, None)?;
 
                 // Analyze else expression if present
                 if let Some(else_expr) = &if_expr.else_expr {
-                    let else_type = self.analyze_expression(else_expr)?;
+                    let else_type =
+                        self.analyze_expression_with_expected(else_expr, None)?;
                     // Check type compatibility
                     if !self.types_compatible(&then_type, &else_type) {
                         return Err(CompileError::Generic(format!(
                             "If expression branches have incompatible types: then '{}', else '{}'",
-                            then_type, else_type
+                            then_type,
+                            else_type
                         )));
                     }
                 }
@@ -641,18 +712,26 @@ impl SemanticAnalyzer {
     }
 
     fn types_compatible(&self, type1: &ResolvedType, type2: &ResolvedType) -> bool {
-        // For now, require exact type equality
-        // In a full implementation, we'd handle:
-        // - Subtyping
-        // - Type coercion (e.g., i32 -> f64)
-        // - Unknown types (which are compatible with anything)
-
         match (type1, type2) {
-            // Unknown types are compatible with anything
             (ResolvedType::Unknown, _) | (_, ResolvedType::Unknown) => true,
-            // Complex types are compatible with anything (for now)
             (ResolvedType::ComplexType, _) | (_, ResolvedType::ComplexType) => true,
-            // Otherwise, require exact equality
+            (ResolvedType::Array(a), ResolvedType::Array(b)) => {
+                self.types_compatible(a.as_ref(), b.as_ref())
+            }
+            (ResolvedType::Signal(a), ResolvedType::Signal(b)) => {
+                self.types_compatible(a.as_ref(), b.as_ref())
+            }
+            (ResolvedType::Tuple(types_a), ResolvedType::Tuple(types_b)) => {
+                if types_a.len() != types_b.len() {
+                    return false;
+                }
+                for (a, b) in types_a.iter().zip(types_b.iter()) {
+                    if !self.types_compatible(a, b) {
+                        return false;
+                    }
+                }
+                true
+            }
             _ => type1 == type2,
         }
     }
