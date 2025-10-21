@@ -1,7 +1,9 @@
 use crate::ast::*;
 use crate::errors::CompileError;
+use crate::module_loader::{ModuleLoader, ExportedSymbol};
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::path::PathBuf;
 
 /// Represents the fully resolved type of any expression in the compiler.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -148,6 +150,7 @@ pub struct SemanticAnalyzer {
     enums: EnumTable,  // Track enum definitions
     in_component: bool,  // Track if we're inside a component
     reactive_variables: HashSet<String>,  // Track reactive variable names
+    module_loader: ModuleLoader,  // Module loader for imports
 }
 
 impl Default for SemanticAnalyzer {
@@ -158,12 +161,17 @@ impl Default for SemanticAnalyzer {
 
 impl SemanticAnalyzer {
     pub fn new() -> Self {
+        Self::with_package_root("aloha-shirts")
+    }
+
+    pub fn with_package_root<P: Into<PathBuf>>(package_root: P) -> Self {
         Self {
             symbols: SymbolTable::new(),
             structs: StructTable::new(),
             enums: EnumTable::new(),
             in_component: false,
             reactive_variables: HashSet::new(),
+            module_loader: ModuleLoader::new(package_root.into()),
         }
     }
 
@@ -265,7 +273,7 @@ impl SemanticAnalyzer {
 
     fn analyze_statement(&mut self, stmt: &Statement) -> Result<ResolvedType, CompileError> {
         match stmt {
-            Statement::Use(_) => Ok(ResolvedType::Unit),
+            Statement::Use(use_stmt) => self.analyze_use_statement(use_stmt),
             Statement::Let(let_stmt) => self.analyze_let_statement(let_stmt),
             Statement::Assignment(assign_stmt) => {
                 // Check that variable exists
@@ -423,6 +431,65 @@ impl SemanticAnalyzer {
         }
 
         Ok(ResolvedType::Unit)
+    }
+
+    fn analyze_use_statement(&mut self, use_stmt: &UseStatement) -> Result<ResolvedType, CompileError> {
+        // Convert Identifier vec to String vec for module path
+        let module_path: Vec<String> = use_stmt.path.iter()
+            .map(|ident| ident.value.clone())
+            .collect();
+
+        // If no specific imports are specified, import all exports
+        if use_stmt.imports.is_empty() {
+            // Wildcard import (use module::*)
+            let exports = self.module_loader.get_all_exports(&module_path)
+                .map_err(|e| CompileError::Generic(format!("Failed to load module: {}", e)))?;
+
+            for (name, export) in exports {
+                self.import_symbol(&name, &export)?;
+            }
+        } else {
+            // Selective imports (use module::{A, B, C})
+            let import_names: Vec<String> = use_stmt.imports.iter()
+                .map(|ident| ident.value.clone())
+                .collect();
+
+            let exports = self.module_loader.get_exports(&module_path, &import_names)
+                .map_err(|e| CompileError::Generic(format!("Failed to load exports: {}", e)))?;
+
+            for (name, export) in exports {
+                self.import_symbol(&name, &export)?;
+            }
+        }
+
+        Ok(ResolvedType::Unit)
+    }
+
+    fn import_symbol(&mut self, name: &str, export: &ExportedSymbol) -> Result<(), CompileError> {
+        match export {
+            ExportedSymbol::Function(_func) => {
+                // For now, register the function name as Unknown type
+                // In a full implementation, we'd track function signatures
+                self.symbols.define(name.to_string(), ResolvedType::Unknown);
+            }
+            ExportedSymbol::Struct(struct_def) => {
+                // Register the struct definition
+                self.register_struct(struct_def)?;
+                // Also add the struct name as a type
+                self.symbols.define(name.to_string(), ResolvedType::Struct(name.to_string()));
+            }
+            ExportedSymbol::Enum(enum_def) => {
+                // Register the enum definition
+                self.register_enum(enum_def)?;
+                // Add enum name to symbols
+                self.symbols.define(name.to_string(), ResolvedType::Unknown);
+            }
+            ExportedSymbol::Type(_) => {
+                // Type alias - for now treat as Unknown
+                self.symbols.define(name.to_string(), ResolvedType::Unknown);
+            }
+        }
+        Ok(())
     }
 
     fn analyze_let_statement(&mut self, stmt: &LetStatement) -> Result<ResolvedType, CompileError> {

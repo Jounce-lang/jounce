@@ -39,6 +39,7 @@ pub enum TokenKind {
     Plus,        // +
     Minus,       // -
     Star,        // *
+    Percent,     // %
     Bang,        // !
     Question,    // ?
     Ampersand,   // &

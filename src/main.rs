@@ -164,7 +164,7 @@ fn main() {
             println!("   Parsing...");
             let mut lexer = Lexer::new(source_code.clone());
             let mut parser = Parser::new(&mut lexer);
-            let program = match parser.parse_program() {
+            let mut program = match parser.parse_program() {
                 Ok(p) => {
                     println!("   ✓ Parsed {} statements", p.statements.len());
                     p
@@ -174,6 +174,14 @@ fn main() {
                     return;
                 }
             };
+
+            // Merge imported modules into the AST
+            use ravensone_compiler::module_loader::ModuleLoader;
+            let mut module_loader = ModuleLoader::new("aloha-shirts");
+            if let Err(e) = module_loader.merge_imports(&mut program) {
+                eprintln!("❌ Module import failed: {}", e);
+                return;
+            }
 
             // Generate JavaScript bundles
             println!("   Generating JavaScript bundles...");
