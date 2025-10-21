@@ -81,6 +81,7 @@ impl Lexer {
             }
             '+' => Token::new(TokenKind::Plus, "+".to_string(), self.line, start_col),
             '*' => Token::new(TokenKind::Star, "*".to_string(), self.line, start_col),
+            '%' => Token::new(TokenKind::Percent, "%".to_string(), self.line, start_col),
             '&' => Token::new(TokenKind::Ampersand, "&".to_string(), self.line, start_col),
             '?' => Token::new(TokenKind::Question, "?".to_string(), self.line, start_col),
             '!' => {

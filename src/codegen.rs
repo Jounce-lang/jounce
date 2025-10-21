@@ -876,6 +876,8 @@ impl CodeGenerator {
                     TokenKind::Plus => { f.instruction(&Instruction::I32Add); }
                     TokenKind::Minus => { f.instruction(&Instruction::I32Sub); }
                     TokenKind::Star => { f.instruction(&Instruction::I32Mul); }
+                    TokenKind::Slash => { f.instruction(&Instruction::I32DivS); }
+                    TokenKind::Percent => { f.instruction(&Instruction::I32RemS); }
                     TokenKind::Eq => { f.instruction(&Instruction::I32Eq); }
                     TokenKind::NotEq => { f.instruction(&Instruction::I32Ne); }
                     TokenKind::LAngle => { f.instruction(&Instruction::I32LtS); }

@@ -252,6 +252,267 @@ impl<T> Vec<T> {
             return Option::None;
         }
     }
+
+    // ITERATOR METHODS - Functional programming support
+
+    // Map: Transform each element using a function
+    fn map<U>(self: &Vec<T>, f: fn(&T) -> U) -> Vec<U> {
+        let result = Vec::with_capacity(self.length);
+
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => {
+                    result.push(f(value));
+                },
+                Option::None => {},
+            }
+        }
+
+        return result;
+    }
+
+    // Filter: Keep only elements matching a predicate
+    fn filter(self: &Vec<T>, predicate: fn(&T) -> bool) -> Vec<T> {
+        let result = Vec::new();
+
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => {
+                    if predicate(value) {
+                        result.push(*value);
+                    }
+                },
+                Option::None => {},
+            }
+        }
+
+        return result;
+    }
+
+    // Find: Find first element matching predicate
+    fn find(self: &Vec<T>, predicate: fn(&T) -> bool) -> Option<&T> {
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => {
+                    if predicate(value) {
+                        return Option::Some(value);
+                    }
+                },
+                Option::None => {},
+            }
+        }
+
+        return Option::None;
+    }
+
+    // Filter-map: Combine filter and map
+    fn filter_map<U>(self: &Vec<T>, f: fn(&T) -> Option<U>) -> Vec<U> {
+        let result = Vec::new();
+
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => {
+                    match f(value) {
+                        Option::Some(mapped) => result.push(mapped),
+                        Option::None => {},
+                    }
+                },
+                Option::None => {},
+            }
+        }
+
+        return result;
+    }
+
+    // Reduce/Fold: Combine elements into a single value
+    fn reduce<U>(self: &Vec<T>, initial: U, f: fn(U, &T) -> U) -> U {
+        let accumulator = initial;
+
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => {
+                    accumulator = f(accumulator, value);
+                },
+                Option::None => {},
+            }
+        }
+
+        return accumulator;
+    }
+
+    // For-each: Execute a function for each element
+    fn for_each(self: &Vec<T>, f: fn(&T)) {
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => f(value),
+                Option::None => {},
+            }
+        }
+    }
+
+    // Any: Check if any element matches predicate
+    fn any(self: &Vec<T>, predicate: fn(&T) -> bool) -> bool {
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => {
+                    if predicate(value) {
+                        return true;
+                    }
+                },
+                Option::None => {},
+            }
+        }
+
+        return false;
+    }
+
+    // All: Check if all elements match predicate
+    fn all(self: &Vec<T>, predicate: fn(&T) -> bool) -> bool {
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => {
+                    if !predicate(value) {
+                        return false;
+                    }
+                },
+                Option::None => {},
+            }
+        }
+
+        return true;
+    }
+
+    // Take: Take first n elements
+    fn take(self: &Vec<T>, n: i32) -> Vec<T> {
+        let result = Vec::new();
+        let count = if n < self.length { n } else { self.length };
+
+        for i in 0..count {
+            match self.get(i) {
+                Option::Some(value) => result.push(*value),
+                Option::None => {},
+            }
+        }
+
+        return result;
+    }
+
+    // Skip: Skip first n elements
+    fn skip(self: &Vec<T>, n: i32) -> Vec<T> {
+        let result = Vec::new();
+
+        for i in n..self.length {
+            match self.get(i) {
+                Option::Some(value) => result.push(*value),
+                Option::None => {},
+            }
+        }
+
+        return result;
+    }
+
+    // Chunk: Split Vec into chunks of size n
+    fn chunks(self: &Vec<T>, chunk_size: i32) -> Vec<Vec<T>> {
+        let result = Vec::new();
+        let mut current_chunk = Vec::new();
+
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => {
+                    current_chunk.push(*value);
+
+                    if current_chunk.len() == chunk_size {
+                        result.push(current_chunk);
+                        current_chunk = Vec::new();
+                    }
+                },
+                Option::None => {},
+            }
+        }
+
+        // Add remaining elements as last chunk
+        if !current_chunk.is_empty() {
+            result.push(current_chunk);
+        }
+
+        return result;
+    }
+
+    // Flat-map: Map and flatten results
+    fn flat_map<U>(self: &Vec<T>, f: fn(&T) -> Vec<U>) -> Vec<U> {
+        let result = Vec::new();
+
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => {
+                    let mapped = f(value);
+                    for j in 0..mapped.len() {
+                        match mapped.get(j) {
+                            Option::Some(item) => result.push(*item),
+                            Option::None => {},
+                        }
+                    }
+                },
+                Option::None => {},
+            }
+        }
+
+        return result;
+    }
+
+    // Partition: Split into two Vecs based on predicate
+    fn partition(self: &Vec<T>, predicate: fn(&T) -> bool) -> (Vec<T>, Vec<T>) {
+        let true_vec = Vec::new();
+        let false_vec = Vec::new();
+
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => {
+                    if predicate(value) {
+                        true_vec.push(*value);
+                    } else {
+                        false_vec.push(*value);
+                    }
+                },
+                Option::None => {},
+            }
+        }
+
+        return (true_vec, false_vec);
+    }
+
+    // Zip: Combine two Vecs into Vec of tuples
+    fn zip<U>(self: &Vec<T>, other: &Vec<U>) -> Vec<(T, U)> {
+        let result = Vec::new();
+        let min_len = if self.length < other.length { self.length } else { other.length };
+
+        for i in 0..min_len {
+            match (self.get(i), other.get(i)) {
+                (Option::Some(a), Option::Some(b)) => {
+                    result.push((*a, *b));
+                },
+                _ => {},
+            }
+        }
+
+        return result;
+    }
+
+    // Enumerate: Create Vec of (index, value) tuples
+    fn enumerate(self: &Vec<T>) -> Vec<(i32, T)> {
+        let result = Vec::new();
+
+        for i in 0..self.length {
+            match self.get(i) {
+                Option::Some(value) => {
+                    result.push((i, *value));
+                },
+                Option::None => {},
+            }
+        }
+
+        return result;
+    }
 }
 
 // Implement Iterator for Vec<T>

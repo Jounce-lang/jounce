@@ -26,6 +26,7 @@ pub mod wasm_runtime; // WebAssembly runtime support
 pub mod lsp; // Language Server Protocol
 pub mod hmr; // Hot Module Replacement
 pub mod package_manager; // Package Manager
+pub mod module_loader; // Module loader for compile-time imports
 pub mod source_map; // Source map generation for debugging
 pub mod wasm_optimizer; // WASM optimization (DCE, inlining, constant folding)
 pub mod doc_generator; // Documentation generator (raven doc)
@@ -95,12 +96,17 @@ impl Compiler {
         }
 
         // FIX: Rename the AST variable to avoid shadowing the `ast` module.
-        let program_ast = if needs_reparse {
+        let mut program_ast = if needs_reparse {
             // Placeholder for real expansion
             initial_ast
         } else {
             initial_ast
         };
+
+        // --- Module Import Resolution ---
+        // Merge imported module definitions into the AST
+        let mut module_loader = module_loader::ModuleLoader::new("aloha-shirts");
+        module_loader.merge_imports(&mut program_ast)?;
 
         // --- Analysis Passes ---
         let mut analyzer = SemanticAnalyzer::new();
