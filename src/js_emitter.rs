@@ -537,6 +537,23 @@ impl JSEmitter {
 
                 format!("{}({})", func, args)
             }
+            Expression::MacroCall(macro_call) => {
+                // Generate JavaScript for macro calls
+                let args = macro_call.arguments
+                    .iter()
+                    .map(|arg| self.generate_expression_js(arg))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                // Map Rust-like macros to JavaScript equivalents
+                match macro_call.name.value.as_str() {
+                    "vec" => format!("[{}]", args),
+                    "println" => format!("console.log({})", args),
+                    "format" => format!("`{}`", args),
+                    "panic" => format!("throw new Error({})", args),
+                    _ => format!("{}({})", macro_call.name.value, args),
+                }
+            }
             Expression::IndexAccess(index) => {
                 let array = self.generate_expression_js(&index.array);
                 let idx = self.generate_expression_js(&index.index);
