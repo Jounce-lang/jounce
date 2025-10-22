@@ -1416,6 +1416,10 @@ impl<'a> Parser<'a> {
 
         let opening_tag = self.parse_jsx_opening_tag_with_mode_check(was_jsx_mode)?;
 
+        // For self-closing tags, exit JSX mode if we entered it for this element
+        if opening_tag.self_closing && !was_jsx_mode {
+            self.lexer.exit_jsx_mode();
+        }
 
         let children = if opening_tag.self_closing { vec![] } else { self.parse_jsx_children()? };
         let closing_tag = if opening_tag.self_closing { None } else {
@@ -1572,7 +1576,7 @@ impl<'a> Parser<'a> {
         Ok(children)
     }
 
-    fn parse_jsx_closing_tag_with_mode_check(&mut self, _was_jsx_mode: bool) -> Result<Identifier, CompileError> {
+    fn parse_jsx_closing_tag_with_mode_check(&mut self, was_jsx_mode: bool) -> Result<Identifier, CompileError> {
         // Enter closing tag mode to prevent lexer from reading JSX text during closing tag parsing
         self.lexer.enter_closing_tag_mode();
 
@@ -1581,8 +1585,12 @@ impl<'a> Parser<'a> {
         let name = self.parse_identifier()?;
         self.expect_and_consume(&TokenKind::RAngle)?;
 
-        // Exit JSX mode and closing tag mode
-        self.lexer.exit_jsx_mode();
+        // Only exit JSX mode if we entered it for this element
+        // If was_jsx_mode = true, we were already in JSX (nested element), so don't exit
+        // If was_jsx_mode = false, we entered JSX for this element, so exit when done
+        if !was_jsx_mode {
+            self.lexer.exit_jsx_mode();
+        }
         self.lexer.exit_closing_tag_mode();
 
         Ok(name)
