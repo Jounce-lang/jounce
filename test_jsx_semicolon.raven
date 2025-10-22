@@ -1,0 +1,7 @@
+component Test() {
+    return <div>Hello</div>;
+}
+
+fn main() {
+    let x = 1;
+}
