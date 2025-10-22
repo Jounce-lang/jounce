@@ -1,0 +1,5 @@
+fn main() {
+    let ui = <div>
+        <p>Loading...</p>
+    </div>;
+}
