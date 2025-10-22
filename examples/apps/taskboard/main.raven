@@ -479,7 +479,7 @@ component Header(store: Store<AppState>) {
             </Link>
 
             <div class="project-selector">
-                {state.selected_project_id.is_some() ? (
+                {state.selected_project_id.is_some() ? {
                     let selected = state.projects.iter()
                         .find(|p| p.id == state.selected_project_id.unwrap());
 
@@ -494,9 +494,9 @@ component Header(store: Store<AppState>) {
                             <div>Select a project</div>
                         }
                     }
-                ) : (
+                } : {
                     <div>No project selected</div>
-                )}
+                }}
             </div>
 
             <nav class="nav">
@@ -505,11 +505,13 @@ component Header(store: Store<AppState>) {
                 <Link to="/calendar" class="nav-link">Calendar</Link>
 
                 {state.current_user.is_some() && (
-                    let user = state.current_user.unwrap();
-                    <div class="user-menu">
-                        <img src={user.avatar_url} alt={user.name} class="avatar-small" />
-                        <span>{user.name}</span>
-                    </div>
+                    match state.current_user {
+                        Some(user) => <div class="user-menu">
+                            <img src={user.avatar_url} alt={user.name} class="avatar-small" />
+                            <span>{user.name}</span>
+                        </div>,
+                        None => <div></div>
+                    }
                 )}
             </nav>
         </div>
@@ -670,12 +672,12 @@ component TaskCard(task: Task, onUpdate: fn(Task), onDelete: fn()) {
         )}
 
         <div class="task-footer">
-            {task.assignee.is_some() ? (
+            {task.assignee.is_some() ? {
                 let assignee = task.assignee.unwrap();
                 <img src={assignee.avatar_url} alt={assignee.name} class="avatar-tiny" />
-            ) : (
+            } : {
                 <div class="unassigned">Unassigned</div>
-            )}
+            }}
 
             {task.due_date.is_some() && (
                 <div class="due-date">📅 {task.due_date.unwrap()}</div>
@@ -759,14 +761,16 @@ component TaskDetailModal(task: Task, onClose: fn(), onUpdate: fn(Task), onDelet
                             </span>
                         </div>
                         {task.assignee.is_some() && (
-                            let assignee = task.assignee.unwrap();
-                            <div class="meta-item">
-                                <strong>Assignee:</strong>
-                                <div class="assignee-info">
-                                    <img src={assignee.avatar_url} class="avatar-small" />
-                                    <span>{assignee.name}</span>
-                                </div>
-                            </div>
+                            match task.assignee {
+                                Some(assignee) => <div class="meta-item">
+                                    <strong>Assignee:</strong>
+                                    <div class="assignee-info">
+                                        <img src={assignee.avatar_url} class="avatar-small" />
+                                        <span>{assignee.name}</span>
+                                    </div>
+                                </div>,
+                                None => <div></div>
+                            }
                         )}
                         {task.due_date.is_some() && (
                             <div class="meta-item">
