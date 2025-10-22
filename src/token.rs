@@ -17,7 +17,7 @@ impl Token {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TokenKind {
     // Keywords
-    Let, Fn, Struct, Enum, Impl, Trait, Component, Extern, Return, Server, Client, Async, Await, Use, True, False, If, Else, While, For, In, Match, Mut,
+    Let, Fn, Struct, Enum, Impl, Trait, Component, Extern, Return, Server, Client, Async, Await, Use, True, False, If, Else, While, For, In, Match, Mut, As,
 
     // Identifiers & Literals
     Identifier,
@@ -106,6 +106,7 @@ lazy_static::lazy_static! {
         map.insert("in", TokenKind::In);
         map.insert("match", TokenKind::Match);
         map.insert("mut", TokenKind::Mut);
+        map.insert("as", TokenKind::As);
         map
     };
 }
