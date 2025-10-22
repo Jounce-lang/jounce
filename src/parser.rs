@@ -1507,8 +1507,9 @@ impl<'a> Parser<'a> {
 
         let opening_tag = self.parse_jsx_opening_tag_with_mode_check(was_jsx_mode)?;
 
-        // For self-closing tags, exit JSX mode if we entered it for this element
-        if opening_tag.self_closing && !was_jsx_mode {
+        // For self-closing tags, always exit JSX mode (pop depth and baseline)
+        // This is needed because we now enter_nested_jsx() for nested elements
+        if opening_tag.self_closing {
             self.lexer.exit_jsx_mode();
         }
 
@@ -1529,8 +1530,13 @@ impl<'a> Parser<'a> {
         // CRITICAL FIX: Enter JSX mode BEFORE parsing tag name
         // This ensures peek is fetched in JSX mode when we parse the identifier
         // Without this, {expr} children are tokenized as JsxText instead of separate tokens
+        // ALSO: Always push baseline for nested JSX (e.g. JSX inside ternary/expressions)
         if !was_jsx_mode {
             self.lexer.enter_jsx_mode();
+        } else {
+            // Already in JSX mode - track nested JSX element
+            // This pushes a new baseline for JSX inside expressions: {cond ? (<div>...</div>) : ...}
+            self.lexer.enter_nested_jsx();
         }
 
         let name = self.parse_identifier()?;
@@ -1676,10 +1682,9 @@ impl<'a> Parser<'a> {
         let name = self.parse_identifier()?;
         self.expect_and_consume(&TokenKind::RAngle)?;
 
-        // Only exit JSX mode if we entered it for this element
-        if !was_jsx_mode {
-            self.lexer.exit_jsx_mode();
-        }
+        // Always exit JSX mode (pop depth and baseline) since we now enter_nested_jsx()
+        // for all JSX elements, even when already in JSX mode
+        self.lexer.exit_jsx_mode();
         self.lexer.exit_closing_tag_mode();
 
         Ok(name)
