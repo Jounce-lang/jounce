@@ -35,6 +35,7 @@ pub mod code_splitter; // Code splitting for server/client separation
 pub mod rpc_generator; // RPC stub generation for client/server communication
 pub mod js_emitter; // JavaScript code generation for server and client bundles
 pub mod js_minifier; // JavaScript minification for production builds
+pub mod formatter; // Code formatter for consistent style
 
 use borrow_checker::BorrowChecker;
 use codegen::CodeGenerator;
