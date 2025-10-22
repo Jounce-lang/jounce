@@ -1119,6 +1119,40 @@ impl<'a> Parser<'a> {
             return Err(self.error("Unexpected empty parentheses"));
         }
 
+        // Check if this might be a typed lambda parameter list: (x: Type, y: Type) =>
+        // Lookahead: if we see identifier followed by colon, it's typed params
+        if let TokenKind::Identifier = self.current_token().kind {
+            if let TokenKind::Colon = self.peek_token().kind {
+                // Parse typed parameters
+                let mut parameters = Vec::new();
+                loop {
+                    let param_name = self.parse_identifier()?;
+
+                    // Type annotation is optional but usually present here
+                    if self.consume_if_matches(&TokenKind::Colon) {
+                        // Parse and discard type for now (lambda parameters are type-inferred)
+                        self.parse_type_expression()?;
+                    }
+
+                    parameters.push(param_name);
+
+                    if !self.consume_if_matches(&TokenKind::Comma) {
+                        break;
+                    }
+                }
+
+                self.expect_and_consume(&TokenKind::RParen)?;
+                self.expect_and_consume(&TokenKind::FatArrow)?;
+                let body = self.parse_expression(Precedence::Lowest)?;
+
+                return Ok(Expression::Lambda(LambdaExpression {
+                    parameters,
+                    body: Box::new(body),
+                    captures: vec![],
+                }));
+            }
+        }
+
         // Parse first expression
         let first_expr = self.parse_expression(Precedence::Lowest)?;
 
