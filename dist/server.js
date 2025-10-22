@@ -21,9 +21,11 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {
 
 // Server function implementations
 // Shared utility functions
-module.exports.function test() {
-  let count = 5;
-  h('div', h('h2', "Comments (", count, ")"));
+module.exports.main = function() {
+  let name = "Alice";
+  let age = 25;
+  console.log(`Hello, ${name}!`);
+  console.log(`Name: ${name}, Age: ${age}`);
 
 }
 

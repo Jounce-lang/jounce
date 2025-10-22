@@ -1,0 +1,204 @@
+// ============================================================================
+// Example 03: Control Flow
+// ============================================================================
+// Demonstrates: Conditionals, pattern matching, loops
+// Features: if/else, match, for, while, loop, ranges
+// Complexity: Beginner
+// Lines: ~150
+// ============================================================================
+
+fn main() {
+    println!("=== Control Flow ===\n");
+
+    // ========================================================================
+    // If/Else Statements
+    // ========================================================================
+
+    let temperature = 72;
+
+    if temperature > 80 {
+        println!("It's hot outside! 🔥");
+    } else if temperature > 60 {
+        println!("Nice weather! ☀️");
+    } else {
+        println!("It's cold! ❄️");
+    }
+
+    // If as an expression (returns a value)
+    let status = if temperature > 70 { "warm" } else { "cool" };
+    println!("Temperature status: {}\n", status);
+
+    // ========================================================================
+    // Match Expressions (Pattern Matching)
+    // ========================================================================
+
+    let number = 7;
+
+    // Match with specific values
+    match number {
+        1 => println!("One!"),
+        2 => println!("Two!"),
+        3 | 4 | 5 => println!("Between three and five"),
+        6..=10 => println!("Between six and ten (inclusive)"),
+        _ => println!("Something else"),
+    }
+
+    // Match as an expression
+    let description = match number {
+        1 => "first",
+        2 => "second",
+        3 => "third",
+        _ => "other",
+    };
+    println!("Number is: {}\n", description);
+
+    // Match with conditions (guards)
+    let age = 25;
+    match age {
+        n if n < 13 => println!("Child"),
+        n if n < 20 => println!("Teenager"),
+        n if n < 65 => println!("Adult"),
+        _ => println!("Senior"),
+    }
+
+    println!("");
+
+    // ========================================================================
+    // For Loops
+    // ========================================================================
+
+    println!("For loop with range (0..5):");
+    for i in 0..5 {
+        print!("{} ", i);
+    }
+    println!("\n");
+
+    println!("For loop with inclusive range (0..=5):");
+    for i in 0..=5 {
+        print!("{} ", i);
+    }
+    println!("\n");
+
+    // Iterating over arrays
+    let fruits = ["apple", "banana", "cherry"];
+    println!("Iterating over array:");
+    for fruit in fruits {
+        println!("  - {}", fruit);
+    }
+    println!("");
+
+    // For loop with index
+    println!("For loop with index:");
+    for (index, fruit) in fruits.iter().enumerate() {
+        println!("  {}. {}", index + 1, fruit);
+    }
+    println!("");
+
+    // ========================================================================
+    // While Loops
+    // ========================================================================
+
+    println!("While loop (countdown from 5):");
+    let mut countdown = 5;
+    while countdown > 0 {
+        print!("{} ", countdown);
+        countdown = countdown - 1;
+    }
+    println!("Liftoff! 🚀\n");
+
+    // ========================================================================
+    // Loop (Infinite Loop with Break)
+    // ========================================================================
+
+    println!("Loop with break:");
+    let mut counter = 0;
+    loop {
+        counter = counter + 1;
+        print!("{} ", counter);
+
+        if counter >= 5 {
+            break;  // Exit the loop
+        }
+    }
+    println!("\n");
+
+    // Loop can return a value
+    let result = loop {
+        counter = counter + 1;
+        if counter >= 10 {
+            break counter;  // Return counter value when breaking
+        }
+    };
+    println!("Loop returned: {}\n", result);
+
+    // ========================================================================
+    // Continue Statement
+    // ========================================================================
+
+    println!("For loop with continue (skip even numbers):");
+    for i in 0..10 {
+        if i % 2 == 0 {
+            continue;  // Skip even numbers
+        }
+        print!("{} ", i);
+    }
+    println!("\n");
+
+    // ========================================================================
+    // Nested Loops
+    // ========================================================================
+
+    println!("Nested loops (multiplication table 1-5):");
+    for i in 1..=5 {
+        for j in 1..=5 {
+            print!("{:3} ", i * j);
+        }
+        println!("");
+    }
+    println!("");
+
+    // ========================================================================
+    // Practical Example: FizzBuzz
+    // ========================================================================
+
+    println!("FizzBuzz (1-20):");
+    for n in 1..=20 {
+        let output = match (n % 3, n % 5) {
+            (0, 0) => "FizzBuzz",
+            (0, _) => "Fizz",
+            (_, 0) => "Buzz",
+            (_, _) => {
+                print!("{} ", n);
+                continue;
+            }
+        };
+        print!("{} ", output);
+    }
+    println!("\n");
+
+    // ========================================================================
+    // Summary
+    // ========================================================================
+
+    println!("=== Control Flow Summary ===");
+    println!("✓ if/else for conditional execution");
+    println!("✓ match for pattern matching");
+    println!("✓ for loops for iteration");
+    println!("✓ while loops for conditional iteration");
+    println!("✓ loop for infinite loops with break");
+    println!("✓ continue to skip iterations");
+    println!("✓ Expressions can return values");
+}
+
+// ============================================================================
+// Key Concepts:
+// ============================================================================
+// 1. if/else can be expressions (return values)
+// 2. match is exhaustive (must cover all cases with _)
+// 3. Ranges: 0..5 (exclusive), 0..=5 (inclusive)
+// 4. for loops work with iterators
+// 5. while loops run while condition is true
+// 6. loop creates infinite loops (use break to exit)
+// 7. break and continue control loop flow
+// 8. Guards (if conditions) can be used in match arms
+// ============================================================================

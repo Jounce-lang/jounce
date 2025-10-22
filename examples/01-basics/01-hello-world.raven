@@ -1,0 +1,56 @@
+// ============================================================================
+// Example 01: Hello World
+// ============================================================================
+// Demonstrates: Basic syntax, functions, console output
+// Features: fn keyword, println! macro, main entry point
+// Complexity: Beginner
+// Lines: ~50
+// ============================================================================
+
+// The main function is the entry point of every RavensOne program.
+// It's automatically called when you run the program.
+fn main() {
+    // println! is a macro that prints text to the console with a newline
+    println!("Hello, RavensOne!");
+
+    // You can print multiple lines
+    println!("Welcome to full-stack programming!");
+    println!("One language. One file. Full stack.");
+
+    // Print with formatting
+    println!("");
+    println!("=== RavensOne Features ===");
+    println!("✓ Rust-inspired syntax");
+    println!("✓ Full-stack in one file");
+    println!("✓ Reactive state management");
+    println!("✓ JSX for UI components");
+    println!("✓ Automatic code splitting");
+    println!("✓ Compiles to JavaScript + WebAssembly");
+}
+
+// ============================================================================
+// How to Run:
+// ============================================================================
+// Compile and run this example:
+//   raven compile examples/01-basics/01-hello-world.raven
+//   node dist/server.js
+//
+// Or use watch mode for automatic recompilation:
+//   raven watch examples/01-basics/01-hello-world.raven
+// ============================================================================
+
+// ============================================================================
+// Expected Output:
+// ============================================================================
+// Hello, RavensOne!
+// Welcome to full-stack programming!
+// One language. One file. Full stack.
+//
+// === RavensOne Features ===
+// ✓ Rust-inspired syntax
+// ✓ Full-stack in one file
+// ✓ Reactive state management
+// ✓ JSX for UI components
+// ✓ Automatic code splitting
+// ✓ Compiles to JavaScript + WebAssembly
+// ============================================================================

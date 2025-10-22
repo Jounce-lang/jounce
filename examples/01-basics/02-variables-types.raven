@@ -1,0 +1,124 @@
+// ============================================================================
+// Example 02: Variables & Types
+// ============================================================================
+// Demonstrates: Variable declarations, type annotations, mutability
+// Features: let, const, mut, primitive types, type inference
+// Complexity: Beginner
+// Lines: ~100
+// ============================================================================
+
+fn main() {
+    println!("=== Variables & Types ===\n");
+
+    // ========================================================================
+    // Variable Declarations
+    // ========================================================================
+
+    // Immutable variable (default) - cannot be changed after assignment
+    let name = "Alice";
+    println!("Immutable: name = {}", name);
+
+    // Mutable variable - can be changed
+    let mut age = 25;
+    println!("Mutable: age = {}", age);
+    age = 26;  // This is allowed because age is mutable
+    println!("Updated: age = {}", age);
+
+    // Constant - must have explicit type, evaluated at compile time
+    const MAX_USERS: i32 = 1000;
+    println!("Constant: MAX_USERS = {}", MAX_USERS);
+
+    println!("");
+
+    // ========================================================================
+    // Primitive Types
+    // ========================================================================
+
+    // Integer types (signed)
+    let small_int: i8 = 127;           // 8-bit signed integer
+    let regular_int: i32 = 42;         // 32-bit signed integer (default)
+    let big_int: i64 = 1_000_000;      // 64-bit signed integer
+
+    println!("Integers: i8={}, i32={}, i64={}", small_int, regular_int, big_int);
+
+    // Integer types (unsigned)
+    let unsigned: u32 = 500;           // 32-bit unsigned integer
+    println!("Unsigned: u32={}", unsigned);
+
+    // Floating-point types
+    let pi: f32 = 3.14159;             // 32-bit float
+    let precise_pi: f64 = 3.141592653589793;  // 64-bit float (default)
+    println!("Floats: f32={}, f64={}", pi, precise_pi);
+
+    // Boolean type
+    let is_active: bool = true;
+    let is_ready = false;              // Type inferred as bool
+    println!("Booleans: is_active={}, is_ready={}", is_active, is_ready);
+
+    // Character type (Note: char literals with single quotes not yet supported)
+    // For now, use strings for single characters
+    let letter = "A";
+    let emoji = "🚀";
+    println!("Chars: letter='{}', emoji='{}'", letter, emoji);
+
+    println!("");
+
+    // ========================================================================
+    // String Types
+    // ========================================================================
+
+    // String slice (&str) - immutable, fixed-size
+    let greeting: &str = "Hello";
+    println!("String slice: {}", greeting);
+
+    // String - growable, heap-allocated
+    let mut message: String = String::from("Welcome");
+    println!("String: {}", message);
+
+    // Strings can be modified if mutable
+    message = message + " to RavensOne!";
+    println!("Modified String: {}", message);
+
+    println!("");
+
+    // ========================================================================
+    // Type Inference
+    // ========================================================================
+
+    // RavensOne can infer types automatically
+    let inferred_int = 100;            // Inferred as i32
+    let inferred_float = 2.5;          // Inferred as f64
+    let inferred_string = "Auto";      // Inferred as &str
+    let inferred_bool = true;          // Inferred as bool
+
+    println!("Type inference works!");
+    println!("  inferred_int = {} (i32)", inferred_int);
+    println!("  inferred_float = {} (f64)", inferred_float);
+    println!("  inferred_string = {} (&str)", inferred_string);
+    println!("  inferred_bool = {} (bool)", inferred_bool);
+
+    println!("");
+
+    // ========================================================================
+    // Type Conversion
+    // ========================================================================
+
+    let x: i32 = 10;
+    let y: f64 = x as f64;             // Explicit type conversion with 'as'
+    println!("Type conversion: i32({}) -> f64({})", x, y);
+
+    let float_num: f64 = 3.7;
+    let truncated: i32 = float_num as i32;  // Truncates decimal
+    println!("Float to int: f64({}) -> i32({}) (truncated)", float_num, truncated);
+}
+
+// ============================================================================
+// Key Concepts:
+// ============================================================================
+// 1. Variables are immutable by default (use 'let')
+// 2. Use 'mut' for mutable variables
+// 3. Use 'const' for compile-time constants
+// 4. Type annotations are optional (type inference works)
+// 5. Use 'as' keyword for explicit type conversion
+// 6. Numbers can use underscores for readability (1_000_000)
+// ============================================================================

@@ -16,9 +16,11 @@ const client = new RPCClient(window.location.origin + '/_rpc');
 
 // Client function implementations
 // Shared utility functions
-export function test() {
-  let count = 5;
-  h('div', h('h2', "Comments (", count, ")"));
+export function main() {
+  let name = "Alice";
+  let age = 25;
+  console.log(`Hello, ${name}!`);
+  console.log(`Name: ${name}, Age: ${age}`);
 
 }
 
