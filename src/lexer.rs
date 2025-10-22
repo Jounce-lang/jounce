@@ -11,6 +11,7 @@ pub struct Lexer {
     jsx_depth: usize,         // Track nesting depth of JSX elements
     brace_depth: usize,       // Track braces in JSX expressions
     jsx_in_tag: bool,         // Track if we're inside a tag (between < and >)
+    in_closing_tag: bool,     // Track if parser is currently parsing a closing tag
 }
 
 impl Lexer {
@@ -26,6 +27,7 @@ impl Lexer {
             jsx_depth: 0,
             brace_depth: 0,
             jsx_in_tag: false,
+            in_closing_tag: false,
         };
         lexer.read_char();
         lexer
@@ -33,8 +35,9 @@ impl Lexer {
 
     pub fn next_token(&mut self) -> Token {
         // In JSX mode, handle text content differently
-        // Only read JSX text when we're not inside a tag (between < and >)
-        if self.jsx_mode && self.brace_depth == 0 && !self.jsx_in_tag && self.ch != '<' && self.ch != '{' && self.ch != '\0' {
+        // Only read JSX text when we're not inside a tag (between < and >) AND we're actually inside a JSX element (jsx_depth > 0)
+        // Also don't read JSX text if we're currently parsing a closing tag
+        if self.jsx_mode && self.jsx_depth > 0 && self.brace_depth == 0 && !self.jsx_in_tag && !self.in_closing_tag && self.ch != '<' && self.ch != '{' && self.ch != '\0' {
             return self.read_jsx_text();
         }
 
@@ -380,6 +383,14 @@ impl Lexer {
 
     pub fn is_jsx_mode(&self) -> bool {
         self.jsx_mode
+    }
+
+    pub fn enter_closing_tag_mode(&mut self) {
+        self.in_closing_tag = true;
+    }
+
+    pub fn exit_closing_tag_mode(&mut self) {
+        self.in_closing_tag = false;
     }
 }
 

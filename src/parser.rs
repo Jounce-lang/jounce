@@ -1534,13 +1534,18 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_jsx_closing_tag_with_mode_check(&mut self, was_jsx_mode: bool) -> Result<Identifier, CompileError> {
+        // Enter closing tag mode to prevent lexer from reading JSX text during closing tag parsing
+        self.lexer.enter_closing_tag_mode();
+
         self.expect_and_consume(&TokenKind::LAngle)?;
         self.expect_and_consume(&TokenKind::Slash)?;
         let name = self.parse_identifier()?;
-        // Consume the closing > FIRST, then exit JSX mode
         self.expect_and_consume(&TokenKind::RAngle)?;
-        // Always decrement jsx_depth for both root and nested elements
+
+        // Exit JSX mode and closing tag mode
         self.lexer.exit_jsx_mode();
+        self.lexer.exit_closing_tag_mode();
+
         Ok(name)
     }
 

@@ -107,20 +107,24 @@ let html = `<div>${name}</div>`;
 let html = "<div>" + name + "</div>";
 ```
 
-### 3. Method Chaining
-**Error**: `ParserError: No prefix parse function for Dot`
+### 3. Method Chaining ✅ IMPLEMENTED (Sprint 5)
+
+**Status**: Method chaining is now fully supported!
 
 ```rust
-// Does NOT work
+// ✅ This now works!
 if message.name.trim().is_empty() {
     return Err("Name required");
 }
 
-// Use instead
-if message.name == "" {
-    return Err("Name required");
-}
+// ✅ String literal chaining works
+let result = "test".to_uppercase().trim();
+
+// ✅ Any expression can be chained
+arr.filter(x => x > 0).map(x => x * 2).sum();
 ```
+
+**Implemented in**: Sprint 5 - Ecommerce Parser Fixes (Parser Fix #3)
 
 ### 4. String Methods
 **Error**: Parser fails on method calls like `.contains()`, `.to_string()`
