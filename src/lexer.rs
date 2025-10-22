@@ -166,10 +166,8 @@ impl Lexer {
                 if self.peek() == '>' && self.jsx_mode {
                     self.read_char();
                     self.read_char();
-                    self.jsx_depth -= 1;
-                    if self.jsx_depth == 0 {
-                        self.jsx_mode = false;
-                    }
+                    // Don't automatically decrement jsx_depth here - let the parser manage it
+                    // via exit_jsx_mode() based on whether this element entered JSX mode
                     // Mark that we're exiting a tag
                     self.jsx_in_tag = false;
                     return Token::new(TokenKind::JsxSelfClose, "/>".to_string(), self.line, start_col);
