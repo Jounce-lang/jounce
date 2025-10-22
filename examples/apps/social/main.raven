@@ -687,7 +687,7 @@ component FeedPage(store: Store<AppState>) {
         <div class="container">
             <div class="feed-layout">
                 <aside class="sidebar-left">
-                    {state.is_authenticated && state.current_user.is_some() ? (
+                    {state.is_authenticated && state.current_user.is_some() ? {
                         let user = state.current_user.unwrap();
                         <div class="profile-widget">
                             <Link to={"/profile/" + user.id.to_string()}>
@@ -710,9 +710,9 @@ component FeedPage(store: Store<AppState>) {
                                 </div>
                             </div>
                         </div>
-                    ) : (
+                    } : {
                         <div></div>
-                    )}
+                    }}
                 </aside>
 
                 <main class="feed-main">

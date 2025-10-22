@@ -1,0 +1,7 @@
+fn test() {
+    let cond = true;
+    let result = cond ? {
+        let x = 5;
+        x + 1
+    } : 10;
+}
