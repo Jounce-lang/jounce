@@ -1,0 +1,12 @@
+fn main() {
+    let loading = true;
+    let ui = <div>
+        {loading ? (
+            <div>
+                <p>Loading products...</p>
+            </div>
+        ) : (
+            <p>Done</p>
+        )}
+    </div>;
+}

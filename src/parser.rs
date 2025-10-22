@@ -1577,6 +1577,15 @@ impl<'a> Parser<'a> {
 
     fn parse_jsx_attribute(&mut self) -> Result<JsxAttribute, CompileError> {
         let name = self.parse_identifier()?;
+
+        // Check if this is a boolean attribute (no = sign)
+        // Boolean attributes like `disabled`, `readonly`, `checked` don't have values
+        if self.current_token().kind != TokenKind::Assign {
+            // Boolean attribute - defaults to true
+            let value = Expression::BoolLiteral(true);
+            return Ok(JsxAttribute { name, value });
+        }
+
         self.expect_and_consume(&TokenKind::Assign)?;
 
         // Check if value is wrapped in curly braces for expression interpolation
@@ -1691,12 +1700,13 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::LAngle)?;
         self.expect_and_consume(&TokenKind::Slash)?;
         let name = self.parse_identifier()?;
-        self.expect_and_consume(&TokenKind::RAngle)?;
 
-        // Always exit JSX mode (pop depth and baseline) since we now enter_nested_jsx()
-        // for all JSX elements, even when already in JSX mode
-        self.lexer.exit_jsx_mode();
+        // CRITICAL: Exit BOTH closing tag mode AND JSX mode BEFORE consuming `>`
+        // This ensures the next token (created during consume) has the correct lexer state
+        // including the correct baseline brace depth for at_baseline calculation
         self.lexer.exit_closing_tag_mode();
+        self.lexer.exit_jsx_mode();
+        self.expect_and_consume(&TokenKind::RAngle)?;
 
         Ok(name)
     }

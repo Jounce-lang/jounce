@@ -1,0 +1,9 @@
+struct Product {
+    stock: i32
+}
+
+fn test() {
+    let product = Product { stock: 5 };
+    let result = <span>{product.stock} in stock</span>;
+    return result;
+}

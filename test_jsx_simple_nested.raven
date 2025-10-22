@@ -1,0 +1,5 @@
+fn test() {
+    let x = 5;
+    // Simple nested: <div>{x}</div>
+    return <div>{x}</div>;
+}

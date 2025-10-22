@@ -13,6 +13,7 @@ pub struct Lexer {
     jsx_in_tag: bool,         // Track if we're inside a tag (between < and >)
     in_closing_tag: bool,     // Track if parser is currently parsing a closing tag
     jsx_baseline_brace_depths: Vec<usize>, // Stack of brace depths when entering each JSX element
+    just_closed_jsx_expr: bool, // Track if we just emitted a JsxCloseBrace (allows delimiters as JSX text)
 }
 
 impl Lexer {
@@ -30,6 +31,7 @@ impl Lexer {
             jsx_in_tag: false,
             in_closing_tag: false,
             jsx_baseline_brace_depths: Vec::new(),
+            just_closed_jsx_expr: false,
         };
         lexer.read_char();
         lexer
@@ -48,7 +50,9 @@ impl Lexer {
 
         // CRITICAL: Don't read JSX text if current character is a delimiter/operator
         // This prevents reading `)`, `}`, `]`, `,`, `;` as JSX text after self-closing tags in closures
-        let is_delimiter = matches!(self.ch, ')' | ']' | ',' | ';');
+        // EXCEPTION: After closing a JSX expression with `}`, allow delimiters as JSX text
+        // Example: `Comments ({expr})` - the `)` after `}` should be read as text
+        let is_delimiter = !self.just_closed_jsx_expr && matches!(self.ch, ')' | ']' | ',' | ';');
 
         // CRITICAL: Check if we would only read whitespace before a delimiter
         // This prevents empty JSX text tokens after self-closing tags in expression contexts
@@ -71,8 +75,13 @@ impl Lexer {
         let can_read_jsx_text = self.jsx_mode && self.jsx_depth > 0 && at_baseline && !self.jsx_in_tag && !self.in_closing_tag && !is_delimiter && !would_read_only_whitespace && self.ch != '<' && self.ch != '{' && self.ch != '}' && self.ch != '\0';
 
         if can_read_jsx_text {
+            // Reset the flag since we're reading JSX text now
+            self.just_closed_jsx_expr = false;
             return self.read_jsx_text();
         }
+
+        // Reset the flag for non-JSX-text tokens (will be set again for JsxCloseBrace below)
+        self.just_closed_jsx_expr = false;
 
         self.skip_whitespace();
         let start_col = self.column;
@@ -177,7 +186,10 @@ impl Lexer {
                     let baseline = self.jsx_baseline_brace_depths.last().copied().unwrap_or(0);
                     // Only use JsxCloseBrace for the first level (closing a JSX expression)
                     // Nested braces should be regular RBrace tokens
-                    let token = if self.brace_depth == baseline + 1 {
+                    let is_jsx_close = self.brace_depth == baseline + 1;
+                    let token = if is_jsx_close {
+                        // Set flag to allow delimiters as JSX text after closing a JSX expression
+                        self.just_closed_jsx_expr = true;
                         Token::new(TokenKind::JsxCloseBrace, "}".to_string(), self.line, start_col)
                     } else {
                         Token::new(TokenKind::RBrace, "}".to_string(), self.line, start_col)
@@ -209,8 +221,13 @@ impl Lexer {
                     self.read_char();
                     return Token::new(TokenKind::GtEq, ">=".to_string(), self.line, start_col);
                 } else {
-                    // Mark that we're exiting a tag
-                    self.jsx_in_tag = false;
+                    // Only mark that we're exiting a tag if we're at the baseline brace depth
+                    // This prevents `>` comparison operators inside attribute expressions from incorrectly
+                    // setting jsx_in_tag = false
+                    let baseline = self.jsx_baseline_brace_depths.last().copied().unwrap_or(0);
+                    if self.brace_depth == baseline {
+                        self.jsx_in_tag = false;
+                    }
                     Token::new(TokenKind::RAngle, ">".to_string(), self.line, start_col)
                 }
             }
