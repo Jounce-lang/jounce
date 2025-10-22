@@ -299,11 +299,114 @@ Enhanced parameter hints showing:
 ### Signature Help (Planned)
 Real-time signature information as you type function calls.
 
-### Go to Definition (Planned)
-Jump to the definition of functions, types, and variables.
+### Go to Definition ✅
+Jump to the definition of functions, types, variables, components, structs, and enums.
 
-### Find References (Planned)
+**How to Use**:
+- **Ctrl+Click** (Cmd+Click on macOS) on any symbol
+- Press **F12** with cursor on a symbol
+- Right-click and select "Go to Definition"
+
+**Supported Symbols**:
+- Functions (`fn myFunction()`)
+- Variables (`let myVar`)
+- Constants (`const MY_CONST`)
+- Components (`component MyComponent()`)
+- Structs (`struct MyStruct`)
+- Enums (`enum MyEnum`)
+
+**Example**:
+```raven
+fn calculate(x: i32) -> i32 {
+    return x * 2;
+}
+
+let result = calculate(10);
+//           ^^^^^^^^^ Ctrl+Click here jumps to line 1
+```
+
+### Find References ✅
 Find all usages of a symbol across your codebase.
+
+**How to Use**:
+- **Shift+F12** with cursor on a symbol
+- Right-click and select "Find All References"
+
+**Features**:
+- Finds all usages including the definition
+- Works across the entire document
+- Shows line numbers and context for each reference
+- Can optionally exclude the definition
+
+**Example**:
+```raven
+fn calculate(x: i32) -> i32 {
+    return x * 2;
+}
+
+let result = calculate(10);
+let result2 = calculate(20);
+//            ^^^^^^^^^ Find References shows: Line 1 (definition), Line 5, Line 6
+```
+
+### Rename Symbol ✅
+Safely rename a symbol across all its usages.
+
+**How to Use**:
+- Press **F2** with cursor on a symbol
+- Right-click and select "Rename Symbol"
+- Enter the new name and press Enter
+
+**Features**:
+- Renames all occurrences atomically
+- Validates identifier syntax
+- Works across the entire document
+- Prevents invalid identifier names
+
+**Example**:
+```raven
+fn oldName() {
+    return 42;
+}
+
+let x = oldName();
+let y = oldName();
+
+// Press F2 on "oldName" and type "newName"
+// All 3 occurrences are renamed to "newName"
+```
+
+### Document Symbols ✅
+Outline view of all symbols in the current file.
+
+**How to Use**:
+- **Ctrl+Shift+O** (Cmd+Shift+O on macOS) to open symbol list
+- View the "Outline" panel in your editor
+
+**Supported Symbols**:
+- Functions with their signatures
+- Variables and constants
+- Components
+- Structs and enums
+- Type aliases
+
+**Example Document Symbols**:
+```raven
+fn calculate() {}          // Function
+let counter = 0;           // Variable
+const MAX = 100;           // Constant
+struct User {}             // Struct
+enum Status {}             // Enum
+component App() {}         // Component (shown as Class)
+```
+
+Shows in outline as:
+- 📦 calculate (Function)
+- 📝 counter (Variable)
+- 📝 MAX (Variable)
+- 🏗️ User (Struct)
+- 🔢 Status (Enum)
+- 📦 App (Class)
 
 ### Code Actions & Quick Fixes ✅
 Automatic code actions and quick fixes for common errors. Available via `Cmd+.` (macOS) or `Ctrl+.` (Windows/Linux) in supported editors.
@@ -490,10 +593,11 @@ Want to improve the LSP? Check out:
 
 ---
 
-**Last Updated**: 2025-10-22 (Phase 2 - Sprint 5)
+**Last Updated**: 2025-10-22 (Phase 2 - Sprint 7)
 **LSP Version**: 0.1.0
 **Completions**: 70+
 **Context Types**: 7
+**Navigation Features**: 4 (Go to Definition, Find References, Rename Symbol, Document Symbols)
 **Code Actions**: 6 quick fixes
 **Error Codes**: 18 errors (E001-E018) + 5 warnings (W001-W005)
-**Test Coverage**: 21 LSP tests + 18 diagnostic tests, 100% passing
+**Test Coverage**: 37 LSP tests (100% passing) + 18 diagnostic tests

@@ -168,6 +168,36 @@ enum SymbolKind {
     TypeAlias,
 }
 
+/// Document symbol for outline view
+#[derive(Debug, Clone)]
+pub struct DocumentSymbol {
+    pub name: String,
+    pub kind: DocumentSymbolKind,
+    pub range: Range,
+    pub selection_range: Range,
+    pub detail: Option<String>,
+    pub children: Vec<DocumentSymbol>,
+}
+
+/// Kind of document symbol
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DocumentSymbolKind {
+    File = 1,
+    Module = 2,
+    Namespace = 3,
+    Class = 5,
+    Method = 6,
+    Property = 7,
+    Field = 8,
+    Constructor = 9,
+    Enum = 10,
+    Interface = 11,
+    Function = 12,
+    Variable = 13,
+    Constant = 14,
+    Struct = 23,
+}
+
 impl LanguageServer {
     pub fn new() -> Self {
         LanguageServer {
@@ -1327,6 +1357,122 @@ impl LanguageServer {
             .map(|sym| sym.location)
     }
 
+    /// Find all references to a symbol at the given position
+    ///
+    /// Returns all locations where the symbol is used (including definition).
+    /// This implements the LSP `textDocument/references` request.
+    pub fn get_references(
+        &self,
+        uri: &str,
+        position: Position,
+        include_declaration: bool,
+    ) -> Vec<Location> {
+        // Get document content
+        let content = if let Some(doc) = self.documents.get(uri) {
+            &doc.content
+        } else {
+            return Vec::new();
+        };
+
+        // Get the word at the cursor position
+        let word = match self.get_word_at_position(content, position) {
+            Some(w) if !w.is_empty() => w,
+            _ => return Vec::new(),
+        };
+
+        // Find all references to this symbol
+        let mut references = find_symbol_references(uri, content, &word);
+
+        // If include_declaration is false, filter out the definition
+        if !include_declaration {
+            // Get the definition location to exclude it
+            let symbols = extract_text_symbols(uri, content);
+            if let Some(def_sym) = symbols.into_iter().find(|sym| sym.name == word) {
+                let def_loc = def_sym.location;
+                references.retain(|loc| {
+                    loc.range.start.line != def_loc.range.start.line
+                        || loc.range.start.character != def_loc.range.start.character
+                });
+            }
+        }
+
+        references
+    }
+
+    /// Rename a symbol at the given position
+    ///
+    /// Returns a WorkspaceEdit with all the rename changes.
+    /// This implements the LSP `textDocument/rename` request.
+    pub fn rename_symbol(
+        &self,
+        uri: &str,
+        position: Position,
+        new_name: String,
+    ) -> Option<WorkspaceEdit> {
+        // Validate the new name is a valid identifier
+        if !is_valid_identifier(&new_name) {
+            return None;
+        }
+
+        // Get all references to the symbol (including definition)
+        let references = self.get_references(uri, position, true);
+        if references.is_empty() {
+            return None;
+        }
+
+        // Create text edits for all references
+        let changes: Vec<TextEdit> = references
+            .into_iter()
+            .map(|loc| TextEdit {
+                range: loc.range,
+                new_text: new_name.clone(),
+            })
+            .collect();
+
+        Some(WorkspaceEdit { changes })
+    }
+
+    /// Get document symbols (outline view)
+    ///
+    /// Returns a hierarchical list of symbols in the document.
+    /// This implements the LSP `textDocument/documentSymbol` request.
+    pub fn get_document_symbols(&self, uri: &str) -> Vec<DocumentSymbol> {
+        // Get document content
+        let content = if let Some(doc) = self.documents.get(uri) {
+            &doc.content
+        } else {
+            return Vec::new();
+        };
+
+        // Extract all symbol definitions
+        let symbol_infos = extract_text_symbols(uri, content);
+
+        // Convert SymbolInfo to DocumentSymbol
+        symbol_infos
+            .into_iter()
+            .map(|sym| {
+                let kind = match sym.kind {
+                    SymbolKind::Function => DocumentSymbolKind::Function,
+                    SymbolKind::Variable => DocumentSymbolKind::Variable,
+                    SymbolKind::Component => DocumentSymbolKind::Class,
+                    SymbolKind::Struct => DocumentSymbolKind::Struct,
+                    SymbolKind::Enum => DocumentSymbolKind::Enum,
+                    SymbolKind::Parameter => DocumentSymbolKind::Variable,
+                    SymbolKind::TypeAlias => DocumentSymbolKind::Class,
+                };
+
+                DocumentSymbol {
+                    name: sym.name.clone(),
+                    kind,
+                    range: sym.location.range,
+                    selection_range: sym.location.range,
+                    detail: Some(format!("{:?}", sym.kind)),
+                    children: Vec::new(), // Flat structure for now
+                }
+            })
+            .collect()
+    }
+
     /// Generate quick fixes for a specific diagnostic
     fn generate_quick_fixes_for_diagnostic(
         &self,
@@ -2211,6 +2357,58 @@ fn extract_text_symbols(uri: &str, content: &str) -> Vec<SymbolInfo> {
     symbols
 }
 
+/// Find all references (usages) of a symbol in the content
+/// This includes the definition and all usages of the symbol
+fn find_symbol_references(uri: &str, content: &str, symbol_name: &str) -> Vec<Location> {
+    let mut references = Vec::new();
+    let lines: Vec<&str> = content.lines().collect();
+
+    for (line_idx, line) in lines.iter().enumerate() {
+        // Find all occurrences of the symbol in this line
+        let mut start_pos = 0;
+        while let Some(pos) = line[start_pos..].find(symbol_name) {
+            let actual_pos = start_pos + pos;
+
+            // Check if this is a whole word match (not part of another identifier)
+            let before_ok = if actual_pos == 0 {
+                true
+            } else {
+                let prev_char = line.chars().nth(actual_pos - 1).unwrap();
+                !prev_char.is_alphanumeric() && prev_char != '_'
+            };
+
+            let after_pos = actual_pos + symbol_name.len();
+            let after_ok = if after_pos >= line.len() {
+                true
+            } else {
+                let next_char = line.chars().nth(after_pos).unwrap();
+                !next_char.is_alphanumeric() && next_char != '_'
+            };
+
+            // Only add if it's a complete word match
+            if before_ok && after_ok {
+                references.push(Location {
+                    uri: uri.to_string(),
+                    range: Range {
+                        start: Position {
+                            line: line_idx,
+                            character: actual_pos,
+                        },
+                        end: Position {
+                            line: line_idx,
+                            character: actual_pos + symbol_name.len(),
+                        },
+                    },
+                });
+            }
+
+            start_pos = actual_pos + 1;
+        }
+    }
+
+    references
+}
+
 /// Check if a string is a valid identifier
 fn is_valid_identifier(s: &str) -> bool {
     if s.is_empty() {
@@ -2668,5 +2866,334 @@ component App() {
         let location = server.get_definition("file:///test.raven", position);
 
         assert!(location.is_none());
+    }
+
+    // ==================== Find References Tests ====================
+
+    #[test]
+    fn test_find_references_function() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn calculate(x: i32) -> i32 {
+    return x * 2;
+}
+
+let result = calculate(10);
+let result2 = calculate(20);
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Find references for "calculate" (on definition line)
+        let position = Position { line: 1, character: 3 };
+        let references = server.get_references("file:///test.raven", position, true);
+
+        // Should find 3 occurrences: definition + 2 calls
+        assert_eq!(references.len(), 3);
+        assert_eq!(references[0].range.start.line, 1); // Definition
+        assert_eq!(references[1].range.start.line, 5); // First call
+        assert_eq!(references[2].range.start.line, 6); // Second call
+    }
+
+    #[test]
+    fn test_find_references_variable() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let count = 0;
+count = count + 1;
+print(count);
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Find references for "count"
+        let position = Position { line: 1, character: 4 };
+        let references = server.get_references("file:///test.raven", position, true);
+
+        // Should find 4 occurrences: definition + 3 usages
+        assert_eq!(references.len(), 4);
+    }
+
+    #[test]
+    fn test_find_references_exclude_declaration() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn test() {
+    return 42;
+}
+
+let x = test();
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Find references excluding declaration
+        let position = Position { line: 1, character: 3 };
+        let references = server.get_references("file:///test.raven", position, false);
+
+        // Should find only the call, not the definition
+        assert_eq!(references.len(), 1);
+        assert_eq!(references[0].range.start.line, 5);
+    }
+
+    #[test]
+    fn test_find_references_component() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+component Button() {
+    <button>Click</button>
+}
+
+component App() {
+    <div>
+        <Button />
+        <Button />
+    </div>
+}
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Find references for "Button"
+        let position = Position { line: 1, character: 10 };
+        let references = server.get_references("file:///test.raven", position, true);
+
+        // Should find 3 occurrences: definition + 2 JSX usages
+        assert_eq!(references.len(), 3);
+    }
+
+    // ==================== Rename Symbol Tests ====================
+
+    #[test]
+    fn test_rename_symbol_function() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn oldName() {
+    return 42;
+}
+
+let x = oldName();
+let y = oldName();
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Rename "oldName" to "newName"
+        let position = Position { line: 1, character: 3 };
+        let edit = server.rename_symbol(
+            "file:///test.raven",
+            position,
+            "newName".to_string(),
+        );
+
+        assert!(edit.is_some());
+        let workspace_edit = edit.unwrap();
+
+        // Should have 3 text edits (definition + 2 calls)
+        assert_eq!(workspace_edit.changes.len(), 3);
+        for change in &workspace_edit.changes {
+            assert_eq!(change.new_text, "newName");
+        }
+    }
+
+    #[test]
+    fn test_rename_symbol_variable() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let counter = 0;
+counter = counter + 1;
+print(counter);
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Rename "counter" to "total"
+        let position = Position { line: 1, character: 4 };
+        let edit = server.rename_symbol(
+            "file:///test.raven",
+            position,
+            "total".to_string(),
+        );
+
+        assert!(edit.is_some());
+        let workspace_edit = edit.unwrap();
+
+        // Should have 4 text edits
+        assert_eq!(workspace_edit.changes.len(), 4);
+        for change in &workspace_edit.changes {
+            assert_eq!(change.new_text, "total");
+        }
+    }
+
+    #[test]
+    fn test_rename_symbol_invalid_name() {
+        let mut server = LanguageServer::new();
+        let code = "fn test() {}";
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Try to rename to invalid identifier
+        let position = Position { line: 0, character: 3 };
+        let edit = server.rename_symbol(
+            "file:///test.raven",
+            position,
+            "123invalid".to_string(),
+        );
+
+        // Should return None for invalid identifier
+        assert!(edit.is_none());
+    }
+
+    #[test]
+    fn test_rename_symbol_not_found() {
+        let mut server = LanguageServer::new();
+        let code = "let x = 10;";
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Try to rename on whitespace (position has no symbol)
+        let position = Position { line: 0, character: 6 }; // On the space between '=' and '10'
+        let edit = server.rename_symbol(
+            "file:///test.raven",
+            position,
+            "newName".to_string(),
+        );
+
+        // Should return None when cursor is not on a valid symbol
+        assert!(edit.is_none());
+    }
+
+    // ==================== Document Symbols Tests ====================
+
+    #[test]
+    fn test_document_symbols_functions() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn function1() {}
+fn function2() {}
+fn function3() {}
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let symbols = server.get_document_symbols("file:///test.raven");
+
+        assert_eq!(symbols.len(), 3);
+        assert_eq!(symbols[0].name, "function1");
+        assert_eq!(symbols[1].name, "function2");
+        assert_eq!(symbols[2].name, "function3");
+
+        for symbol in &symbols {
+            assert_eq!(symbol.kind, DocumentSymbolKind::Function);
+        }
+    }
+
+    #[test]
+    fn test_document_symbols_mixed() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn myFunction() {}
+let myVariable = 10;
+const MY_CONST = 100;
+struct MyStruct {}
+enum MyEnum {}
+component MyComponent() {}
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let symbols = server.get_document_symbols("file:///test.raven");
+
+        assert_eq!(symbols.len(), 6);
+
+        // Check each symbol type
+        assert_eq!(symbols[0].name, "myFunction");
+        assert_eq!(symbols[0].kind, DocumentSymbolKind::Function);
+
+        assert_eq!(symbols[1].name, "myVariable");
+        assert_eq!(symbols[1].kind, DocumentSymbolKind::Variable);
+
+        assert_eq!(symbols[2].name, "MY_CONST");
+        assert_eq!(symbols[2].kind, DocumentSymbolKind::Variable);
+
+        assert_eq!(symbols[3].name, "MyStruct");
+        assert_eq!(symbols[3].kind, DocumentSymbolKind::Struct);
+
+        assert_eq!(symbols[4].name, "MyEnum");
+        assert_eq!(symbols[4].kind, DocumentSymbolKind::Enum);
+
+        assert_eq!(symbols[5].name, "MyComponent");
+        assert_eq!(symbols[5].kind, DocumentSymbolKind::Class);
+    }
+
+    #[test]
+    fn test_document_symbols_empty() {
+        let mut server = LanguageServer::new();
+        let code = "// Just a comment";
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let symbols = server.get_document_symbols("file:///test.raven");
+
+        assert_eq!(symbols.len(), 0);
+    }
+
+    #[test]
+    fn test_document_symbols_range() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn calculate() {
+    return 42;
+}
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let symbols = server.get_document_symbols("file:///test.raven");
+
+        assert_eq!(symbols.len(), 1);
+        let symbol = &symbols[0];
+
+        // Check range is correct
+        assert_eq!(symbol.range.start.line, 1);
+        assert_eq!(symbol.selection_range.start.line, 1);
+        // Both range and selection_range should be valid
+        assert!(symbol.range.end.character > symbol.range.start.character);
     }
 }
