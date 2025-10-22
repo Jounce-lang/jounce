@@ -1,0 +1,3 @@
+fn main() {
+    let jsx = <div>in stock</div>;
+}
