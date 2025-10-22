@@ -57,6 +57,25 @@ pub enum CompletionItemKind {
     Snippet,
 }
 
+/// Context in which completions are requested
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CompletionContext {
+    /// After a dot (e.g., "foo.")
+    MemberAccess { object_name: String },
+    /// After :: (e.g., "Math::")
+    NamespaceAccess { namespace: String },
+    /// Inside a function call (e.g., "foo(|)")
+    FunctionCall { function_name: String },
+    /// Inside JSX tag (e.g., "<|")
+    JsxTag,
+    /// Inside JSX attribute (e.g., "<div |")
+    JsxAttribute { tag_name: String },
+    /// At statement/expression start
+    StatementStart,
+    /// General context (default)
+    General,
+}
+
 /// Hover information
 #[derive(Debug, Clone)]
 pub struct Hover {
@@ -141,8 +160,59 @@ impl LanguageServer {
     }
 
     /// Get completions at a position
-    #[allow(unused_variables)] // uri and position used in future context-aware completions
     pub fn get_completions(&self, uri: &str, position: Position) -> Vec<CompletionItem> {
+        let mut completions = Vec::new();
+
+        // Get document content
+        let content = if let Some(doc) = self.documents.get(uri) {
+            &doc.content
+        } else {
+            return completions;
+        };
+
+        // Detect context at cursor position
+        let context = self.detect_context(content, position);
+
+        // Filter completions based on context
+        match context {
+            CompletionContext::NamespaceAccess { ref namespace } => {
+                // Show only members of the namespace
+                completions.extend(self.get_namespace_completions(namespace));
+            }
+            CompletionContext::MemberAccess { ref object_name } => {
+                // Show only methods/fields of the object
+                completions.extend(self.get_member_completions(object_name, content));
+            }
+            CompletionContext::JsxTag => {
+                // Show HTML tags and component names
+                completions.extend(self.get_jsx_tag_completions(content));
+            }
+            CompletionContext::JsxAttribute { ref tag_name } => {
+                // Show valid attributes for this tag
+                completions.extend(self.get_jsx_attribute_completions(tag_name));
+            }
+            CompletionContext::StatementStart => {
+                // Show keywords and top-level declarations
+                completions.extend(self.get_keyword_completions());
+                completions.extend(self.get_scope_completions(content));
+            }
+            CompletionContext::FunctionCall { ref function_name } => {
+                // Show parameter hints (for now, fall back to general)
+                completions.extend(self.get_parameter_hints(function_name));
+                // Also show general completions for argument values
+                completions.extend(self.get_general_completions(content));
+            }
+            CompletionContext::General => {
+                // Show all completions
+                completions.extend(self.get_general_completions(content));
+            }
+        }
+
+        completions
+    }
+
+    /// Get general completions (all available)
+    fn get_general_completions(&self, content: &str) -> Vec<CompletionItem> {
         let mut completions = Vec::new();
 
         // Add keywords
@@ -154,13 +224,11 @@ impl LanguageServer {
         // Add reactive primitives
         completions.extend(self.get_reactive_completions());
 
-        // Add JSX completions
+        // Add JSX snippets
         completions.extend(self.get_jsx_completions());
 
         // Add local variables and functions from current scope
-        if let Some(doc) = self.documents.get(uri) {
-            completions.extend(self.get_scope_completions(&doc.content));
-        }
+        completions.extend(self.get_scope_completions(content));
 
         completions
     }
@@ -221,6 +289,497 @@ impl LanguageServer {
         } else {
             None
         }
+    }
+
+    /// Detect the completion context at the cursor position
+    fn detect_context(&self, content: &str, position: Position) -> CompletionContext {
+        let lines: Vec<&str> = content.lines().collect();
+        if position.line >= lines.len() {
+            return CompletionContext::General;
+        }
+
+        let line = lines[position.line];
+        let chars: Vec<char> = line.chars().collect();
+
+        // Get text before cursor
+        let text_before = if position.character <= chars.len() {
+            chars[..position.character].iter().collect::<String>()
+        } else {
+            line.to_string()
+        };
+
+        // Detect JSX context
+        if let Some(context) = self.detect_jsx_context(&text_before, content, position) {
+            return context;
+        }
+
+        // Detect namespace access (::)
+        if text_before.ends_with("::") {
+            if let Some(namespace) = self.extract_namespace(&text_before) {
+                return CompletionContext::NamespaceAccess { namespace };
+            }
+        }
+
+        // Detect member access (.)
+        if text_before.ends_with('.') {
+            if let Some(object_name) = self.extract_object_name(&text_before) {
+                return CompletionContext::MemberAccess { object_name };
+            }
+        }
+
+        // Detect function call context
+        if let Some(function_name) = self.detect_function_call(&text_before) {
+            return CompletionContext::FunctionCall { function_name };
+        }
+
+        // Detect statement start (beginning of line or after {)
+        let trimmed = text_before.trim_start();
+        if trimmed.is_empty() || trimmed.ends_with('{') {
+            return CompletionContext::StatementStart;
+        }
+
+        CompletionContext::General
+    }
+
+    /// Detect JSX context (tag or attribute)
+    fn detect_jsx_context(&self, text_before: &str, _content: &str, _position: Position) -> Option<CompletionContext> {
+        // Check if we're inside a JSX tag
+        let mut depth: i32 = 0;
+        let mut in_tag = false;
+        let mut tag_name = String::new();
+        let mut collecting_tag_name = false;
+
+        for ch in text_before.chars() {
+            match ch {
+                '<' => {
+                    depth += 1;
+                    in_tag = true;
+                    collecting_tag_name = true;
+                    tag_name.clear();
+                }
+                '>' => {
+                    depth = depth.saturating_sub(1);
+                    in_tag = false;
+                    collecting_tag_name = false;
+                }
+                ' ' | '\t' if in_tag && collecting_tag_name => {
+                    collecting_tag_name = false;
+                }
+                _ if collecting_tag_name && (ch.is_alphanumeric() || ch == '_') => {
+                    tag_name.push(ch);
+                }
+                _ => {}
+            }
+        }
+
+        if in_tag && depth > 0 {
+            if tag_name.is_empty() {
+                // Right after <, suggest tags
+                return Some(CompletionContext::JsxTag);
+            } else {
+                // Inside tag with name, suggest attributes
+                return Some(CompletionContext::JsxAttribute { tag_name });
+            }
+        }
+
+        None
+    }
+
+    /// Extract namespace from text like "Math::"
+    fn extract_namespace(&self, text: &str) -> Option<String> {
+        let trimmed = text.trim_end_matches("::");
+        let parts: Vec<&str> = trimmed.split(|c: char| !c.is_alphanumeric() && c != '_' && c != ':').collect();
+        parts.last().and_then(|s| {
+            if !s.is_empty() {
+                Some(s.trim_end_matches("::").to_string())
+            } else {
+                None
+            }
+        })
+    }
+
+    /// Extract object name from text like "foo."
+    fn extract_object_name(&self, text: &str) -> Option<String> {
+        let trimmed = text.trim_end_matches('.');
+        let parts: Vec<&str> = trimmed.split(|c: char| !c.is_alphanumeric() && c != '_').collect();
+        parts.last().and_then(|s| {
+            if !s.is_empty() {
+                Some(s.to_string())
+            } else {
+                None
+            }
+        })
+    }
+
+    /// Detect if we're inside a function call
+    fn detect_function_call(&self, text: &str) -> Option<String> {
+        // Find the last unclosed (
+        let mut depth = 0;
+        let mut function_start = None;
+
+        for (i, ch) in text.char_indices().rev() {
+            match ch {
+                ')' => depth += 1,
+                '(' => {
+                    if depth == 0 {
+                        function_start = Some(i);
+                        break;
+                    }
+                    depth -= 1;
+                }
+                _ => {}
+            }
+        }
+
+        if let Some(start) = function_start {
+            let before_paren = &text[..start];
+            // Extract function name
+            let parts: Vec<&str> = before_paren.split(|c: char| !c.is_alphanumeric() && c != '_' && c != ':').collect();
+            if let Some(name) = parts.last() {
+                if !name.is_empty() {
+                    return Some(name.to_string());
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Get completions for namespace members (after ::)
+    fn get_namespace_completions(&self, namespace: &str) -> Vec<CompletionItem> {
+        match namespace {
+            "Math" => vec![
+                CompletionItem {
+                    label: "abs".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn abs(x: f64) -> f64".to_string()),
+                    documentation: Some("Returns the absolute value of a number".to_string()),
+                    insert_text: Some("abs($0)".to_string()),
+                },
+                CompletionItem {
+                    label: "min".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn min(a: f64, b: f64) -> f64".to_string()),
+                    documentation: Some("Returns the smaller of two numbers".to_string()),
+                    insert_text: Some("min($0)".to_string()),
+                },
+                CompletionItem {
+                    label: "max".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn max(a: f64, b: f64) -> f64".to_string()),
+                    documentation: Some("Returns the larger of two numbers".to_string()),
+                    insert_text: Some("max($0)".to_string()),
+                },
+                CompletionItem {
+                    label: "sqrt".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn sqrt(x: f64) -> f64".to_string()),
+                    documentation: Some("Returns the square root of a number".to_string()),
+                    insert_text: Some("sqrt($0)".to_string()),
+                },
+                CompletionItem {
+                    label: "pow".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn pow(base: f64, exponent: f64) -> f64".to_string()),
+                    documentation: Some("Raises a number to a power".to_string()),
+                    insert_text: Some("pow($0)".to_string()),
+                },
+                CompletionItem {
+                    label: "round".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn round(x: f64) -> f64".to_string()),
+                    documentation: Some("Rounds to the nearest integer".to_string()),
+                    insert_text: Some("round($0)".to_string()),
+                },
+                CompletionItem {
+                    label: "floor".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn floor(x: f64) -> f64".to_string()),
+                    documentation: Some("Rounds down to the nearest integer".to_string()),
+                    insert_text: Some("floor($0)".to_string()),
+                },
+                CompletionItem {
+                    label: "ceil".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn ceil(x: f64) -> f64".to_string()),
+                    documentation: Some("Rounds up to the nearest integer".to_string()),
+                    insert_text: Some("ceil($0)".to_string()),
+                },
+                CompletionItem {
+                    label: "random".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn random() -> f64".to_string()),
+                    documentation: Some("Returns a random number between 0 and 1".to_string()),
+                    insert_text: Some("random()".to_string()),
+                },
+            ],
+            "Signal" => vec![
+                CompletionItem {
+                    label: "new".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn new<T>(initial: T) -> Signal<T>".to_string()),
+                    documentation: Some("Creates a new reactive signal".to_string()),
+                    insert_text: Some("new($0)".to_string()),
+                },
+            ],
+            "Computed" => vec![
+                CompletionItem {
+                    label: "new".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn new<T>(fn() -> T) -> Computed<T>".to_string()),
+                    documentation: Some("Creates a computed value".to_string()),
+                    insert_text: Some("new(|| $0)".to_string()),
+                },
+            ],
+            "Effect" => vec![
+                CompletionItem {
+                    label: "new".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn new(fn())".to_string()),
+                    documentation: Some("Creates an effect".to_string()),
+                    insert_text: Some("new(|| $0)".to_string()),
+                },
+            ],
+            "String" => vec![
+                CompletionItem {
+                    label: "split".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn split(s: &str, delimiter: &str) -> Vec<String>".to_string()),
+                    documentation: Some("Splits a string by a delimiter".to_string()),
+                    insert_text: Some("split($0)".to_string()),
+                },
+                CompletionItem {
+                    label: "trim".to_string(),
+                    kind: CompletionItemKind::Function,
+                    detail: Some("fn trim(s: &str) -> String".to_string()),
+                    documentation: Some("Removes whitespace from both ends".to_string()),
+                    insert_text: Some("trim($0)".to_string()),
+                },
+            ],
+            _ => vec![],
+        }
+    }
+
+    /// Get completions for object members (after .)
+    fn get_member_completions(&self, _object_name: &str, _content: &str) -> Vec<CompletionItem> {
+        // TODO: Use type information to determine available methods/fields
+        // For now, show common methods that work on multiple types
+        vec![
+            CompletionItem {
+                label: "get".to_string(),
+                kind: CompletionItemKind::Function,
+                detail: Some("Get value from Signal".to_string()),
+                documentation: Some("Gets the current value of a signal".to_string()),
+                insert_text: Some("get()".to_string()),
+            },
+            CompletionItem {
+                label: "set".to_string(),
+                kind: CompletionItemKind::Function,
+                detail: Some("Set value in Signal".to_string()),
+                documentation: Some("Sets a new value in a signal".to_string()),
+                insert_text: Some("set($0)".to_string()),
+            },
+            CompletionItem {
+                label: "iter".to_string(),
+                kind: CompletionItemKind::Function,
+                detail: Some("Get iterator".to_string()),
+                documentation: Some("Returns an iterator over the collection".to_string()),
+                insert_text: Some("iter()".to_string()),
+            },
+            CompletionItem {
+                label: "map".to_string(),
+                kind: CompletionItemKind::Function,
+                detail: Some("Map over collection".to_string()),
+                documentation: Some("Transforms each element".to_string()),
+                insert_text: Some("map(|$1| $0)".to_string()),
+            },
+            CompletionItem {
+                label: "filter".to_string(),
+                kind: CompletionItemKind::Function,
+                detail: Some("Filter collection".to_string()),
+                documentation: Some("Filters elements by predicate".to_string()),
+                insert_text: Some("filter(|$1| $0)".to_string()),
+            },
+            CompletionItem {
+                label: "len".to_string(),
+                kind: CompletionItemKind::Function,
+                detail: Some("Get length".to_string()),
+                documentation: Some("Returns the length of the collection".to_string()),
+                insert_text: Some("len()".to_string()),
+            },
+            CompletionItem {
+                label: "push".to_string(),
+                kind: CompletionItemKind::Function,
+                detail: Some("Push to Vec".to_string()),
+                documentation: Some("Adds an element to the end".to_string()),
+                insert_text: Some("push($0)".to_string()),
+            },
+        ]
+    }
+
+    /// Get JSX tag completions
+    fn get_jsx_tag_completions(&self, content: &str) -> Vec<CompletionItem> {
+        let mut completions = Vec::new();
+
+        // Add component names from current file
+        let mut lexer = Lexer::new(content.to_string());
+        let mut parser = Parser::new(&mut lexer);
+        if let Ok(ast) = parser.parse_program() {
+            use crate::ast::Statement;
+            for statement in &ast.statements {
+                if let Statement::Component(comp_def) = statement {
+                    completions.push(CompletionItem {
+                        label: comp_def.name.value.clone(),
+                        kind: CompletionItemKind::Class,
+                        detail: Some(format!("component {}", comp_def.name.value)),
+                        documentation: Some("User-defined component".to_string()),
+                        insert_text: Some(format!("{}>$0</{}>", comp_def.name.value, comp_def.name.value)),
+                    });
+                }
+            }
+        }
+
+        // Add common HTML tags
+        completions.extend(vec![
+            CompletionItem {
+                label: "div".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Container div".to_string()),
+                documentation: Some("Block container element".to_string()),
+                insert_text: Some("div>$0</div>".to_string()),
+            },
+            CompletionItem {
+                label: "button".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Button element".to_string()),
+                documentation: Some("Clickable button".to_string()),
+                insert_text: Some("button onclick={$1}>\"$0\"</button>".to_string()),
+            },
+            CompletionItem {
+                label: "input".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Input field".to_string()),
+                documentation: Some("Text input".to_string()),
+                insert_text: Some("input type=\"text\" value={$0} />".to_string()),
+            },
+            CompletionItem {
+                label: "h1".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Heading 1".to_string()),
+                documentation: Some("Top-level heading".to_string()),
+                insert_text: Some("h1>\"$0\"</h1>".to_string()),
+            },
+            CompletionItem {
+                label: "p".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Paragraph".to_string()),
+                documentation: Some("Paragraph text".to_string()),
+                insert_text: Some("p>\"$0\"</p>".to_string()),
+            },
+            CompletionItem {
+                label: "ul".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Unordered list".to_string()),
+                documentation: Some("Bullet point list".to_string()),
+                insert_text: Some("ul>$0</ul>".to_string()),
+            },
+            CompletionItem {
+                label: "li".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("List item".to_string()),
+                documentation: Some("List item".to_string()),
+                insert_text: Some("li>$0</li>".to_string()),
+            },
+        ]);
+
+        completions
+    }
+
+    /// Get JSX attribute completions
+    fn get_jsx_attribute_completions(&self, tag_name: &str) -> Vec<CompletionItem> {
+        let mut completions = Vec::new();
+
+        // Common attributes for all elements
+        completions.extend(vec![
+            CompletionItem {
+                label: "class".to_string(),
+                kind: CompletionItemKind::Property,
+                detail: Some("CSS class".to_string()),
+                documentation: Some("CSS class name".to_string()),
+                insert_text: Some("class=\"$0\"".to_string()),
+            },
+            CompletionItem {
+                label: "id".to_string(),
+                kind: CompletionItemKind::Property,
+                detail: Some("Element ID".to_string()),
+                documentation: Some("Unique element identifier".to_string()),
+                insert_text: Some("id=\"$0\"".to_string()),
+            },
+            CompletionItem {
+                label: "style".to_string(),
+                kind: CompletionItemKind::Property,
+                detail: Some("Inline styles".to_string()),
+                documentation: Some("Inline CSS styles".to_string()),
+                insert_text: Some("style=\"$0\"".to_string()),
+            },
+        ]);
+
+        // Tag-specific attributes
+        match tag_name {
+            "button" | "div" | "span" | "a" => {
+                completions.push(CompletionItem {
+                    label: "onclick".to_string(),
+                    kind: CompletionItemKind::Property,
+                    detail: Some("Click event handler".to_string()),
+                    documentation: Some("Called when element is clicked".to_string()),
+                    insert_text: Some("onclick={$0}".to_string()),
+                });
+            }
+            "input" | "textarea" => {
+                completions.extend(vec![
+                    CompletionItem {
+                        label: "value".to_string(),
+                        kind: CompletionItemKind::Property,
+                        detail: Some("Input value".to_string()),
+                        documentation: Some("Current input value".to_string()),
+                        insert_text: Some("value={$0}".to_string()),
+                    },
+                    CompletionItem {
+                        label: "oninput".to_string(),
+                        kind: CompletionItemKind::Property,
+                        detail: Some("Input event handler".to_string()),
+                        documentation: Some("Called when input changes".to_string()),
+                        insert_text: Some("oninput={$0}".to_string()),
+                    },
+                    CompletionItem {
+                        label: "placeholder".to_string(),
+                        kind: CompletionItemKind::Property,
+                        detail: Some("Placeholder text".to_string()),
+                        documentation: Some("Placeholder when empty".to_string()),
+                        insert_text: Some("placeholder=\"$0\"".to_string()),
+                    },
+                ]);
+            }
+            "form" => {
+                completions.push(CompletionItem {
+                    label: "onsubmit".to_string(),
+                    kind: CompletionItemKind::Property,
+                    detail: Some("Submit event handler".to_string()),
+                    documentation: Some("Called when form is submitted".to_string()),
+                    insert_text: Some("onsubmit={$0}".to_string()),
+                });
+            }
+            _ => {}
+        }
+
+        completions
+    }
+
+    /// Get parameter hints for function calls
+    fn get_parameter_hints(&self, _function_name: &str) -> Vec<CompletionItem> {
+        // TODO: Look up function signature and return parameter information
+        // For now, return empty
+        vec![]
     }
 
     /// Get keyword completions
@@ -887,13 +1446,102 @@ mod tests {
     }
 
     #[test]
-    fn test_get_completions() {
-        let server = LanguageServer::new();
-        let completions = server.get_completions("file:///test.raven", Position { line: 0, character: 0 });
+    fn test_get_completions_statement_start() {
+        let mut server = LanguageServer::new();
+        server.open_document(
+            "file:///test.raven".to_string(),
+            "let x = 10;".to_string(),
+            1,
+        );
 
+        // At statement start, should get keywords
+        let completions = server.get_completions("file:///test.raven", Position { line: 0, character: 0 });
         assert!(!completions.is_empty());
         assert!(completions.iter().any(|c| c.label == "component"));
+        assert!(completions.iter().any(|c| c.label == "let"));
+        assert!(completions.iter().any(|c| c.label == "fn"));
+    }
+
+    #[test]
+    fn test_get_completions_general() {
+        let mut server = LanguageServer::new();
+        server.open_document(
+            "file:///test.raven".to_string(),
+            "let x = ".to_string(),
+            1,
+        );
+
+        // In general context, should get all completions
+        let completions = server.get_completions("file:///test.raven", Position { line: 0, character: 8 });
+        assert!(!completions.is_empty());
         assert!(completions.iter().any(|c| c.label == "Signal::new"));
+    }
+
+    #[test]
+    fn test_context_detection_namespace() {
+        let mut server = LanguageServer::new();
+        server.open_document(
+            "file:///test.raven".to_string(),
+            "let x = Math::".to_string(),
+            1,
+        );
+
+        // After ::, should get namespace members
+        let completions = server.get_completions("file:///test.raven", Position { line: 0, character: 14 });
+        assert!(!completions.is_empty());
+        assert!(completions.iter().any(|c| c.label == "abs"));
+        assert!(completions.iter().any(|c| c.label == "sqrt"));
+        // Should NOT include keywords
+        assert!(!completions.iter().any(|c| c.label == "component"));
+    }
+
+    #[test]
+    fn test_context_detection_member_access() {
+        let mut server = LanguageServer::new();
+        server.open_document(
+            "file:///test.raven".to_string(),
+            "let count = Signal::new(0);\nlet val = count.".to_string(),
+            1,
+        );
+
+        // After ., should get member methods
+        let completions = server.get_completions("file:///test.raven", Position { line: 1, character: 16 });
+        assert!(!completions.is_empty());
+        assert!(completions.iter().any(|c| c.label == "get"));
+        assert!(completions.iter().any(|c| c.label == "set"));
+    }
+
+    #[test]
+    fn test_context_detection_jsx_tag() {
+        let mut server = LanguageServer::new();
+        server.open_document(
+            "file:///test.raven".to_string(),
+            "component App() { <".to_string(),
+            1,
+        );
+
+        // After <, should get JSX tags
+        let completions = server.get_completions("file:///test.raven", Position { line: 0, character: 19 });
+        assert!(!completions.is_empty());
+        assert!(completions.iter().any(|c| c.label == "div"));
+        assert!(completions.iter().any(|c| c.label == "button"));
+    }
+
+    #[test]
+    fn test_context_detection_jsx_attribute() {
+        let mut server = LanguageServer::new();
+        server.open_document(
+            "file:///test.raven".to_string(),
+            "component App() { <div ".to_string(),
+            1,
+        );
+
+        // Inside JSX tag, should get attributes
+        let completions = server.get_completions("file:///test.raven", Position { line: 0, character: 23 });
+        assert!(!completions.is_empty());
+        assert!(completions.iter().any(|c| c.label == "class"));
+        assert!(completions.iter().any(|c| c.label == "id"));
+        assert!(completions.iter().any(|c| c.label == "onclick"));
     }
 
     #[test]
