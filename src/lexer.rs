@@ -392,6 +392,16 @@ impl Lexer {
     pub fn exit_closing_tag_mode(&mut self) {
         self.in_closing_tag = false;
     }
+
+    pub fn increment_brace_depth(&mut self) {
+        self.brace_depth += 1;
+    }
+
+    pub fn decrement_brace_depth(&mut self) {
+        if self.brace_depth > 0 {
+            self.brace_depth -= 1;
+        }
+    }
 }
 
 #[cfg(test)]
