@@ -499,6 +499,11 @@ impl SemanticAnalyzer {
                 // Add enum name to symbols
                 self.symbols.define(name.to_string(), ResolvedType::Unknown);
             }
+            ExportedSymbol::Const(_const_decl) => {
+                // Register the constant as a symbol
+                // Type will be inferred from the constant's value
+                self.symbols.define(name.to_string(), ResolvedType::Unknown);
+            }
             ExportedSymbol::Type(_) => {
                 // Type alias - for now treat as Unknown
                 self.symbols.define(name.to_string(), ResolvedType::Unknown);

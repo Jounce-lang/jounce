@@ -1,7 +1,7 @@
 // Module Loader for RavensOne
 // Handles compile-time module resolution and import processing
 
-use crate::ast::{Program, Statement, FunctionDefinition, StructDefinition, EnumDefinition, Identifier, UseStatement};
+use crate::ast::{Program, Statement, FunctionDefinition, StructDefinition, EnumDefinition, ConstDeclaration, Identifier, UseStatement};
 use crate::errors::CompileError;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
@@ -15,6 +15,7 @@ pub enum ExportedSymbol {
     Function(FunctionDefinition),
     Struct(StructDefinition),
     Enum(EnumDefinition),
+    Const(ConstDeclaration),
     Type(Identifier),
 }
 
@@ -168,7 +169,10 @@ impl ModuleLoader {
                 Statement::Enum(enum_def) => {
                     exports.insert(enum_def.name.value.clone(), ExportedSymbol::Enum(enum_def.clone()));
                 }
-                // TODO: Handle type aliases, constants, etc.
+                Statement::Const(const_decl) => {
+                    exports.insert(const_decl.name.value.clone(), ExportedSymbol::Const(const_decl.clone()));
+                }
+                // TODO: Handle type aliases
                 _ => {}
             }
         }
@@ -226,19 +230,22 @@ impl ModuleLoader {
     /// This processes all `use` statements and adds the imported definitions
     /// to the program, making them available for code generation.
     pub fn merge_imports(&mut self, program: &mut Program) -> Result<(), CompileError> {
-        // First, collect all use statements
-        let use_statements: Vec<UseStatement> = program.statements.iter()
-            .filter_map(|stmt| {
-                if let Statement::Use(use_stmt) = stmt {
-                    Some(use_stmt.clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
+        // First, collect all use statements and find insertion point
+        let mut use_statements: Vec<UseStatement> = Vec::new();
+        let mut last_use_index = 0;
+
+        for (i, stmt) in program.statements.iter().enumerate() {
+            if let Statement::Use(use_stmt) = stmt {
+                use_statements.push(use_stmt.clone());
+                last_use_index = i + 1; // Insert after the last use statement
+            }
+        }
 
         // Keep track of which symbols we've already added to avoid duplicates
         let mut imported_symbols: HashMap<String, bool> = HashMap::new();
+
+        // Collect all imported statements first
+        let mut statements_to_insert: Vec<Statement> = Vec::new();
 
         // For each use statement, load the module and add imported definitions
         for use_stmt in use_statements {
@@ -264,32 +271,46 @@ impl ModuleLoader {
                     .collect()
             };
 
-            // Add each imported symbol to the program
+            // Add each imported symbol to the collection
             for (symbol_name, export) in symbols_to_import {
                 // Skip if already imported
                 if imported_symbols.contains_key(&symbol_name) {
                     continue;
                 }
 
-                // Add the definition to the program based on symbol type
-                match export {
+                // Add the definition to the collection based on symbol type
+                let statement = match export {
                     ExportedSymbol::Function(func) => {
-                        program.statements.push(Statement::Function(func));
+                        Some(Statement::Function(func))
                     }
                     ExportedSymbol::Struct(struct_def) => {
-                        program.statements.push(Statement::Struct(struct_def));
+                        Some(Statement::Struct(struct_def))
                     }
                     ExportedSymbol::Enum(enum_def) => {
-                        program.statements.push(Statement::Enum(enum_def));
+                        Some(Statement::Enum(enum_def))
+                    }
+                    ExportedSymbol::Const(const_decl) => {
+                        Some(Statement::Const(const_decl))
                     }
                     ExportedSymbol::Type(_) => {
                         // Type aliases - skip for now
                         // TODO: Add type alias support
+                        None
                     }
+                };
+
+                if let Some(stmt) = statement {
+                    statements_to_insert.push(stmt);
                 }
 
                 imported_symbols.insert(symbol_name, true);
             }
+        }
+
+        // Insert all imported statements after the last use statement
+        // This ensures they're available before any code that uses them
+        for (i, stmt) in statements_to_insert.into_iter().enumerate() {
+            program.statements.insert(last_use_index + i, stmt);
         }
 
         Ok(())

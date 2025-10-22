@@ -1,5 +1,5 @@
 use math;
 
 fn test() -> f64 {
-    return math::PI * 2.0;
+    return PI * 2.0;
 }
