@@ -748,7 +748,7 @@ impl SemanticAnalyzer {
                 Ok(first_arm_type)
             }
             Expression::JsxElement(_) => Ok(ResolvedType::VNode),
-            Expression::FunctionCall(_) => Ok(ResolvedType::Unknown),
+            Expression::FunctionCall(func_call) => self.analyze_function_call(func_call),
             Expression::Lambda(_) => Ok(ResolvedType::Unknown),
             Expression::Borrow(borrow_expr) => {
                 self.analyze_expression_with_expected(&borrow_expr.expression, None)?;
@@ -895,6 +895,56 @@ impl SemanticAnalyzer {
                 expr.operator.lexeme, left_type, right_type
             )))
         }
+    }
+
+    fn analyze_function_call(&mut self, func_call: &FunctionCall) -> Result<ResolvedType, CompileError> {
+        // Analyze all arguments
+        for arg in &func_call.arguments {
+            self.analyze_expression_with_expected(arg, None)?;
+        }
+
+        // Check if this is a method call (function is a field access)
+        if let Expression::FieldAccess(field_access) = &*func_call.function {
+            // Get the type of the object
+            let object_type = self.analyze_expression(&field_access.object)?;
+            let method_name = &field_access.field.value;
+
+            // Handle String methods
+            if object_type == ResolvedType::String {
+                return Ok(match method_name.as_str() {
+                    // Methods that return bool
+                    "contains" | "starts_with" | "ends_with" |
+                    "is_empty" | "is_alphabetic" | "is_numeric" | "is_alphanumeric" => {
+                        ResolvedType::Bool
+                    },
+                    // Methods that return String
+                    "to_uppercase" | "to_lowercase" | "trim" | "trim_start" | "trim_end" |
+                    "substring" | "replace" | "repeat" | "reverse" |
+                    "pad_start" | "pad_end" => {
+                        ResolvedType::String
+                    },
+                    // Methods that return i32
+                    "len" | "count" => {
+                        ResolvedType::Integer
+                    },
+                    // Methods that return Option<i32> (use Unknown for now since Option isn't in ResolvedType)
+                    "find" | "rfind" | "char_at" | "pop" => {
+                        ResolvedType::Unknown
+                    },
+                    // Methods that return Vec<String>
+                    "split" | "lines" => {
+                        ResolvedType::Array(Box::new(ResolvedType::String))
+                    },
+                    // Default: unknown method
+                    _ => ResolvedType::Unknown,
+                });
+            }
+
+            // TODO: Add method type inference for other types (Vec, HashMap, etc.)
+        }
+
+        // For regular function calls, return Unknown for now
+        Ok(ResolvedType::Unknown)
     }
 
     fn types_compatible(&self, type1: &ResolvedType, type2: &ResolvedType) -> bool {
