@@ -1,6 +1,10 @@
 # Getting Started with RavensOne
 
+> ⚠️ **Alpha Status**: RavensOne is in early alpha. Many core features (if/else, for loops, Option/Result) are currently broken and being fixed in Phase 4. See README.md for current status.
+
 Welcome to RavensOne! This guide will help you get up and running with the full-stack reactive programming language that compiles to WebAssembly.
+
+**What works now**: JSX, basic functions, arrays, arithmetic. See [Current Limitations](#current-limitations) below.
 
 ## Table of Contents
 
@@ -832,6 +836,52 @@ For complete details, see:
 - **[Phase 1 Complete Summary](docs/PHASE_1_COMPLETE.md)** - All 15 sprints documented
 - **[Stdlib API Reference](docs/guides/STDLIB_API_REFERENCE.md)** - 200+ functions
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history
+
+---
+
+## Current Limitations (Phase 4 - In Progress)
+
+**RavensOne is in active development**. The following features are currently broken and being fixed:
+
+### ❌ Not Working (Being Fixed)
+
+- **if/else expressions** - Borrow checker bug blocks else clauses
+  - ✅ Works: `if condition { code }`
+  - ❌ Broken: `if condition { code } else { code }`
+
+- **For loops with ranges** - Parser doesn't support range syntax
+  - ❌ Broken: `for i in 1..10 { }`
+  - ✅ Workaround: Use array iteration
+
+- **Recursive functions** - Borrow checker bug
+  - ❌ Broken: `fn factorial(n) { ... factorial(n-1) ... }`
+
+- **Option and Result** - Depend on if/else (broken)
+  - ❌ Broken: `Option<T>`, `Result<T, E>`, `Some`, `None`, `Ok`, `Err`
+
+- **Match OR patterns** - Not implemented
+  - ❌ Broken: `match x { 1 | 2 | 3 => ... }`
+
+### ✅ What Works
+
+- Functions with parameters and return types
+- Arrays and array indexing
+- Arithmetic operations (+, -, *, /, %)
+- Boolean operations (&&, ||, ==, !=, <, >)
+- Simple if statements (without else)
+- println! with format strings
+- JSX (fully working!)
+- LSP features (editor support)
+
+### 🔧 Current Focus
+
+**Phase 4 Sprint 1** is fixing the critical borrow checker bug to enable:
+- if/else expressions
+- Recursive functions
+- Option and Result types
+- Error handling patterns
+
+See `CLAUDE.md` for detailed Phase 4 roadmap and `SPRINT3_FINDINGS.md` for technical analysis.
 
 ---
 

@@ -1,0 +1,98 @@
+// ============================================================================
+// Example 05: Collections
+// ============================================================================
+// Demonstrates: Arrays, array indexing
+// Features: Arrays, array access
+// Complexity: Beginner
+// Lines: ~50
+// ============================================================================
+
+fn main() {
+    println!("=== Collections ===");
+    println!("");
+
+    // ========================================================================
+    // Arrays (Fixed Size)
+    // ========================================================================
+
+    // Array literal
+    let numbers = [1, 2, 3, 4, 5];
+    println!("Array: [1, 2, 3, 4, 5]");
+    println!("First element: {}", numbers[0]);
+    println!("Second element: {}", numbers[1]);
+    println!("Third element: {}", numbers[2]);
+    println!("Fourth element: {}", numbers[3]);
+    println!("Fifth element: {}", numbers[4]);
+    println!("");
+
+    // Array of strings
+    let colors = ["red", "green", "blue"];
+    println!("Colors:");
+    println!("  {}", colors[0]);
+    println!("  {}", colors[1]);
+    println!("  {}", colors[2]);
+    println!("");
+
+    // Array of floating-point numbers
+    let prices = [9.99, 19.99, 29.99];
+    println!("Prices:");
+    println!("  ${}", prices[0]);
+    println!("  ${}", prices[1]);
+    println!("  ${}", prices[2]);
+    println!("");
+
+    // ========================================================================
+    // Working with Array Values
+    // ========================================================================
+
+    println!("=== Array Calculations ===");
+    println!("");
+
+    let scores = [85, 90, 78, 92, 88];
+    let sum = scores[0] + scores[1] + scores[2] + scores[3] + scores[4];
+    let average = sum / 5;
+
+    println!("Scores: 85, 90, 78, 92, 88");
+    println!("Sum: {}", sum);
+    println!("Average: {}", average);
+}
+
+// ============================================================================
+// How to Run:
+// ============================================================================
+// Compile and run this example:
+//   raven compile examples/01-basics/05-collections.raven
+//   node dist/server.js
+//
+// Or use watch mode for automatic recompilation:
+//   raven watch examples/01-basics/05-collections.raven
+// ============================================================================
+
+// ============================================================================
+// Expected Output:
+// ============================================================================
+// === Collections ===
+//
+// Array: [1, 2, 3, 4, 5]
+// First element: 1
+// Second element: 2
+// Third element: 3
+// Fourth element: 4
+// Fifth element: 5
+//
+// Colors:
+//   red
+//   green
+//   blue
+//
+// Prices:
+//   $9.99
+//   $19.99
+//   $29.99
+//
+// === Array Calculations ===
+//
+// Scores: 85, 90, 78, 92, 88
+// Sum: 433
+// Average: 86
+// ============================================================================
