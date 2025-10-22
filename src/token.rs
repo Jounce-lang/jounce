@@ -36,6 +36,7 @@ pub enum TokenKind {
     Dot,         // .
     DotDot,      // .. (range)
     DotDotEq,    // ..= (inclusive range)
+    DotDotDot,   // ... (spread operator)
     Plus,        // +
     Minus,       // -
     Star,        // *

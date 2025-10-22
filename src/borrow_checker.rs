@@ -262,6 +262,10 @@ impl BorrowChecker {
                 self.check_expression(&prefix_expr.right)?;
                 Ok(ResolvedType::Integer)
             }
+            Expression::Spread(spread_expr) => {
+                self.check_expression(&spread_expr.expression)?;
+                Ok(ResolvedType::Unit)
+            }
             Expression::Infix(infix_expr) => {
                 self.check_expression(&infix_expr.left)?;
                 self.check_expression(&infix_expr.right)?;

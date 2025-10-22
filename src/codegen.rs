@@ -928,6 +928,12 @@ impl CodeGenerator {
                     ))),
                 }
             }
+            Expression::Spread(_spread) => {
+                // Spread operator is primarily a JavaScript feature
+                // For WASM, we'd need to expand it at compile time
+                // For now, push a placeholder value
+                f.instruction(&Instruction::I32Const(0));
+            }
             Expression::Infix(infix) => {
                 self.generate_expression(&infix.left, f)?;
                 self.generate_expression(&infix.right, f)?;
@@ -1904,6 +1910,9 @@ impl CodeGenerator {
             Expression::Prefix(prefix) => {
                 self.collect_lambdas_from_expression(&prefix.right);
             }
+            Expression::Spread(spread) => {
+                self.collect_lambdas_from_expression(&spread.expression);
+            }
             Expression::Infix(infix) => {
                 self.collect_lambdas_from_expression(&infix.left);
                 self.collect_lambdas_from_expression(&infix.right);
@@ -2049,6 +2058,9 @@ impl CodeGenerator {
             }
             Expression::Prefix(prefix) => {
                 self.collect_variable_references(&prefix.right, vars);
+            }
+            Expression::Spread(spread) => {
+                self.collect_variable_references(&spread.expression, vars);
             }
             Expression::Infix(infix) => {
                 self.collect_variable_references(&infix.left, vars);

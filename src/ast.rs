@@ -150,6 +150,7 @@ pub enum Expression {
     TupleLiteral(TupleLiteral),
     StructLiteral(StructLiteral),
     Prefix(PrefixExpression),
+    Spread(SpreadExpression),  // ...expr (spread operator in arrays)
     Infix(InfixExpression),
     FieldAccess(FieldAccessExpression),
     IndexAccess(IndexExpression),
@@ -185,6 +186,11 @@ pub struct Lifetime {
 pub struct PrefixExpression {
     pub operator: Token,
     pub right: Box<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SpreadExpression {
+    pub expression: Box<Expression>,  // The expression being spread (e.g., arr in ...arr)
 }
 
 #[derive(Debug, Clone)]

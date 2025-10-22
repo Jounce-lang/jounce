@@ -606,6 +606,12 @@ impl SemanticAnalyzer {
                 self.analyze_expression_with_expected(&prefix_expr.right, None)?;
                 Ok(ResolvedType::Integer)
             }
+            Expression::Spread(spread_expr) => {
+                // Analyze the inner expression of spread operator
+                self.analyze_expression_with_expected(&spread_expr.expression, None)?;
+                // Spread preserves the type of the array being spread
+                Ok(ResolvedType::Unit)  // Type will be inferred from context
+            }
             Expression::Infix(infix_expr) => self.analyze_infix_expression(infix_expr),
             Expression::ArrayLiteral(array_lit) => {
                 let mut expected_element_type = match expected {
