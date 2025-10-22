@@ -34,7 +34,7 @@ pub struct UseStatement {
 
 #[derive(Debug, Clone)]
 pub struct LetStatement {
-    pub name: Identifier,
+    pub pattern: Pattern,  // Changed from 'name' to support destructuring
     pub mutable: bool,
     pub type_annotation: Option<TypeExpression>,
     pub value: Expression,
@@ -289,12 +289,30 @@ pub struct IfExpression {
 #[derive(Debug, Clone)]
 pub enum Pattern {
     Identifier(Identifier),           // x (binds to variable)
+    Tuple(Vec<Pattern>),              // (a, b, c) (destructure tuple)
     Literal(Expression),              // 42, "hello", true
     Wildcard,                         // _ (matches anything)
     EnumVariant {
         name: Identifier,             // Color::Red or Option::Some
         fields: Option<Vec<Pattern>>, // For destructuring fields
     },
+}
+
+impl Pattern {
+    /// Extract all identifiers bound by this pattern
+    pub fn bound_identifiers(&self) -> Vec<Identifier> {
+        match self {
+            Pattern::Identifier(id) => vec![id.clone()],
+            Pattern::Tuple(patterns) => {
+                patterns.iter().flat_map(|p| p.bound_identifiers()).collect()
+            }
+            Pattern::Wildcard => vec![],
+            Pattern::Literal(_) => vec![],
+            Pattern::EnumVariant { fields, .. } => {
+                fields.as_ref().map(|f| f.iter().flat_map(|p| p.bound_identifiers()).collect()).unwrap_or_else(Vec::new)
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

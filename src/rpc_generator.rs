@@ -216,7 +216,6 @@ pub struct RPCStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{BlockStatement, Statement};
     use crate::lexer::Lexer;
     use crate::parser::Parser;
     use crate::code_splitter::CodeSplitter;

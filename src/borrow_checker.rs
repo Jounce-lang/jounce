@@ -220,7 +220,10 @@ impl BorrowChecker {
                 self.symbols.update_state(&ident.value, OwnershipState::Moved);
             }
         }
-        self.symbols.define(stmt.name.value.clone(), value_type);
+        // Register all identifiers from the pattern
+        for ident in stmt.pattern.bound_identifiers() {
+            self.symbols.define(ident.value.clone(), value_type.clone());
+        }
         Ok(())
     }
 
