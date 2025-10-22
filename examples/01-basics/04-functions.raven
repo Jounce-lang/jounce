@@ -1,0 +1,127 @@
+// ============================================================================
+// Example 04: Functions
+// ============================================================================
+// Demonstrates: Function definitions, parameters, return types
+// Features: fn keyword, return values, arithmetic operations
+// Complexity: Beginner
+// Lines: ~70
+// ============================================================================
+
+fn main() {
+    println!("=== Functions ===");
+    println!("");
+
+    // Basic function with no parameters
+    greet();
+    println!("");
+
+    // Function with parameters
+    let sum = add(5, 3);
+    println!("add(5, 3) = {}", sum);
+
+    let product = multiply(4, 7);
+    println!("multiply(4, 7) = {}", product);
+
+    let difference = subtract(10, 3);
+    println!("subtract(10, 3) = {}", difference);
+    println!("");
+
+    // Function with floating-point numbers
+    let quotient = divide(10.0, 2.0);
+    println!("divide(10.0, 2.0) = {}", quotient);
+    println!("");
+
+    // Boolean functions
+    println!("is_even(42) = {}", is_even(42));
+    println!("is_even(17) = {}", is_even(17));
+    println!("");
+
+    println!("is_positive(5) = {}", is_positive(5));
+    println!("is_positive(-3) = {}", is_positive(-3));
+    println!("");
+
+    // Function composition
+    let x = 5;
+    let doubled = double(x);
+    let squared = square(doubled);
+    println!("{} -> double -> {} -> square -> {}", x, doubled, squared);
+}
+
+// ============================================================================
+// Function Definitions
+// ============================================================================
+
+// No parameters, no return value
+fn greet() {
+    println!("Hello from RavensOne!");
+}
+
+// Two parameters, returns i32
+fn add(a: i32, b: i32) -> i32 {
+    return a + b;
+}
+
+// Return without explicit 'return' keyword
+fn multiply(a: i32, b: i32) -> i32 {
+    a * b
+}
+
+fn subtract(a: i32, b: i32) -> i32 {
+    a - b
+}
+
+// Function with floating-point numbers
+fn divide(a: f64, b: f64) -> f64 {
+    a / b
+}
+
+// Boolean return type
+fn is_even(n: i32) -> bool {
+    return n % 2 == 0;
+}
+
+fn is_positive(n: i32) -> bool {
+    return n > 0;
+}
+
+// Simple transformations
+fn double(x: i32) -> i32 {
+    return x * 2;
+}
+
+fn square(x: i32) -> i32 {
+    return x * x;
+}
+
+// ============================================================================
+// How to Run:
+// ============================================================================
+// Compile and run this example:
+//   raven compile examples/01-basics/04-functions.raven
+//   node dist/server.js
+//
+// Or use watch mode for automatic recompilation:
+//   raven watch examples/01-basics/04-functions.raven
+// ============================================================================
+
+// ============================================================================
+// Expected Output:
+// ============================================================================
+// === Functions ===
+//
+// Hello from RavensOne!
+//
+// add(5, 3) = 8
+// multiply(4, 7) = 28
+// subtract(10, 3) = 7
+//
+// divide(10.0, 2.0) = 5
+//
+// is_even(42) = true
+// is_even(17) = false
+//
+// is_positive(5) = true
+// is_positive(-3) = false
+//
+// 5 -> double -> 10 -> square -> 100
+// ============================================================================

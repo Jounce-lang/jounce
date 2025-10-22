@@ -1,0 +1,138 @@
+// ============================================================================
+// Example 06: Basic Error Patterns
+// ============================================================================
+// Demonstrates: Safe operations, validation, bounds checking
+// Features: Boolean checks, safe arithmetic
+// Complexity: Beginner
+// Lines: ~70
+// ============================================================================
+
+fn main() {
+    println!("=== Error Handling Patterns ===");
+    println!("");
+
+    // ========================================================================
+    // Input Validation
+    // ========================================================================
+
+    println!("=== Input Validation ===");
+    println!("");
+
+    // Check if values are valid
+    let age = 25;
+    println!("Age: {}", age);
+    println!("Is valid age: {}", is_valid_age(age));
+    println!("");
+
+    let invalid_age = -5;
+    println!("Age: {}", invalid_age);
+    println!("Is valid age: {}", is_valid_age(invalid_age));
+    println!("");
+
+    // ========================================================================
+    // Safe Division
+    // ========================================================================
+
+    println!("=== Safe Division ===");
+    println!("");
+
+    // Check before dividing
+    let a = 10.0;
+    let b = 2.0;
+    println!("{} ÷ {} is safe: {}", a, b, is_safe_to_divide(b));
+
+    let c = 0.0;
+    println!("{} ÷ {} is safe: {}", a, c, is_safe_to_divide(c));
+    println!("");
+
+    // ========================================================================
+    // Range Validation
+    // ========================================================================
+
+    println!("=== Range Validation ===");
+    println!("");
+
+    let score = 85;
+    println!("Score {} in range: {}", score, is_valid_score(score));
+
+    let bad_score = 150;
+    println!("Score {} in range: {}", bad_score, is_valid_score(bad_score));
+    println!("");
+
+    // ========================================================================
+    // String Validation
+    // ========================================================================
+
+    println!("=== String Validation ===");
+    println!("");
+
+    let empty = "";
+    println!("String is empty: {}", is_empty_string(empty));
+
+    let nonempty = "Hello";
+    println!("String is empty: {}", is_empty_string(nonempty));
+}
+
+// ============================================================================
+// Validation Functions
+// ============================================================================
+
+// Check if age is in valid range
+fn is_valid_age(age: i32) -> bool {
+    return age >= 0 && age <= 150;
+}
+
+// Check if it's safe to divide by a number
+fn is_safe_to_divide(divisor: f64) -> bool {
+    return divisor != 0.0;
+}
+
+// Check if score is in valid range (0-100)
+fn is_valid_score(score: i32) -> bool {
+    return score >= 0 && score <= 100;
+}
+
+// Check if string is empty
+fn is_empty_string(s: &str) -> bool {
+    return s.len() == 0;
+}
+
+// ============================================================================
+// How to Run:
+// ============================================================================
+// Compile and run this example:
+//   raven compile examples/01-basics/06-error-handling.raven
+//   node dist/server.js
+//
+// Or use watch mode for automatic recompilation:
+//   raven watch examples/01-basics/06-error-handling.raven
+// ============================================================================
+
+// ============================================================================
+// Expected Output:
+// ============================================================================
+// === Error Handling Patterns ===
+//
+// === Input Validation ===
+//
+// Age: 25
+// Is valid age: true
+//
+// Age: -5
+// Is valid age: false
+//
+// === Safe Division ===
+//
+// 10 ÷ 2 is safe: true
+// 10 ÷ 0 is safe: false
+//
+// === Range Validation ===
+//
+// Score 85 in range: true
+// Score 150 in range: false
+//
+// === String Validation ===
+//
+// String is empty: true
+// String is empty: false
+// ============================================================================
