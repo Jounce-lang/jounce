@@ -305,11 +305,74 @@ Jump to the definition of functions, types, and variables.
 ### Find References (Planned)
 Find all usages of a symbol across your codebase.
 
-### Code Actions (Planned)
-Quick fixes and refactoring suggestions:
-- "Import missing module"
-- "Add type annotation"
-- "Convert to async"
+### Code Actions & Quick Fixes ✅
+Automatic code actions and quick fixes for common errors. Available via `Cmd+.` (macOS) or `Ctrl+.` (Windows/Linux) in supported editors.
+
+#### Quick Fix 1: "Did you mean?" Typo Fixes
+Automatically fixes typos and undefined identifiers.
+
+```raven
+// Before:
+let count = Signa::new(0);  // Error: undefined identifier
+
+// Quick Fix: "Change to 'Signal'"
+let count = Signal::new(0);  // ✅ Fixed
+```
+
+#### Quick Fix 2: Prefix Unused Variable with `_`
+Suppresses warnings for intentionally unused variables.
+
+```raven
+// Before:
+let count = 0;  // Warning: unused variable 'count'
+
+// Quick Fix: "Rename to '_count'"
+let _count = 0;  // ✅ Fixed - warning suppressed
+```
+
+#### Quick Fix 3: Add Type Cast
+Automatically casts numeric types when there's a type mismatch.
+
+```raven
+// Before:
+let x: f64 = 42;  // Error: type mismatch (expected f64, found i32)
+
+// Quick Fix: "Cast to f64"
+let x: f64 = 42 as f64;  // ✅ Fixed
+```
+
+#### Quick Fix 4: Add Missing Semicolon
+Inserts missing semicolons at statement end.
+
+```raven
+// Before:
+let x = 10  // Error: expected ';'
+
+// Quick Fix: "Add semicolon"
+let x = 10;  // ✅ Fixed
+```
+
+#### Quick Fix 5: Add Type Annotation
+Adds explicit type annotations when type inference fails.
+
+```raven
+// Before:
+let items = vec![];  // Error: type annotation needed
+
+// Quick Fix: "Add type annotation: Vec<i32>"
+let items: Vec<i32> = vec![];  // ✅ Fixed
+```
+
+#### Quick Fix 6: Remove Unused Import
+Removes unused import statements.
+
+```raven
+// Before:
+use raven_store::Signal;  // Warning: unused import
+
+// Quick Fix: "Remove unused import"
+// ✅ Line removed
+```
 
 ## 3. Enhanced Diagnostics & Error Reporting
 
@@ -427,9 +490,10 @@ Want to improve the LSP? Check out:
 
 ---
 
-**Last Updated**: 2025-10-22 (Phase 2 - Sprint 3 & 4)
+**Last Updated**: 2025-10-22 (Phase 2 - Sprint 5)
 **LSP Version**: 0.1.0
 **Completions**: 70+
 **Context Types**: 7
+**Code Actions**: 6 quick fixes
 **Error Codes**: 18 errors (E001-E018) + 5 warnings (W001-W005)
-**Test Coverage**: 18 diagnostic tests, 100% passing
+**Test Coverage**: 21 LSP tests + 18 diagnostic tests, 100% passing

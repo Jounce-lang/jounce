@@ -1,0 +1,13 @@
+fn get_value() -> Option<i32> {
+    return Some(42);
+}
+
+fn process() -> Option<i32> {
+    let value = get_value()?;
+    return Some(value + 1);
+}
+
+fn main() {
+    let result = process();
+    println!("{:?}", result);
+}

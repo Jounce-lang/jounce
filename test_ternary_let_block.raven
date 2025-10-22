@@ -1,7 +1,9 @@
 fn test() {
-    let cond = true;
-    let result = cond ? {
-        let x = 5;
-        x + 1
-    } : 10;
+    let x = true ? {
+        let y = 5;
+        y + 1
+    } : {
+        let z = 10;
+        z + 2
+    };
 }
