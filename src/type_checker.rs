@@ -320,6 +320,11 @@ impl TypeChecker {
                 self.check_prefix_expression(prefix)
             }
 
+            Expression::Spread(spread) => {
+                // Type check the inner expression - must be an array
+                self.infer_expression(&spread.expression)
+            }
+
             Expression::Infix(infix) => {
                 self.check_infix_expression(infix)
             }
