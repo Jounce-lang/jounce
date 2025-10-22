@@ -45,7 +45,7 @@ impl Lexer {
         // Read JSX text when at baseline brace depth (not inside expressions)
         // OR when we've just finished parsing an opening tag (even if inside nested braces)
         let at_baseline = self.brace_depth == baseline_brace_depth;
-        let can_read_jsx_text = self.jsx_mode && self.jsx_depth > 0 && at_baseline && !self.jsx_in_tag && !self.in_closing_tag && self.ch != '<' && self.ch != '{' && self.ch != '\0';
+        let can_read_jsx_text = self.jsx_mode && self.jsx_depth > 0 && at_baseline && !self.jsx_in_tag && !self.in_closing_tag && self.ch != '<' && self.ch != '{' && self.ch != '}' && self.ch != '\0';
 
         if can_read_jsx_text {
             return self.read_jsx_text();
@@ -411,6 +411,14 @@ impl Lexer {
         self.jsx_mode = true;
         self.jsx_depth += 1;
         // Record the current brace depth as the baseline for this JSX element
+        self.jsx_baseline_brace_depths.push(self.brace_depth);
+    }
+
+    // Enter nested JSX (already in jsx_mode, just track nesting)
+    pub fn enter_nested_jsx(&mut self) {
+        self.jsx_depth += 1;
+        // Push current brace depth as baseline for this nested JSX element
+        // This is CRITICAL for JSX inside expressions like: {cond ? (<div>...</div>) : ...}
         self.jsx_baseline_brace_depths.push(self.brace_depth);
     }
 
