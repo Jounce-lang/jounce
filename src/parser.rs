@@ -72,6 +72,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::Fn | TokenKind::Server | TokenKind::Client | TokenKind::Async => self.parse_function_definition().map(Statement::Function),
             TokenKind::Let => self.parse_let_statement().map(Statement::Let),
+            TokenKind::Const => self.parse_const_declaration().map(Statement::Const),
             TokenKind::Return => self.parse_return_statement().map(Statement::Return),
             TokenKind::If => self.parse_if_statement().map(Statement::If),
             TokenKind::While => self.parse_while_statement().map(Statement::While),
@@ -566,6 +567,24 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::Assign)?;
         let value = self.parse_expression(Precedence::Lowest)?;
         Ok(LetStatement { pattern, mutable, type_annotation, value })
+    }
+
+    fn parse_const_declaration(&mut self) -> Result<ConstDeclaration, CompileError> {
+        self.expect_and_consume(&TokenKind::Const)?;
+
+        // Parse constant name (must be an identifier)
+        let name = self.parse_identifier()?;
+
+        // Parse optional type annotation: const MAX_SIZE: i32 = 100
+        let type_annotation = if self.consume_if_matches(&TokenKind::Colon) {
+            Some(self.parse_type_expression()?)
+        } else {
+            None
+        };
+
+        self.expect_and_consume(&TokenKind::Assign)?;
+        let value = self.parse_expression(Precedence::Lowest)?;
+        Ok(ConstDeclaration { name, type_annotation, value })
     }
 
     fn parse_let_pattern(&mut self) -> Result<Pattern, CompileError> {
@@ -1658,8 +1677,6 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::RAngle)?;
 
         // Only exit JSX mode if we entered it for this element
-        // If was_jsx_mode = true, we were already in JSX (nested element), so don't exit
-        // If was_jsx_mode = false, we entered JSX for this element, so exit when done
         if !was_jsx_mode {
             self.lexer.exit_jsx_mode();
         }

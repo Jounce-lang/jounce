@@ -12,6 +12,7 @@ pub struct Lexer {
     brace_depth: usize,       // Track braces in JSX expressions
     jsx_in_tag: bool,         // Track if we're inside a tag (between < and >)
     in_closing_tag: bool,     // Track if parser is currently parsing a closing tag
+    jsx_baseline_brace_depths: Vec<usize>, // Stack of brace depths when entering each JSX element
 }
 
 impl Lexer {
@@ -28,6 +29,7 @@ impl Lexer {
             brace_depth: 0,
             jsx_in_tag: false,
             in_closing_tag: false,
+            jsx_baseline_brace_depths: Vec::new(),
         };
         lexer.read_char();
         lexer
@@ -37,7 +39,10 @@ impl Lexer {
         // In JSX mode, handle text content differently
         // Only read JSX text when we're not inside a tag (between < and >) AND we're actually inside a JSX element (jsx_depth > 0)
         // Also don't read JSX text if we're currently parsing a closing tag
-        if self.jsx_mode && self.jsx_depth > 0 && self.brace_depth == 0 && !self.jsx_in_tag && !self.in_closing_tag && self.ch != '<' && self.ch != '{' && self.ch != '\0' {
+        // Check if brace_depth is at or below the baseline for the current JSX element
+        let baseline_brace_depth = self.jsx_baseline_brace_depths.last().copied().unwrap_or(0);
+
+        if self.jsx_mode && self.jsx_depth > 0 && self.brace_depth == baseline_brace_depth && !self.jsx_in_tag && !self.in_closing_tag && self.ch != '<' && self.ch != '{' && self.ch != '\0' {
             return self.read_jsx_text();
         }
 
@@ -369,8 +374,8 @@ impl Lexer {
         let start_col = self.column;
         let mut result = String::new();
 
-        // Read text until we hit < (tag start), { (expression start), or end of input
-        while self.ch != '<' && self.ch != '{' && self.ch != '\0' {
+        // Read text until we hit < (tag start), { (expression start), } (expression end), or end of input
+        while self.ch != '<' && self.ch != '{' && self.ch != '}' && self.ch != '\0' {
             result.push(self.ch);
             self.read_char();
         }
@@ -385,11 +390,15 @@ impl Lexer {
     pub fn enter_jsx_mode(&mut self) {
         self.jsx_mode = true;
         self.jsx_depth += 1;
+        // Record the current brace depth as the baseline for this JSX element
+        self.jsx_baseline_brace_depths.push(self.brace_depth);
     }
 
     pub fn exit_jsx_mode(&mut self) {
         if self.jsx_depth > 0 {
             self.jsx_depth -= 1;
+            // Pop the baseline brace depth for this JSX element
+            self.jsx_baseline_brace_depths.pop();
         }
         if self.jsx_depth == 0 {
             self.jsx_mode = false;

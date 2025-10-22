@@ -17,7 +17,7 @@ impl Token {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TokenKind {
     // Keywords
-    Let, Fn, Struct, Enum, Impl, Trait, Component, Extern, Return, Server, Client, Async, Await, Use, True, False, If, Else, While, For, In, Match, Mut, As,
+    Let, Const, Fn, Struct, Enum, Impl, Trait, Component, Extern, Return, Server, Client, Async, Await, Use, True, False, If, Else, While, For, In, Match, Mut, As,
 
     // Identifiers & Literals
     Identifier,
@@ -85,6 +85,7 @@ lazy_static::lazy_static! {
     pub static ref KEYWORDS: std::collections::HashMap<&'static str, TokenKind> = {
         let mut map = std::collections::HashMap::new();
         map.insert("let", TokenKind::Let);
+        map.insert("const", TokenKind::Const);
         map.insert("fn", TokenKind::Fn);
         map.insert("struct", TokenKind::Struct);
         map.insert("enum", TokenKind::Enum);
