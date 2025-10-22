@@ -45,7 +45,30 @@ impl Lexer {
         // Read JSX text when at baseline brace depth (not inside expressions)
         // OR when we've just finished parsing an opening tag (even if inside nested braces)
         let at_baseline = self.brace_depth == baseline_brace_depth;
-        let can_read_jsx_text = self.jsx_mode && self.jsx_depth > 0 && at_baseline && !self.jsx_in_tag && !self.in_closing_tag && self.ch != '<' && self.ch != '{' && self.ch != '}' && self.ch != '\0';
+
+        // CRITICAL: Don't read JSX text if current character is a delimiter/operator
+        // This prevents reading `)`, `}`, `]`, `,`, `;` as JSX text after self-closing tags in closures
+        let is_delimiter = matches!(self.ch, ')' | ']' | ',' | ';');
+
+        // CRITICAL: Check if we would only read whitespace before a delimiter
+        // This prevents empty JSX text tokens after self-closing tags in expression contexts
+        let would_read_only_whitespace = self.ch.is_whitespace() && {
+            let mut temp_pos = self.position;
+            let mut temp_ch = self.ch;
+            // Skip whitespace to see what's next
+            while temp_ch.is_whitespace() && temp_ch != '\0' {
+                temp_pos += 1;
+                temp_ch = if temp_pos < self.input.len() {
+                    self.input[temp_pos]
+                } else {
+                    '\0'
+                };
+            }
+            // Check if next non-whitespace is a delimiter or JSX-significant character
+            matches!(temp_ch, '}' | ')' | ']' | '<' | '\0')
+        };
+
+        let can_read_jsx_text = self.jsx_mode && self.jsx_depth > 0 && at_baseline && !self.jsx_in_tag && !self.in_closing_tag && !is_delimiter && !would_read_only_whitespace && self.ch != '<' && self.ch != '{' && self.ch != '}' && self.ch != '\0';
 
         if can_read_jsx_text {
             return self.read_jsx_text();

@@ -1507,11 +1507,9 @@ impl<'a> Parser<'a> {
 
         let opening_tag = self.parse_jsx_opening_tag_with_mode_check(was_jsx_mode)?;
 
-        // For self-closing tags, always exit JSX mode (pop depth and baseline)
-        // This is needed because we now enter_nested_jsx() for nested elements
-        if opening_tag.self_closing {
-            self.lexer.exit_jsx_mode();
-        }
+        // Note: For self-closing tags, exit_jsx_mode() is already called in
+        // parse_jsx_opening_tag_with_mode_check() BEFORE consuming the final token,
+        // to prevent lexer from generating JSX text tokens in the lookahead buffer
 
         let children = if opening_tag.self_closing { vec![] } else { self.parse_jsx_children()? };
         let closing_tag = if opening_tag.self_closing { None } else {
@@ -1549,13 +1547,26 @@ impl<'a> Parser<'a> {
         }
 
         // Check for self-closing tag />
-        let self_closing = if self.consume_if_matches(&TokenKind::JsxSelfClose) {
-            // Self-closing tag, jsx_depth was already incremented
-            true
-        } else if self.consume_if_matches(&TokenKind::Slash) {
-            // Self-closing with separate / and >
-            self.expect_and_consume(&TokenKind::RAngle)?;
-            true
+        // CRITICAL: Exit JSX mode BEFORE consuming any tokens for self-closing tags
+        // to prevent lexer from generating JSX text tokens in the lookahead buffer
+        let is_self_closing = self.current_token().kind == TokenKind::JsxSelfClose ||
+                              self.current_token().kind == TokenKind::Slash;
+
+        let self_closing = if is_self_closing {
+            // Exit JSX mode FIRST, before consuming any tokens
+            self.lexer.exit_jsx_mode();
+
+            if self.consume_if_matches(&TokenKind::JsxSelfClose) {
+                // Self-closing tag with />
+                true
+            } else if self.consume_if_matches(&TokenKind::Slash) {
+                // Self-closing with separate / and >
+                self.expect_and_consume(&TokenKind::RAngle)?;
+                true
+            } else {
+                // Should not reach here
+                false
+            }
         } else {
             // Regular opening tag - consume >
             self.expect_and_consume(&TokenKind::RAngle)?;
