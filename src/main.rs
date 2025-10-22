@@ -63,6 +63,8 @@ enum Commands {
     Fmt {
         #[arg(short, long)]
         check: bool,
+        #[arg(short, long)]
+        write: bool,
         path: Option<PathBuf>,
     },
     /// Lint RavensOne source files
@@ -330,14 +332,19 @@ fn main() {
                 process::exit(1);
             }
         }
-        Commands::Fmt { check, path } => {
+        Commands::Fmt { check, write, path } => {
             let target = path.unwrap_or_else(|| PathBuf::from("src"));
-            if check {
-                println!("🔍 Checking formatting for {}...", target.display());
+
+            // Determine mode
+            let mode = if check {
+                FormatMode::Check
+            } else if write {
+                FormatMode::Write
             } else {
-                println!("✨ Formatting {}...", target.display());
-            }
-            if let Err(e) = format_code(target, check) {
+                FormatMode::Print
+            };
+
+            if let Err(e) = format_code(target, mode) {
                 eprintln!("❌ Formatting failed: {}", e);
                 process::exit(1);
             }
@@ -671,91 +678,154 @@ fn run_tests(watch_mode: bool) -> std::io::Result<()> {
     Ok(())
 }
 
-fn format_code(path: PathBuf, check_only: bool) -> std::io::Result<()> {
+/// Formatting mode for the format command
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum FormatMode {
+    /// Check if files need formatting (exit with error if they do)
+    Check,
+    /// Format files and write changes to disk
+    Write,
+    /// Print formatted output to stdout (default)
+    Print,
+}
+
+/// Result of formatting a file
+enum FormatResult {
+    Changed,
+    Unchanged,
+}
+
+fn format_code(path: PathBuf, mode: FormatMode) -> std::io::Result<()> {
+    use ravensone_compiler::formatter::{Formatter, FormatterConfig};
+    use ravensone_compiler::lexer::Lexer;
+    use ravensone_compiler::parser::Parser;
     let mut formatted_count = 0;
     let mut error_count = 0;
+    let mut total_count = 0;
+
+    // Print mode header
+    match mode {
+        FormatMode::Check => println!("🔍 Checking formatting for {}...", path.display()),
+        FormatMode::Write => println!("✨ Formatting {}...", path.display()),
+        FormatMode::Print => {}, // No header for print mode
+    }
 
     if path.is_file() {
-        match format_file(&path, check_only) {
-            Ok(true) => formatted_count += 1,
-            Ok(false) => {},
+        total_count += 1;
+        match format_file(&path, mode) {
+            Ok(FormatResult::Changed) => formatted_count += 1,
+            Ok(FormatResult::Unchanged) => {},
             Err(_) => error_count += 1,
         }
-    } else {
-        for entry in fs::read_dir(path)?.flatten() {
-            let entry_path = entry.path();
+    } else if path.is_dir() {
+        // Recursively walk directory
+        visit_dirs(&path, &mut |entry_path: &PathBuf| {
             if entry_path.extension().map_or(false, |ext| ext == "raven") {
-                match format_file(&entry_path, check_only) {
-                    Ok(true) => formatted_count += 1,
-                    Ok(false) => {},
+                total_count += 1;
+                match format_file(entry_path, mode) {
+                    Ok(FormatResult::Changed) => formatted_count += 1,
+                    Ok(FormatResult::Unchanged) => {},
                     Err(_) => error_count += 1,
                 }
             }
-        }
-    }
-
-    if check_only {
-        if formatted_count > 0 {
-            println!("⚠️  {} file(s) need formatting", formatted_count);
-            process::exit(1);
-        } else {
-            println!("✅ All files are properly formatted");
-        }
+        })?;
     } else {
-        println!("✅ Formatted {} file(s)", formatted_count);
+        eprintln!("❌ Path not found: {}", path.display());
+        process::exit(1);
     }
 
-    if error_count > 0 {
-        println!("❌ {} file(s) had errors", error_count);
+    // Print summary
+    match mode {
+        FormatMode::Check => {
+            if formatted_count > 0 {
+                eprintln!("⚠️  {} file(s) need formatting", formatted_count);
+                process::exit(1);
+            } else if total_count > 0 {
+                println!("✅ All {} file(s) are properly formatted", total_count);
+            }
+        }
+        FormatMode::Write => {
+            if formatted_count > 0 {
+                println!("✅ Formatted {} file(s)", formatted_count);
+            } else if total_count > 0 {
+                println!("✅ All {} file(s) already properly formatted", total_count);
+            }
+            if error_count > 0 {
+                eprintln!("⚠️  {} file(s) had errors", error_count);
+            }
+        }
+        FormatMode::Print => {
+            // No summary for print mode
+        }
     }
 
     Ok(())
 }
 
-fn format_file(path: &PathBuf, check_only: bool) -> std::io::Result<bool> {
-    let content = fs::read_to_string(path)?;
-    let formatted = format_raven_code(&content);
+fn format_file(path: &PathBuf, mode: FormatMode) -> std::io::Result<FormatResult> {
+    use ravensone_compiler::formatter::{Formatter, FormatterConfig};
+    use ravensone_compiler::lexer::Lexer;
+    use ravensone_compiler::parser::Parser;
 
-    if content != formatted {
-        if check_only {
-            println!("  ⚠️  {} needs formatting", path.display());
-        } else {
-            fs::write(path, formatted)?;
-            println!("  ✨ Formatted {}", path.display());
+    let content = fs::read_to_string(path)?;
+
+    // Parse the file
+    let mut lexer = Lexer::new(content.clone());
+    let mut parser = Parser::new(&mut lexer);
+    let ast = match parser.parse_program() {
+        Ok(ast) => ast,
+        Err(e) => {
+            eprintln!("  ❌ Parse error in {}: {:?}", path.display(), e);
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("Parse error: {:?}", e),
+            ));
         }
-        Ok(true)
-    } else {
-        Ok(false)
+    };
+
+    // Format the AST
+    let config = FormatterConfig::default();
+    let mut formatter = Formatter::with_config(config);
+    let formatted = formatter.format_program(&ast);
+
+    // Check if content changed
+    if content.trim() == formatted.trim() {
+        return Ok(FormatResult::Unchanged);
+    }
+
+    // Handle based on mode
+    match mode {
+        FormatMode::Check => {
+            println!("  ⚠️  {} needs formatting", path.display());
+            Ok(FormatResult::Changed)
+        }
+        FormatMode::Write => {
+            fs::write(path, &formatted)?;
+            println!("  ✨ Formatted {}", path.display());
+            Ok(FormatResult::Changed)
+        }
+        FormatMode::Print => {
+            // Print formatted output to stdout
+            print!("{}", formatted);
+            Ok(FormatResult::Changed)
+        }
     }
 }
 
-fn format_raven_code(code: &str) -> String {
-    // Simple formatter - normalize whitespace and indentation
-    let mut formatted = String::new();
-    let mut indent: usize = 0;
-
-    for line in code.lines() {
-        let trimmed = line.trim();
-
-        // Decrease indent for closing braces
-        if trimmed.starts_with('}') {
-            indent = indent.saturating_sub(1);
-        }
-
-        // Add indented line
-        if !trimmed.is_empty() {
-            formatted.push_str(&"    ".repeat(indent));
-            formatted.push_str(trimmed);
-            formatted.push('\n');
-        }
-
-        // Increase indent for opening braces
-        if trimmed.ends_with('{') {
-            indent += 1;
+/// Visit all files in a directory recursively
+fn visit_dirs(dir: &PathBuf, cb: &mut dyn FnMut(&PathBuf)) -> std::io::Result<()> {
+    if dir.is_dir() {
+        for entry in fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                visit_dirs(&path, cb)?;
+            } else {
+                cb(&path);
+            }
         }
     }
-
-    formatted
+    Ok(())
 }
 
 fn lint_code(path: PathBuf, fix: bool) -> std::io::Result<()> {

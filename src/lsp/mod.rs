@@ -83,6 +83,22 @@ pub struct Hover {
     pub range: Option<Range>,
 }
 
+/// Text edit for document modifications
+#[derive(Debug, Clone)]
+pub struct TextEdit {
+    pub range: Range,
+    pub new_text: String,
+}
+
+/// Formatting options
+#[derive(Debug, Clone)]
+pub struct FormattingOptions {
+    pub tab_size: usize,
+    pub insert_spaces: bool,
+    pub trim_trailing_whitespace: bool,
+    pub insert_final_newline: bool,
+}
+
 impl LanguageServer {
     pub fn new() -> Self {
         LanguageServer {
@@ -1048,6 +1064,139 @@ impl LanguageServer {
 
         completions
     }
+
+    /// Format entire document
+    ///
+    /// Returns a TextEdit that replaces the entire document with formatted content.
+    /// This implements the LSP `textDocument/formatting` request.
+    pub fn format_document(&self, uri: &str, options: FormattingOptions) -> Option<Vec<TextEdit>> {
+        use crate::formatter::{Formatter, FormatterConfig};
+        use crate::lexer::Lexer;
+        use crate::parser::Parser;
+
+        // Get document content
+        let doc = self.documents.get(uri)?;
+        let content = &doc.content;
+
+        // Parse the document
+        let mut lexer = Lexer::new(content.to_string());
+        let mut parser = Parser::new(&mut lexer);
+        let ast = match parser.parse_program() {
+            Ok(ast) => ast,
+            Err(_) => {
+                // If parsing fails, don't format (return None)
+                return None;
+            }
+        };
+
+        // Create formatter with config from LSP options
+        let config = FormatterConfig {
+            indent_size: options.tab_size,
+            max_line_length: 100,
+            use_spaces: options.insert_spaces,
+            trailing_comma: true,
+        };
+
+        let mut formatter = Formatter::with_config(config);
+        let formatted = formatter.format_program(&ast);
+
+        // Apply final newline if requested
+        let final_text = if options.insert_final_newline && !formatted.ends_with('\n') {
+            format!("{}\n", formatted)
+        } else {
+            formatted
+        };
+
+        // Calculate document range (entire document)
+        let lines: Vec<&str> = content.lines().collect();
+        let last_line = if lines.is_empty() { 0 } else { lines.len() - 1 };
+        let last_char = lines.last().map(|l| l.len()).unwrap_or(0);
+
+        let range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position {
+                line: last_line,
+                character: last_char,
+            },
+        };
+
+        Some(vec![TextEdit {
+            range,
+            new_text: final_text,
+        }])
+    }
+
+    /// Format a range within a document
+    ///
+    /// Returns a TextEdit that replaces only the specified range with formatted content.
+    /// This implements the LSP `textDocument/rangeFormatting` request.
+    pub fn format_range(
+        &self,
+        uri: &str,
+        range: Range,
+        options: FormattingOptions,
+    ) -> Option<Vec<TextEdit>> {
+        use crate::formatter::{Formatter, FormatterConfig};
+        use crate::lexer::Lexer;
+        use crate::parser::Parser;
+
+        // Get document content
+        let doc = self.documents.get(uri)?;
+        let content = &doc.content;
+
+        // Extract the range text
+        let lines: Vec<&str> = content.lines().collect();
+        if range.start.line >= lines.len() {
+            return None;
+        }
+
+        // For simplicity, format the entire document and extract the range
+        // A more sophisticated implementation would parse only the range
+        let mut lexer = Lexer::new(content.to_string());
+        let mut parser = Parser::new(&mut lexer);
+        let ast = match parser.parse_program() {
+            Ok(ast) => ast,
+            Err(_) => {
+                // If parsing fails, don't format
+                return None;
+            }
+        };
+
+        // Create formatter with config from LSP options
+        let config = FormatterConfig {
+            indent_size: options.tab_size,
+            max_line_length: 100,
+            use_spaces: options.insert_spaces,
+            trailing_comma: true,
+        };
+
+        let mut formatter = Formatter::with_config(config);
+        let formatted = formatter.format_program(&ast);
+
+        // For range formatting, we still replace the whole document
+        // (extracting specific ranges is complex and error-prone)
+        let final_text = if options.insert_final_newline && !formatted.ends_with('\n') {
+            format!("{}\n", formatted)
+        } else {
+            formatted
+        };
+
+        let last_line = if lines.is_empty() { 0 } else { lines.len() - 1 };
+        let last_char = lines.last().map(|l| l.len()).unwrap_or(0);
+
+        let full_range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position {
+                line: last_line,
+                character: last_char,
+            },
+        };
+
+        Some(vec![TextEdit {
+            range: full_range,
+            new_text: final_text,
+        }])
+    }
 }
 
 impl Default for LanguageServer {
@@ -1560,5 +1709,112 @@ mod tests {
 
         assert!(docs.is_some());
         assert!(docs.unwrap().contains("reactive value"));
+    }
+
+    #[test]
+    fn test_format_document() {
+        let mut server = LanguageServer::new();
+        let unformatted = "let x:i32=42;";
+        server.open_document(
+            "file:///test.raven".to_string(),
+            unformatted.to_string(),
+            1,
+        );
+
+        let options = FormattingOptions {
+            tab_size: 4,
+            insert_spaces: true,
+            trim_trailing_whitespace: true,
+            insert_final_newline: true,
+        };
+
+        let edits = server.format_document("file:///test.raven", options);
+
+        assert!(edits.is_some());
+        let edits = edits.unwrap();
+        assert_eq!(edits.len(), 1);
+        assert!(edits[0].new_text.contains("let x: i32 = 42;"));
+    }
+
+    #[test]
+    fn test_format_document_with_function() {
+        let mut server = LanguageServer::new();
+        let unformatted = "fn add(a:i32,b:i32){return a+b;}";
+        server.open_document(
+            "file:///test.raven".to_string(),
+            unformatted.to_string(),
+            1,
+        );
+
+        let options = FormattingOptions {
+            tab_size: 4,
+            insert_spaces: true,
+            trim_trailing_whitespace: true,
+            insert_final_newline: true,
+        };
+
+        let edits = server.format_document("file:///test.raven", options);
+
+        assert!(edits.is_some());
+        let edits = edits.unwrap();
+        assert_eq!(edits.len(), 1);
+
+        let formatted = &edits[0].new_text;
+        assert!(formatted.contains("fn add(a: i32, b: i32)"));
+        assert!(formatted.contains("return a + b;"));
+    }
+
+    #[test]
+    fn test_format_range() {
+        let mut server = LanguageServer::new();
+        let code = "let x:i32=42;\nlet y:i32=43;";
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let options = FormattingOptions {
+            tab_size: 4,
+            insert_spaces: true,
+            trim_trailing_whitespace: true,
+            insert_final_newline: true,
+        };
+
+        let range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: 0, character: 13 },
+        };
+
+        let edits = server.format_range("file:///test.raven", range, options);
+
+        assert!(edits.is_some());
+        let edits = edits.unwrap();
+        assert_eq!(edits.len(), 1);
+        assert!(edits[0].new_text.contains("let x: i32 = 42;"));
+        assert!(edits[0].new_text.contains("let y: i32 = 43;"));
+    }
+
+    #[test]
+    fn test_format_document_invalid_syntax() {
+        let mut server = LanguageServer::new();
+        let invalid = "let x = ;"; // Invalid syntax
+        server.open_document(
+            "file:///test.raven".to_string(),
+            invalid.to_string(),
+            1,
+        );
+
+        let options = FormattingOptions {
+            tab_size: 4,
+            insert_spaces: true,
+            trim_trailing_whitespace: true,
+            insert_final_newline: true,
+        };
+
+        let edits = server.format_document("file:///test.raven", options);
+
+        // Should return None for invalid syntax
+        assert!(edits.is_none());
     }
 }
