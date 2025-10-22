@@ -915,14 +915,18 @@ impl<'a> Parser<'a> {
                     else_expr,
                 })
             },
-            TokenKind::LBrace => {
+            TokenKind::LBrace | TokenKind::JsxOpenBrace => {
                 // Parse block as expression: { statements... }
+                // Accept both LBrace and JsxOpenBrace since in JSX mode { is tokenized as JsxOpenBrace
                 self.next_token(); // consume {
                 let mut statements = Vec::new();
-                while self.current_token().kind != TokenKind::RBrace {
+                while self.current_token().kind != TokenKind::RBrace && self.current_token().kind != TokenKind::JsxCloseBrace {
                     statements.push(self.parse_statement()?);
                 }
-                self.expect_and_consume(&TokenKind::RBrace)?;
+                // Accept either RBrace or JsxCloseBrace
+                if !self.consume_if_matches(&TokenKind::RBrace) {
+                    self.expect_and_consume(&TokenKind::JsxCloseBrace)?;
+                }
                 Expression::Block(BlockStatement { statements })
             },
             _ => return Err(self.error(&format!("No prefix parse function for {:?}", token.kind))),
@@ -1426,19 +1430,15 @@ impl<'a> Parser<'a> {
 
     fn parse_jsx_opening_tag_with_mode_check(&mut self, was_jsx_mode: bool) -> Result<JsxOpeningTag, CompileError> {
         self.expect_and_consume(&TokenKind::LAngle)?;
-        let name = self.parse_identifier()?;
 
-        // Enter JSX mode early - right after parsing tag name
-        // This ensures any tokens read while parsing attributes or after > are in JSX mode
-        // CRITICAL FIX: Solves the issue where keywords in JSX text ("in stock", "for", etc.)
-        // were tokenized as keyword tokens instead of JsxText
+        // CRITICAL FIX: Enter JSX mode BEFORE parsing tag name
+        // This ensures peek is fetched in JSX mode when we parse the identifier
+        // Without this, {expr} children are tokenized as JsxText instead of separate tokens
         if !was_jsx_mode {
             self.lexer.enter_jsx_mode();
-            // Need to refresh peek since it was tokenized before JSX mode
-            // But we can't call refresh_peek_token() as it would skip a token
-            // So we accept that attribute parsing might have issues with first token
-            // The alternative is architectural changes to lazy tokenization
         }
+
+        let name = self.parse_identifier()?;
 
         let mut attributes = vec![];
         while self.current_token().kind != TokenKind::RAngle &&
