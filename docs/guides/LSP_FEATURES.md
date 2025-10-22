@@ -86,16 +86,63 @@ In expressions and other general contexts, you get all available completions.
 let x =   // Shows: keywords, stdlib functions, reactive primitives, JSX snippets, local variables
 ```
 
-### 2. Hover Information
+### 2. Hover Information ✅
 
-Hover over identifiers to see documentation, type information, and examples.
+Hover over identifiers to see documentation, type information, function signatures, and definitions.
 
 **Supported Items**:
-- Standard library functions (Math, Signal, String, etc.)
-- Reactive primitives (Signal, Computed, Effect, Resource)
-- User-defined functions and variables (coming soon)
+- ✅ Standard library functions (Math, Signal, String, etc.)
+- ✅ Reactive primitives (Signal, Computed, Effect, Resource)
+- ✅ User-defined functions with full signatures
+- ✅ Variables with type annotations
+- ✅ Constants with type information
+- ✅ Components with parameter lists
+- ✅ Struct definitions
+- ✅ Enum definitions
 
-**Example**:
+**Examples**:
+
+**Function Hover**:
+```raven
+fn add(x: i32, y: i32) -> i32 {
+    return x + y;
+}
+
+let result = add(5, 10);
+        // Hover over 'add' shows:
+        // ```raven
+        // fn add(x: i32, y: i32) -> i32
+        // ```
+        // **Function**
+```
+
+**Variable Hover**:
+```raven
+let count: i32 = 0;
+        // Hover over 'count' shows:
+        // ```raven
+        // let count: i32
+        // ```
+        // **Variable** with type `i32`
+```
+
+**Struct Hover**:
+```raven
+struct Point {
+    x: f64,
+    y: f64,
+}
+        // Hover over 'Point' shows:
+        // ```raven
+        // struct Point {
+        //     x: f64,
+        //     y: f64,
+        // }
+        // ```
+        // **Struct** definition
+```
+
+**Stdlib Function Hover**:
 ```raven
 let x = Math::abs(-42);
         // Hover over 'abs' shows:
@@ -103,6 +150,37 @@ let x = Math::abs(-42);
         // Returns the absolute value of a number
         // Example: let positive = Math::abs(-42.5); // 42.5
 ```
+
+### 2.5. Signature Help ✅ NEW
+
+Get real-time parameter hints while typing function calls. The LSP automatically shows:
+- Function signature with parameter types
+- Current parameter highlighted
+- Parameter documentation
+
+**How it works**: When you type `(` after a function name, the LSP shows the function signature and highlights the parameter you're currently typing.
+
+**Example**:
+```raven
+fn calculate(x: i32, y: i32, z: i32) -> i32 {
+    return x + y + z;
+}
+
+let result = calculate(1, |    // ← Cursor here
+        // Shows:
+        // fn calculate(x: i32, y: i32, z: i32) -> i32
+        // Active parameter: y: i32 (parameter 2)
+```
+
+**Keyboard Shortcuts**:
+- **VS Code/Most Editors**: Signature help appears automatically when you type `(`
+- **Manual Trigger**: `Ctrl+Shift+Space` (VS Code) or `Cmd+Shift+Space` (macOS)
+
+**Features**:
+- ✅ Automatic detection of function calls
+- ✅ Parameter index tracking (counts commas)
+- ✅ Nested function call support
+- ✅ Multi-line signature support
 
 ### 3. Real-Time Diagnostics
 
@@ -593,11 +671,13 @@ Want to improve the LSP? Check out:
 
 ---
 
-**Last Updated**: 2025-10-22 (Phase 2 - Sprint 7)
+**Last Updated**: 2025-10-22 (Phase 2 - Sprint 8)
 **LSP Version**: 0.1.0
 **Completions**: 70+
 **Context Types**: 7
+**Hover Information**: ✅ Full support for functions, variables, structs, enums, components
+**Signature Help**: ✅ Real-time parameter hints with active parameter tracking
 **Navigation Features**: 4 (Go to Definition, Find References, Rename Symbol, Document Symbols)
 **Code Actions**: 6 quick fixes
 **Error Codes**: 18 errors (E001-E018) + 5 warnings (W001-W005)
-**Test Coverage**: 37 LSP tests (100% passing) + 18 diagnostic tests
+**Test Coverage**: 52 LSP tests (100% passing) - 10 hover + 6 signature help + 18 diagnostic + 18 other
