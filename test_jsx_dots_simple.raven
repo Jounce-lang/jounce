@@ -1,0 +1,3 @@
+fn main() {
+    let ui = <div>{true ? <p>Loading...</p> : <p>Done</p>}</div>;
+}

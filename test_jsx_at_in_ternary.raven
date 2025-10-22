@@ -1,0 +1,10 @@
+component Test() {
+    let condition = true;
+    <div>
+        {condition ? {
+            <p>@username</p>
+        } : {
+            <p>None</p>
+        }}
+    </div>
+}

@@ -1,0 +1,13 @@
+component Test() {
+    let show = true;
+
+    return <div>
+        {show && (
+            <Dropdown />
+        )}
+    </div>;
+}
+
+fn main() {
+    let x = Test();
+}

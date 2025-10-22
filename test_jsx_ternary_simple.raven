@@ -1,0 +1,11 @@
+fn test() {
+    let flag = true;
+
+    <div>
+        {flag ? (
+            <span>Yes</span>
+        ) : (
+            <span>No</span>
+        )}
+    </div>;
+}

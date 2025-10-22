@@ -1,0 +1,5 @@
+fn test() {
+    let stock = 5;
+    let result = <span>{stock}</span>;
+    return result;
+}
