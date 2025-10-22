@@ -1,6 +1,8 @@
-# 🚀 RavensOne
+# 🚧 RavensOne (Alpha - In Development)
 
 **The Full-Stack Programming Language for Human-AI Collaboration**
+
+> ⚠️ **Development Status**: RavensOne is in **early alpha**. Core language features are still being implemented. See [Current Status](#-current-status) below.
 
 RavensOne is a revolutionary language where you write **ONE `.raven` file** that automatically compiles into server and client code. Build production applications in seconds with AI assistance using `@server` and `@client` annotations.
 
@@ -39,15 +41,17 @@ raven compile app.raven
 - **Type-safe** - Compile-time checking across the stack
 - **Code splitting** - Compiler automatically separates server/client bundles
 
-### **Batteries Included**
-- ✅ **JSX Support** - Full JSX syntax with components and expressions
-- ✅ HTTP client with REST support
-- ✅ Database ORM with type-safe queries
-- ✅ Authentication with JWT & RBAC
-- ✅ Real-time WebSocket communication
-- ✅ React-like component system
-- ✅ Hot Module Replacement (HMR)
-- ✅ Package manager with registry
+### **Batteries Included** (Status)
+- ✅ **JSX Support** - Full JSX syntax with components and expressions (Working!)
+- ✅ **LSP Server** - Full editor support with 8 major features (Working!)
+- ✅ **Code Formatting** - `raven fmt` command (Working!)
+- ✅ **Watch Mode** - Auto-recompile on file changes (Working!)
+- 🚧 **HTTP client** - Stdlib exists, needs testing
+- 🚧 **Package manager** - Registry exists, needs integration
+- ⏳ **Database ORM** - Planned
+- ⏳ **Authentication** - Planned
+- ⏳ **WebSockets** - Planned
+- ⏳ **HMR** - Planned
 
 ### **AI-Native Development**
 - **Single file** = one context window for AI
@@ -112,25 +116,42 @@ Open `http://localhost:3000` - your app is live! 🎉
 
 ---
 
-## 🎯 Latest Updates (October 22, 2025)
+## 🚧 Current Status (October 22, 2025)
 
-### 🎉 Phase 1: Language Core Implementation - COMPLETE!
+### **Development Phase**: Phase 4 - Core Language Implementation
 
-**What's New**:
-- 🎯 **100% Language Completeness** - All core features implemented!
-- 📦 **Const Imports** - Import constants from modules: `use math::{PI, E}`
-- 🔗 **Namespaced Constants** - Access via namespace: `math::PI`
-- ✅ **221/221 tests passing** - 100% pass rate, zero regressions
-- 📚 **15 sprints completed** - 40+ features implemented
+**Reality Check**: During Phase 3 (creating examples), we discovered that many core language features don't actually work despite having tests. The tests only validated AST structure, not end-to-end compilation.
 
-**Recent Features (Sprints 13-15)**:
-- Array spread operator: `vec![...arr, 4, 5]`
-- Slice syntax: `arr[1..3]`, `arr[1..=3]`
-- Const declarations: `const MAX_SIZE: i32 = 100`
-- Module constant exports and imports
-- Namespaced constant access
+### ✅ What Actually Works
 
-See [docs/PHASE_1_COMPLETE.md](docs/PHASE_1_COMPLETE.md) for complete Phase 1 summary.
+- **JSX** - Fully implemented and tested (100% working!)
+- **Functions** - Basic functions with parameters and return types
+- **Arrays** - Array literals and indexing
+- **Arithmetic** - All math operations (+, -, *, /, %)
+- **Booleans** - Logical operations (&&, ||, ==, !=, <, >)
+- **if (no else)** - Simple if statements compile
+- **println!** - Format strings work perfectly
+- **LSP** - Full editor support (completions, hover, go-to-def, etc.)
+- **VS Code Extension** - Professional extension ready
+
+### ❌ Currently Broken (Being Fixed in Phase 4)
+
+- **if/else** - Borrow checker bug (`__else_block` undefined) - **CRITICAL**
+- **Recursive functions** - Borrow checker bug
+- **For loops with ranges** (`for i in 1..10`) - Parser limitation
+- **Option/Result** - Depends on if/else (broken)
+- **Match OR patterns** (`3 | 4 | 5`) - Not implemented
+- **Closures with types** - Parser limitation
+
+### 🎯 Next Steps
+
+**Phase 4 Sprint 1** (Starting Now):
+- Fix critical borrow checker bug
+- Enable if/else expressions
+- Add integration tests
+- Validate Option/Result work
+
+See `CLAUDE.md` for detailed Phase 4 plan and `SPRINT3_FINDINGS.md` for full analysis.
 
 ---
 

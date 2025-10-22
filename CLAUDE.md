@@ -2,18 +2,36 @@
 
 ## 📌 Current Status
 
-**Phase**: Phase 3 - Ecosystem & Distribution 🚀
-**Current Sprint**: Sprint 2 - Compiler Fixes ✅ **COMPLETE!**
-**Language Core**: ✅ 100% Complete (Phase 1)
+**Phase**: Phase 4 - Core Language Implementation 🚧 **STARTING**
+**Previous Phase**: Phase 3 - Ecosystem & Distribution (Paused)
+**Language Core**: ⚠️ **~30% Complete** (JSX: ✅ 100%, Control Flow: ❌ Broken)
 **Developer Experience**: ✅ 100% Complete (Phase 2)
 **VS Code Extension**: ✅ 100% Complete (Sprint 1)
 **Compiler Fixes**: ✅ Format strings + Function exports (Sprint 2)
-**Production Ready**: ✅ YES
+**Production Ready**: ❌ **NO** - Critical borrow checker bugs
 
-**Tests**: 314 total (305 passing, 0 failures, 9 HTTP ignored) - **100% pass rate**
-**Compilation Speed**: 96,292 compilations/sec for small programs (~10µs)
-**Extension**: Ready for testing and publishing!
-**Examples**: Ready to create with working format strings!
+**Tests**: 314 total (305 passing) - **Tests don't validate compilation**
+**Reality Check**: Tests only validate AST formatting, not actual code generation
+**Compilation Speed**: 96,292 compilations/sec for programs that compile
+**Critical Issue**: Borrow checker bug blocks if/else, recursion, Option/Result
+
+**What Actually Works**:
+- ✅ JSX (fully implemented and tested)
+- ✅ Functions (non-recursive)
+- ✅ Arrays and indexing
+- ✅ Basic arithmetic and boolean operations
+- ✅ if without else
+- ✅ println! with format strings
+- ✅ LSP features (completions, hover, formatting, etc.)
+- ✅ VS Code extension
+
+**What's Broken**:
+- ❌ if/else expressions (borrow checker bug)
+- ❌ Recursive functions (borrow checker bug)
+- ❌ For loops with ranges (parser limitation)
+- ❌ Match arm OR patterns (parser limitation)
+- ❌ Option/Result (depends on if/else)
+- ❌ Closures with type annotations (parser limitation)
 
 ## Project Overview
 
@@ -176,12 +194,14 @@ perf: Performance improvement
 
 ## 📚 Phase History & Archives
 
-### Phase 1: Language Core Implementation ✅ COMPLETE
+### Phase 1: Language Core Implementation ⚠️ INCOMPLETE (Paused)
 - **Duration**: 18 sprints
 - **Archive**: `docs/archive/CLAUDE_PHASE1.md`
-- **Achievements**: 100% language completeness, JSX support, full compiler pipeline
-- **Tests**: 221 tests passing
-- **Key Features**: Lexer, Parser, Type checker, Borrow checker, JSX, Pattern matching
+- **Status**: JSX ✅ Complete, Core Lang ❌ Incomplete
+- **Tests**: 221 tests (AST/formatting only, not compilation)
+- **What Works**: Lexer, Parser (partial), JSX (100%), Type checker (basic)
+- **What's Broken**: Borrow checker (critical bugs), Control flow (if/else), Iteration (for ranges)
+- **Reality**: Tests don't validate end-to-end compilation, only AST structure
 
 ### Phase 2: Developer Experience & Tooling ✅ COMPLETE
 - **Duration**: 11 sprints (~34.5 hours)
@@ -723,14 +743,945 @@ println!("Name: {}, Age: {}", name, age);
 
 ---
 
-### Other Phase 3 Focus Areas (Future Sprints)
+## ⏸️ Phase 3 - Sprint 3: Educational Examples & Learning Path (PAUSED)
 
-2. **Semantic Highlighting** - Token classification for better syntax highlighting
-3. **Multi-Project Workspaces** - Manage multiple .raven projects
-4. **Advanced Caching** - Disk-based AST persistence for instant rebuilds
-5. **Parallel Compilation** - Multi-core compilation for large projects
-6. **Package Ecosystem Growth** - Expand aloha-shirts/ packages
-7. **LSP Server Standalone** - Separate LSP server binary for other editors
+**Sprint Goal**: Create comprehensive, working example applications that teach RavensOne from beginner to advanced
+
+**Status**: ⏸️ **PAUSED** - Blocked by compiler bugs (Started 2025-10-22)
+**Reason**: Cannot create meaningful examples without if/else, loops, Option/Result
+**Estimated Time**: 4-6 hours (after Phase 4 complete)
+**Priority**: HIGH (Foundation for user adoption and learning)
+
+### Sprint Overview
+
+This sprint creates a complete learning path with **working, compilable examples** that showcase RavensOne's current capabilities. Unlike the aspirational apps in `examples/apps/`, these examples use ONLY implemented features and can compile and run today.
+
+**Key Principle**: Every example MUST compile successfully with the current compiler.
+
+### Sprint Goals
+
+1. **Complete the 01-basics tutorial series** (6 examples)
+2. **Create working full-stack examples** (5 examples)
+3. **Build real-world mini-apps** (3 examples)
+4. **Write comprehensive documentation** (README + guides)
+5. **Verify all examples compile and run**
+
+### Sprint Tasks
+
+---
+
+#### Task 1: Complete Basic Tutorial Series (1.5 hours)
+
+**Goal**: Finish the `examples/01-basics/` tutorial series with 6 comprehensive lessons
+
+**Current Status**:
+- ✅ 01-hello-world.raven (Complete)
+- ✅ 02-variables-types.raven (Complete)
+- ✅ 03-control-flow.raven (Complete)
+- ❌ 04-functions.raven (Missing)
+- ❌ 05-collections.raven (Missing)
+- ❌ 06-error-handling.raven (Missing)
+
+**Examples to Create**:
+
+1. **04-functions.raven** - Functions, parameters, return types
+   ```raven
+   // Function basics
+   fn add(a: i32, b: i32) -> i32 { a + b }
+
+   // Closures
+   let multiply = |x: i32, y: i32| -> i32 { x * y };
+
+   // Higher-order functions
+   fn apply_twice(f: fn(i32) -> i32, x: i32) -> i32 {
+       f(f(x))
+   }
+   ```
+
+2. **05-collections.raven** - Arrays, vectors, iteration
+   ```raven
+   // Arrays
+   let numbers = [1, 2, 3, 4, 5];
+
+   // Vectors (dynamic arrays)
+   let mut items = Vec::new();
+   items.push(10);
+
+   // Iteration with for loops
+   for num in numbers {
+       println!("Number: {}", num);
+   }
+   ```
+
+3. **06-error-handling.raven** - Option, Result, match
+   ```raven
+   // Option<T>
+   fn find_user(id: i32) -> Option<String> {
+       if id == 1 {
+           Some("Alice".to_string())
+       } else {
+           None
+       }
+   }
+
+   // Result<T, E>
+   fn divide(a: f64, b: f64) -> Result<f64, String> {
+       if b == 0.0 {
+           Err("Division by zero".to_string())
+       } else {
+           Ok(a / b)
+       }
+   }
+
+   // Pattern matching
+   match find_user(1) {
+       Some(name) => println!("Found: {}", name),
+       None => println!("Not found"),
+   }
+   ```
+
+**Files to Create**:
+- `examples/01-basics/04-functions.raven`
+- `examples/01-basics/05-collections.raven`
+- `examples/01-basics/06-error-handling.raven`
+
+**Success Criteria**:
+- [ ] All 3 examples compile successfully
+- [ ] Each example is well-commented (header, inline, expected output)
+- [ ] Each example demonstrates 3-5 key concepts
+- [ ] Each example is 50-100 lines
+- [ ] Examples build progressively in complexity
+
+---
+
+#### Task 2: Full-Stack JSX Examples (2 hours)
+
+**Goal**: Create working full-stack examples showcasing @server/@client annotations and JSX
+
+**Examples to Create**:
+
+1. **07-hello-jsx.raven** - First JSX component
+   ```raven
+   fn main() {
+       let app = <div>
+           <h1>"Hello, JSX!"</h1>
+           <p>"This is your first component."</p>
+       </div>;
+
+       println!("{}", app);
+   }
+   ```
+
+2. **08-reactive-counter.raven** - Reactive state with Signal
+   ```raven
+   fn Counter() -> Element {
+       let count = Signal::new(0);
+
+       <div>
+           <h1>"Count: {count.get()}"</h1>
+           <button onclick={move || count.set(count.get() + 1)}>
+               "Increment"
+           </button>
+       </div>
+   }
+   ```
+
+3. **09-server-client-split.raven** - Server/client code splitting
+   ```raven
+   @server
+   fn fetch_message() -> String {
+       "Hello from the server!".to_string()
+   }
+
+   @client
+   fn App() -> Element {
+       let message = fetch_message();
+       <div>
+           <h1>{message}</h1>
+       </div>
+   }
+   ```
+
+4. **10-todo-app-simple.raven** - Simple todo list with state
+   ```raven
+   fn TodoApp() -> Element {
+       let todos = Signal::new(Vec::new());
+       let input = Signal::new("".to_string());
+
+       <div>
+           <h1>"My Todos"</h1>
+           <input
+               value={input.get()}
+               oninput={move |e| input.set(e.target.value)}
+           />
+           <button onclick={move || {
+               todos.update(|list| list.push(input.get()));
+               input.set("".to_string());
+           }}>
+               "Add"
+           </button>
+           <ul>
+               {todos.get().iter().map(|todo| {
+                   <li>{todo}</li>
+               }).collect()}
+           </ul>
+       </div>
+   }
+   ```
+
+5. **11-user-dashboard.raven** - Data fetching and display
+   ```raven
+   @server
+   fn get_user_stats() -> UserStats {
+       UserStats {
+           name: "Alice".to_string(),
+           posts: 42,
+           followers: 1337,
+           following: 256,
+       }
+   }
+
+   @client
+   fn Dashboard() -> Element {
+       let stats = get_user_stats();
+
+       <div class="dashboard">
+           <h1>"Welcome, {stats.name}"</h1>
+           <div class="stats">
+               <div class="stat">
+                   <span class="label">"Posts"</span>
+                   <span class="value">"{stats.posts}"</span>
+               </div>
+               <div class="stat">
+                   <span class="label">"Followers"</span>
+                   <span class="value">"{stats.followers}"</span>
+               </div>
+               <div class="stat">
+                   <span class="label">"Following"</span>
+                   <span class="value">"{stats.following}"</span>
+               </div>
+           </div>
+       </div>
+   }
+   ```
+
+**Directory**: `examples/02-fullstack/`
+
+**Files to Create**:
+- `examples/02-fullstack/07-hello-jsx.raven`
+- `examples/02-fullstack/08-reactive-counter.raven`
+- `examples/02-fullstack/09-server-client-split.raven`
+- `examples/02-fullstack/10-todo-app-simple.raven`
+- `examples/02-fullstack/11-user-dashboard.raven`
+- `examples/02-fullstack/README.md` - Guide to full-stack development
+
+**Success Criteria**:
+- [ ] All 5 examples compile successfully
+- [ ] Each demonstrates @server/@client splitting
+- [ ] JSX syntax is clean and idiomatic
+- [ ] State management patterns are clear
+- [ ] Examples show progressive complexity
+
+---
+
+#### Task 3: Real-World Mini Applications (2 hours)
+
+**Goal**: Build 3 production-quality mini-apps that solve real problems
+
+**Applications to Create**:
+
+1. **Weather Dashboard** - Fetch and display weather data
+   - Server function for API calls
+   - Client UI with reactive updates
+   - Error handling for failed requests
+   - Beautiful card-based layout
+   - ~150 lines
+
+2. **Product Catalog** - E-commerce product listing
+   - Server function for product data
+   - Client-side filtering and search
+   - Shopping cart state management
+   - Product cards with JSX
+   - ~200 lines
+
+3. **Blog Reader** - Simple blog platform
+   - Server function for blog posts
+   - Client rendering with JSX
+   - Post list and detail views
+   - Markdown-style formatting
+   - ~175 lines
+
+**Directory**: `examples/03-mini-apps/`
+
+**Files to Create**:
+- `examples/03-mini-apps/weather-dashboard.raven`
+- `examples/03-mini-apps/product-catalog.raven`
+- `examples/03-mini-apps/blog-reader.raven`
+- `examples/03-mini-apps/README.md` - Guide to building mini-apps
+
+**Success Criteria**:
+- [ ] All 3 apps compile successfully
+- [ ] Each solves a real-world use case
+- [ ] Code demonstrates best practices
+- [ ] Apps are visually appealing (good HTML structure)
+- [ ] Error handling is robust
+
+---
+
+#### Task 4: Standard Library Showcase (1 hour)
+
+**Goal**: Create focused examples demonstrating stdlib capabilities
+
+**Examples to Create**:
+
+1. **12-math-utilities.raven** - Math stdlib showcase
+   ```raven
+   use math;
+
+   fn main() {
+       println!("Trigonometry:");
+       println!("sin(π/2) = {}", math::sin(math::PI / 2.0));
+       println!("cos(π) = {}", math::cos(math::PI));
+
+       println!("\nPower and roots:");
+       println!("2^10 = {}", math::pow(2.0, 10.0));
+       println!("√16 = {}", math::sqrt(16.0));
+
+       println!("\nRounding:");
+       println!("floor(3.7) = {}", math::floor(3.7));
+       println!("ceil(3.2) = {}", math::ceil(3.2));
+       println!("round(3.5) = {}", math::round(3.5));
+   }
+   ```
+
+2. **13-http-client.raven** - HTTP requests
+   ```raven
+   use http;
+
+   @server
+   async fn fetch_data() -> Result<String, String> {
+       let response = http::get("https://api.example.com/data").await?;
+       Ok(response.text().await?)
+   }
+
+   fn main() {
+       match fetch_data() {
+           Ok(data) => println!("Received: {}", data),
+           Err(e) => println!("Error: {}", e),
+       }
+   }
+   ```
+
+3. **14-collections-demo.raven** - Vec, HashMap, HashSet
+   ```raven
+   fn main() {
+       // Vectors
+       let mut numbers = Vec::new();
+       numbers.push(1);
+       numbers.push(2);
+       numbers.push(3);
+
+       for n in numbers.iter() {
+           println!("Number: {}", n);
+       }
+
+       // HashSet for unique values
+       let mut unique = HashSet::new();
+       unique.insert("apple");
+       unique.insert("banana");
+       unique.insert("apple"); // Duplicate, won't be added
+
+       println!("Unique fruits: {}", unique.len()); // 2
+   }
+   ```
+
+**Directory**: `examples/04-stdlib/`
+
+**Files to Create**:
+- `examples/04-stdlib/12-math-utilities.raven`
+- `examples/04-stdlib/13-http-client.raven`
+- `examples/04-stdlib/14-collections-demo.raven`
+- `examples/04-stdlib/README.md` - Standard library guide
+
+**Success Criteria**:
+- [ ] All examples compile successfully
+- [ ] Cover all major stdlib modules (math, http, collections)
+- [ ] Show practical use cases
+- [ ] Include error handling examples
+
+---
+
+#### Task 5: Documentation & Organization (1 hour)
+
+**Goal**: Create comprehensive documentation tying all examples together
+
+**Documentation to Create**:
+
+1. **examples/README.md** - Master index
+   - Overview of all example categories
+   - Learning path recommendation
+   - Prerequisites and setup
+   - Compilation instructions
+   - Links to all sub-READMEs
+
+2. **examples/LEARNING_PATH.md** - Guided tutorial
+   - Step-by-step learning progression
+   - What to learn in each example
+   - Exercises and challenges
+   - Common mistakes to avoid
+   - Next steps after examples
+
+3. **examples/EXAMPLES_INDEX.md** - Complete catalog
+   - Table of all examples
+   - Difficulty ratings
+   - Lines of code
+   - Features demonstrated
+   - Compilation status
+
+**Update Existing Files**:
+- Update root `README.md` with links to examples
+- Update `GETTING_STARTED.md` to reference example path
+- Create `examples/.gitignore` for compiled output
+
+**Files to Create**:
+- `examples/README.md`
+- `examples/LEARNING_PATH.md`
+- `examples/EXAMPLES_INDEX.md`
+- `examples/.gitignore`
+
+**Success Criteria**:
+- [ ] Clear learning progression documented
+- [ ] All examples indexed and categorized
+- [ ] Compilation instructions are accurate
+- [ ] Links between docs work correctly
+
+---
+
+### Sprint Deliverables
+
+1. **Basic Tutorial Series** - 6 examples (01-06) covering fundamentals
+2. **Full-Stack Examples** - 5 examples (07-11) demonstrating JSX and server/client
+3. **Mini Applications** - 3 real-world apps (weather, products, blog)
+4. **Stdlib Showcase** - 3 focused examples (12-14)
+5. **Comprehensive Documentation** - 3 guides + updated READMEs
+
+**Total**: 17 new working examples + documentation
+
+### Success Metrics
+
+- **Compilation**: 17/17 examples compile successfully (100%)
+- **Documentation**: 4 comprehensive guides
+- **Coverage**: All major features demonstrated
+- **Quality**: Professional comments and structure
+- **Educational Value**: Clear progression from beginner to advanced
+
+### Directory Structure After Sprint
+
+```
+examples/
+├── README.md                      # Master index (NEW)
+├── LEARNING_PATH.md               # Tutorial guide (NEW)
+├── EXAMPLES_INDEX.md              # Complete catalog (NEW)
+├── .gitignore                     # Ignore compiled files (NEW)
+│
+├── 01-basics/                     # Fundamentals
+│   ├── 01-hello-world.raven      # ✅ Exists
+│   ├── 02-variables-types.raven  # ✅ Exists
+│   ├── 03-control-flow.raven     # ✅ Exists
+│   ├── 04-functions.raven        # NEW
+│   ├── 05-collections.raven      # NEW
+│   └── 06-error-handling.raven   # NEW
+│
+├── 02-fullstack/                  # NEW DIRECTORY
+│   ├── README.md
+│   ├── 07-hello-jsx.raven
+│   ├── 08-reactive-counter.raven
+│   ├── 09-server-client-split.raven
+│   ├── 10-todo-app-simple.raven
+│   └── 11-user-dashboard.raven
+│
+├── 03-mini-apps/                  # NEW DIRECTORY
+│   ├── README.md
+│   ├── weather-dashboard.raven
+│   ├── product-catalog.raven
+│   └── blog-reader.raven
+│
+├── 04-stdlib/                     # NEW DIRECTORY
+│   ├── README.md
+│   ├── 12-math-utilities.raven
+│   ├── 13-http-client.raven
+│   └── 14-collections-demo.raven
+│
+└── apps/                          # Existing aspirational apps
+    ├── README.md                  # ✅ Exists
+    ├── ecommerce/
+    ├── social/
+    └── taskboard/
+```
+
+### Testing Plan
+
+**For Each Example**:
+1. Compile: `./target/release/raven compile examples/XX/example.raven`
+2. Verify output: Check `dist/` directory
+3. Run server: `node dist/server.js` (if applicable)
+4. Test client: Open `dist/index.html` (if applicable)
+5. Verify output matches expected results
+
+**Batch Testing**:
+```bash
+# Compile all examples in sequence
+for file in examples/01-basics/*.raven examples/02-fullstack/*.raven examples/03-mini-apps/*.raven examples/04-stdlib/*.raven; do
+    echo "Compiling $file..."
+    ./target/release/raven compile "$file" || echo "FAILED: $file"
+done
+```
+
+### Key Constraints
+
+1. **Use ONLY implemented features**:
+   - ✅ JSX syntax
+   - ✅ @server/@client annotations
+   - ✅ Functions (basic)
+   - ✅ Arrays, array indexing
+   - ✅ Boolean operations (&&, ||, ==, !=, <, >)
+   - ✅ Arithmetic operations (+, -, *, /, %)
+   - ✅ Format strings in println!
+   - ❌ if/else expressions (BORROW CHECKER BUG)
+   - ❌ Closures with type annotations (NOT YET)
+   - ❌ For loops with ranges (NOT YET)
+   - ❌ Match arms with OR patterns (3 | 4 | 5) (NOT YET)
+   - ❌ Recursive functions (BORROW CHECKER BUG)
+   - ❌ Package imports (NOT YET)
+   - ❌ Option, Result (require if/else)
+   - ❌ Vec, HashMap, HashSet (LIMITED)
+
+2. **Every example MUST compile** with current compiler
+3. **Clear documentation** in every file
+4. **Progressive complexity** across the series
+5. **Real-world applicability** for mini-apps
+
+### Bugs Discovered During Sprint 3
+
+While creating examples, we discovered several compiler bugs and unimplemented features:
+
+#### 1. Borrow Checker Bug: `__else_block` Undefined Variable ❌
+**Status**: BLOCKING
+**Affects**: if/else expressions, recursive functions, Option/Result
+
+**Error Message**:
+```
+error: Borrow checker: undefined variable '__else_block'
+```
+
+**Reproduction**:
+```raven
+fn max(a: i32, b: i32) -> i32 {
+    if a > b {
+        return a;
+    } else {
+        return b;
+    }
+}
+```
+
+**Impact**: Cannot use if/else in function bodies, blocking error handling patterns
+**Workaround**: Use only boolean expressions without branching
+**Priority**: HIGH - Blocks basic control flow
+
+---
+
+#### 2. For Loop Range Syntax Not Implemented ❌
+**Status**: NOT IMPLEMENTED
+**Affects**: Iteration patterns
+
+**Error Message**:
+```
+ParserError { message: "Expected LBrace, found DotDot", line: X, column: Y }
+```
+
+**Reproduction**:
+```raven
+for i in 1..10 {  // ❌ Does not parse
+    println!("{}", i);
+}
+
+for i in 1..=10 {  // ❌ Does not parse
+    println!("{}", i);
+}
+```
+
+**Impact**: Cannot iterate over ranges
+**Workaround**: Use array iteration or manual indexing
+**Priority**: MEDIUM - Limits iteration patterns
+
+---
+
+#### 3. Match Arm OR Patterns Not Implemented ❌
+**Status**: NOT IMPLEMENTED
+**Affects**: Pattern matching
+
+**Error Message**:
+```
+ParserError { message: "Expected FatArrow, found Pipe", line: X, column: Y }
+```
+
+**Reproduction**:
+```raven
+match number {
+    1 => println!("One"),
+    3 | 4 | 5 => println!("Three to five"),  // ❌ Does not parse
+    _ => println!("Other"),
+}
+```
+
+**Impact**: Verbose match expressions
+**Workaround**: Use separate match arms
+**Priority**: LOW - Convenience feature
+
+---
+
+#### 4. Closure Type Annotations Not Supported ❌
+**Status**: NOT IMPLEMENTED
+**Affects**: Closure definitions
+
+**Error Message**:
+```
+ParserError { message: "Expected Pipe, found Colon", line: X, column: Y }
+```
+
+**Reproduction**:
+```raven
+let square = |x: i32| -> i32 { x * x };  // ❌ Does not parse
+```
+
+**Working Syntax**:
+```raven
+let square = |x| x * x;  // ✅ Works (no type annotations)
+```
+
+**Impact**: Less type safety in closures
+**Workaround**: Omit type annotations
+**Priority**: LOW - Type inference works
+
+---
+
+#### 5. Runtime Code Generation Bug: Duplicate HttpServer Declaration ⚠️
+**Status**: RUNTIME BUG
+**Affects**: Generated JavaScript
+
+**Error Message** (when running `node dist/server.js`):
+```
+SyntaxError: Identifier 'HttpServer' has already been declared
+```
+
+**Impact**: Examples compile but may not run
+**Workaround**: None currently
+**Priority**: MEDIUM - Doesn't block compilation
+**Note**: This is a code generation bug, not a parser/compiler bug
+
+---
+
+#### Summary of Working Features
+
+Based on testing, these features **DO work**:
+- ✅ Functions with parameters and return types
+- ✅ Boolean return types
+- ✅ Arithmetic operations (+, -, *, /, %)
+- ✅ Boolean operations (&&, ||, ==, !=, <, >)
+- ✅ String literals and &str parameters
+- ✅ Arrays with literal syntax `[1, 2, 3]`
+- ✅ Array indexing `arr[0]`
+- ✅ Format strings in println!
+- ✅ Simple closures without type annotations
+- ✅ Integer types (i32, f64, etc.)
+- ✅ println! macro
+- ✅ Compilation to JS + WASM
+
+---
+
+### Impact
+
+This sprint will:
+- **Enable learning** - Complete tutorial path for new users
+- **Showcase capabilities** - Demonstrate what RavensOne can do TODAY
+- **Validate compiler** - 17 real-world test cases
+- **Foundation for growth** - Template for future examples
+- **Marketing material** - Show off RavensOne's potential
+
+---
+
+## 🚧 Phase 4: Core Language Implementation
+
+**Focus**: Implement fundamental language features that should have been in Phase 1
+**Status**: 🚧 **STARTING** (Started 2025-10-22)
+**Priority**: CRITICAL - Blocks all other work
+**Estimated Duration**: 6-10 sprints (~20-30 hours)
+
+### Phase 4 Overview
+
+Phase 3 (Examples) revealed that **Phase 1 was never actually completed**. The tests only validated AST structure, not actual compilation. Many core language features are broken or unimplemented.
+
+**This phase fixes the compiler so basic programs can actually run.**
+
+### Phase 4 Goals
+
+1. **Fix Critical Bugs** - Make the compiler actually work
+2. **Add Integration Tests** - Test end-to-end compilation
+3. **Implement Core Features** - Control flow, loops, Option/Result
+4. **Validate Everything** - Every feature must compile and run
+
+### Phase 4 Sprints
+
+---
+
+## 🚧 Phase 4 - Sprint 1: Fix Borrow Checker (NEXT)
+
+**Sprint Goal**: Fix the critical `__else_block` bug that blocks if/else expressions
+
+**Status**: 📋 **PLANNED**
+**Estimated Time**: 2-4 hours
+**Priority**: CRITICAL - Blocks if/else, recursion, Option/Result
+
+### Sprint Overview
+
+The borrow checker has a critical bug where it references `__else_block` without declaring it. This blocks:
+- if/else expressions
+- Recursive functions
+- Option<T> and Result<T, E>
+- Most error handling patterns
+
+**This is the #1 blocker for RavensOne.**
+
+### Sprint Tasks
+
+#### Task 1: Reproduce and Document Bug (30 min)
+
+**Goal**: Create minimal reproduction case and understand root cause
+
+**Steps**:
+1. Create minimal test case:
+   ```raven
+   fn test() -> i32 {
+       if true { 1 } else { 0 }
+   }
+   ```
+
+2. Trace through borrow checker code
+3. Find where `__else_block` is referenced
+4. Find where it should be declared
+
+**Files to Check**:
+- `src/borrow_checker.rs` - Main borrow checker logic
+- `src/codegen.rs` - Code generation
+- `src/js_emitter.rs` - JavaScript emission
+
+**Success Criteria**:
+- [ ] Minimal reproduction test created
+- [ ] Root cause identified
+- [ ] Fix location identified
+
+---
+
+#### Task 2: Fix Borrow Checker (1-2 hours)
+
+**Goal**: Fix the `__else_block` declaration bug
+
+**Approach Options**:
+
+**Option A: Declare the variable**
+```rust
+// In borrow checker, when processing if/else:
+if has_else_clause {
+    let else_block_var = format!("__else_block_{}", self.next_id());
+    // Declare it before using it
+    self.declare_variable(else_block_var);
+}
+```
+
+**Option B: Restructure if/else handling**
+```rust
+// Generate different code that doesn't need __else_block
+// Use ternary or different pattern
+```
+
+**Option C: Skip borrow checking for if/else**
+```rust
+// Temporarily bypass borrow checker for if/else
+// (Not ideal but unblocks development)
+```
+
+**Files to Modify**:
+- `src/borrow_checker.rs` - Main fix location
+
+**Success Criteria**:
+- [ ] if/else expressions compile
+- [ ] No `__else_block` error
+- [ ] Generated code is valid JavaScript
+- [ ] All existing tests still pass
+
+---
+
+#### Task 3: Add Integration Tests (1 hour)
+
+**Goal**: Add tests that actually compile code end-to-end
+
+**Tests to Add**:
+
+1. **test_if_else_compiles**
+   ```rust
+   #[test]
+   fn test_if_else_compiles() {
+       let source = r#"
+           fn main() {
+               if true {
+                   println!("yes");
+               } else {
+                   println!("no");
+               }
+           }
+       "#;
+
+       let result = compile_source(source);
+       assert!(result.is_ok());
+   }
+   ```
+
+2. **test_if_else_expression**
+   ```rust
+   #[test]
+   fn test_if_else_expression() {
+       let source = r#"
+           fn max(a: i32, b: i32) -> i32 {
+               if a > b { a } else { b }
+           }
+       "#;
+
+       let result = compile_source(source);
+       assert!(result.is_ok());
+   }
+   ```
+
+3. **test_nested_if_else**
+4. **test_if_else_in_loop**
+5. **test_recursive_function**
+
+**Files to Create**:
+- `src/integration_tests.rs` - New test module
+- Add to `src/lib.rs`: `#[cfg(test)] mod integration_tests;`
+
+**Success Criteria**:
+- [ ] 5+ integration tests added
+- [ ] All tests compile real source code
+- [ ] Tests validate generated JavaScript runs
+- [ ] Tests become part of CI
+
+---
+
+#### Task 4: Validate Option and Result (30 min)
+
+**Goal**: Verify that Option/Result work now that if/else is fixed
+
+**Tests**:
+
+```raven
+fn find_user(id: i32) -> Option<String> {
+    if id == 1 {
+        Some("Alice".to_string())
+    } else {
+        None
+    }
+}
+
+fn divide(a: f64, b: f64) -> Result<f64, String> {
+    if b == 0.0 {
+        Err("Division by zero".to_string())
+    } else {
+        Ok(a / b)
+    }
+}
+```
+
+**Success Criteria**:
+- [ ] Option<T> works with if/else
+- [ ] Result<T, E> works with if/else
+- [ ] match expressions work with Option/Result
+- [ ] Error handling patterns compile
+
+---
+
+### Sprint Deliverables
+
+1. **Fixed Borrow Checker** - if/else expressions work
+2. **Integration Tests** - 5+ end-to-end compilation tests
+3. **Working Option/Result** - Error handling patterns compile
+4. **Test Infrastructure** - Foundation for future integration tests
+
+### Success Metrics
+
+- **Borrow Checker Bug**: ✅ Fixed
+- **if/else Compilation**: 100% success rate
+- **Integration Tests**: 5+ passing
+- **Option/Result**: Working
+- **Regression Tests**: 0 broken
+
+---
+
+## Phase 4 - Sprint 2: For Loops and Ranges (PLANNED)
+
+**Sprint Goal**: Implement for loop range syntax (`for i in 1..10`)
+
+**Status**: 📋 **PLANNED**
+**Estimated Time**: 2-3 hours
+**Priority**: HIGH - Core iteration pattern
+
+### Tasks
+1. Add range syntax to parser
+2. Generate proper JavaScript for loops
+3. Add tests for ranges
+4. Support inclusive ranges (`1..=10`)
+
+---
+
+## Phase 4 - Sprint 3: Match Expression Improvements (PLANNED)
+
+**Sprint Goal**: Add OR patterns in match arms (`3 | 4 | 5`)
+
+**Status**: 📋 **PLANNED**
+**Estimated Time**: 1-2 hours
+**Priority**: MEDIUM - Convenience feature
+
+---
+
+## Phase 4 - Sprint 4: Recursive Functions (PLANNED)
+
+**Sprint Goal**: Enable recursive function calls
+
+**Status**: 📋 **PLANNED**
+**Estimated Time**: 1-2 hours
+**Priority**: HIGH - Common pattern
+**Note**: May be fixed by Sprint 1 (borrow checker fix)
+
+---
+
+## Phase 4 - Sprint 5: Comprehensive Integration Tests (PLANNED)
+
+**Sprint Goal**: Add 50+ integration tests covering all language features
+
+**Status**: 📋 **PLANNED**
+**Estimated Time**: 4-6 hours
+**Priority**: HIGH - Prevent regressions
+
+---
+
+### Other Phase 3 Focus Areas (After Phase 4)
+
+4. **Semantic Highlighting** - Token classification for better syntax highlighting
+5. **Multi-Project Workspaces** - Manage multiple .raven projects
+6. **Advanced Caching** - Disk-based AST persistence for instant rebuilds
+7. **Parallel Compilation** - Multi-core compilation for large projects
+8. **Package Ecosystem Growth** - Expand aloha-shirts/ packages
+9. **LSP Server Standalone** - Separate LSP server binary for other editors
 
 ## Resources
 
@@ -746,5 +1697,6 @@ println!("Name: {}, Age: {}", name, age);
 ---
 
 **Last Updated**: 2025-10-22
-**Compiler Version**: 0.1.0
-**Status**: 🚀 **Phase 3 Sprint 1 IN PROGRESS** - VS Code Extension Development
+**Compiler Version**: 0.1.0-alpha (Not Production Ready)
+**Status**: 🚧 **Phase 4 Starting** - Core Language Implementation
+**Critical Priority**: Fix borrow checker bug to enable if/else expressions
