@@ -1037,7 +1037,6 @@ impl std::error::Error for PackageError {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
 
     #[test]
     fn test_manifest_serialization() {

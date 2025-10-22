@@ -430,9 +430,28 @@ impl JSEmitter {
     fn generate_statement_js(&self, stmt: &Statement) -> String {
         match stmt {
             Statement::Let(let_stmt) => {
+                use crate::ast::Pattern;
+
                 // All let statements become 'let' in JS (RavensOne tracks mutability)
                 let value = self.generate_expression_js(&let_stmt.value);
-                format!("let {} = {};", let_stmt.name.value, value)
+
+                // Generate pattern for left-hand side
+                let pattern_str = match &let_stmt.pattern {
+                    Pattern::Identifier(id) => id.value.clone(),
+                    Pattern::Tuple(patterns) => {
+                        // Generate tuple destructuring: let [a, b, c] = value;
+                        let names: Vec<String> = patterns.iter().map(|p| {
+                            match p {
+                                Pattern::Identifier(id) => id.value.clone(),
+                                _ => "_".to_string(),  // Nested patterns become wildcards for now
+                            }
+                        }).collect();
+                        format!("[{}]", names.join(", "))
+                    }
+                    _ => "_".to_string(),  // Other patterns become wildcards
+                };
+
+                format!("let {} = {};", pattern_str, value)
             }
             Statement::Return(ret_stmt) => {
                 let value = self.generate_expression_js(&ret_stmt.value);
@@ -669,6 +688,11 @@ impl JSEmitter {
         match pattern {
             Pattern::Wildcard | Pattern::Identifier(_) => {
                 // Wildcards and identifiers always match
+                "true".to_string()
+            }
+            Pattern::Tuple(_) => {
+                // TODO: Implement tuple pattern matching
+                // For now, treat as wildcard
                 "true".to_string()
             }
             Pattern::Literal(expr) => {

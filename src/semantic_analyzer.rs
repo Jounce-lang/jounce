@@ -507,6 +507,8 @@ impl SemanticAnalyzer {
     }
 
     fn analyze_let_statement(&mut self, stmt: &LetStatement) -> Result<ResolvedType, CompileError> {
+        use crate::ast::Pattern;
+
         let annotation_type = stmt
             .type_annotation
             .as_ref()
@@ -520,22 +522,47 @@ impl SemanticAnalyzer {
 
         if let Some(expected_type) = annotation_type {
             if !self.types_compatible(&expected_type, &value_type) {
+                let pattern_str = match &stmt.pattern {
+                    Pattern::Identifier(id) => id.value.clone(),
+                    Pattern::Tuple(_) => "(tuple)".to_string(),
+                    _ => "(pattern)".to_string(),
+                };
                 return Err(CompileError::Generic(format!(
                     "Type mismatch in let binding '{}': expected '{}', found '{}'",
-                    stmt.name.value, expected_type, value_type
+                    pattern_str, expected_type, value_type
                 )));
             }
             value_type = expected_type;
         }
 
-        // Auto-wrap in Signal<T> if inside a component and type is simple
-        if self.in_component && self.should_be_reactive(&value_type) {
-            value_type = ResolvedType::Signal(Box::new(value_type));
-            self.reactive_variables.insert(stmt.name.value.clone());
-            println!("[Reactive] Variable '{}' marked as reactive: {}", stmt.name.value, value_type);
+        // Register all bound identifiers from the pattern
+        let identifiers = stmt.pattern.bound_identifiers();
+        for (idx, ident) in identifiers.iter().enumerate() {
+            // For tuple patterns, extract the corresponding type from the tuple
+            let ident_type = match &stmt.pattern {
+                Pattern::Tuple(_) => {
+                    // If value is a tuple type, extract the element type
+                    if let ResolvedType::Tuple(types) = &value_type {
+                        types.get(idx).cloned().unwrap_or(ResolvedType::Unknown)
+                    } else {
+                        value_type.clone()
+                    }
+                }
+                _ => value_type.clone(),
+            };
+
+            // Auto-wrap in Signal<T> if inside a component and type is simple
+            let final_type = if self.in_component && self.should_be_reactive(&ident_type) {
+                self.reactive_variables.insert(ident.value.clone());
+                println!("[Reactive] Variable '{}' marked as reactive: {}", ident.value, ident_type);
+                ResolvedType::Signal(Box::new(ident_type))
+            } else {
+                ident_type
+            };
+
+            self.symbols.define(ident.value.clone(), final_type);
         }
 
-        self.symbols.define(stmt.name.value.clone(), value_type);
         Ok(ResolvedType::Unit)
     }
 
@@ -981,6 +1008,10 @@ impl SemanticAnalyzer {
             match &arm.pattern {
                 Pattern::Wildcard => {
                     has_wildcard = true;
+                }
+                Pattern::Tuple(_) => {
+                    // TODO: Check tuple pattern exhaustiveness
+                    has_wildcard = true;  // Treat as wildcard for now
                 }
                 Pattern::EnumVariant { name, .. } => {
                     // Extract the variant name (could be "Color::Red" format)
