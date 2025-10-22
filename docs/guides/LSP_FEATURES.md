@@ -636,6 +636,99 @@ error: cannot find `Signa` in module `raven_store`
   [E008]
 ```
 
+## Inlay Hints ✅
+
+Inlay hints display inline type annotations and parameter names without modifying your source code, similar to Rust Analyzer. These subtle hints help you understand code at a glance.
+
+### Type Hints
+
+Show inferred types for variables without explicit type annotations:
+
+**What you write**:
+```raven
+let count = 42;
+let name = "Alice";
+let active = true;
+let price = 9.99;
+```
+
+**What you see** (with inlay hints):
+```raven
+let count: i32 = 42;
+let name: String = "Alice";
+let active: bool = true;
+let price: f64 = 9.99;
+```
+
+**Supported Types**:
+- **Integers**: `i32` for whole numbers
+- **Floats**: `f64` for decimal numbers
+- **Strings**: `String` for text literals
+- **Booleans**: `bool` for true/false
+- **Characters**: `char` for single characters
+- **Collections**: `Vec`, `Array` for collections
+
+**Note**: Type hints only appear for variables WITHOUT explicit type annotations. If you write `let count: i32 = 42;`, no hint will be shown.
+
+### Parameter Hints
+
+Show parameter names in function calls:
+
+**What you write**:
+```raven
+calculate(10, 20, 5);
+render(elem, true);
+```
+
+**What you see** (with inlay hints):
+```raven
+calculate(x: 10, y: 20, z: 5);
+render(element: elem, visible: true);
+```
+
+This is especially helpful for functions with many parameters or non-obvious parameter names.
+
+### Configuration (Future)
+
+Future versions may include configuration options:
+- Enable/disable type hints
+- Enable/disable parameter hints
+- Max hint length
+- Hint appearance customization
+
+### LSP Request
+
+**Method**: `textDocument/inlayHint`
+
+**Request**:
+```json
+{
+  "textDocument": { "uri": "file:///path/to/file.raven" },
+  "range": {
+    "start": { "line": 0, "character": 0 },
+    "end": { "line": 100, "character": 0 }
+  }
+}
+```
+
+**Response**:
+```json
+[
+  {
+    "position": { "line": 1, "character": 10 },
+    "label": ": i32",
+    "kind": 1,
+    "tooltip": "Inferred type: i32",
+    "paddingLeft": false,
+    "paddingRight": true
+  }
+]
+```
+
+**Hint Kinds**:
+- **1 (Type)**: Type annotation hints
+- **2 (Parameter)**: Parameter name hints
+
 ## Troubleshooting
 
 ### Completions Not Working
@@ -671,13 +764,14 @@ Want to improve the LSP? Check out:
 
 ---
 
-**Last Updated**: 2025-10-22 (Phase 2 - Sprint 8)
+**Last Updated**: 2025-10-22 (Phase 2 - Sprint 9)
 **LSP Version**: 0.1.0
 **Completions**: 70+
 **Context Types**: 7
 **Hover Information**: ✅ Full support for functions, variables, structs, enums, components
 **Signature Help**: ✅ Real-time parameter hints with active parameter tracking
+**Inlay Hints**: ✅ Type hints (i32, f64, String, bool, etc.) + Parameter hints
 **Navigation Features**: 4 (Go to Definition, Find References, Rename Symbol, Document Symbols)
 **Code Actions**: 6 quick fixes
 **Error Codes**: 18 errors (E001-E018) + 5 warnings (W001-W005)
-**Test Coverage**: 52 LSP tests (100% passing) - 10 hover + 6 signature help + 18 diagnostic + 18 other
+**Test Coverage**: 60 LSP tests (100% passing) - 10 hover + 6 signature help + 8 inlay hints + 18 diagnostic + 18 other
