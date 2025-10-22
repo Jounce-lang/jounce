@@ -1,0 +1,6 @@
+const PI: f64 = 3.14159;
+const E: f64 = 2.71828;
+
+fn double(x: f64) -> f64 {
+    return x * 2.0;
+}

@@ -549,7 +549,15 @@ impl JSEmitter {
     /// Generates JavaScript code for an expression
     fn generate_expression_js(&self, expr: &Expression) -> String {
         match expr {
-            Expression::Identifier(ident) => ident.value.clone(),
+            Expression::Identifier(ident) => {
+                // Handle namespaced identifiers (e.g., math::PI, console::log)
+                // Strip the namespace since wildcard imports make symbols available globally
+                if let Some(idx) = ident.value.rfind("::") {
+                    ident.value[idx + 2..].to_string()
+                } else {
+                    ident.value.clone()
+                }
+            }
             Expression::IntegerLiteral(value) => value.to_string(),
             Expression::FloatLiteral(value) => value.clone(),
             Expression::StringLiteral(value) => format!("\"{}\"", value),
