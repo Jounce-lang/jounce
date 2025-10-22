@@ -311,6 +311,87 @@ Quick fixes and refactoring suggestions:
 - "Add type annotation"
 - "Convert to async"
 
+## 3. Enhanced Diagnostics & Error Reporting
+
+RavensOne provides beautiful, actionable error messages with:
+- ✅ **Rich formatting** with ANSI colors
+- ✅ **Source code snippets** showing the error location
+- ✅ **Helpful suggestions** for fixing common mistakes
+- ✅ **"Did you mean...?"** fuzzy matching for typos
+- ✅ **Error codes** for documentation lookup (E001-E018, W001-W005)
+
+### Error Message Format
+
+```
+error: type mismatch: expected `f64`, found `i32`
+  --> app.raven:42:10
+   41 | let total: f64 = 100;
+   42 | let result = calculate(total);
+      |          ^^^^^^^^^^^^^^^^^^^
+  help: consider converting `i32` to `f64`
+  [E001]
+```
+
+### Error Codes Reference
+
+#### Type Errors (E001-E006)
+
+- **E001 - Type mismatch**: Expected one type, found another
+- **E002 - Undefined variable**: Variable not declared in scope
+- **E003 - Undefined function**: Function not found or not imported
+- **E004 - Syntax error**: Invalid syntax or missing tokens
+- **E005 - Borrow checker error**: Memory safety violation
+- **E006 - Invalid JSX**: JSX syntax errors
+
+#### Module & Import Errors (E007-E009)
+
+- **E007 - Module not found**: Module doesn't exist or not installed
+- **E008 - Import item not found**: Item doesn't exist in module
+- **E009 - Circular dependency**: Modules depend on each other
+
+#### JSX Errors (E010-E012)
+
+- **E010 - Unclosed JSX element**: Missing closing tag
+- **E011 - Mismatched JSX tags**: Opening and closing tags don't match
+- **E012 - Invalid JSX attribute**: Attribute not valid for element
+
+#### Async/Await Errors (E013-E014)
+
+- **E013 - Await non-async function**: Cannot await synchronous function
+- **E014 - Missing return type**: Function missing return type annotation
+
+#### Type System Errors (E015-E018)
+
+- **E015 - Type annotation needed**: Compiler cannot infer type
+- **E016 - Missing struct field**: Required field not provided
+- **E017 - Unknown struct field**: Field doesn't exist on struct
+- **E018 - Match not exhaustive**: Match doesn't handle all cases
+
+### Warnings (W001-W005)
+
+- **W001 - Unused variable**: Variable declared but never used
+- **W002 - Unreachable code**: Code after return statement
+- **W003 - Async not awaited**: Async function call missing await
+- **W004 - Dead code**: Code that's never executed
+- **W005 - Deprecated API**: Using deprecated function or method
+
+### "Did You Mean?" Suggestions
+
+The compiler uses fuzzy matching (Levenshtein distance) to suggest corrections:
+
+```raven
+use raven_store::{Signa};
+```
+
+```
+error: cannot find `Signa` in module `raven_store`
+  --> app.raven:1:20
+   1 | use raven_store::{Signa};
+     |                    ^^^^^
+  help: did you mean `Signal`?
+  [E008]
+```
+
 ## Troubleshooting
 
 ### Completions Not Working
@@ -346,8 +427,9 @@ Want to improve the LSP? Check out:
 
 ---
 
-**Last Updated**: 2025-10-22 (Phase 2 - Sprint 1)
+**Last Updated**: 2025-10-22 (Phase 2 - Sprint 3 & 4)
 **LSP Version**: 0.1.0
 **Completions**: 70+
 **Context Types**: 7
-**Test Coverage**: 9 tests, 100% passing
+**Error Codes**: 18 errors (E001-E018) + 5 warnings (W001-W005)
+**Test Coverage**: 18 diagnostic tests, 100% passing

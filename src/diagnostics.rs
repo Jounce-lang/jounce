@@ -335,6 +335,151 @@ impl DiagnosticBuilder {
             .with_code("W002")
             .with_note("any code after a `return` statement will never execute")
     }
+
+    /// Module not found error
+    pub fn module_not_found(module_name: &str, location: SourceLocation) -> Diagnostic {
+        Diagnostic::error(format!("module `{}` not found", module_name))
+            .at(location)
+            .with_code("E007")
+            .with_suggestion("check that the module name is spelled correctly")
+            .with_note("modules must be installed via `raven pkg add` or exist in the workspace")
+    }
+
+    /// Import item not found error
+    pub fn import_not_found(item: &str, module: &str, location: SourceLocation, similar: Option<&str>) -> Diagnostic {
+        let mut diag = Diagnostic::error(format!("cannot find `{}` in module `{}`", item, module))
+            .at(location)
+            .with_code("E008");
+
+        if let Some(similar_name) = similar {
+            diag = diag.with_suggestion(format!("did you mean `{}`?", similar_name));
+        } else {
+            diag = diag.with_suggestion(format!("check the exports of `{}`", module));
+        }
+
+        diag
+    }
+
+    /// Circular dependency error
+    pub fn circular_dependency(modules: &[String], location: SourceLocation) -> Diagnostic {
+        let cycle = modules.join(" -> ");
+        Diagnostic::error(format!("circular dependency detected: {}", cycle))
+            .at(location)
+            .with_code("E009")
+            .with_note("circular dependencies can cause initialization issues")
+            .with_suggestion("refactor code to break the circular dependency")
+    }
+
+    /// JSX: unclosed element error
+    pub fn jsx_unclosed_element(tag_name: &str, location: SourceLocation) -> Diagnostic {
+        Diagnostic::error(format!("unclosed JSX element `<{}>`", tag_name))
+            .at(location)
+            .with_code("E010")
+            .with_suggestion(format!("add closing tag `</{}>` or make it self-closing `<{} />`", tag_name, tag_name))
+    }
+
+    /// JSX: mismatched tags error
+    pub fn jsx_mismatched_tags(opening: &str, closing: &str, location: SourceLocation) -> Diagnostic {
+        Diagnostic::error(format!("mismatched JSX tags: expected `</{}`, found `</{}>`", opening, closing))
+            .at(location)
+            .with_code("E011")
+            .with_suggestion(format!("change closing tag to `</{}>`", opening))
+    }
+
+    /// JSX: invalid attribute error
+    pub fn jsx_invalid_attribute(attr: &str, tag: &str, location: SourceLocation) -> Diagnostic {
+        Diagnostic::error(format!("invalid attribute `{}` for `<{}>` element", attr, tag))
+            .at(location)
+            .with_code("E012")
+            .with_note("check HTML attribute names for this element type")
+    }
+
+    /// Async/await: cannot await non-async function
+    pub fn await_non_async(function_name: &str, location: SourceLocation) -> Diagnostic {
+        Diagnostic::error(format!("cannot await non-async function `{}`", function_name))
+            .at(location)
+            .with_code("E013")
+            .with_suggestion(format!("mark function `{}` as `async fn` or remove `await`", function_name))
+    }
+
+    /// Async/await: async function not awaited
+    pub fn async_not_awaited(function_name: &str, location: SourceLocation) -> Diagnostic {
+        Diagnostic::warning(format!("async function `{}` is not awaited", function_name))
+            .at(location)
+            .with_code("W003")
+            .with_suggestion("add `await` before the function call or use `.then()` for Promise handling")
+            .with_note("async functions return Promises that should be awaited")
+    }
+
+    /// Missing return type error
+    pub fn missing_return_type(function_name: &str, location: SourceLocation) -> Diagnostic {
+        Diagnostic::error(format!("function `{}` is missing return type annotation", function_name))
+            .at(location)
+            .with_code("E014")
+            .with_suggestion("add `-> ReturnType` after function parameters")
+            .with_note("explicit return types improve code clarity and type safety")
+    }
+
+    /// Dead code warning
+    pub fn dead_code(item_type: &str, item_name: &str, location: SourceLocation) -> Diagnostic {
+        Diagnostic::warning(format!("{} `{}` is never used", item_type, item_name))
+            .at(location)
+            .with_code("W004")
+            .with_suggestion("remove unused code or prefix with `_` to suppress warning")
+    }
+
+    /// Deprecated API warning
+    pub fn deprecated_api(api_name: &str, replacement: Option<&str>, location: SourceLocation) -> Diagnostic {
+        let mut diag = Diagnostic::warning(format!("use of deprecated API: `{}`", api_name))
+            .at(location)
+            .with_code("W005");
+
+        if let Some(new_api) = replacement {
+            diag = diag.with_suggestion(format!("use `{}` instead", new_api));
+        }
+
+        diag.with_note("deprecated APIs may be removed in future versions")
+    }
+
+    /// Type annotation needed
+    pub fn type_annotation_needed(var_name: &str, location: SourceLocation) -> Diagnostic {
+        Diagnostic::error(format!("cannot infer type for variable `{}`, type annotation required", var_name))
+            .at(location)
+            .with_code("E015")
+            .with_suggestion(format!("add type annotation: `let {}: Type = ...`", var_name))
+            .with_note("type inference requires sufficient context")
+    }
+
+    /// Missing field in struct literal
+    pub fn missing_struct_field(struct_name: &str, field_name: &str, location: SourceLocation) -> Diagnostic {
+        Diagnostic::error(format!("missing field `{}` in `{}` struct literal", field_name, struct_name))
+            .at(location)
+            .with_code("E016")
+            .with_suggestion(format!("add field: `{}: value`", field_name))
+    }
+
+    /// Unknown field in struct literal
+    pub fn unknown_struct_field(struct_name: &str, field_name: &str, location: SourceLocation, similar: Option<&str>) -> Diagnostic {
+        let mut diag = Diagnostic::error(format!("struct `{}` has no field `{}`", struct_name, field_name))
+            .at(location)
+            .with_code("E017");
+
+        if let Some(similar_name) = similar {
+            diag = diag.with_suggestion(format!("did you mean `{}`?", similar_name));
+        }
+
+        diag
+    }
+
+    /// Match not exhaustive
+    pub fn match_not_exhaustive(missing_patterns: &[String], location: SourceLocation) -> Diagnostic {
+        let patterns = missing_patterns.join("`, `");
+        Diagnostic::error(format!("match is not exhaustive, missing patterns: `{}`", patterns))
+            .at(location)
+            .with_code("E018")
+            .with_suggestion("add missing match arms or use `_` wildcard pattern")
+            .with_note("match expressions must handle all possible values")
+    }
 }
 
 /// Diagnostic collector for managing multiple diagnostics
@@ -565,5 +710,143 @@ mod tests {
 
         assert!(output.contains("let y = 20"));
         assert!(output.contains("^"));
+    }
+
+    #[test]
+    fn test_module_not_found() {
+        let loc = SourceLocation::unknown();
+        let diag = DiagnosticBuilder::module_not_found("missing_module", loc);
+
+        assert_eq!(diag.severity, Severity::Error);
+        assert!(diag.message.contains("module `missing_module` not found"));
+        assert_eq!(diag.code, Some("E007".to_string()));
+        assert!(!diag.suggestions.is_empty());
+    }
+
+    #[test]
+    fn test_import_not_found() {
+        let loc = SourceLocation::unknown();
+        let diag = DiagnosticBuilder::import_not_found("Item", "raven_store", loc, Some("Signal"));
+
+        assert_eq!(diag.severity, Severity::Error);
+        assert!(diag.message.contains("cannot find `Item` in module"));
+        assert_eq!(diag.code, Some("E008".to_string()));
+        assert!(diag.suggestions[0].contains("did you mean `Signal`?"));
+    }
+
+    #[test]
+    fn test_circular_dependency() {
+        let loc = SourceLocation::unknown();
+        let modules = vec!["A".to_string(), "B".to_string(), "A".to_string()];
+        let diag = DiagnosticBuilder::circular_dependency(&modules, loc);
+
+        assert_eq!(diag.severity, Severity::Error);
+        assert!(diag.message.contains("circular dependency"));
+        assert_eq!(diag.code, Some("E009".to_string()));
+    }
+
+    #[test]
+    fn test_jsx_unclosed_element() {
+        let loc = SourceLocation::unknown();
+        let diag = DiagnosticBuilder::jsx_unclosed_element("div", loc);
+
+        assert_eq!(diag.severity, Severity::Error);
+        assert!(diag.message.contains("unclosed JSX element `<div>`"));
+        assert_eq!(diag.code, Some("E010".to_string()));
+        assert!(diag.suggestions[0].contains("closing tag"));
+    }
+
+    #[test]
+    fn test_jsx_mismatched_tags() {
+        let loc = SourceLocation::unknown();
+        let diag = DiagnosticBuilder::jsx_mismatched_tags("div", "span", loc);
+
+        assert_eq!(diag.severity, Severity::Error);
+        assert!(diag.message.contains("mismatched JSX tags"));
+        assert_eq!(diag.code, Some("E011".to_string()));
+    }
+
+    #[test]
+    fn test_await_non_async() {
+        let loc = SourceLocation::unknown();
+        let diag = DiagnosticBuilder::await_non_async("fetch_data", loc);
+
+        assert_eq!(diag.severity, Severity::Error);
+        assert!(diag.message.contains("cannot await non-async function"));
+        assert_eq!(diag.code, Some("E013".to_string()));
+    }
+
+    #[test]
+    fn test_async_not_awaited() {
+        let loc = SourceLocation::unknown();
+        let diag = DiagnosticBuilder::async_not_awaited("fetch_data", loc);
+
+        assert_eq!(diag.severity, Severity::Warning);
+        assert!(diag.message.contains("async function"));
+        assert_eq!(diag.code, Some("W003".to_string()));
+    }
+
+    #[test]
+    fn test_type_annotation_needed() {
+        let loc = SourceLocation::unknown();
+        let diag = DiagnosticBuilder::type_annotation_needed("x", loc);
+
+        assert_eq!(diag.severity, Severity::Error);
+        assert!(diag.message.contains("cannot infer type"));
+        assert_eq!(diag.code, Some("E015".to_string()));
+        assert!(diag.suggestions[0].contains("type annotation"));
+    }
+
+    #[test]
+    fn test_missing_struct_field() {
+        let loc = SourceLocation::unknown();
+        let diag = DiagnosticBuilder::missing_struct_field("Point", "z", loc);
+
+        assert_eq!(diag.severity, Severity::Error);
+        assert!(diag.message.contains("missing field `z` in `Point`"));
+        assert_eq!(diag.code, Some("E016".to_string()));
+    }
+
+    #[test]
+    fn test_unknown_struct_field() {
+        let loc = SourceLocation::unknown();
+        let diag = DiagnosticBuilder::unknown_struct_field("Point", "z", loc, Some("x"));
+
+        assert_eq!(diag.severity, Severity::Error);
+        assert!(diag.message.contains("struct `Point` has no field `z`"));
+        assert_eq!(diag.code, Some("E017".to_string()));
+        assert!(diag.suggestions[0].contains("did you mean `x`?"));
+    }
+
+    #[test]
+    fn test_match_not_exhaustive() {
+        let loc = SourceLocation::unknown();
+        let missing = vec!["Some(_)".to_string(), "None".to_string()];
+        let diag = DiagnosticBuilder::match_not_exhaustive(&missing, loc);
+
+        assert_eq!(diag.severity, Severity::Error);
+        assert!(diag.message.contains("match is not exhaustive"));
+        assert_eq!(diag.code, Some("E018".to_string()));
+    }
+
+    #[test]
+    fn test_dead_code_warning() {
+        let loc = SourceLocation::unknown();
+        let diag = DiagnosticBuilder::dead_code("function", "unused_func", loc);
+
+        assert_eq!(diag.severity, Severity::Warning);
+        assert!(diag.message.contains("function `unused_func` is never used"));
+        assert_eq!(diag.code, Some("W004".to_string()));
+    }
+
+    #[test]
+    fn test_deprecated_api() {
+        let loc = SourceLocation::unknown();
+        let diag = DiagnosticBuilder::deprecated_api("old_api", Some("new_api"), loc);
+
+        assert_eq!(diag.severity, Severity::Warning);
+        assert!(diag.message.contains("deprecated API"));
+        assert_eq!(diag.code, Some("W005".to_string()));
+        assert!(diag.suggestions[0].contains("new_api"));
     }
 }

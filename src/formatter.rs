@@ -788,7 +788,40 @@ impl Formatter {
     }
 
     fn format_jsx_element(&mut self, jsx: &JsxElement) {
-        // Opening tag
+        // Determine if this should be multi-line
+        let should_be_multiline = self.should_jsx_be_multiline(jsx);
+
+        if should_be_multiline {
+            self.format_jsx_element_multiline(jsx);
+        } else {
+            self.format_jsx_element_inline(jsx);
+        }
+    }
+
+    /// Determine if JSX element should be formatted on multiple lines
+    fn should_jsx_be_multiline(&self, jsx: &JsxElement) -> bool {
+        // Multi-line if:
+        // 1. Has more than 3 attributes
+        // 2. Has JSX element children
+
+        if jsx.opening_tag.attributes.len() > 3 {
+            return true;
+        }
+
+        if !jsx.children.is_empty() {
+            // Check if any child is a JSX element
+            for child in &jsx.children {
+                if matches!(child, JsxChild::Element(_)) {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    /// Format JSX element on a single line (for simple elements)
+    fn format_jsx_element_inline(&mut self, jsx: &JsxElement) {
         self.write("<");
         self.write(&jsx.opening_tag.name.value);
 
@@ -797,15 +830,12 @@ impl Formatter {
             self.write(" ");
             self.write(&attr.name.value);
 
-            // Check if it's a boolean attribute
             if let Expression::BoolLiteral(true) = attr.value {
-                // Boolean attribute without value (e.g., disabled)
                 continue;
             }
 
             self.write("=");
 
-            // String literals don't need braces
             match &attr.value {
                 Expression::StringLiteral(s) => {
                     self.write("\"");
@@ -827,7 +857,7 @@ impl Formatter {
 
         self.write(">");
 
-        // Children
+        // Children inline
         for child in &jsx.children {
             match child {
                 JsxChild::Element(elem) => self.format_jsx_element(elem),
@@ -836,6 +866,134 @@ impl Formatter {
                     self.write("{");
                     self.format_expression(expr);
                     self.write("}");
+                }
+            }
+        }
+
+        // Closing tag
+        if let Some(closing_tag) = &jsx.closing_tag {
+            self.write("</");
+            self.write(&closing_tag.value);
+            self.write(">");
+        }
+    }
+
+    /// Format JSX element on multiple lines (for complex elements)
+    fn format_jsx_element_multiline(&mut self, jsx: &JsxElement) {
+        self.write("<");
+        self.write(&jsx.opening_tag.name.value);
+
+        // Attributes - multi-line if >3
+        if jsx.opening_tag.attributes.len() > 3 {
+            self.indent_level += 1;
+            for attr in &jsx.opening_tag.attributes {
+                self.newline();
+                self.write_indent();
+                self.write(&attr.name.value);
+
+                if let Expression::BoolLiteral(true) = attr.value {
+                    continue;
+                }
+
+                self.write("=");
+
+                match &attr.value {
+                    Expression::StringLiteral(s) => {
+                        self.write("\"");
+                        self.write(s);
+                        self.write("\"");
+                    }
+                    _ => {
+                        self.write("{");
+                        self.format_expression(&attr.value);
+                        self.write("}");
+                    }
+                }
+            }
+            self.indent_level -= 1;
+            self.newline();
+            self.write_indent();
+        } else {
+            // Inline attributes if <=3
+            for attr in &jsx.opening_tag.attributes {
+                self.write(" ");
+                self.write(&attr.name.value);
+
+                if let Expression::BoolLiteral(true) = attr.value {
+                    continue;
+                }
+
+                self.write("=");
+
+                match &attr.value {
+                    Expression::StringLiteral(s) => {
+                        self.write("\"");
+                        self.write(s);
+                        self.write("\"");
+                    }
+                    _ => {
+                        self.write("{");
+                        self.format_expression(&attr.value);
+                        self.write("}");
+                    }
+                }
+            }
+        }
+
+        if jsx.opening_tag.self_closing {
+            if jsx.opening_tag.attributes.len() > 3 {
+                self.write("/>");
+            } else {
+                self.write(" />");
+            }
+            return;
+        }
+
+        self.write(">");
+
+        // Children - each on new line if element children exist
+        let has_element_children = jsx.children.iter().any(|c| matches!(c, JsxChild::Element(_)));
+
+        if has_element_children {
+            self.indent_level += 1;
+            for child in &jsx.children {
+                match child {
+                    JsxChild::Element(elem) => {
+                        self.newline();
+                        self.write_indent();
+                        self.format_jsx_element(elem);
+                    }
+                    JsxChild::Text(text) => {
+                        let trimmed = text.trim();
+                        if !trimmed.is_empty() {
+                            self.newline();
+                            self.write_indent();
+                            self.write(trimmed);
+                        }
+                    }
+                    JsxChild::Expression(expr) => {
+                        self.newline();
+                        self.write_indent();
+                        self.write("{");
+                        self.format_expression(expr);
+                        self.write("}");
+                    }
+                }
+            }
+            self.indent_level -= 1;
+            self.newline();
+            self.write_indent();
+        } else {
+            // Inline children if no element children
+            for child in &jsx.children {
+                match child {
+                    JsxChild::Element(elem) => self.format_jsx_element(elem),
+                    JsxChild::Text(text) => self.write(text),
+                    JsxChild::Expression(expr) => {
+                        self.write("{");
+                        self.format_expression(expr);
+                        self.write("}");
+                    }
                 }
             }
         }
@@ -1247,5 +1405,561 @@ mod tests {
         assert!(formatted.contains("struct Point {"));
         assert!(formatted.contains("x: i32,"));
         assert!(formatted.contains("y: i32,"));
+    }
+
+    #[test]
+    fn test_format_enum() {
+        let program = Program {
+            statements: vec![Statement::Enum(EnumDefinition {
+                name: Identifier {
+                    value: "Option".to_string(),
+                },
+                lifetime_params: vec![],
+                type_params: vec![],
+                variants: vec![
+                    EnumVariant {
+                        name: Identifier {
+                            value: "Some".to_string(),
+                        },
+                        fields: None,
+                    },
+                    EnumVariant {
+                        name: Identifier {
+                            value: "None".to_string(),
+                        },
+                        fields: None,
+                    },
+                ],
+                derives: vec![],
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("enum Option {"));
+        assert!(formatted.contains("Some,"));
+        assert!(formatted.contains("None,"));
+    }
+
+    #[test]
+    fn test_format_match_expression() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "result".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::Match(MatchExpression {
+                    scrutinee: Box::new(Expression::Identifier(Identifier {
+                        value: "x".to_string(),
+                    })),
+                    arms: vec![
+                        MatchArm {
+                            pattern: Pattern::Literal(Expression::IntegerLiteral(1)),
+                            body: Box::new(Expression::StringLiteral("one".to_string())),
+                        },
+                        MatchArm {
+                            pattern: Pattern::Wildcard,
+                            body: Box::new(Expression::StringLiteral("other".to_string())),
+                        },
+                    ],
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("match x {"));
+        assert!(formatted.contains("1 => \"one\","));
+        assert!(formatted.contains("_ => \"other\","));
+    }
+
+    #[test]
+    fn test_format_jsx_simple_inline() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "elem".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::JsxElement(JsxElement {
+                    opening_tag: JsxOpeningTag {
+                        name: Identifier {
+                            value: "Button".to_string(),
+                        },
+                        attributes: vec![],
+                        self_closing: false,
+                    },
+                    children: vec![JsxChild::Text("Click".to_string())],
+                    closing_tag: Some(Identifier {
+                        value: "Button".to_string(),
+                    }),
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("let elem = <Button>Click</Button>;"));
+    }
+
+    #[test]
+    fn test_format_jsx_multiline_nested() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "elem".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::JsxElement(JsxElement {
+                    opening_tag: JsxOpeningTag {
+                        name: Identifier {
+                            value: "div".to_string(),
+                        },
+                        attributes: vec![],
+                        self_closing: false,
+                    },
+                    children: vec![
+                        JsxChild::Element(Box::new(JsxElement {
+                            opening_tag: JsxOpeningTag {
+                                name: Identifier {
+                                    value: "Header".to_string(),
+                                },
+                                attributes: vec![],
+                                self_closing: true,
+                            },
+                            children: vec![],
+                            closing_tag: None,
+                        })),
+                        JsxChild::Element(Box::new(JsxElement {
+                            opening_tag: JsxOpeningTag {
+                                name: Identifier {
+                                    value: "Content".to_string(),
+                                },
+                                attributes: vec![],
+                                self_closing: true,
+                            },
+                            children: vec![],
+                            closing_tag: None,
+                        })),
+                    ],
+                    closing_tag: Some(Identifier {
+                        value: "div".to_string(),
+                    }),
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        // Should be multi-line because it has nested JSX elements
+        assert!(formatted.contains("<div>"));
+        assert!(formatted.contains("<Header />"));
+        assert!(formatted.contains("<Content />"));
+        assert!(formatted.contains("</div>"));
+    }
+
+    #[test]
+    fn test_format_jsx_many_attributes() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "elem".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::JsxElement(JsxElement {
+                    opening_tag: JsxOpeningTag {
+                        name: Identifier {
+                            value: "Component".to_string(),
+                        },
+                        attributes: vec![
+                            JsxAttribute {
+                                name: Identifier {
+                                    value: "prop1".to_string(),
+                                },
+                                value: Expression::IntegerLiteral(1),
+                            },
+                            JsxAttribute {
+                                name: Identifier {
+                                    value: "prop2".to_string(),
+                                },
+                                value: Expression::IntegerLiteral(2),
+                            },
+                            JsxAttribute {
+                                name: Identifier {
+                                    value: "prop3".to_string(),
+                                },
+                                value: Expression::IntegerLiteral(3),
+                            },
+                            JsxAttribute {
+                                name: Identifier {
+                                    value: "prop4".to_string(),
+                                },
+                                value: Expression::IntegerLiteral(4),
+                            },
+                        ],
+                        self_closing: true,
+                    },
+                    children: vec![],
+                    closing_tag: None,
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        // Should be multi-line because it has >3 attributes
+        assert!(formatted.contains("<Component"));
+        assert!(formatted.contains("prop1={1}"));
+        assert!(formatted.contains("prop2={2}"));
+        assert!(formatted.contains("prop3={3}"));
+        assert!(formatted.contains("prop4={4}"));
+        assert!(formatted.contains("/>"));
+    }
+
+    #[test]
+    fn test_format_lambda() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "add".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::Lambda(LambdaExpression {
+                    parameters: vec![
+                        Identifier {
+                            value: "x".to_string(),
+                        },
+                        Identifier {
+                            value: "y".to_string(),
+                        },
+                    ],
+                    body: Box::new(Expression::Infix(InfixExpression {
+                        left: Box::new(Expression::Identifier(Identifier {
+                            value: "x".to_string(),
+                        })),
+                        operator: Token::new(TokenKind::Plus, "+".to_string(), 1, 1),
+                        right: Box::new(Expression::Identifier(Identifier {
+                            value: "y".to_string(),
+                        })),
+                    })),
+                    captures: vec![],
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("|x, y| x + y"));
+    }
+
+    #[test]
+    fn test_format_ternary() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "result".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::Ternary(TernaryExpression {
+                    condition: Box::new(Expression::BoolLiteral(true)),
+                    true_expr: Box::new(Expression::IntegerLiteral(1)),
+                    false_expr: Box::new(Expression::IntegerLiteral(0)),
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("true ? 1 : 0"));
+    }
+
+    #[test]
+    fn test_format_array_literal() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "arr".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::ArrayLiteral(ArrayLiteral {
+                    elements: vec![
+                        Expression::IntegerLiteral(1),
+                        Expression::IntegerLiteral(2),
+                        Expression::IntegerLiteral(3),
+                    ],
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("[1, 2, 3]"));
+    }
+
+    #[test]
+    fn test_format_if_expression() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "result".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::IfExpression(IfExpression {
+                    condition: Box::new(Expression::BoolLiteral(true)),
+                    then_expr: Box::new(Expression::IntegerLiteral(1)),
+                    else_expr: Some(Box::new(Expression::IntegerLiteral(0))),
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("if true { 1 } else { 0 }"));
+    }
+
+    #[test]
+    fn test_format_for_loop() {
+        let program = Program {
+            statements: vec![Statement::ForIn(ForInStatement {
+                variable: Identifier {
+                    value: "i".to_string(),
+                },
+                iterator: Expression::Identifier(Identifier {
+                    value: "items".to_string(),
+                }),
+                body: BlockStatement {
+                    statements: vec![Statement::Expression(Expression::Identifier(Identifier {
+                        value: "i".to_string(),
+                    }))],
+                },
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("for i in items {"));
+    }
+
+    #[test]
+    fn test_format_while_loop() {
+        let program = Program {
+            statements: vec![Statement::While(WhileStatement {
+                condition: Expression::BoolLiteral(true),
+                body: BlockStatement {
+                    statements: vec![Statement::Expression(Expression::Identifier(Identifier {
+                        value: "x".to_string(),
+                    }))],
+                },
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("while true {"));
+    }
+
+    #[test]
+    fn test_format_const() {
+        let program = Program {
+            statements: vec![Statement::Const(ConstDeclaration {
+                name: Identifier {
+                    value: "PI".to_string(),
+                },
+                type_annotation: Some(TypeExpression::Named(Identifier {
+                    value: "f64".to_string(),
+                })),
+                value: Expression::FloatLiteral("3.14".to_string()),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("const PI: f64 = 3.14;"));
+    }
+
+    #[test]
+    fn test_format_use_statement() {
+        let program = Program {
+            statements: vec![Statement::Use(UseStatement {
+                path: vec![Identifier {
+                    value: "raven_store".to_string(),
+                }],
+                imports: vec![
+                    Identifier {
+                        value: "Signal".to_string(),
+                    },
+                    Identifier {
+                        value: "Computed".to_string(),
+                    },
+                ],
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("use raven_store::{Signal, Computed};"));
+    }
+
+    #[test]
+    fn test_format_spread_operator() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "arr".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::ArrayLiteral(ArrayLiteral {
+                    elements: vec![
+                        Expression::IntegerLiteral(1),
+                        Expression::Spread(SpreadExpression {
+                            expression: Box::new(Expression::Identifier(Identifier {
+                                value: "rest".to_string(),
+                            })),
+                        }),
+                    ],
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("[1, ...rest]"));
+    }
+
+    #[test]
+    fn test_format_type_cast() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "x".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::TypeCast(TypeCastExpression {
+                    expression: Box::new(Expression::IntegerLiteral(42)),
+                    target_type: TypeExpression::Named(Identifier {
+                        value: "f64".to_string(),
+                    }),
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("42 as f64"));
+    }
+
+    #[test]
+    fn test_format_struct_literal() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "point".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::StructLiteral(StructLiteral {
+                    name: Identifier {
+                        value: "Point".to_string(),
+                    },
+                    fields: vec![
+                        (
+                            Identifier {
+                                value: "x".to_string(),
+                            },
+                            Expression::IntegerLiteral(10),
+                        ),
+                        (
+                            Identifier {
+                                value: "y".to_string(),
+                            },
+                            Expression::IntegerLiteral(20),
+                        ),
+                    ],
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("Point { x: 10, y: 20 }"));
+    }
+
+    #[test]
+    fn test_format_async_function() {
+        let program = Program {
+            statements: vec![Statement::Function(FunctionDefinition {
+                name: Identifier {
+                    value: "fetch_data".to_string(),
+                },
+                lifetime_params: vec![],
+                type_params: vec![],
+                parameters: vec![],
+                is_server: false,
+                is_client: false,
+                is_async: true,
+                body: BlockStatement {
+                    statements: vec![Statement::Return(ReturnStatement {
+                        value: Expression::IntegerLiteral(42),
+                    })],
+                },
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("async fn fetch_data()"));
+    }
+
+    #[test]
+    fn test_format_tuple_literal() {
+        let program = Program {
+            statements: vec![Statement::Let(LetStatement {
+                pattern: Pattern::Identifier(Identifier {
+                    value: "tuple".to_string(),
+                }),
+                mutable: false,
+                type_annotation: None,
+                value: Expression::TupleLiteral(TupleLiteral {
+                    elements: vec![
+                        Expression::IntegerLiteral(1),
+                        Expression::StringLiteral("hello".to_string()),
+                        Expression::BoolLiteral(true),
+                    ],
+                }),
+            })],
+        };
+
+        let mut formatter = Formatter::new();
+        let formatted = formatter.format_program(&program);
+
+        assert!(formatted.contains("(1, \"hello\", true)"));
     }
 }
