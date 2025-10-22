@@ -64,7 +64,23 @@ impl Default for BorrowChecker {
 
 impl BorrowChecker {
     pub fn new() -> Self {
-        Self { symbols: BorrowSymbolTable::new() }
+        let mut checker = Self {
+            symbols: BorrowSymbolTable::new(),
+        };
+
+        // Add built-in Option constructors to global scope
+        // These are always available without imports
+        // Use ComplexType since the actual type is polymorphic
+        checker.symbols.define(
+            "Some".to_string(),
+            ResolvedType::ComplexType // Function that returns Option<T>
+        );
+        checker.symbols.define(
+            "None".to_string(),
+            ResolvedType::ComplexType // Option<T> value
+        );
+
+        checker
     }
 
     pub fn check_program(&mut self, program: &Program) -> Result<(), CompileError> {
