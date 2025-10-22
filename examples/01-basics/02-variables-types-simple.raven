@@ -1,0 +1,76 @@
+// ============================================================================
+// Example 02: Variables & Types (Simplified)
+// ============================================================================
+// Demonstrates: Variable declarations, type annotations, mutability
+// Features: let, const, mut, primitive types
+// Complexity: Beginner
+// ============================================================================
+
+fn main() {
+    // ========================================================================
+    // Variable Declarations
+    // ========================================================================
+
+    // Immutable variable
+    let name = "Alice";
+
+    // Mutable variable
+    let mut age = 25;
+    age = 26;
+
+    // Constant
+    const MAX_USERS: i32 = 1000;
+
+    // ========================================================================
+    // Primitive Types
+    // ========================================================================
+
+    // Integer types
+    let small_int: i8 = 127;
+    let regular_int: i32 = 42;
+    let big_int: i64 = 1000000;
+
+    // Unsigned integers
+    let unsigned: u32 = 500;
+
+    // Floating-point
+    let pi: f32 = 3.14159;
+    let precise_pi: f64 = 3.141592653589793;
+
+    // Boolean
+    let is_active: bool = true;
+    let is_ready = false;
+
+    // Strings
+    let greeting: String = "Hello";
+    let message = "Welcome to RavensOne";
+
+    // ========================================================================
+    // Type Inference
+    // ========================================================================
+
+    let inferred_int = 100;        // i32
+    let inferred_float = 2.5;      // f64
+    let inferred_string = "Auto";  // String
+    let inferred_bool = true;      // bool
+
+    // ========================================================================
+    // Type Conversion
+    // ========================================================================
+
+    let x: i32 = 10;
+    let y: f64 = x as f64;
+
+    let float_num: f64 = 3.7;
+    let truncated: i32 = float_num as i32;
+}
+
+// ============================================================================
+// Key Concepts:
+// ============================================================================
+// 1. Variables are immutable by default (use 'let')
+// 2. Use 'mut' for mutable variables
+// 3. Use 'const' for compile-time constants
+// 4. Type annotations are optional (type inference works)
+// 5. Use 'as' keyword for explicit type conversion
+// ============================================================================
