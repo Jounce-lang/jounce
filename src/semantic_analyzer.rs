@@ -275,6 +275,7 @@ impl SemanticAnalyzer {
         match stmt {
             Statement::Use(use_stmt) => self.analyze_use_statement(use_stmt),
             Statement::Let(let_stmt) => self.analyze_let_statement(let_stmt),
+            Statement::Const(const_decl) => self.analyze_const_declaration(const_decl),
             Statement::Assignment(assign_stmt) => {
                 // Check that the target is a valid assignment target
                 match &assign_stmt.target {
@@ -504,6 +505,37 @@ impl SemanticAnalyzer {
             }
         }
         Ok(())
+    }
+
+    fn analyze_const_declaration(&mut self, decl: &ConstDeclaration) -> Result<ResolvedType, CompileError> {
+        // Get the type annotation if provided
+        let annotation_type = decl
+            .type_annotation
+            .as_ref()
+            .map(|ty| self.type_expression_to_resolved_type(ty));
+
+        // Analyze the value expression
+        let mut value_type = if let Some(expected) = annotation_type.as_ref() {
+            self.analyze_expression_with_expected(&decl.value, Some(expected))?
+        } else {
+            self.analyze_expression(&decl.value)?
+        };
+
+        // Check type compatibility if annotation is provided
+        if let Some(expected_type) = annotation_type {
+            if !self.types_compatible(&expected_type, &value_type) {
+                return Err(CompileError::Generic(format!(
+                    "Type mismatch in const declaration '{}': expected '{}', found '{}'",
+                    decl.name.value, expected_type, value_type
+                )));
+            }
+            value_type = expected_type;
+        }
+
+        // Register the constant in the symbol table
+        self.symbols.define(decl.name.value.clone(), value_type);
+
+        Ok(ResolvedType::Unit)
     }
 
     fn analyze_let_statement(&mut self, stmt: &LetStatement) -> Result<ResolvedType, CompileError> {
