@@ -1,0 +1,146 @@
+{
+  "name": "ravensone",
+  "displayName": "RavensOne",
+  "description": "Official VS Code extension for the RavensOne full-stack programming language",
+  "version": "0.1.0",
+  "publisher": "ravensone",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ravensone/ravensone.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ravensone/ravensone/issues"
+  },
+  "homepage": "https://github.com/ravensone/ravensone#readme",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Linters"
+  ],
+  "keywords": [
+    "ravensone",
+    "raven",
+    "full-stack",
+    "jsx",
+    "wasm"
+  ],
+  "activationEvents": [
+    "onLanguage:raven"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "raven",
+        "aliases": [
+          "RavensOne",
+          "raven"
+        ],
+        "extensions": [
+          ".raven"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "raven",
+        "scopeName": "source.raven",
+        "path": "./syntaxes/raven.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "raven.compile",
+        "title": "RavensOne: Compile Current File",
+        "category": "RavensOne"
+      },
+      {
+        "command": "raven.watch",
+        "title": "RavensOne: Watch Current File",
+        "category": "RavensOne"
+      },
+      {
+        "command": "raven.format",
+        "title": "RavensOne: Format Document",
+        "category": "RavensOne"
+      },
+      {
+        "command": "raven.test",
+        "title": "RavensOne: Run Tests",
+        "category": "RavensOne"
+      },
+      {
+        "command": "raven.profile",
+        "title": "RavensOne: Show Profiling",
+        "category": "RavensOne"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "raven.format",
+        "key": "shift+alt+f",
+        "when": "editorTextFocus && editorLangId == 'raven'"
+      }
+    ],
+    "configuration": {
+      "title": "RavensOne",
+      "properties": {
+        "ravensone.lspPath": {
+          "type": "string",
+          "default": "raven",
+          "description": "Path to the RavensOne compiler binary"
+        },
+        "ravensone.enableInlayHints": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable inlay hints (type hints and parameter hints)"
+        },
+        "ravensone.enableTypeHints": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show type hints for variables without explicit types"
+        },
+        "ravensone.enableParameterHints": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show parameter names in function calls"
+        },
+        "ravensone.formatOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically format files on save"
+        },
+        "ravensone.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the RavensOne language server"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^2.20.0"
+  }
+}

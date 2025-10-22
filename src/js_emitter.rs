@@ -406,14 +406,21 @@ impl JSEmitter {
             .join(", ");
 
         let async_keyword = if func.is_async { "async " } else { "" };
-        let export_keyword = if is_server { "module.exports." } else { "export " };
-
         let body = self.generate_block_js(&func.body);
 
-        format!(
-            "{}{}function {}({}) {{\n{}\n}}",
-            export_keyword, async_keyword, name, params, body
-        )
+        if is_server {
+            // Server-side: module.exports.name = function() { ... }
+            format!(
+                "module.exports.{} = {}function({}) {{\n{}\n}}",
+                name, async_keyword, params, body
+            )
+        } else {
+            // Client-side: export function name() { ... }
+            format!(
+                "export {}function {}({}) {{\n{}\n}}",
+                async_keyword, name, params, body
+            )
+        }
     }
 
     /// Generates a JavaScript component implementation from AST
@@ -604,7 +611,26 @@ impl JSEmitter {
                 // Map Rust-like macros to JavaScript equivalents
                 match macro_call.name.value.as_str() {
                     "vec" => format!("[{}]", args.join(", ")),
-                    "println" => format!("console.log({})", args.join(", ")),
+                    "println" => {
+                        // Handle println! with format string support
+                        if args.is_empty() {
+                            "console.log()".to_string()
+                        } else if args.len() == 1 {
+                            // Single argument - just print it
+                            format!("console.log({})", args[0])
+                        } else {
+                            // Multiple arguments - format string + args
+                            let format_str = args[0].trim_matches('"');
+                            let mut result = format_str.to_string();
+
+                            // Replace each {} with ${arg}
+                            for arg in args.iter().skip(1) {
+                                result = result.replacen("{}", &format!("${{{}}}", arg), 1);
+                            }
+
+                            format!("console.log(`{}`)", result)
+                        }
+                    }
                     "format" => {
                         // Handle format! macro with string interpolation
                         if args.is_empty() {

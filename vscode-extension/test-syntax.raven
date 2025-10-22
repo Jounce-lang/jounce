@@ -1,0 +1,88 @@
+// Test file for RavensOne syntax highlighting
+/*
+ * Block comment test
+ */
+
+use std::collections::HashMap;
+
+// Annotations
+@server
+fn process_data(input: String) -> Result<i32, String> {
+    let count: i32 = 42;
+    let pi = 3.14159f64;
+    let name = "RavensOne";
+    let flag = true;
+
+    // Pattern matching
+    match count {
+        0 => None,
+        n if n > 0 => Some(n),
+        _ => Err("Invalid"),
+    }
+}
+
+@client
+fn render_ui() -> JSX {
+    let items = vec![1, 2, 3];
+
+    // JSX with components
+    <div class="container">
+        <Header title="Hello World" />
+        <Content>
+            {items.map(|item| {
+                <Item key={item.id} value={item} />
+            })}
+        </Content>
+        <Footer />
+    </div>
+}
+
+// Struct definition
+struct User {
+    id: i32,
+    name: String,
+    email: String,
+}
+
+// Enum definition
+enum Status {
+    Active,
+    Inactive,
+    Pending,
+}
+
+// Trait implementation
+impl User {
+    fn new(name: String) -> Self {
+        Self {
+            id: 0,
+            name,
+            email: String::new(),
+        }
+    }
+
+    async fn fetch_data(&self) -> Result<Vec<u8>, String> {
+        let url = format!("https://api.example.com/users/{}", self.id);
+        // Async/await
+        let response = http::get(url).await?;
+        Ok(response)
+    }
+}
+
+// Constants and operators
+const MAX_SIZE: usize = 1000;
+let x = 10 + 20 * 3;
+let y = x >= 100 && x <= 200;
+let range = 0..10;
+let inclusive = 0..=10;
+
+// Turbofish operator
+let result = parse::<i32>("42");
+
+// Spread operator
+let arr = [1, 2, 3];
+let expanded = [...arr, 4, 5];
+
+// Signal (reactive state)
+let count = Signal::new(0);
+count.update(|c| c + 1);
