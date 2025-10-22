@@ -3,6 +3,10 @@
 
 import { RPCClient, mountComponent } from '../dist/client-runtime.js';
 
+// Built-in Option<T> constructors
+function Some(value) { return { variant: 'Some', data: value }; }
+const None = { variant: 'None' };
+
 // RPC Client Setup
 // Auto-generated RPC client stubs
 import { RPCClient } from '../dist/client-runtime.js';
@@ -13,8 +17,8 @@ const client = new RPCClient(window.location.origin + '/_rpc');
 // Client function implementations
 // Shared utility functions
 export function test() {
-  let my_closure = /* Unsupported expression */;
-  let result = my_closure();
+  let count = 5;
+  h('div', h('h2', "Comments (", count, ")"));
 
 }
 

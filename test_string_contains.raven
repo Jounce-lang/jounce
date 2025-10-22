@@ -1,0 +1,6 @@
+fn main() {
+    let email = "test@example.com";
+    if email.contains("@") {
+        println!("Valid email");
+    }
+}

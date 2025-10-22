@@ -23,14 +23,14 @@ pub struct Document {
 }
 
 /// Position in a document (line, character)
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Position {
     pub line: usize,
     pub character: usize,
 }
 
 /// Range in a document
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Range {
     pub start: Position,
     pub end: Position,
@@ -97,6 +97,75 @@ pub struct FormattingOptions {
     pub insert_spaces: bool,
     pub trim_trailing_whitespace: bool,
     pub insert_final_newline: bool,
+}
+
+/// Code action kind (quick fix, refactor, etc.)
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CodeActionKind {
+    QuickFix,
+    Refactor,
+    RefactorExtract,
+    RefactorInline,
+    RefactorRewrite,
+    Source,
+    SourceOrganizeImports,
+}
+
+impl CodeActionKind {
+    pub fn as_str(&self) -> &str {
+        match self {
+            CodeActionKind::QuickFix => "quickfix",
+            CodeActionKind::Refactor => "refactor",
+            CodeActionKind::RefactorExtract => "refactor.extract",
+            CodeActionKind::RefactorInline => "refactor.inline",
+            CodeActionKind::RefactorRewrite => "refactor.rewrite",
+            CodeActionKind::Source => "source",
+            CodeActionKind::SourceOrganizeImports => "source.organizeImports",
+        }
+    }
+}
+
+/// Code action (quick fix or refactoring)
+#[derive(Debug, Clone)]
+pub struct CodeAction {
+    pub title: String,
+    pub kind: CodeActionKind,
+    pub diagnostics: Vec<Diagnostic>,
+    pub edit: WorkspaceEdit,
+    pub is_preferred: bool,
+}
+
+/// Workspace edit (collection of text edits)
+#[derive(Debug, Clone)]
+pub struct WorkspaceEdit {
+    pub changes: Vec<TextEdit>,
+}
+
+/// Location in a file (for Go to Definition, Find References)
+#[derive(Debug, Clone, PartialEq)]
+pub struct Location {
+    pub uri: String,
+    pub range: Range,
+}
+
+/// Symbol information for definition/references
+#[derive(Debug, Clone)]
+struct SymbolInfo {
+    pub name: String,
+    pub kind: SymbolKind,
+    pub location: Location,
+}
+
+/// Kind of symbol (function, variable, etc.)
+#[derive(Debug, Clone, PartialEq)]
+enum SymbolKind {
+    Function,
+    Variable,
+    Component,
+    Struct,
+    Enum,
+    Parameter,
+    TypeAlias,
 }
 
 impl LanguageServer {
@@ -1197,6 +1266,245 @@ impl LanguageServer {
             new_text: final_text,
         }])
     }
+
+    /// Get code actions (quick fixes) for a range
+    ///
+    /// Returns available code actions for the given range, typically at the cursor position.
+    /// This implements the LSP `textDocument/codeAction` request.
+    pub fn get_code_actions(&self, uri: &str, range: Range) -> Vec<CodeAction> {
+        let mut actions = Vec::new();
+
+        // Get diagnostics for this document
+        let diagnostics = self.get_diagnostics(uri);
+
+        // Get document content
+        let content = if let Some(doc) = self.documents.get(uri) {
+            &doc.content
+        } else {
+            return actions;
+        };
+
+        // For each diagnostic, check if it's in the range and offer quick fixes
+        for diagnostic in diagnostics {
+            // Check if diagnostic overlaps with the requested range
+            if let Some(diag_range) = diagnostic.to_lsp_range() {
+                if !ranges_overlap(diag_range, range) {
+                    continue;
+                }
+            }
+
+            // Generate quick fixes based on diagnostic message and code
+            actions.extend(self.generate_quick_fixes_for_diagnostic(&diagnostic, content, uri));
+        }
+
+        actions
+    }
+
+    /// Get definition location for a symbol at the given position
+    ///
+    /// Returns the location where the symbol is defined.
+    /// This implements the LSP `textDocument/definition` request.
+    pub fn get_definition(&self, uri: &str, position: Position) -> Option<Location> {
+        // Get document content
+        let content = if let Some(doc) = self.documents.get(uri) {
+            &doc.content
+        } else {
+            return None;
+        };
+
+        // Get the word at the cursor position
+        let word = self.get_word_at_position(content, position)?;
+        if word.is_empty() {
+            return None;
+        }
+
+        // Extract symbol definitions using text-based approach
+        let symbols = extract_text_symbols(uri, content);
+
+        // Find the definition for the word
+        symbols.into_iter()
+            .find(|sym| sym.name == word)
+            .map(|sym| sym.location)
+    }
+
+    /// Generate quick fixes for a specific diagnostic
+    fn generate_quick_fixes_for_diagnostic(
+        &self,
+        diagnostic: &Diagnostic,
+        content: &str,
+        _uri: &str,
+    ) -> Vec<CodeAction> {
+        let mut actions = Vec::new();
+
+        // Check diagnostic message for patterns
+        let message = &diagnostic.message;
+
+        // Quick Fix 1: "Did you mean?" typo fixes (E002 - undefined_identifier)
+        if message.contains("undefined") || message.contains("not found") {
+            if let Some(suggestion) = extract_suggestion(message) {
+                if let Some(range) = diagnostic.to_lsp_range() {
+                    let word = get_word_at_range(content, range);
+                    if !word.is_empty() {
+                        actions.push(CodeAction {
+                            title: format!("Change to '{}'", suggestion),
+                            kind: CodeActionKind::QuickFix,
+                            diagnostics: vec![diagnostic.clone()],
+                            edit: WorkspaceEdit {
+                                changes: vec![TextEdit {
+                                    range,
+                                    new_text: suggestion,
+                                }],
+                            },
+                            is_preferred: true,
+                        });
+                    }
+                }
+            }
+        }
+
+        // Quick Fix 2: Prefix unused variable with _ (W001 - unused_variable)
+        if message.contains("unused") && message.contains("variable") {
+            if let Some(range) = diagnostic.to_lsp_range() {
+                let word = get_word_at_range(content, range);
+                if !word.is_empty() && !word.starts_with('_') {
+                    actions.push(CodeAction {
+                        title: format!("Rename to '_{}'", word),
+                        kind: CodeActionKind::QuickFix,
+                        diagnostics: vec![diagnostic.clone()],
+                        edit: WorkspaceEdit {
+                            changes: vec![TextEdit {
+                                range,
+                                new_text: format!("_{}", word),
+                            }],
+                        },
+                        is_preferred: true,
+                    });
+                }
+            }
+        }
+
+        // Quick Fix 3: Add type cast (E003 - type_mismatch)
+        if message.contains("type mismatch") || message.contains("expected") {
+            // Extract expected type from message (e.g., "expected f64, found i32")
+            if let Some((expected_type, found_type)) = extract_type_mismatch(message) {
+                if let Some(range) = diagnostic.to_lsp_range() {
+                    let expr = get_word_at_range(content, range);
+                    if !expr.is_empty() && can_cast(&found_type, &expected_type) {
+                        actions.push(CodeAction {
+                            title: format!("Cast to {}", expected_type),
+                            kind: CodeActionKind::QuickFix,
+                            diagnostics: vec![diagnostic.clone()],
+                            edit: WorkspaceEdit {
+                                changes: vec![TextEdit {
+                                    range,
+                                    new_text: format!("{} as {}", expr, expected_type),
+                                }],
+                            },
+                            is_preferred: false,
+                        });
+                    }
+                }
+            }
+        }
+
+        // Quick Fix 4: Add missing semicolon (E001 - syntax_error)
+        if message.contains("expected") && message.contains(";") {
+            if let Some(range) = diagnostic.to_lsp_range() {
+                // Find the end of the line
+                let lines: Vec<&str> = content.lines().collect();
+                if range.end.line < lines.len() {
+                    let line = lines[range.end.line];
+                    let insert_pos = Position {
+                        line: range.end.line,
+                        character: line.trim_end().len(),
+                    };
+                    actions.push(CodeAction {
+                        title: "Add semicolon".to_string(),
+                        kind: CodeActionKind::QuickFix,
+                        diagnostics: vec![diagnostic.clone()],
+                        edit: WorkspaceEdit {
+                            changes: vec![TextEdit {
+                                range: Range {
+                                    start: insert_pos,
+                                    end: insert_pos,
+                                },
+                                new_text: ";".to_string(),
+                            }],
+                        },
+                        is_preferred: true,
+                    });
+                }
+            }
+        }
+
+        // Quick Fix 5: Add missing type annotation (E015 - type_annotation_needed)
+        if message.contains("type annotation") || message.contains("cannot infer type") {
+            if let Some(inferred_type) = extract_inferred_type(message) {
+                if let Some(range) = diagnostic.to_lsp_range() {
+                    let lines: Vec<&str> = content.lines().collect();
+                    if range.start.line < lines.len() {
+                        let line = lines[range.start.line];
+                        // Find where to insert the type annotation (after variable name)
+                        if let Some(pos) = line[range.start.character..].find('=') {
+                            let insert_pos = Position {
+                                line: range.start.line,
+                                character: range.start.character + pos,
+                            };
+                            actions.push(CodeAction {
+                                title: format!("Add type annotation: {}", inferred_type),
+                                kind: CodeActionKind::QuickFix,
+                                diagnostics: vec![diagnostic.clone()],
+                                edit: WorkspaceEdit {
+                                    changes: vec![TextEdit {
+                                        range: Range {
+                                            start: insert_pos,
+                                            end: insert_pos,
+                                        },
+                                        new_text: format!(": {} ", inferred_type),
+                                    }],
+                                },
+                                is_preferred: false,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Quick Fix 6: Remove unused import (W002 - unused_import)
+        if message.contains("unused") && message.contains("import") {
+            if let Some(range) = diagnostic.to_lsp_range() {
+                // Remove the entire line
+                let lines: Vec<&str> = content.lines().collect();
+                if range.start.line < lines.len() {
+                    let line_range = Range {
+                        start: Position {
+                            line: range.start.line,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: range.start.line + 1,
+                            character: 0,
+                        },
+                    };
+                    actions.push(CodeAction {
+                        title: "Remove unused import".to_string(),
+                        kind: CodeActionKind::QuickFix,
+                        diagnostics: vec![diagnostic.clone()],
+                        edit: WorkspaceEdit {
+                            changes: vec![TextEdit {
+                                range: line_range,
+                                new_text: String::new(),
+                            }],
+                        },
+                        is_preferred: true,
+                    });
+                }
+            }
+        }
+
+        actions
+    }
 }
 
 impl Default for LanguageServer {
@@ -1578,6 +1886,348 @@ impl Default for StdlibDocs {
     }
 }
 
+// ==================== Helper Functions for Code Actions ====================
+
+/// Check if two ranges overlap
+fn ranges_overlap(a: Range, b: Range) -> bool {
+    // Check if ranges are on the same lines or overlap
+    if a.end.line < b.start.line || b.end.line < a.start.line {
+        return false;
+    }
+    if a.end.line == b.start.line && a.end.character <= b.start.character {
+        return false;
+    }
+    if b.end.line == a.start.line && b.end.character <= a.start.character {
+        return false;
+    }
+    true
+}
+
+/// Extract suggestion from diagnostic message (e.g., "Did you mean 'Signal'?")
+fn extract_suggestion(message: &str) -> Option<String> {
+    // Look for patterns like "Did you mean 'X'?" or "Did you mean `X`?"
+    if let Some(start) = message.find("Did you mean") {
+        let rest = &message[start..];
+        // Look for text between quotes or backticks
+        if let Some(quote_start) = rest.find('\'') {
+            if let Some(quote_end) = rest[quote_start + 1..].find('\'') {
+                return Some(rest[quote_start + 1..quote_start + 1 + quote_end].to_string());
+            }
+        }
+        if let Some(tick_start) = rest.find('`') {
+            if let Some(tick_end) = rest[tick_start + 1..].find('`') {
+                return Some(rest[tick_start + 1..tick_start + 1 + tick_end].to_string());
+            }
+        }
+    }
+    None
+}
+
+/// Extract type mismatch information from diagnostic message
+/// Returns (expected_type, found_type)
+fn extract_type_mismatch(message: &str) -> Option<(String, String)> {
+    // Look for pattern: "expected X, found Y" or "expected X but found Y"
+    if let Some(expected_pos) = message.find("expected ") {
+        let after_expected = &message[expected_pos + 9..]; // "expected ".len() == 9
+
+        // Find the expected type (up to comma, "but", or "found")
+        let expected_end = after_expected
+            .find(',')
+            .or_else(|| after_expected.find(" but"))
+            .or_else(|| after_expected.find(" found"))
+            .unwrap_or(after_expected.len());
+
+        let expected_type = after_expected[..expected_end].trim().to_string();
+
+        // Look for the found type
+        if let Some(found_pos) = message.find("found ") {
+            let after_found = &message[found_pos + 6..]; // "found ".len() == 6
+
+            // Find the found type (up to punctuation or end)
+            let found_end = after_found
+                .find(|c: char| !c.is_alphanumeric() && c != '_')
+                .unwrap_or(after_found.len());
+
+            let found_type = after_found[..found_end].trim().to_string();
+
+            if !expected_type.is_empty() && !found_type.is_empty() {
+                return Some((expected_type, found_type));
+            }
+        }
+    }
+    None
+}
+
+/// Check if a type can be cast to another type
+fn can_cast(from: &str, to: &str) -> bool {
+    // Numeric type casts
+    let numeric_types = ["i32", "i64", "f32", "f64", "u32", "u64", "usize", "isize"];
+    numeric_types.contains(&from) && numeric_types.contains(&to)
+}
+
+/// Extract inferred type from diagnostic message
+fn extract_inferred_type(message: &str) -> Option<String> {
+    // Look for patterns like "inferred to be X" or "type is X"
+    if let Some(pos) = message.find("inferred to be ") {
+        let rest = &message[pos + 15..];
+        let end = rest.find(|c: char| !c.is_alphanumeric() && c != '_' && c != ':')
+            .unwrap_or(rest.len());
+        let typ = rest[..end].trim().to_string();
+        if !typ.is_empty() {
+            return Some(typ);
+        }
+    }
+    if let Some(pos) = message.find("type is ") {
+        let rest = &message[pos + 8..];
+        let end = rest.find(|c: char| !c.is_alphanumeric() && c != '_' && c != ':')
+            .unwrap_or(rest.len());
+        let typ = rest[..end].trim().to_string();
+        if !typ.is_empty() {
+            return Some(typ);
+        }
+    }
+    None
+}
+
+/// Get word at a specific range in content
+fn get_word_at_range(content: &str, range: Range) -> String {
+    let lines: Vec<&str> = content.lines().collect();
+    if range.start.line >= lines.len() {
+        return String::new();
+    }
+
+    let line = lines[range.start.line];
+    let chars: Vec<char> = line.chars().collect();
+
+    if range.start.character >= chars.len() {
+        return String::new();
+    }
+
+    let start = range.start.character;
+    let end = if range.end.line == range.start.line {
+        range.end.character.min(chars.len())
+    } else {
+        chars.len()
+    };
+
+    if start >= end {
+        return String::new();
+    }
+
+    chars[start..end].iter().collect()
+}
+
+/// Extract symbol definitions using text-based parsing
+/// This is a simpler approach that doesn't require full AST parsing
+fn extract_text_symbols(uri: &str, content: &str) -> Vec<SymbolInfo> {
+    let mut symbols = Vec::new();
+    let lines: Vec<&str> = content.lines().collect();
+
+    for (line_idx, line) in lines.iter().enumerate() {
+        let trimmed = line.trim();
+
+        // Match function definitions: fn name(
+        if let Some(fn_pos) = trimmed.find("fn ") {
+            if let Some(paren_pos) = trimmed[fn_pos..].find('(') {
+                let name_start = fn_pos + 3;
+                let name_end = fn_pos + paren_pos;
+                let name = trimmed[name_start..name_end].trim();
+
+                if !name.is_empty() && is_valid_identifier(name) {
+                    let char_pos = line.find(name).unwrap_or(0);
+                    symbols.push(SymbolInfo {
+                        name: name.to_string(),
+                        kind: SymbolKind::Function,
+                        location: Location {
+                            uri: uri.to_string(),
+                            range: Range {
+                                start: Position {
+                                    line: line_idx,
+                                    character: char_pos,
+                                },
+                                end: Position {
+                                    line: line_idx,
+                                    character: char_pos + name.len(),
+                                },
+                            },
+                        },
+                    });
+                }
+            }
+        }
+
+        // Match component definitions: component Name(
+        if let Some(comp_pos) = trimmed.find("component ") {
+            if let Some(paren_pos) = trimmed[comp_pos..].find('(') {
+                let name_start = comp_pos + 10;
+                let name_end = comp_pos + paren_pos;
+                let name = trimmed[name_start..name_end].trim();
+
+                if !name.is_empty() && is_valid_identifier(name) {
+                    let char_pos = line.find(name).unwrap_or(0);
+                    symbols.push(SymbolInfo {
+                        name: name.to_string(),
+                        kind: SymbolKind::Component,
+                        location: Location {
+                            uri: uri.to_string(),
+                            range: Range {
+                                start: Position {
+                                    line: line_idx,
+                                    character: char_pos,
+                                },
+                                end: Position {
+                                    line: line_idx,
+                                    character: char_pos + name.len(),
+                                },
+                            },
+                        },
+                    });
+                }
+            }
+        }
+
+        // Match variable definitions: let name =
+        if let Some(let_pos) = trimmed.find("let ") {
+            let after_let = &trimmed[let_pos + 4..];
+            // Find the identifier (stop at =, :, or space)
+            let name_end = after_let
+                .find(|c: char| c == '=' || c == ':' || c == ' ')
+                .unwrap_or(after_let.len());
+            let name = after_let[..name_end].trim();
+
+            if !name.is_empty() && is_valid_identifier(name) {
+                let char_pos = line.find(name).unwrap_or(0);
+                symbols.push(SymbolInfo {
+                    name: name.to_string(),
+                    kind: SymbolKind::Variable,
+                    location: Location {
+                        uri: uri.to_string(),
+                        range: Range {
+                            start: Position {
+                                line: line_idx,
+                                character: char_pos,
+                            },
+                            end: Position {
+                                line: line_idx,
+                                character: char_pos + name.len(),
+                            },
+                        },
+                    },
+                });
+            }
+        }
+
+        // Match const definitions: const NAME =
+        if let Some(const_pos) = trimmed.find("const ") {
+            let after_const = &trimmed[const_pos + 6..];
+            let name_end = after_const
+                .find(|c: char| c == '=' || c == ':' || c == ' ')
+                .unwrap_or(after_const.len());
+            let name = after_const[..name_end].trim();
+
+            if !name.is_empty() && is_valid_identifier(name) {
+                let char_pos = line.find(name).unwrap_or(0);
+                symbols.push(SymbolInfo {
+                    name: name.to_string(),
+                    kind: SymbolKind::Variable,
+                    location: Location {
+                        uri: uri.to_string(),
+                        range: Range {
+                            start: Position {
+                                line: line_idx,
+                                character: char_pos,
+                            },
+                            end: Position {
+                                line: line_idx,
+                                character: char_pos + name.len(),
+                            },
+                        },
+                    },
+                });
+            }
+        }
+
+        // Match struct definitions: struct Name
+        if let Some(struct_pos) = trimmed.find("struct ") {
+            let after_struct = &trimmed[struct_pos + 7..];
+            let name_end = after_struct
+                .find(|c: char| c == '{' || c == ' ')
+                .unwrap_or(after_struct.len());
+            let name = after_struct[..name_end].trim();
+
+            if !name.is_empty() && is_valid_identifier(name) {
+                let char_pos = line.find(name).unwrap_or(0);
+                symbols.push(SymbolInfo {
+                    name: name.to_string(),
+                    kind: SymbolKind::Struct,
+                    location: Location {
+                        uri: uri.to_string(),
+                        range: Range {
+                            start: Position {
+                                line: line_idx,
+                                character: char_pos,
+                            },
+                            end: Position {
+                                line: line_idx,
+                                character: char_pos + name.len(),
+                            },
+                        },
+                    },
+                });
+            }
+        }
+
+        // Match enum definitions: enum Name
+        if let Some(enum_pos) = trimmed.find("enum ") {
+            let after_enum = &trimmed[enum_pos + 5..];
+            let name_end = after_enum
+                .find(|c: char| c == '{' || c == ' ')
+                .unwrap_or(after_enum.len());
+            let name = after_enum[..name_end].trim();
+
+            if !name.is_empty() && is_valid_identifier(name) {
+                let char_pos = line.find(name).unwrap_or(0);
+                symbols.push(SymbolInfo {
+                    name: name.to_string(),
+                    kind: SymbolKind::Enum,
+                    location: Location {
+                        uri: uri.to_string(),
+                        range: Range {
+                            start: Position {
+                                line: line_idx,
+                                character: char_pos,
+                            },
+                            end: Position {
+                                line: line_idx,
+                                character: char_pos + name.len(),
+                            },
+                        },
+                    },
+                });
+            }
+        }
+    }
+
+    symbols
+}
+
+/// Check if a string is a valid identifier
+fn is_valid_identifier(s: &str) -> bool {
+    if s.is_empty() {
+        return false;
+    }
+
+    let chars: Vec<char> = s.chars().collect();
+
+    // First character must be letter or underscore
+    if !chars[0].is_alphabetic() && chars[0] != '_' {
+        return false;
+    }
+
+    // Remaining characters must be alphanumeric or underscore
+    chars.iter().all(|&c| c.is_alphanumeric() || c == '_')
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1816,5 +2466,207 @@ mod tests {
 
         // Should return None for invalid syntax
         assert!(edits.is_none());
+    }
+
+    // ==================== Code Action Tests ====================
+
+    #[test]
+    fn test_get_code_actions_empty() {
+        let mut server = LanguageServer::new();
+        server.open_document(
+            "file:///test.raven".to_string(),
+            "let x = 10;".to_string(),
+            1,
+        );
+
+        let range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: 0, character: 11 },
+        };
+
+        let actions = server.get_code_actions("file:///test.raven", range);
+
+        // Should return empty for valid code with no diagnostics
+        assert!(actions.is_empty());
+    }
+
+    #[test]
+    fn test_extract_suggestion() {
+        let message = "Variable 'Signa' not found. Did you mean 'Signal'?";
+        let suggestion = extract_suggestion(message);
+        assert_eq!(suggestion, Some("Signal".to_string()));
+
+        let message2 = "Variable 'cout' not found. Did you mean `count`?";
+        let suggestion2 = extract_suggestion(message2);
+        assert_eq!(suggestion2, Some("count".to_string()));
+    }
+
+    #[test]
+    fn test_extract_type_mismatch() {
+        let message = "type mismatch: expected f64, found i32";
+        let types = extract_type_mismatch(message);
+        assert_eq!(types, Some(("f64".to_string(), "i32".to_string())));
+
+        let message2 = "expected String but found i32";
+        let types2 = extract_type_mismatch(message2);
+        assert_eq!(types2, Some(("String".to_string(), "i32".to_string())));
+    }
+
+    #[test]
+    fn test_can_cast() {
+        assert!(can_cast("i32", "f64"));
+        assert!(can_cast("f64", "i32"));
+        assert!(can_cast("u32", "i64"));
+        assert!(!can_cast("String", "i32"));
+        assert!(!can_cast("bool", "f64"));
+    }
+
+    #[test]
+    fn test_extract_inferred_type() {
+        let message = "cannot infer type, type is i32";
+        let typ = extract_inferred_type(message);
+        assert_eq!(typ, Some("i32".to_string()));
+
+        let message2 = "type annotation needed, inferred to be String";
+        let typ2 = extract_inferred_type(message2);
+        assert_eq!(typ2, Some("String".to_string()));
+    }
+
+    #[test]
+    fn test_get_word_at_range() {
+        let content = "let count = Signal::new(0);";
+        let range = Range {
+            start: Position { line: 0, character: 4 },
+            end: Position { line: 0, character: 9 },
+        };
+        let word = get_word_at_range(content, range);
+        assert_eq!(word, "count");
+    }
+
+    #[test]
+    fn test_ranges_overlap() {
+        let range1 = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: 0, character: 10 },
+        };
+        let range2 = Range {
+            start: Position { line: 0, character: 5 },
+            end: Position { line: 0, character: 15 },
+        };
+        assert!(ranges_overlap(range1, range2));
+
+        let range3 = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: 0, character: 5 },
+        };
+        let range4 = Range {
+            start: Position { line: 0, character: 10 },
+            end: Position { line: 0, character: 15 },
+        };
+        assert!(!ranges_overlap(range3, range4));
+    }
+
+    #[test]
+    fn test_code_action_kind_as_str() {
+        assert_eq!(CodeActionKind::QuickFix.as_str(), "quickfix");
+        assert_eq!(CodeActionKind::Refactor.as_str(), "refactor");
+        assert_eq!(CodeActionKind::SourceOrganizeImports.as_str(), "source.organizeImports");
+    }
+
+    // ==================== Go to Definition Tests ====================
+
+    #[test]
+    fn test_go_to_definition_function() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn calculate(x: i32) -> i32 {
+    return x * 2;
+}
+
+let result = calculate(10);
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Click on "calculate" in the function call (line 5)
+        let position = Position { line: 5, character: 13 };
+        let location = server.get_definition("file:///test.raven", position);
+
+        assert!(location.is_some());
+        let loc = location.unwrap();
+        assert_eq!(loc.uri, "file:///test.raven");
+        assert_eq!(loc.range.start.line, 1); // Function definition on line 1
+    }
+
+    #[test]
+    fn test_go_to_definition_variable() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let count = 0;
+let doubled = count * 2;
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Click on "count" in line 2
+        let position = Position { line: 2, character: 14 };
+        let location = server.get_definition("file:///test.raven", position);
+
+        assert!(location.is_some());
+        let loc = location.unwrap();
+        assert_eq!(loc.uri, "file:///test.raven");
+        assert_eq!(loc.range.start.line, 1); // Variable definition on line 1
+        assert_eq!(loc.range.start.character, 4); // "count" starts at column 4
+    }
+
+    #[test]
+    fn test_go_to_definition_component() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+component Counter() {
+    <div>Counter</div>
+}
+
+component App() {
+    <Counter />
+}
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Click on "Counter" in JSX (line 6)
+        let position = Position { line: 6, character: 5 };
+        let location = server.get_definition("file:///test.raven", position);
+
+        assert!(location.is_some());
+        let loc = location.unwrap();
+        assert_eq!(loc.uri, "file:///test.raven");
+        assert_eq!(loc.range.start.line, 1); // Component definition on line 1
+    }
+
+    #[test]
+    fn test_go_to_definition_not_found() {
+        let mut server = LanguageServer::new();
+        let code = "let x = 10;";
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Click on "y" which doesn't exist
+        let position = Position { line: 0, character: 8 };
+        let location = server.get_definition("file:///test.raven", position);
+
+        assert!(location.is_none());
     }
 }
