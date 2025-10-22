@@ -5,6 +5,10 @@ const { HttpServer, loadWasm } = require('../dist/server-runtime.js');
 const fs = require('fs');
 const path = require('path');
 
+// Built-in Option<T> constructors
+function Some(value) { return { variant: 'Some', data: value }; }
+const None = { variant: 'None' };
+
 // Load WebAssembly module
 const wasmPath = path.join(__dirname, 'app.wasm');
 const wasmBytes = fs.readFileSync(wasmPath);
@@ -18,8 +22,8 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {
 // Server function implementations
 // Shared utility functions
 module.exports.function test() {
-  let my_closure = /* Unsupported expression */;
-  let result = my_closure();
+  let count = 5;
+  h('div', h('h2', "Comments (", count, ")"));
 
 }
 

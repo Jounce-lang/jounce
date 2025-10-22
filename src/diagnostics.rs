@@ -128,6 +128,26 @@ impl Diagnostic {
         self
     }
 
+    /// Get LSP-compatible range from source location
+    pub fn to_lsp_range(&self) -> Option<crate::lsp::Range> {
+        self.location.as_ref().map(|loc| {
+            crate::lsp::Range {
+                start: crate::lsp::Position {
+                    line: if loc.line > 0 { loc.line - 1 } else { 0 },
+                    character: if loc.column > 0 { loc.column - 1 } else { 0 },
+                },
+                end: crate::lsp::Position {
+                    line: if loc.line > 0 { loc.line - 1 } else { 0 },
+                    character: if loc.column > 0 {
+                        loc.column - 1 + loc.length
+                    } else {
+                        loc.length
+                    },
+                },
+            }
+        })
+    }
+
     pub fn with_code(mut self, code: impl Into<String>) -> Self {
         self.code = Some(code.into());
         self

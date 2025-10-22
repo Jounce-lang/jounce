@@ -1,0 +1,10 @@
+component Test() {
+    let condition = true;
+    <div>
+        {condition ? {
+            <p>True</p>
+        } : {
+            <p>False</p>
+        }}
+    </div>
+}
