@@ -1418,11 +1418,14 @@ impl<'a> Parser<'a> {
         // jsx_in_tag is still true, so > won't be read as JSX text
         // For nested elements, we also increment jsx_depth to maintain proper tracking
         if self.current_token().kind == TokenKind::RAngle {
-            if !was_jsx_mode {
-                self.lexer.enter_jsx_mode();
-            } else {
-                // Already in JSX mode, but increment depth for nested element
-                self.lexer.enter_jsx_mode();
+            self.lexer.enter_jsx_mode();
+
+            // CRITICAL BUG FIX: If peek token is LBrace, it was tokenized before JSX mode was active
+            // The lexer would have returned LBrace instead of JsxOpenBrace, and didn't increment brace_depth
+            // We need to manually increment brace_depth so the lexer doesn't incorrectly read JSX text
+            // LIMITATION: Only works for root-level JSX elements, not nested elements inside JSX expressions
+            if !was_jsx_mode && self.peek_token().kind == TokenKind::LBrace {
+                self.lexer.increment_brace_depth();
             }
         }
 
@@ -1513,6 +1516,13 @@ impl<'a> Parser<'a> {
                 TokenKind::String(text) => {
                     // String literals in JSX are treated as text
                     children.push(JsxChild::Text(text.clone()));
+                    self.next_token();
+                    continue;
+                }
+                TokenKind::Illegal(ch) => {
+                    // Illegal tokens are Unicode characters (like emojis) that were tokenized
+                    // before JSX mode was entered. Treat them as JSX text content.
+                    children.push(JsxChild::Text(ch.to_string()));
                     self.next_token();
                     continue;
                 }
