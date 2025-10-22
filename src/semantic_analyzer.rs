@@ -783,6 +783,24 @@ impl SemanticAnalyzer {
                 // For now, just return the type of the true branch
                 Ok(true_type.clone())
             }
+            Expression::TypeCast(type_cast) => {
+                // Analyze the expression being cast
+                self.analyze_expression(&type_cast.expression)?;
+
+                // Return the target type - extract from TypeExpression
+                match &type_cast.target_type {
+                    TypeExpression::Named(ident) => {
+                        match ident.value.as_str() {
+                            "i32" | "i64" | "isize" | "u32" | "u64" | "usize" => Ok(ResolvedType::Integer),
+                            "f32" | "f64" => Ok(ResolvedType::Float),
+                            "bool" => Ok(ResolvedType::Bool),
+                            "String" => Ok(ResolvedType::String),
+                            _ => Ok(ResolvedType::Unknown),
+                        }
+                    }
+                    _ => Ok(ResolvedType::Unknown),
+                }
+            }
             Expression::Await(await_expr) => {
                 // Analyze the inner expression and return its type
                 // In a full implementation, we would verify that the inner expression

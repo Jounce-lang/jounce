@@ -165,6 +165,7 @@ pub enum Expression {
     Range(RangeExpression),  // start..end or start..=end
     TryOperator(TryOperatorExpression),  // expr? (error propagation)
     Ternary(TernaryExpression),  // condition ? true_expr : false_expr
+    TypeCast(TypeCastExpression),  // expr as Type (type casting)
     Await(AwaitExpression),  // await expr (async/await)
     Block(BlockStatement),  // { statements... } as an expression (for match arms, etc.)
 }
@@ -225,6 +226,12 @@ pub struct TernaryExpression {
     pub condition: Box<Expression>,     // The condition to test
     pub true_expr: Box<Expression>,     // Expression if condition is true
     pub false_expr: Box<Expression>,    // Expression if condition is false
+}
+
+#[derive(Debug, Clone)]
+pub struct TypeCastExpression {
+    pub expression: Box<Expression>,  // The expression being cast
+    pub target_type: TypeExpression,  // The type to cast to
 }
 
 #[derive(Debug, Clone)]

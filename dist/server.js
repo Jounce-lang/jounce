@@ -18,8 +18,8 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {
 // Server function implementations
 // Shared utility functions
 module.exports.function test() {
-  let x = 5;
-  let y = Number(x);
+  let my_closure = /* Unsupported expression */;
+  let result = my_closure();
 
 }
 

@@ -1260,6 +1260,42 @@ impl CodeGenerator {
                 // End if block
                 f.instruction(&Instruction::End);
             }
+            Expression::TypeCast(type_cast) => {
+                // Generate code for type casting
+                // In WebAssembly, we need to emit conversion instructions for numeric types
+                self.generate_expression(&type_cast.expression, f)?;
+
+                // Extract type name from TypeExpression
+                let type_name = match &type_cast.target_type {
+                    TypeExpression::Named(ident) => ident.value.as_str(),
+                    _ => return Ok(()), // For complex types, no conversion needed
+                };
+
+                // Apply appropriate WASM conversion based on target type
+                match type_name {
+                    "i32" => {
+                        // Assume source is f64, convert to i32
+                        f.instruction(&Instruction::I32TruncF64S);
+                    }
+                    "i64" => {
+                        // Assume source is f64, convert to i64
+                        f.instruction(&Instruction::I64TruncF64S);
+                    }
+                    "f32" => {
+                        // Assume source is i32/f64, demote if needed
+                        // For now, assume f64 -> f32
+                        f.instruction(&Instruction::F32DemoteF64);
+                    }
+                    "f64" => {
+                        // Assume source is i32, convert to f64
+                        f.instruction(&Instruction::F64ConvertI32S);
+                    }
+                    _ => {
+                        // For other types (like bool, custom types), no conversion needed
+                        // Value is already on stack
+                    }
+                }
+            }
             Expression::Await(await_expr) => {
                 // Await operator for async/await
                 // In a full implementation, this would:
@@ -1877,6 +1913,9 @@ impl CodeGenerator {
                 self.collect_lambdas_from_expression(&ternary.true_expr);
                 self.collect_lambdas_from_expression(&ternary.false_expr);
             }
+            Expression::TypeCast(type_cast) => {
+                self.collect_lambdas_from_expression(&type_cast.expression);
+            }
             Expression::Block(block) => {
                 for stmt in &block.statements {
                     self.collect_lambdas_from_statement(stmt);
@@ -2037,6 +2076,7 @@ impl CodeGenerator {
             | Expression::Range(_)
             | Expression::TryOperator(_)
             | Expression::Ternary(_)
+            | Expression::TypeCast(_)
             | Expression::Await(_)
             | Expression::JsxElement(_) => {}
         }
