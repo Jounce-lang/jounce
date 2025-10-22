@@ -10,6 +10,7 @@ pub struct Lexer {
     jsx_mode: bool,           // Track if we're in JSX context
     jsx_depth: usize,         // Track nesting depth of JSX elements
     brace_depth: usize,       // Track braces in JSX expressions
+    jsx_in_tag: bool,         // Track if we're inside a tag (between < and >)
 }
 
 impl Lexer {
@@ -24,6 +25,7 @@ impl Lexer {
             jsx_mode: false,
             jsx_depth: 0,
             brace_depth: 0,
+            jsx_in_tag: false,
         };
         lexer.read_char();
         lexer
@@ -31,7 +33,8 @@ impl Lexer {
 
     pub fn next_token(&mut self) -> Token {
         // In JSX mode, handle text content differently
-        if self.jsx_mode && self.brace_depth == 0 && self.ch != '<' && self.ch != '{' && self.ch != '\0' {
+        // Only read JSX text when we're not inside a tag (between < and >)
+        if self.jsx_mode && self.brace_depth == 0 && !self.jsx_in_tag && self.ch != '<' && self.ch != '{' && self.ch != '\0' {
             return self.read_jsx_text();
         }
 
@@ -139,7 +142,8 @@ impl Lexer {
                 } else {
                     // Check if this might be JSX: < followed by an alphabetic character or uppercase
                     // This handles <div>, <Component>, etc.
-                    // We DON'T enter JSX mode yet - we'll enter it when we see the >
+                    // Always set jsx_in_tag when we see <, as the parser will enable JSX mode if needed
+                    self.jsx_in_tag = true;
                     Token::new(TokenKind::LAngle, "<".to_string(), self.line, start_col)
                 }
             }
@@ -149,6 +153,8 @@ impl Lexer {
                     self.read_char();
                     return Token::new(TokenKind::GtEq, ">=".to_string(), self.line, start_col);
                 } else {
+                    // Mark that we're exiting a tag
+                    self.jsx_in_tag = false;
                     Token::new(TokenKind::RAngle, ">".to_string(), self.line, start_col)
                 }
             }
@@ -161,6 +167,8 @@ impl Lexer {
                     if self.jsx_depth == 0 {
                         self.jsx_mode = false;
                     }
+                    // Mark that we're exiting a tag
+                    self.jsx_in_tag = false;
                     return Token::new(TokenKind::JsxSelfClose, "/>".to_string(), self.line, start_col);
                 } else {
                     Token::new(TokenKind::Slash, "/".to_string(), self.line, start_col)

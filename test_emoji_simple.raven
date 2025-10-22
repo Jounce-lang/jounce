@@ -1,0 +1,3 @@
+fn test() {
+    let x = <span>🔔</span>;
+}

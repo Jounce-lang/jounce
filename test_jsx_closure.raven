@@ -1,0 +1,7 @@
+component Test() {
+    <button onclick={() => {
+        let x = 5;
+    }}>
+        "Click"
+    </button>
+}

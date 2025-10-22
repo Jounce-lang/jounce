@@ -17,23 +17,9 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {
 
 // Server function implementations
 // Shared utility functions
-module.exports.function calculate_discount(price, percent) {
-  return price;
-
-}
-
-module.exports.function format_currency(amount) {
-  return "USD";
-
-}
-
-module.exports.function get_stock_status(quantity) {
-  return (quantity > 0);
-
-}
-
-module.exports.function calculate_total(price, quantity) {
-  return (price + quantity);
+module.exports.function test() {
+  let x = 5;
+  let y = Number(x);
 
 }
 
