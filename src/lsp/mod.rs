@@ -221,6 +221,26 @@ pub enum DocumentSymbolKind {
     Struct = 23,
 }
 
+/// Inlay hint (inline code annotation)
+#[derive(Debug, Clone, PartialEq)]
+pub struct InlayHint {
+    pub position: Position,
+    pub label: String,
+    pub kind: InlayHintKind,
+    pub tooltip: Option<String>,
+    pub padding_left: bool,
+    pub padding_right: bool,
+}
+
+/// Kind of inlay hint
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InlayHintKind {
+    /// Type hint (e.g., `: i32` after variable name)
+    Type,
+    /// Parameter hint (e.g., `x:` before function argument)
+    Parameter,
+}
+
 impl LanguageServer {
     pub fn new() -> Self {
         LanguageServer {
@@ -797,6 +817,266 @@ impl LanguageServer {
         }
 
         parameters
+    }
+
+    /// Get inlay hints for a document range
+    pub fn get_inlay_hints(&self, uri: &str, range: Range) -> Vec<InlayHint> {
+        let content = if let Some(doc) = self.documents.get(uri) {
+            &doc.content
+        } else {
+            return Vec::new();
+        };
+
+        let mut hints = Vec::new();
+
+        // Extract type hints (for variables without explicit types)
+        hints.extend(self.extract_type_hints(content, range));
+
+        // Extract parameter hints (for function calls)
+        hints.extend(self.extract_parameter_hints(content, range));
+
+        hints
+    }
+
+    /// Extract type hints for variables without explicit type annotations
+    fn extract_type_hints(&self, content: &str, range: Range) -> Vec<InlayHint> {
+        let mut hints = Vec::new();
+        let lines: Vec<&str> = content.lines().collect();
+
+        for (line_idx, line) in lines.iter().enumerate() {
+            // Skip lines outside the range
+            if line_idx < range.start.line || line_idx > range.end.line {
+                continue;
+            }
+
+            let trimmed = line.trim();
+
+            // Match variable declarations: let name = value;
+            // We'll look for patterns like "let identifier = "
+            if trimmed.starts_with("let ") {
+                // Extract variable name and infer type from value
+                if let Some(eq_pos) = trimmed.find('=') {
+                    // Get text between "let" and "="
+                    let var_part = trimmed[4..eq_pos].trim();
+
+                    // Check if it's a mutable binding
+                    let var_name = if var_part.starts_with("mut ") {
+                        var_part[4..].trim()
+                    } else {
+                        var_part
+                    };
+
+                    // Skip if variable already has type annotation (contains ':')
+                    if var_name.contains(':') {
+                        continue;
+                    }
+
+                    // Get the value part after "="
+                    let value_part = trimmed[eq_pos + 1..].trim();
+
+                    // Infer type from the value
+                    let inferred_type = self.infer_type_from_value(value_part);
+
+                    if let Some(type_str) = inferred_type {
+                        // Find the position after the variable name in the original line
+                        if let Some(var_start) = line.find(var_name) {
+                            let position = Position {
+                                line: line_idx,
+                                character: var_start + var_name.len(),
+                            };
+
+                            hints.push(InlayHint {
+                                position,
+                                label: format!(": {}", type_str),
+                                kind: InlayHintKind::Type,
+                                tooltip: Some(format!("Inferred type: {}", type_str)),
+                                padding_left: false,
+                                padding_right: true,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        hints
+    }
+
+    /// Extract parameter hints for function calls
+    fn extract_parameter_hints(&self, content: &str, range: Range) -> Vec<InlayHint> {
+        let mut hints = Vec::new();
+        let lines: Vec<&str> = content.lines().collect();
+
+        for (line_idx, line) in lines.iter().enumerate() {
+            // Skip lines outside the range
+            if line_idx < range.start.line || line_idx > range.end.line {
+                continue;
+            }
+
+            // Find function calls (pattern: identifier(...))
+            let chars: Vec<char> = line.chars().collect();
+            let mut i = 0;
+
+            while i < chars.len() {
+                // Look for function name followed by (
+                if chars[i].is_alphabetic() || chars[i] == '_' {
+                    let name_start = i;
+                    while i < chars.len() && (chars[i].is_alphanumeric() || chars[i] == '_') {
+                        i += 1;
+                    }
+                    let name_end = i;
+
+                    // Skip whitespace
+                    while i < chars.len() && chars[i].is_whitespace() {
+                        i += 1;
+                    }
+
+                    // Check if followed by (
+                    if i < chars.len() && chars[i] == '(' {
+                        let function_name: String = chars[name_start..name_end].iter().collect();
+
+                        // Extract function signature to get parameter names
+                        if let Some(sig) = self.extract_function_signature(content, &function_name) {
+                            // Find the arguments in the call
+                            let call_start = i + 1;
+                            let mut paren_depth = 1;
+                            let mut call_end = call_start;
+
+                            while call_end < chars.len() && paren_depth > 0 {
+                                match chars[call_end] {
+                                    '(' => paren_depth += 1,
+                                    ')' => paren_depth -= 1,
+                                    _ => {}
+                                }
+                                if paren_depth > 0 {
+                                    call_end += 1;
+                                }
+                            }
+
+                            // Extract arguments (split by comma at depth 0)
+                            let args_str: String = chars[call_start..call_end].iter().collect();
+                            let args = self.split_arguments(&args_str);
+
+                            // Add parameter hints for each argument
+                            for (arg_idx, _arg) in args.iter().enumerate() {
+                                if arg_idx < sig.parameters.len() {
+                                    let param_name = &sig.parameters[arg_idx].label;
+
+                                    // Extract just the parameter name (before :)
+                                    let name_only = param_name.split(':').next().unwrap_or(param_name).trim();
+
+                                    // Find position of this argument
+                                    // For simplicity, we'll use the start of the call for now
+                                    // A more sophisticated approach would track exact positions
+                                    let position = Position {
+                                        line: line_idx,
+                                        character: call_start,
+                                    };
+
+                                    hints.push(InlayHint {
+                                        position,
+                                        label: format!("{}:", name_only),
+                                        kind: InlayHintKind::Parameter,
+                                        tooltip: Some(format!("Parameter: {}", param_name)),
+                                        padding_left: false,
+                                        padding_right: true,
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                i += 1;
+            }
+        }
+
+        hints
+    }
+
+    /// Infer type from a value expression
+    fn infer_type_from_value(&self, value: &str) -> Option<String> {
+        let value = value.trim();
+
+        // Strip trailing semicolon if present
+        let value = value.trim_end_matches(';').trim();
+
+        // String literals
+        if value.starts_with('"') && value.contains('"') {
+            return Some("String".to_string());
+        }
+
+        // Character literals
+        if value.starts_with('\'') && value.contains('\'') {
+            return Some("char".to_string());
+        }
+
+        // Boolean literals
+        if value == "true" || value == "false" {
+            return Some("bool".to_string());
+        }
+
+        // Numeric literals - try float first (more specific)
+        if value.contains('.') {
+            if let Ok(_) = value.parse::<f64>() {
+                return Some("f64".to_string());
+            }
+        }
+
+        // Integer literals
+        if let Ok(_) = value.parse::<i32>() {
+            return Some("i32".to_string());
+        }
+
+        // Array literals
+        if value.starts_with('[') {
+            return Some("Array".to_string());
+        }
+
+        // Vec constructor
+        if value.starts_with("vec![") || value.starts_with("Vec::new") {
+            return Some("Vec".to_string());
+        }
+
+        // Function calls - we'd need more context
+        None
+    }
+
+    /// Split function arguments by comma (respecting nesting)
+    fn split_arguments(&self, args_str: &str) -> Vec<String> {
+        let mut args = Vec::new();
+        let mut current_arg = String::new();
+        let mut depth = 0;
+
+        for ch in args_str.chars() {
+            match ch {
+                '(' | '[' | '{' | '<' => {
+                    depth += 1;
+                    current_arg.push(ch);
+                }
+                ')' | ']' | '}' | '>' => {
+                    depth -= 1;
+                    current_arg.push(ch);
+                }
+                ',' if depth == 0 => {
+                    let trimmed = current_arg.trim().to_string();
+                    if !trimmed.is_empty() {
+                        args.push(trimmed);
+                    }
+                    current_arg.clear();
+                }
+                _ => {
+                    current_arg.push(ch);
+                }
+            }
+        }
+
+        // Add last argument
+        let trimmed = current_arg.trim().to_string();
+        if !trimmed.is_empty() {
+            args.push(trimmed);
+        }
+
+        args
     }
 
     /// Get word at position
@@ -3973,5 +4253,228 @@ let result = unknown_func(10);
         let sig_help = server.get_signature_help("file:///test.raven", Position { line: 5, character: 27 });
         // Should return None because function is not defined
         assert!(sig_help.is_none());
+    }
+
+    // Inlay hints tests
+    #[test]
+    fn test_inlay_hints_type_i32() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let count = 42;
+let value = 100;
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: 10, character: 0 },
+        };
+
+        let hints = server.get_inlay_hints("file:///test.raven", range);
+
+        // Should have type hints for both variables
+        assert_eq!(hints.len(), 2);
+
+        // First hint for 'count'
+        assert_eq!(hints[0].kind, InlayHintKind::Type);
+        assert_eq!(hints[0].label, ": i32");
+        assert_eq!(hints[0].position.line, 1);
+
+        // Second hint for 'value'
+        assert_eq!(hints[1].kind, InlayHintKind::Type);
+        assert_eq!(hints[1].label, ": i32");
+        assert_eq!(hints[1].position.line, 2);
+    }
+
+    #[test]
+    fn test_inlay_hints_type_string() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let name = "Alice";
+let message = "Hello, World!";
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: 10, character: 0 },
+        };
+
+        let hints = server.get_inlay_hints("file:///test.raven", range);
+
+        // Should have type hints for both string variables
+        assert_eq!(hints.len(), 2);
+        assert_eq!(hints[0].label, ": String");
+        assert_eq!(hints[1].label, ": String");
+    }
+
+    #[test]
+    fn test_inlay_hints_type_bool() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let is_active = true;
+let is_done = false;
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: 10, character: 0 },
+        };
+
+        let hints = server.get_inlay_hints("file:///test.raven", range);
+
+        // Should have type hints for both boolean variables
+        assert_eq!(hints.len(), 2);
+        assert_eq!(hints[0].label, ": bool");
+        assert_eq!(hints[1].label, ": bool");
+    }
+
+    #[test]
+    fn test_inlay_hints_type_float() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let pi = 3.14;
+let e = 2.718;
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: 10, character: 0 },
+        };
+
+        let hints = server.get_inlay_hints("file:///test.raven", range);
+
+        // Should have type hints for both float variables
+        assert_eq!(hints.len(), 2);
+        assert_eq!(hints[0].label, ": f64");
+        assert_eq!(hints[1].label, ": f64");
+    }
+
+    #[test]
+    fn test_inlay_hints_no_hints_for_explicit_types() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let count: i32 = 42;
+let name: String = "Alice";
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: 10, character: 0 },
+        };
+
+        let hints = server.get_inlay_hints("file:///test.raven", range);
+
+        // Should have NO type hints since types are explicitly declared
+        // (only parameter hints from any function calls, but there are none here)
+        assert_eq!(hints.len(), 0);
+    }
+
+    #[test]
+    fn test_inlay_hints_type_vec() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let items = vec![1, 2, 3];
+let names = Vec::new();
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: 10, character: 0 },
+        };
+
+        let hints = server.get_inlay_hints("file:///test.raven", range);
+
+        // Should have type hints for Vec types
+        assert_eq!(hints.len(), 2);
+        assert_eq!(hints[0].label, ": Vec");
+        assert_eq!(hints[1].label, ": Vec");
+    }
+
+    #[test]
+    fn test_inlay_hints_mixed_types() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let count = 42;
+let name = "Bob";
+let active = true;
+let price = 9.99;
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        let range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: 10, character: 0 },
+        };
+
+        let hints = server.get_inlay_hints("file:///test.raven", range);
+
+        // Should have type hints for all variables
+        assert_eq!(hints.len(), 4);
+        assert_eq!(hints[0].label, ": i32");
+        assert_eq!(hints[1].label, ": String");
+        assert_eq!(hints[2].label, ": bool");
+        assert_eq!(hints[3].label, ": f64");
+    }
+
+    #[test]
+    fn test_inlay_hints_range_filtering() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let a = 1;
+let b = 2;
+let c = 3;
+let d = 4;
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Only request hints for lines 2-3
+        let range = Range {
+            start: Position { line: 2, character: 0 },
+            end: Position { line: 3, character: 0 },
+        };
+
+        let hints = server.get_inlay_hints("file:///test.raven", range);
+
+        // Should only have hints for variables in the range
+        assert_eq!(hints.len(), 2);
+        assert_eq!(hints[0].position.line, 2); // 'b'
+        assert_eq!(hints[1].position.line, 3); // 'c'
     }
 }
