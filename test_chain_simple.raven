@@ -1,0 +1,4 @@
+fn test() {
+    let x = "test";
+    let y = x.to_uppercase();
+}

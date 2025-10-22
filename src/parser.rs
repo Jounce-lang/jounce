@@ -810,6 +810,22 @@ impl<'a> Parser<'a> {
             TokenKind::LParen => self.parse_lambda_or_grouped()?,
             TokenKind::LAngle => self.parse_jsx_element()?,
             TokenKind::Pipe => self.parse_lambda_with_pipes()?,
+            TokenKind::PipePipe => {
+                // Handle || { } closures (no parameters)
+                self.next_token(); // consume ||
+
+                // Optional => before body
+                self.consume_if_matches(&TokenKind::FatArrow);
+
+                // Parse body expression
+                let body = self.parse_expression(Precedence::Lowest)?;
+
+                Expression::Lambda(LambdaExpression {
+                    parameters: vec![], // No parameters
+                    body: Box::new(body),
+                    captures: vec![], // Will be analyzed later
+                })
+            }
             TokenKind::LBracket => self.parse_array_literal()?,
             TokenKind::Match => self.parse_match_expression()?,
             TokenKind::If => {
@@ -921,6 +937,17 @@ impl<'a> Parser<'a> {
                     expr = Expression::IndexAccess(IndexExpression {
                         array: Box::new(expr),
                         index: Box::new(index),
+                    });
+                }
+                TokenKind::As => {
+                    self.next_token(); // consume 'as'
+
+                    // Parse the target type
+                    let target_type = self.parse_type_expression()?;
+
+                    expr = Expression::TypeCast(TypeCastExpression {
+                        expression: Box::new(expr),
+                        target_type,
                     });
                 }
                 TokenKind::Question => {
@@ -1332,13 +1359,52 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_jsx_element(&mut self) -> Result<Expression, CompileError> {
-        let opening_tag = self.parse_jsx_opening_tag()?;
+        // Check if we need to enter JSX mode for the root element
+        let was_jsx_mode = self.lexer.is_jsx_mode();
+
+        let opening_tag = self.parse_jsx_opening_tag_with_mode_check(was_jsx_mode)?;
+
+
         let children = if opening_tag.self_closing { vec![] } else { self.parse_jsx_children()? };
-        let closing_tag = if opening_tag.self_closing { None } else { Some(self.parse_jsx_closing_tag()?) };
+        let closing_tag = if opening_tag.self_closing { None } else {
+            Some(self.parse_jsx_closing_tag_with_mode_check(was_jsx_mode)?)
+        };
         if !opening_tag.self_closing && opening_tag.name.value != closing_tag.as_ref().unwrap().value {
             return Err(self.error("Mismatched closing tag"));
         }
+
         Ok(Expression::JsxElement(JsxElement { opening_tag, children, closing_tag }))
+    }
+
+    fn parse_jsx_opening_tag_with_mode_check(&mut self, was_jsx_mode: bool) -> Result<JsxOpeningTag, CompileError> {
+        self.expect_and_consume(&TokenKind::LAngle)?;
+        let name = self.parse_identifier()?;
+        let mut attributes = vec![];
+        while self.current_token().kind != TokenKind::RAngle &&
+              self.current_token().kind != TokenKind::Slash &&
+              self.current_token().kind != TokenKind::JsxSelfClose {
+            attributes.push(self.parse_jsx_attribute()?);
+        }
+        // Check for self-closing tag />
+        let self_closing = if self.consume_if_matches(&TokenKind::JsxSelfClose) {
+            // Self-closing tag doesn't enter JSX mode
+            true
+        } else if self.consume_if_matches(&TokenKind::Slash) {
+            // Self-closing with separate / and >
+            self.expect_and_consume(&TokenKind::RAngle)?;
+            true
+        } else {
+            // Regular opening tag - enter JSX mode BEFORE consuming > if this is root element
+            if !was_jsx_mode {
+                self.lexer.enter_jsx_mode();
+                // Re-fetch peek token so it's tokenized with jsx_mode=true
+                self.refresh_peek();
+            }
+            // Now consume the > and the next tokens will be fetched with jsx_mode=true
+            self.expect_and_consume(&TokenKind::RAngle)?;
+            false
+        };
+        Ok(JsxOpeningTag { name, attributes, self_closing })
     }
 
     fn parse_jsx_opening_tag(&mut self) -> Result<JsxOpeningTag, CompileError> {
@@ -1361,6 +1427,7 @@ impl<'a> Parser<'a> {
         } else {
             // Regular opening tag
             self.expect_and_consume(&TokenKind::RAngle)?;
+            // Lexer now manages JSX mode automatically via jsx_in_tag flag
             false
         };
         Ok(JsxOpeningTag { name, attributes, self_closing })
@@ -1426,7 +1493,12 @@ impl<'a> Parser<'a> {
             }
 
             // Check for {expr} interpolation with JSX-aware braces
-            if self.consume_if_matches(&TokenKind::JsxOpenBrace) || self.consume_if_matches(&TokenKind::LBrace) {
+            let is_jsx_open_brace = self.current_token().kind == TokenKind::JsxOpenBrace;
+            let is_lbrace = self.current_token().kind == TokenKind::LBrace;
+            if is_jsx_open_brace || is_lbrace {
+                self.next_token(); // Consume the brace
+                // Re-fetch peek token because lexer's brace_depth was incremented when creating the { token
+                self.refresh_peek();
                 let expr = self.parse_expression(Precedence::Lowest)?;
                 if !self.consume_if_matches(&TokenKind::JsxCloseBrace) {
                     self.expect_and_consume(&TokenKind::RBrace)?;
@@ -1456,12 +1528,26 @@ impl<'a> Parser<'a> {
         Ok(children)
     }
 
+    fn parse_jsx_closing_tag_with_mode_check(&mut self, was_jsx_mode: bool) -> Result<Identifier, CompileError> {
+        self.expect_and_consume(&TokenKind::LAngle)?;
+        self.expect_and_consume(&TokenKind::Slash)?;
+        let name = self.parse_identifier()?;
+        // Exit JSX mode BEFORE consuming the closing > so the next token is parsed normally
+        if !was_jsx_mode {
+            self.lexer.exit_jsx_mode();
+            // Re-fetch peek token so it's tokenized with jsx_mode=false
+            self.refresh_peek();
+        }
+        self.expect_and_consume(&TokenKind::RAngle)?;
+        Ok(name)
+    }
+
     fn parse_jsx_closing_tag(&mut self) -> Result<Identifier, CompileError> {
+        // Lexer manages JSX mode automatically via jsx_in_tag flag
         self.expect_and_consume(&TokenKind::LAngle)?;
         self.expect_and_consume(&TokenKind::Slash)?;
         let name = self.parse_identifier()?;
         self.expect_and_consume(&TokenKind::RAngle)?;
-        // Note: JSX mode is already exited in parse_jsx_children before we get here
         Ok(name)
     }
 
@@ -1484,8 +1570,7 @@ impl<'a> Parser<'a> {
         self.peek = self.lexer.next_token();
     }
 
-    // Re-fetch the peek token after changing lexer state (e.g., jsx_mode)
-    #[allow(dead_code)] // For future JSX mode switching
+    // Re-fetch the peek token after changing lexer state (e.g., brace_depth, jsx_mode)
     fn refresh_peek(&mut self) {
         self.peek = self.lexer.next_token();
     }
