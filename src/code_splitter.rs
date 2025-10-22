@@ -14,6 +14,7 @@ pub struct CodeSplitter {
     pub client_functions: Vec<FunctionDefinition>,
     pub shared_functions: Vec<FunctionDefinition>,
     pub client_components: Vec<ComponentDefinition>,
+    pub shared_constants: Vec<crate::ast::ConstDeclaration>,
 }
 
 impl Default for CodeSplitter {
@@ -29,6 +30,7 @@ impl CodeSplitter {
             client_functions: Vec::new(),
             shared_functions: Vec::new(),
             client_components: Vec::new(),
+            shared_constants: Vec::new(),
         }
     }
 
@@ -41,6 +43,10 @@ impl CodeSplitter {
                 }
                 Statement::Component(comp) => {
                     self.split_component(comp);
+                }
+                Statement::Const(const_decl) => {
+                    // Constants are shared across server and client
+                    self.shared_constants.push(const_decl.clone());
                 }
                 // Other statements (structs, enums, etc.) are currently ignored
                 // In the future, we may want to handle these differently

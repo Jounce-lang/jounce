@@ -94,6 +94,13 @@ impl BorrowChecker {
         match stmt {
             Statement::Use(_) => Ok(()),
             Statement::Let(let_stmt) => self.check_let_statement(let_stmt),
+            Statement::Const(const_decl) => {
+                // Check the value expression
+                self.check_expression(&const_decl.value)?;
+                // Register the constant in the symbol table
+                self.symbols.define(const_decl.name.value.clone(), crate::semantic_analyzer::ResolvedType::Unknown);
+                Ok(())
+            }
             Statement::Assignment(assign_stmt) => {
                 // Check the target is valid
                 match &assign_stmt.target {

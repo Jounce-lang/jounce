@@ -227,6 +227,16 @@ impl JSEmitter {
         output.push_str(&rpc_gen.generate_client_stubs());
         output.push('\n');
 
+        // Generate shared constants
+        if !self.splitter.shared_constants.is_empty() {
+            output.push_str("// Shared constants\n");
+            for const_decl in &self.splitter.shared_constants {
+                let value = self.generate_expression_js(&const_decl.value);
+                output.push_str(&format!("const {} = {};\n", const_decl.name.value, value));
+            }
+            output.push_str("\n");
+        }
+
         // Generate client function implementations
         output.push_str("// Client function implementations\n");
         for func in &self.splitter.client_functions {
@@ -462,6 +472,11 @@ impl JSEmitter {
                 };
 
                 format!("let {} = {};", pattern_str, value)
+            }
+            Statement::Const(const_decl) => {
+                // Emit const declarations as JavaScript const
+                let value = self.generate_expression_js(&const_decl.value);
+                format!("const {} = {};", const_decl.name.value, value)
             }
             Statement::Return(ret_stmt) => {
                 let value = self.generate_expression_js(&ret_stmt.value);

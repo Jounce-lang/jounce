@@ -9,6 +9,7 @@ pub struct Program {
 pub enum Statement {
     Use(UseStatement),
     Let(LetStatement),
+    Const(ConstDeclaration),
     Assignment(AssignmentStatement),
     Return(ReturnStatement),
     Expression(Expression),
@@ -36,6 +37,13 @@ pub struct UseStatement {
 pub struct LetStatement {
     pub pattern: Pattern,  // Changed from 'name' to support destructuring
     pub mutable: bool,
+    pub type_annotation: Option<TypeExpression>,
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConstDeclaration {
+    pub name: Identifier,
     pub type_annotation: Option<TypeExpression>,
     pub value: Expression,
 }
