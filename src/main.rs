@@ -2,7 +2,12 @@ use clap::Parser as ClapParser;
 use std::fs;
 use std::path::PathBuf;
 use std::process;
+use std::time::Instant;
 use ravensone_compiler::{Compiler, deployer, BuildTarget}; // FIX: Corrected the import path
+use ravensone_compiler::watcher::{FileWatcher, WatchConfig, CompileStats};
+use ravensone_compiler::lexer::Lexer;
+use ravensone_compiler::parser::Parser;
+use ravensone_compiler::js_emitter::JSEmitter;
 
 #[derive(ClapParser)]
 #[command(name = "raven", version, about)]
@@ -20,6 +25,8 @@ enum Commands {
         output: Option<PathBuf>,
         #[arg(short, long)]
         minify: bool,
+        #[arg(short, long)]
+        profile: bool,
     },
     /// Creates a new RavensOne project
     New {
@@ -48,6 +55,12 @@ enum Commands {
     Watch {
         #[arg(default_value = "src")]
         path: PathBuf,
+        #[arg(short, long, default_value = "dist")]
+        output: PathBuf,
+        #[arg(short, long)]
+        clear: bool,
+        #[arg(short, long)]
+        verbose: bool,
     },
     /// Start development server with HMR
     Dev {
@@ -140,20 +153,25 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Compile { path, output, minify } => {
+        Commands::Compile { path, output, minify, profile } => {
             use ravensone_compiler::lexer::Lexer;
             use ravensone_compiler::parser::Parser;
             use ravensone_compiler::js_emitter::JSEmitter;
             use ravensone_compiler::js_minifier::JSMinifier;
-            
+
+            let compile_start = Instant::now();
 
             println!("🔥 Compiling full-stack application: {}", path.display());
             if minify {
                 println!("   🗜️  Minification: enabled");
             }
+            if profile {
+                println!("   📊 Profiling: enabled");
+            }
             println!("   📦 Output: server.js + client.js + app.wasm\n");
 
             // Read source code
+            let io_start = Instant::now();
             let source_code = match fs::read_to_string(&path) {
                 Ok(code) => code,
                 Err(e) => {
@@ -161,10 +179,15 @@ fn main() {
                     return;
                 }
             };
+            let io_time = io_start.elapsed();
 
             // Parse the source
             println!("   Parsing...");
+            let lex_start = Instant::now();
             let mut lexer = Lexer::new(source_code.clone());
+            let lex_time = lex_start.elapsed();
+
+            let parse_start = Instant::now();
             let mut parser = Parser::new(&mut lexer);
             let mut program = match parser.parse_program() {
                 Ok(p) => {
@@ -176,28 +199,35 @@ fn main() {
                     return;
                 }
             };
+            let parse_time = parse_start.elapsed();
 
             // Merge imported modules into the AST
+            let module_start = Instant::now();
             use ravensone_compiler::module_loader::ModuleLoader;
             let mut module_loader = ModuleLoader::new("aloha-shirts");
             if let Err(e) = module_loader.merge_imports(&mut program) {
                 eprintln!("❌ Module import failed: {}", e);
                 return;
             }
+            let module_time = module_start.elapsed();
 
             // Generate JavaScript bundles
             println!("   Generating JavaScript bundles...");
+            let codegen_start = Instant::now();
             let emitter = JSEmitter::new(&program);
             let mut server_js = emitter.generate_server_js();
             let mut client_js = emitter.generate_client_js();
+            let codegen_time = codegen_start.elapsed();
 
             let stats = emitter.stats();
             println!("   ✓ Split: {} server, {} client, {} shared functions",
                 stats.server_functions, stats.client_functions, stats.shared_functions);
 
             // Minify if requested
+            let mut minify_time = std::time::Duration::ZERO;
             if minify {
                 println!("   Minifying JavaScript...");
+                let minify_start = Instant::now();
                 let minifier = JSMinifier::new();
 
                 let server_minified = minifier.minify(&server_js);
@@ -213,10 +243,12 @@ fn main() {
 
                 server_js = server_minified;
                 client_js = client_minified;
+                minify_time = minify_start.elapsed();
             }
 
             // Compile to WASM
             println!("   Compiling to WebAssembly...");
+            let wasm_start = Instant::now();
             let compiler = Compiler::new();
             let wasm_bytes = match compiler.compile_source(&source_code, BuildTarget::Client) {
                 Ok(bytes) => {
@@ -230,6 +262,7 @@ fn main() {
                     return;
                 }
             };
+            let wasm_time = wasm_start.elapsed();
 
             // Determine output directory
             let output_dir = output.unwrap_or_else(|| PathBuf::from("dist"));
@@ -240,6 +273,7 @@ fn main() {
 
             // Write output files
             println!("\n   Writing output files...");
+            let write_start = Instant::now();
 
             let server_path = output_dir.join("server.js");
             if let Err(e) = fs::write(&server_path, server_js) {
@@ -270,8 +304,30 @@ fn main() {
             } else {
                 println!("   ✓ {}", html_path.display());
             }
+            let write_time = write_start.elapsed();
 
-            println!("\n✨ Compilation complete!");
+            let total_time = compile_start.elapsed();
+
+            // Display profiling report if requested
+            if profile {
+                println!("\n📊 Profiling Results");
+                println!("====================");
+                println!("  File I/O:      {:>8.2?}  ({:>5.1}%)", io_time, (io_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0);
+                println!("  Lexing:        {:>8.2?}  ({:>5.1}%)", lex_time, (lex_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0);
+                println!("  Parsing:       {:>8.2?}  ({:>5.1}%)", parse_time, (parse_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0);
+                println!("  Modules:       {:>8.2?}  ({:>5.1}%)", module_time, (module_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0);
+                println!("  Codegen:       {:>8.2?}  ({:>5.1}%)", codegen_time, (codegen_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0);
+                if minify {
+                    println!("  Minification:  {:>8.2?}  ({:>5.1}%)", minify_time, (minify_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0);
+                }
+                println!("  WASM:          {:>8.2?}  ({:>5.1}%)", wasm_time, (wasm_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0);
+                println!("  Writing:       {:>8.2?}  ({:>5.1}%)", write_time, (write_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0);
+                println!("  {}", "─".repeat(38));
+                println!("  Total:         {:>8.2?}  ({:>5.0}%)", total_time, 100.0);
+                println!();
+            }
+
+            println!("\n✨ Compilation complete! ({:.2?})", total_time);
             println!("   Run: cd {} && node server.js", output_dir.display());
         }
         Commands::New { name } => {
@@ -307,9 +363,9 @@ fn main() {
                 process::exit(1);
             }
         }
-        Commands::Watch { path } => {
+        Commands::Watch { path, output, clear, verbose } => {
             println!("👀 Watching {} for changes...", path.display());
-            if let Err(e) = watch_and_compile(path) {
+            if let Err(e) = watch_and_compile(path, output, clear, verbose) {
                 eprintln!("❌ Watch failed: {}", e);
                 process::exit(1);
             }
@@ -537,52 +593,152 @@ fn create_new_project(name: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-fn watch_and_compile(path: PathBuf) -> std::io::Result<()> {
-    use std::time::Duration;
-    use std::thread;
+fn watch_and_compile(
+    path: PathBuf,
+    output: PathBuf,
+    clear: bool,
+    verbose: bool
+) -> Result<(), String> {
+    // Create watch configuration
+    let config = WatchConfig {
+        path: path.clone(),
+        output_dir: output.clone(),
+        debounce_ms: 150,
+        clear_console: clear,
+        verbose,
+    };
 
-    println!("✅ Watching started. Press Ctrl+C to stop.");
-    println!("   Monitoring: {}", path.display());
+    // Create file watcher
+    let mut watcher = FileWatcher::new(config)?;
+    watcher.watch()?;
 
-    let mut last_modified = std::collections::HashMap::new();
+    // Initial compilation
+    println!("🔥 RavensOne Watch Mode");
+    println!("   Path: {}", path.display());
+    println!("   Output: {}", output.display());
+    println!();
 
+    let compile_result = compile_file(&path, &output, verbose);
+    display_compile_result(&compile_result, clear);
+
+    println!("\n👀 Watching for changes... (Ctrl+C to stop)\n");
+
+    // Watch loop
     loop {
-        // Walk directory and check for changes
-        if let Ok(entries) = fs::read_dir(&path) {
-            for entry in entries.flatten() {
-                let entry_path = entry.path();
-                if entry_path.extension().map_or(false, |ext| ext == "raven") {
-                    if let Ok(metadata) = entry.metadata() {
-                        if let Ok(modified) = metadata.modified() {
-                            let last = last_modified.get(&entry_path);
-                            if last.map_or(true, |&last| last != modified) {
-                                println!("\n🔄 Change detected: {}", entry_path.display());
-
-                                // Compile the file
-                                let output_path = entry_path.with_extension("wasm");
-                                if let Ok(source) = fs::read_to_string(&entry_path) {
-                                    let compiler = Compiler::new();
-                                    match compiler.compile_source(&source, BuildTarget::Client) {
-                                        Ok(wasm_bytes) => {
-                                            if fs::write(&output_path, wasm_bytes).is_ok() {
-                                                println!("✅ Compiled → {}", output_path.display());
-                                            }
-                                        }
-                                        Err(e) => {
-                                            eprintln!("❌ Compilation error: {}", e);
-                                        }
-                                    }
-                                }
-
-                                last_modified.insert(entry_path, modified);
-                            }
-                        }
-                    }
-                }
+        // Wait for file change (with debouncing)
+        if let Some(changed_path) = watcher.wait_for_change() {
+            if verbose {
+                println!("[{}] File changed", changed_path.display());
             }
-        }
 
-        thread::sleep(Duration::from_millis(500));
+            // Clear console if requested
+            if clear {
+                print!("\x1B[2J\x1B[1;1H"); // ANSI escape codes to clear screen
+            }
+
+            // Determine what file to compile
+            let target_path = if changed_path.is_file() {
+                changed_path
+            } else {
+                path.clone()
+            };
+
+            println!("⚡ Recompiling...");
+            let compile_result = compile_file(&target_path, &output, verbose);
+            display_compile_result(&compile_result, clear);
+
+            println!("\n👀 Watching for changes... (Ctrl+C to stop)\n");
+        }
+    }
+}
+
+fn compile_file(path: &PathBuf, output_dir: &PathBuf, verbose: bool) -> CompileStats {
+    let start = Instant::now();
+    let mut stats = CompileStats::default();
+
+    // Read source file
+    let source = match fs::read_to_string(path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("✗ Failed to read file: {}", e);
+            stats.success = false;
+            stats.duration_ms = start.elapsed().as_millis() as u64;
+            return stats;
+        }
+    };
+
+    // Compile
+    let mut lexer = Lexer::new(source.clone());
+    let mut parser = Parser::new(&mut lexer);
+    let program = match parser.parse_program() {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("✗ Parser error: {:?}", e);
+            stats.success = false;
+            stats.duration_ms = start.elapsed().as_millis() as u64;
+            return stats;
+        }
+    };
+
+    // Generate JavaScript
+    let emitter = JSEmitter::new(&program);
+    let server_js = emitter.generate_server_js();
+    let client_js = emitter.generate_client_js();
+
+    // Create output directory if it doesn't exist
+    if let Err(e) = fs::create_dir_all(output_dir) {
+        eprintln!("✗ Failed to create output directory: {}", e);
+        stats.success = false;
+        stats.duration_ms = start.elapsed().as_millis() as u64;
+        return stats;
+    }
+
+    // Write output files
+    let server_path = output_dir.join("server.js");
+    let client_path = output_dir.join("client.js");
+
+    if let Err(e) = fs::write(&server_path, server_js) {
+        eprintln!("✗ Failed to write server.js: {}", e);
+        stats.success = false;
+        stats.duration_ms = start.elapsed().as_millis() as u64;
+        return stats;
+    }
+
+    if let Err(e) = fs::write(&client_path, client_js) {
+        eprintln!("✗ Failed to write client.js: {}", e);
+        stats.success = false;
+        stats.duration_ms = start.elapsed().as_millis() as u64;
+        return stats;
+    }
+
+    stats.compiled = 1;
+    stats.success = true;
+    stats.duration_ms = start.elapsed().as_millis() as u64;
+
+    if verbose {
+        println!("  → {}", server_path.display());
+        println!("  → {}", client_path.display());
+    }
+
+    stats
+}
+
+fn display_compile_result(stats: &CompileStats, _clear: bool) {
+    if stats.success {
+        println!("✓ Compiled successfully ({}ms)", stats.duration_ms);
+        if stats.compiled > 0 || stats.cached > 0 {
+            println!(
+                "  Files: {} compiled{}",
+                stats.compiled,
+                if stats.cached > 0 {
+                    format!(", {} cached", stats.cached)
+                } else {
+                    String::new()
+                }
+            );
+        }
+    } else {
+        println!("✗ Compilation failed ({}ms)", stats.duration_ms);
     }
 }
 
@@ -594,7 +750,12 @@ fn start_dev_server(port: u16) -> std::io::Result<()> {
 
     // Start file watcher in background
     let watch_thread = std::thread::spawn(|| {
-        let _ = watch_and_compile(PathBuf::from("src"));
+        let _ = watch_and_compile(
+            PathBuf::from("src"),
+            PathBuf::from("dist"),
+            false,
+            false
+        );
     });
 
     // Start HMR server
@@ -668,7 +829,14 @@ fn run_tests(watch_mode: bool) -> std::io::Result<()> {
 
     if watch_mode {
         println!("\n👀 Watching for changes...");
-        watch_and_compile(PathBuf::from("tests"))?;
+        if let Err(e) = watch_and_compile(
+            PathBuf::from("tests"),
+            PathBuf::from("dist"),
+            false,
+            false
+        ) {
+            eprintln!("Watch failed: {}", e);
+        }
     }
 
     if failed > 0 {
