@@ -10,7 +10,7 @@
 // - server.js: Server-side code with HTTP server and RPC handlers
 // - client.js: Client-side code with RPC stubs and UI components
 
-use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern};
+use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression};
 use crate::code_splitter::CodeSplitter;
 use crate::rpc_generator::RPCGenerator;
 use crate::source_map::SourceMapBuilder;
@@ -595,6 +595,36 @@ impl JSEmitter {
                 let true_expr = self.generate_expression_js(&ternary.true_expr);
                 let false_expr = self.generate_expression_js(&ternary.false_expr);
                 format!("({} ? {} : {})", condition, true_expr, false_expr)
+            }
+            Expression::TypeCast(type_cast) => {
+                // Generate JavaScript type cast - in JS this is mostly a no-op, but we emit for clarity
+                // For numeric conversions, we use Number(), Math.floor(), etc.
+                let expr_code = self.generate_expression_js(&type_cast.expression);
+
+                // Extract type name from TypeExpression
+                let type_name = match &type_cast.target_type {
+                    TypeExpression::Named(ident) => ident.value.as_str(),
+                    _ => return expr_code, // For complex types, just pass through
+                };
+
+                match type_name {
+                    "i32" | "i64" | "isize" | "u32" | "u64" | "usize" => {
+                        // Integer cast: use Math.floor for safety
+                        format!("Math.floor({})", expr_code)
+                    }
+                    "f32" | "f64" => {
+                        // Float cast: use Number() or just pass through
+                        format!("Number({})", expr_code)
+                    }
+                    "bool" => {
+                        // Boolean cast
+                        format!("Boolean({})", expr_code)
+                    }
+                    _ => {
+                        // For other types, just emit the expression (structural compatibility)
+                        expr_code
+                    }
+                }
             }
             Expression::Match(match_expr) => {
                 self.generate_match_expression_js(match_expr)

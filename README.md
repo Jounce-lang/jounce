@@ -447,16 +447,17 @@ open http://localhost:8000/demo-components.html
 - ✅ LSP with 70+ completions
 
 ### ⚠️ Known Limitations
-- **Division operator** (`/`) not implemented in parser - blocks some math examples
-- **Modulo operator** (`%`) not tested
+- **Option constructors** (`Some()`, `None`) not yet available as built-in functions
+- **Unicode/emoji** support limited in lexer (blocks some UI examples)
+- **PipePipe prefix parsing** - some closure patterns not yet supported
 
 ### 🚧 In Progress (Phase 8)
-- 🟡 Parser enhancements (division, modulo operators)
-- 🟡 Community growth
+- 🟡 Option type constructors (Some/None)
+- 🟡 Unicode/emoji lexer support
 - 🟡 Additional stdlib modules
 
 ### 📋 Roadmap
-See **[STATUS.md](STATUS.md)** for detailed roadmap and progress tracking.
+See **[docs/archive/STATUS.md](docs/archive/STATUS.md)** for archived roadmap. Current sprint progress tracked in CLAUDE.md.
 
 ---
 

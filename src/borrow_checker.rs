@@ -339,6 +339,23 @@ impl BorrowChecker {
                 // In a full implementation, we'd check that both branches have the same type
                 Ok(true_type)
             }
+            Expression::TypeCast(type_cast) => {
+                self.check_expression(&type_cast.expression)?;
+                // The result type is the target type
+                // Extract the type name from TypeExpression
+                match &type_cast.target_type {
+                    TypeExpression::Named(ident) => {
+                        match ident.value.as_str() {
+                            "i32" | "i64" | "isize" | "u32" | "u64" | "usize" => Ok(ResolvedType::Integer),
+                            "f32" | "f64" => Ok(ResolvedType::Float),
+                            "bool" => Ok(ResolvedType::Bool),
+                            "String" => Ok(ResolvedType::String),
+                            _ => Ok(ResolvedType::Unknown),
+                        }
+                    }
+                    _ => Ok(ResolvedType::Unknown),
+                }
+            }
             Expression::Await(await_expr) => {
                 self.check_expression(&await_expr.expression)?;
                 Ok(ResolvedType::Unknown)

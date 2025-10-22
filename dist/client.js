@@ -13,8 +13,8 @@ const client = new RPCClient(window.location.origin + '/_rpc');
 // Client function implementations
 // Shared utility functions
 export function test() {
-  let x = 5;
-  let y = Number(x);
+  let my_closure = /* Unsupported expression */;
+  let result = my_closure();
 
 }
 

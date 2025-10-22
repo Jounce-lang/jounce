@@ -497,6 +497,18 @@ impl TypeChecker {
                 // For now, return the true branch type
                 Ok(true_type)
             }
+            Expression::TypeCast(type_cast) => {
+                // Infer the type of the expression being cast
+                let _expr_type = self.infer_expression(&type_cast.expression)?;
+
+                // Return the target type specified in the cast - extract from TypeExpression
+                match &type_cast.target_type {
+                    TypeExpression::Named(ident) => {
+                        Ok(Type::Named(ident.value.clone()))
+                    }
+                    _ => Ok(Type::Void), // Use Void for unknown complex types
+                }
+            }
 
             Expression::Await(await_expr) => {
                 // Process the inner expression recursively
