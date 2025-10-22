@@ -549,6 +549,11 @@ impl JSEmitter {
                 let operand = self.generate_expression_js(&prefix.right);
                 format!("({}{})", prefix.operator.lexeme, operand)
             }
+            Expression::Spread(spread) => {
+                // Generate JavaScript spread operator: ...expr
+                let expr = self.generate_expression_js(&spread.expression);
+                format!("...{}", expr)
+            }
             Expression::FunctionCall(call) => {
                 let func = self.generate_expression_js(&call.function);
                 let args = call.arguments
@@ -585,8 +590,34 @@ impl JSEmitter {
             }
             Expression::IndexAccess(index) => {
                 let array = self.generate_expression_js(&index.array);
-                let idx = self.generate_expression_js(&index.index);
-                format!("{}[{}]", array, idx)
+
+                // Check if the index is a Range expression (for slicing)
+                if let Expression::Range(range) = &*index.index {
+                    // Generate arr.slice(start, end) for slicing
+                    let start = if let Some(start_expr) = &range.start {
+                        self.generate_expression_js(start_expr)
+                    } else {
+                        "0".to_string()
+                    };
+
+                    let end = if let Some(end_expr) = &range.end {
+                        let end_code = self.generate_expression_js(end_expr);
+                        // For inclusive range (..=), we need to add 1 to the end
+                        if range.inclusive {
+                            format!("({} + 1)", end_code)
+                        } else {
+                            end_code
+                        }
+                    } else {
+                        "undefined".to_string()
+                    };
+
+                    format!("{}.slice({}, {})", array, start, end)
+                } else {
+                    // Regular index access
+                    let idx = self.generate_expression_js(&index.index);
+                    format!("{}[{}]", array, idx)
+                }
             }
             Expression::ArrayLiteral(array) => {
                 let elements = array.elements

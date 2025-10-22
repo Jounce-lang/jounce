@@ -829,6 +829,14 @@ impl<'a> Parser<'a> {
                     right: Box::new(right),
                 })
             },
+            TokenKind::DotDotDot => {
+                // Parse spread operator: ...expr (used in array literals)
+                self.next_token();
+                let expression = self.parse_expression(Precedence::Lowest)?;
+                Expression::Spread(SpreadExpression {
+                    expression: Box::new(expression),
+                })
+            },
             TokenKind::Ampersand => {
                 // Parse borrow expression: &x or &mut x
                 self.next_token();
@@ -991,12 +999,35 @@ impl<'a> Parser<'a> {
                 }
                 TokenKind::LBracket => {
                     self.next_token(); // consume the [
-                    let index = self.parse_expression(Precedence::Lowest)?;
-                    self.expect_and_consume(&TokenKind::RBracket)?;
-                    expr = Expression::IndexAccess(IndexExpression {
-                        array: Box::new(expr),
-                        index: Box::new(index),
-                    });
+                    let start = self.parse_expression(Precedence::Lowest)?;
+
+                    // Check if this is a slice (arr[start..end]) or regular index access (arr[index])
+                    if self.current_token().kind == TokenKind::DotDot || self.current_token().kind == TokenKind::DotDotEq {
+                        // This is a slice: arr[start..end] or arr[start..=end]
+                        let inclusive = self.current_token().kind == TokenKind::DotDotEq;
+                        self.next_token(); // consume .. or ..=
+                        let end = self.parse_expression(Precedence::Lowest)?;
+                        self.expect_and_consume(&TokenKind::RBracket)?;
+
+                        // Create a Range expression and use it as the index
+                        let range_expr = Expression::Range(RangeExpression {
+                            start: Some(Box::new(start)),
+                            end: Some(Box::new(end)),
+                            inclusive,
+                        });
+
+                        expr = Expression::IndexAccess(IndexExpression {
+                            array: Box::new(expr),
+                            index: Box::new(range_expr),
+                        });
+                    } else {
+                        // Regular index access: arr[index]
+                        self.expect_and_consume(&TokenKind::RBracket)?;
+                        expr = Expression::IndexAccess(IndexExpression {
+                            array: Box::new(expr),
+                            index: Box::new(start),
+                        });
+                    }
                 }
                 TokenKind::As => {
                     self.next_token(); // consume 'as'

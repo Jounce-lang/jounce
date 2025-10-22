@@ -78,10 +78,15 @@ impl Lexer {
             }
             ',' => Token::new(TokenKind::Comma, ",".to_string(), self.line, start_col),
             '.' => {
-                // Check for .. or ..=
+                // Check for .., ..=, or ...
                 if self.peek() == '.' {
                     self.read_char();
                     self.read_char();
+                    // Check for ... (spread operator)
+                    if self.ch == '.' {
+                        self.read_char();
+                        return Token::new(TokenKind::DotDotDot, "...".to_string(), self.line, start_col);
+                    }
                     // Check for ..=
                     if self.ch == '=' {
                         self.read_char();
