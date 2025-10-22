@@ -250,6 +250,12 @@ impl BorrowChecker {
             Expression::BoolLiteral(_) => Ok(ResolvedType::Bool),
             Expression::StringLiteral(_) => Ok(ResolvedType::String),
             Expression::Identifier(ident) => {
+                // Check if this is a namespaced identifier (e.g., Math::PI, console::log)
+                // Treat all namespaced identifiers as external/built-in and skip ownership checking
+                if ident.value.contains("::") {
+                    return Ok(ResolvedType::Unknown);
+                }
+
                 let (state, ty) = self.symbols.lookup(&ident.value)
                     .ok_or_else(|| CompileError::Generic(format!("Borrow checker: undefined variable '{}'", ident.value)))?;
 
