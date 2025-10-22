@@ -239,8 +239,20 @@ impl Lexer {
             if self.ch.is_whitespace() {
                 self.read_char();
             } else if self.ch == '/' && self.peek() == '/' {
+                // Skip line comment //
                 while self.ch != '\n' && self.ch != '\0' {
                     self.read_char();
+                }
+            } else if self.ch == '/' && self.peek() == '*' {
+                // Skip block comment /* */
+                self.read_char(); // consume /
+                self.read_char(); // consume *
+                while !(self.ch == '*' && self.peek() == '/') && self.ch != '\0' {
+                    self.read_char();
+                }
+                if self.ch == '*' {
+                    self.read_char(); // consume *
+                    self.read_char(); // consume /
                 }
             } else {
                 break;

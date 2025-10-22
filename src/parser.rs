@@ -465,7 +465,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_type_expression(&mut self) -> Result<TypeExpression, CompileError> {
-        // Check if this is a function type: fn(T1, T2) -> R
+        // Check if this is a function type: fn(T1, T2) -> R or fn()
         if self.consume_if_matches(&TokenKind::Fn) {
             self.expect_and_consume(&TokenKind::LParen)?;
             let mut param_types = Vec::new();
@@ -474,8 +474,15 @@ impl<'a> Parser<'a> {
                 if !self.consume_if_matches(&TokenKind::Comma) { break; }
             }
             self.expect_and_consume(&TokenKind::RParen)?;
-            self.expect_and_consume(&TokenKind::Arrow)?;
-            let return_type = Box::new(self.parse_type_expression()?);
+
+            // Arrow and return type are optional - if not present, default to unit type ()
+            let return_type = if self.consume_if_matches(&TokenKind::Arrow) {
+                Box::new(self.parse_type_expression()?)
+            } else {
+                // Default to unit type () when no return type specified
+                Box::new(TypeExpression::Tuple(Vec::new()))
+            };
+
             return Ok(TypeExpression::Function(param_types, return_type));
         }
 
