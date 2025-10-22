@@ -1531,6 +1531,11 @@ impl CodeGenerator {
                     // Look up user-defined function (direct call)
                     if let Some(&func_idx) = self.func_symbols.funcs.get(&ident.value) {
                         f.instruction(&Instruction::Call(func_idx));
+                    } else if ident.value == "Some" || ident.value == "None" {
+                        // Built-in Option constructors - skip WASM compilation
+                        // These are handled by JavaScript runtime
+                        // For WASM, we just push a placeholder value (0)
+                        f.instruction(&Instruction::I32Const(0));
                     } else {
                         return Err(CompileError::Generic(format!(
                             "Undefined function: '{}'", ident.value

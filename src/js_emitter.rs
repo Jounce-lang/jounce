@@ -59,6 +59,11 @@ impl JSEmitter {
         output.push_str("const fs = require('fs');\n");
         output.push_str("const path = require('path');\n\n");
 
+        // Built-in Option constructors
+        output.push_str("// Built-in Option<T> constructors\n");
+        output.push_str("function Some(value) { return { variant: 'Some', data: value }; }\n");
+        output.push_str("const None = { variant: 'None' };\n\n");
+
         // Load WASM module
         output.push_str("// Load WebAssembly module\n");
         output.push_str("const wasmPath = path.join(__dirname, 'app.wasm');\n");
@@ -210,6 +215,11 @@ impl JSEmitter {
 
         // Import runtime
         output.push_str("import { RPCClient, mountComponent } from '../dist/client-runtime.js';\n\n");
+
+        // Built-in Option constructors
+        output.push_str("// Built-in Option<T> constructors\n");
+        output.push_str("function Some(value) { return { variant: 'Some', data: value }; }\n");
+        output.push_str("const None = { variant: 'None' };\n\n");
 
         // Generate RPC client stubs
         output.push_str("// RPC Client Setup\n");

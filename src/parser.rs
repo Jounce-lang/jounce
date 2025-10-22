@@ -1427,6 +1427,19 @@ impl<'a> Parser<'a> {
     fn parse_jsx_opening_tag_with_mode_check(&mut self, was_jsx_mode: bool) -> Result<JsxOpeningTag, CompileError> {
         self.expect_and_consume(&TokenKind::LAngle)?;
         let name = self.parse_identifier()?;
+
+        // Enter JSX mode early - right after parsing tag name
+        // This ensures any tokens read while parsing attributes or after > are in JSX mode
+        // CRITICAL FIX: Solves the issue where keywords in JSX text ("in stock", "for", etc.)
+        // were tokenized as keyword tokens instead of JsxText
+        if !was_jsx_mode {
+            self.lexer.enter_jsx_mode();
+            // Need to refresh peek since it was tokenized before JSX mode
+            // But we can't call refresh_peek_token() as it would skip a token
+            // So we accept that attribute parsing might have issues with first token
+            // The alternative is architectural changes to lazy tokenization
+        }
+
         let mut attributes = vec![];
         while self.current_token().kind != TokenKind::RAngle &&
               self.current_token().kind != TokenKind::Slash &&
@@ -1434,24 +1447,9 @@ impl<'a> Parser<'a> {
             attributes.push(self.parse_jsx_attribute()?);
         }
 
-        // Enter JSX mode now, before consuming closing tokens
-        // jsx_in_tag is still true, so > won't be read as JSX text
-        // For nested elements, we also increment jsx_depth to maintain proper tracking
-        if self.current_token().kind == TokenKind::RAngle {
-            self.lexer.enter_jsx_mode();
-
-            // CRITICAL BUG FIX: If peek token is LBrace, it was tokenized before JSX mode was active
-            // The lexer would have returned LBrace instead of JsxOpenBrace, and didn't increment brace_depth
-            // We need to manually increment brace_depth so the lexer doesn't incorrectly read JSX text
-            // LIMITATION: Only works for root-level JSX elements, not nested elements inside JSX expressions
-            if !was_jsx_mode && self.peek_token().kind == TokenKind::LBrace {
-                self.lexer.increment_brace_depth();
-            }
-        }
-
         // Check for self-closing tag />
         let self_closing = if self.consume_if_matches(&TokenKind::JsxSelfClose) {
-            // Self-closing tag doesn't enter JSX mode
+            // Self-closing tag, jsx_depth was already incremented
             true
         } else if self.consume_if_matches(&TokenKind::Slash) {
             // Self-closing with separate / and >
@@ -1520,6 +1518,15 @@ impl<'a> Parser<'a> {
                     self.next_token();
                     continue;
                 }
+                // CRITICAL FIX: Keywords that appear as JSX text content
+                // When JSX mode is entered too late, keywords get tokenized as keyword tokens instead of JsxText
+                // We handle them here by treating them as text content
+                TokenKind::In | TokenKind::If | TokenKind::For | TokenKind::Let | TokenKind::Return |
+                TokenKind::Match | TokenKind::While | TokenKind::Else | TokenKind::As | TokenKind::Fn |
+                TokenKind::Struct | TokenKind::Enum | TokenKind::Impl | TokenKind::Trait |
+                TokenKind::Component | TokenKind::Extern | TokenKind::Server | TokenKind::Client |
+                TokenKind::Async | TokenKind::Await | TokenKind::Use | TokenKind::Mut |
+                TokenKind::True | TokenKind::False |
                 TokenKind::Identifier | TokenKind::Bang | TokenKind::Comma => {
                     // Various tokens in JSX children position are text content
                     // This handles words, punctuation, etc.
