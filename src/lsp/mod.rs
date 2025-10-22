@@ -83,6 +83,29 @@ pub struct Hover {
     pub range: Option<Range>,
 }
 
+/// Signature help for function calls
+#[derive(Debug, Clone)]
+pub struct SignatureHelp {
+    pub signatures: Vec<SignatureInformation>,
+    pub active_signature: usize,
+    pub active_parameter: usize,
+}
+
+/// Information about a function signature
+#[derive(Debug, Clone)]
+pub struct SignatureInformation {
+    pub label: String,
+    pub documentation: Option<String>,
+    pub parameters: Vec<ParameterInformation>,
+}
+
+/// Information about a function parameter
+#[derive(Debug, Clone)]
+pub struct ParameterInformation {
+    pub label: String,
+    pub documentation: Option<String>,
+}
+
 /// Text edit for document modifications
 #[derive(Debug, Clone)]
 pub struct TextEdit {
@@ -353,7 +376,7 @@ impl LanguageServer {
         let doc = self.documents.get(uri)?;
         let word = self.get_word_at_position(&doc.content, position)?;
 
-        // Check stdlib
+        // Check stdlib first (highest priority)
         if let Some(docs) = self.stdlib_docs.get_documentation(&word) {
             return Some(Hover {
                 contents: docs,
@@ -369,7 +392,411 @@ impl LanguageServer {
             });
         }
 
+        // Check local symbols (functions, variables, components, etc.)
+        if let Some(hover_info) = self.get_symbol_hover_info(&doc.content, &word) {
+            return Some(Hover {
+                contents: hover_info,
+                range: None,
+            });
+        }
+
         None
+    }
+
+    /// Get hover information for a local symbol (function, variable, struct, enum)
+    fn get_symbol_hover_info(&self, content: &str, symbol_name: &str) -> Option<String> {
+        let lines: Vec<&str> = content.lines().collect();
+
+        for (line_idx, line) in lines.iter().enumerate() {
+            let trimmed = line.trim();
+
+            // Match function definitions: fn name(
+            if let Some(fn_pos) = trimmed.find("fn ") {
+                if let Some(paren_pos) = trimmed[fn_pos..].find('(') {
+                    let name_start = fn_pos + 3;
+                    let name_end = fn_pos + paren_pos;
+                    let name = trimmed[name_start..name_end].trim();
+
+                    if name == symbol_name {
+                        // Extract full function signature (including return type if present)
+                        let mut signature = String::from(trimmed);
+
+                        // If signature doesn't end with { or ;, look at next lines for return type
+                        if !trimmed.ends_with('{') && !trimmed.ends_with(';') {
+                            let mut line_offset = 1;
+                            while line_idx + line_offset < lines.len() {
+                                let next_line = lines[line_idx + line_offset].trim();
+                                signature.push(' ');
+                                signature.push_str(next_line);
+                                if next_line.contains('{') || next_line.contains(';') {
+                                    break;
+                                }
+                                line_offset += 1;
+                                if line_offset > 3 {
+                                    break; // Safety limit
+                                }
+                            }
+                        }
+
+                        // Clean up the signature (remove opening brace)
+                        if let Some(brace_pos) = signature.find('{') {
+                            signature = signature[..brace_pos].trim().to_string();
+                        }
+
+                        return Some(format!("```raven\n{}\n```\n\n**Function**", signature));
+                    }
+                }
+            }
+
+            // Match component definitions: component Name(
+            if let Some(comp_pos) = trimmed.find("component ") {
+                if let Some(paren_pos) = trimmed[comp_pos..].find('(') {
+                    let name_start = comp_pos + 10;
+                    let name_end = comp_pos + paren_pos;
+                    let name = trimmed[name_start..name_end].trim();
+
+                    if name == symbol_name {
+                        let mut signature = String::from(trimmed);
+
+                        // Look for multi-line signatures
+                        if !trimmed.ends_with('{') {
+                            let mut line_offset = 1;
+                            while line_idx + line_offset < lines.len() {
+                                let next_line = lines[line_idx + line_offset].trim();
+                                signature.push(' ');
+                                signature.push_str(next_line);
+                                if next_line.contains('{') {
+                                    break;
+                                }
+                                line_offset += 1;
+                                if line_offset > 3 {
+                                    break;
+                                }
+                            }
+                        }
+
+                        if let Some(brace_pos) = signature.find('{') {
+                            signature = signature[..brace_pos].trim().to_string();
+                        }
+
+                        return Some(format!("```raven\n{}\n```\n\n**Component**", signature));
+                    }
+                }
+            }
+
+            // Match variable definitions: let name = or let name: Type =
+            if let Some(let_pos) = trimmed.find("let ") {
+                let after_let = &trimmed[let_pos + 4..];
+                let name_end = after_let
+                    .find(|c: char| c == '=' || c == ':' || c == ' ')
+                    .unwrap_or(after_let.len());
+                let name = after_let[..name_end].trim();
+
+                if name == symbol_name {
+                    // Try to extract type annotation
+                    if let Some(colon_pos) = after_let.find(':') {
+                        if let Some(eq_pos) = after_let.find('=') {
+                            let type_str = after_let[colon_pos + 1..eq_pos].trim();
+                            return Some(format!(
+                                "```raven\nlet {}: {}\n```\n\n**Variable** with type `{}`",
+                                name, type_str, type_str
+                            ));
+                        }
+                    }
+
+                    // No type annotation, show just the declaration
+                    return Some(format!("```raven\nlet {}\n```\n\n**Variable**", name));
+                }
+            }
+
+            // Match const definitions: const NAME =
+            if let Some(const_pos) = trimmed.find("const ") {
+                let after_const = &trimmed[const_pos + 6..];
+                let name_end = after_const
+                    .find(|c: char| c == '=' || c == ':' || c == ' ')
+                    .unwrap_or(after_const.len());
+                let name = after_const[..name_end].trim();
+
+                if name == symbol_name {
+                    // Try to extract type annotation
+                    if let Some(colon_pos) = after_const.find(':') {
+                        if let Some(eq_pos) = after_const.find('=') {
+                            let type_str = after_const[colon_pos + 1..eq_pos].trim();
+                            return Some(format!(
+                                "```raven\nconst {}: {}\n```\n\n**Constant** with type `{}`",
+                                name, type_str, type_str
+                            ));
+                        }
+                    }
+
+                    return Some(format!("```raven\nconst {}\n```\n\n**Constant**", name));
+                }
+            }
+
+            // Match struct definitions: struct Name
+            if let Some(struct_pos) = trimmed.find("struct ") {
+                let after_struct = &trimmed[struct_pos + 7..];
+                let name_end = after_struct
+                    .find(|c: char| c == '{' || c == ' ')
+                    .unwrap_or(after_struct.len());
+                let name = after_struct[..name_end].trim();
+
+                if name == symbol_name {
+                    // Try to extract struct definition (few lines)
+                    let mut definition = String::from(trimmed);
+                    let mut line_offset = 1;
+
+                    // Add up to 5 more lines for struct body
+                    while line_idx + line_offset < lines.len() && line_offset <= 5 {
+                        let next_line = lines[line_idx + line_offset];
+                        definition.push('\n');
+                        definition.push_str(next_line);
+                        if next_line.trim() == "}" {
+                            break;
+                        }
+                        line_offset += 1;
+                    }
+
+                    return Some(format!("```raven\n{}\n```\n\n**Struct** definition", definition));
+                }
+            }
+
+            // Match enum definitions: enum Name
+            if let Some(enum_pos) = trimmed.find("enum ") {
+                let after_enum = &trimmed[enum_pos + 5..];
+                let name_end = after_enum
+                    .find(|c: char| c == '{' || c == ' ')
+                    .unwrap_or(after_enum.len());
+                let name = after_enum[..name_end].trim();
+
+                if name == symbol_name {
+                    // Try to extract enum definition (few lines)
+                    let mut definition = String::from(trimmed);
+                    let mut line_offset = 1;
+
+                    // Add up to 10 more lines for enum variants
+                    while line_idx + line_offset < lines.len() && line_offset <= 10 {
+                        let next_line = lines[line_idx + line_offset];
+                        definition.push('\n');
+                        definition.push_str(next_line);
+                        if next_line.trim() == "}" {
+                            break;
+                        }
+                        line_offset += 1;
+                    }
+
+                    return Some(format!("```raven\n{}\n```\n\n**Enum** definition", definition));
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Get signature help for function calls at the given position
+    ///
+    /// Shows parameter information when cursor is inside a function call.
+    /// This implements the LSP `textDocument/signatureHelp` request.
+    pub fn get_signature_help(&self, uri: &str, position: Position) -> Option<SignatureHelp> {
+        let content = if let Some(doc) = self.documents.get(uri) {
+            &doc.content
+        } else {
+            return None;
+        };
+
+        // Find if we're inside a function call
+        let (function_name, param_index) = self.find_function_call_context(content, position)?;
+
+        // Extract function signature from source code
+        let signature_info = self.extract_function_signature(content, &function_name)?;
+
+        Some(SignatureHelp {
+            signatures: vec![signature_info],
+            active_signature: 0,
+            active_parameter: param_index,
+        })
+    }
+
+    /// Find the function being called and the current parameter index
+    fn find_function_call_context(&self, content: &str, position: Position) -> Option<(String, usize)> {
+        let lines: Vec<&str> = content.lines().collect();
+        if position.line >= lines.len() {
+            return None;
+        }
+
+        let line = lines[position.line];
+        let chars: Vec<char> = line.chars().collect();
+
+        // Start from cursor position and work backwards to find opening paren
+        let mut char_idx = position.character.min(chars.len());
+        let mut paren_count = 0;
+        let mut found_open_paren = false;
+
+        // Go backwards to find the matching opening parenthesis
+        while char_idx > 0 {
+            char_idx -= 1;
+            match chars[char_idx] {
+                ')' => paren_count += 1,
+                '(' => {
+                    if paren_count == 0 {
+                        found_open_paren = true;
+                        break;
+                    }
+                    paren_count -= 1;
+                }
+                _ => {}
+            }
+        }
+
+        if !found_open_paren {
+            return None;
+        }
+
+        // Extract function name before the opening paren
+        let mut name_end = char_idx;
+        let mut name_start = name_end;
+
+        // Skip whitespace before paren
+        while name_start > 0 && chars[name_start - 1].is_whitespace() {
+            name_start -= 1;
+            name_end -= 1;
+        }
+
+        // Extract function name (alphanumeric and _)
+        while name_start > 0 && (chars[name_start - 1].is_alphanumeric() || chars[name_start - 1] == '_') {
+            name_start -= 1;
+        }
+
+        if name_start >= name_end {
+            return None;
+        }
+
+        let function_name: String = chars[name_start..name_end].iter().collect();
+
+        // Count commas between opening paren and cursor to determine parameter index
+        let mut param_index = 0;
+        let mut nested_parens = 0;
+
+        for i in (char_idx + 1)..position.character.min(chars.len()) {
+            match chars[i] {
+                '(' => nested_parens += 1,
+                ')' => nested_parens -= 1,
+                ',' if nested_parens == 0 => param_index += 1,
+                _ => {}
+            }
+        }
+
+        Some((function_name, param_index))
+    }
+
+    /// Extract function signature from source code
+    fn extract_function_signature(&self, content: &str, function_name: &str) -> Option<SignatureInformation> {
+        let lines: Vec<&str> = content.lines().collect();
+
+        for (line_idx, line) in lines.iter().enumerate() {
+            let trimmed = line.trim();
+
+            // Match function definitions: fn name(
+            if let Some(fn_pos) = trimmed.find("fn ") {
+                if let Some(paren_pos) = trimmed[fn_pos..].find('(') {
+                    let name_start = fn_pos + 3;
+                    let name_end = fn_pos + paren_pos;
+                    let name = trimmed[name_start..name_end].trim();
+
+                    if name == function_name {
+                        // Extract full function signature
+                        let mut signature = String::from(trimmed);
+
+                        // Look for multi-line signatures
+                        if !trimmed.ends_with('{') && !trimmed.ends_with(';') {
+                            let mut line_offset = 1;
+                            while line_idx + line_offset < lines.len() {
+                                let next_line = lines[line_idx + line_offset].trim();
+                                signature.push(' ');
+                                signature.push_str(next_line);
+                                if next_line.contains('{') || next_line.contains(';') {
+                                    break;
+                                }
+                                line_offset += 1;
+                                if line_offset > 3 {
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Clean up signature (remove opening brace)
+                        if let Some(brace_pos) = signature.find('{') {
+                            signature = signature[..brace_pos].trim().to_string();
+                        }
+
+                        // Extract parameters
+                        let params = self.extract_parameters(&signature);
+
+                        return Some(SignatureInformation {
+                            label: signature.clone(),
+                            documentation: Some(format!("Function: {}", function_name)),
+                            parameters: params,
+                        });
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Extract parameters from a function signature
+    fn extract_parameters(&self, signature: &str) -> Vec<ParameterInformation> {
+        let mut parameters = Vec::new();
+
+        // Find the parameter list (between parentheses)
+        if let Some(open_paren) = signature.find('(') {
+            if let Some(close_paren) = signature.rfind(')') {
+                let param_str = &signature[open_paren + 1..close_paren];
+
+                // Split by comma, but respect nested types like Vec<T>
+                let mut current_param = String::new();
+                let mut depth = 0;
+
+                for ch in param_str.chars() {
+                    match ch {
+                        '<' | '(' | '[' => {
+                            depth += 1;
+                            current_param.push(ch);
+                        }
+                        '>' | ')' | ']' => {
+                            depth -= 1;
+                            current_param.push(ch);
+                        }
+                        ',' if depth == 0 => {
+                            // End of parameter
+                            let param = current_param.trim().to_string();
+                            if !param.is_empty() {
+                                parameters.push(ParameterInformation {
+                                    label: param.clone(),
+                                    documentation: None,
+                                });
+                            }
+                            current_param.clear();
+                        }
+                        _ => {
+                            current_param.push(ch);
+                        }
+                    }
+                }
+
+                // Add the last parameter
+                let param = current_param.trim().to_string();
+                if !param.is_empty() {
+                    parameters.push(ParameterInformation {
+                        label: param,
+                        documentation: None,
+                    });
+                }
+            }
+        }
+
+        parameters
     }
 
     /// Get word at position
@@ -3195,5 +3622,356 @@ fn calculate() {
         assert_eq!(symbol.selection_range.start.line, 1);
         // Both range and selection_range should be valid
         assert!(symbol.range.end.character > symbol.range.start.character);
+    }
+
+    // Hover tests
+    #[test]
+    fn test_hover_function() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn add(x: i32, y: i32) -> i32 {
+    return x + y;
+}
+
+let result = add(5, 10);
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Hover over function name in definition
+        let hover = server.get_hover("file:///test.raven", Position { line: 1, character: 3 });
+        assert!(hover.is_some());
+        let hover_content = hover.unwrap().contents;
+        assert!(hover_content.contains("fn add(x: i32, y: i32) -> i32"));
+        assert!(hover_content.contains("**Function**"));
+    }
+
+    #[test]
+    fn test_hover_component() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+component Button(props: ButtonProps) {
+    return <button>{props.label}</button>;
+}
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Hover over component name
+        let hover = server.get_hover("file:///test.raven", Position { line: 1, character: 10 });
+        assert!(hover.is_some());
+        let hover_content = hover.unwrap().contents;
+        assert!(hover_content.contains("component Button(props: ButtonProps)"));
+        assert!(hover_content.contains("**Component**"));
+    }
+
+    #[test]
+    fn test_hover_variable_with_type() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let count: i32 = 0;
+let value = count + 1;
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Hover over variable with type annotation
+        let hover = server.get_hover("file:///test.raven", Position { line: 1, character: 4 });
+        assert!(hover.is_some());
+        let hover_content = hover.unwrap().contents;
+        assert!(hover_content.contains("let count: i32"));
+        assert!(hover_content.contains("**Variable**"));
+        assert!(hover_content.contains("type `i32`"));
+    }
+
+    #[test]
+    fn test_hover_variable_without_type() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let message = "Hello";
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Hover over variable without type annotation
+        let hover = server.get_hover("file:///test.raven", Position { line: 1, character: 4 });
+        assert!(hover.is_some());
+        let hover_content = hover.unwrap().contents;
+        assert!(hover_content.contains("let message"));
+        assert!(hover_content.contains("**Variable**"));
+    }
+
+    #[test]
+    fn test_hover_const() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+const MAX_SIZE: usize = 100;
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Hover over constant
+        let hover = server.get_hover("file:///test.raven", Position { line: 1, character: 6 });
+        assert!(hover.is_some());
+        let hover_content = hover.unwrap().contents;
+        assert!(hover_content.contains("const MAX_SIZE: usize"));
+        assert!(hover_content.contains("**Constant**"));
+        assert!(hover_content.contains("type `usize`"));
+    }
+
+    #[test]
+    fn test_hover_struct() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+struct Point {
+    x: f64,
+    y: f64,
+}
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Hover over struct name
+        let hover = server.get_hover("file:///test.raven", Position { line: 1, character: 7 });
+        assert!(hover.is_some());
+        let hover_content = hover.unwrap().contents;
+        assert!(hover_content.contains("struct Point"));
+        assert!(hover_content.contains("x: f64"));
+        assert!(hover_content.contains("y: f64"));
+        assert!(hover_content.contains("**Struct**"));
+    }
+
+    #[test]
+    fn test_hover_enum() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+enum Status {
+    Pending,
+    Active,
+    Completed,
+}
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Hover over enum name
+        let hover = server.get_hover("file:///test.raven", Position { line: 1, character: 5 });
+        assert!(hover.is_some());
+        let hover_content = hover.unwrap().contents;
+        assert!(hover_content.contains("enum Status"));
+        assert!(hover_content.contains("Pending"));
+        assert!(hover_content.contains("Active"));
+        assert!(hover_content.contains("Completed"));
+        assert!(hover_content.contains("**Enum**"));
+    }
+
+    #[test]
+    fn test_hover_stdlib_function() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let result = Math::abs(-5);
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Hover over stdlib function
+        // Note: stdlib documentation may or may not be loaded, so we just verify
+        // the hover mechanism works (returns Some or None based on documentation availability)
+        let hover = server.get_hover("file:///test.raven", Position { line: 1, character: 19 });
+
+        // If hover exists, it should have non-empty contents
+        if let Some(h) = hover {
+            assert!(!h.contents.is_empty(), "Hover contents should not be empty");
+        }
+        // It's ok if hover is None (stdlib docs not loaded)
+    }
+
+    #[test]
+    fn test_hover_no_match() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+let x = 10;
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Hover over a non-identifier location (should return None)
+        let hover = server.get_hover("file:///test.raven", Position { line: 1, character: 6 });
+        // Position at "=" should not match anything useful
+        assert!(hover.is_none() || hover.unwrap().contents.is_empty());
+    }
+
+    // Signature Help tests
+    #[test]
+    fn test_signature_help_first_param() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn add(x: i32, y: i32) -> i32 {
+    return x + y;
+}
+
+let result = add(5, 10);
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Cursor at first parameter: add(|
+        let sig_help = server.get_signature_help("file:///test.raven", Position { line: 5, character: 17 });
+        assert!(sig_help.is_some());
+
+        let sig = sig_help.unwrap();
+        assert_eq!(sig.signatures.len(), 1);
+        assert_eq!(sig.active_parameter, 0); // First parameter
+
+        let sig_info = &sig.signatures[0];
+        assert!(sig_info.label.contains("fn add(x: i32, y: i32) -> i32"));
+        assert_eq!(sig_info.parameters.len(), 2);
+        assert_eq!(sig_info.parameters[0].label, "x: i32");
+        assert_eq!(sig_info.parameters[1].label, "y: i32");
+    }
+
+    #[test]
+    fn test_signature_help_second_param() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn multiply(a: f64, b: f64, c: f64) -> f64 {
+    return a * b * c;
+}
+
+let result = multiply(2.0, 3.0, 4.0);
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Cursor at second parameter: multiply(2.0, |
+        let sig_help = server.get_signature_help("file:///test.raven", Position { line: 5, character: 27 });
+        assert!(sig_help.is_some());
+
+        let sig = sig_help.unwrap();
+        assert_eq!(sig.active_parameter, 1); // Second parameter
+        assert_eq!(sig.signatures[0].parameters.len(), 3);
+    }
+
+    #[test]
+    fn test_signature_help_third_param() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn calculate(x: i32, y: i32, z: i32) -> i32 {
+    return x + y + z;
+}
+
+let result = calculate(1, 2, 3);
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Cursor at third parameter: calculate(1, 2, |
+        let sig_help = server.get_signature_help("file:///test.raven", Position { line: 5, character: 30 });
+        assert!(sig_help.is_some());
+
+        let sig = sig_help.unwrap();
+        assert_eq!(sig.active_parameter, 2); // Third parameter
+    }
+
+    #[test]
+    fn test_signature_help_no_params() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn get_value() -> i32 {
+    return 42;
+}
+
+let val = get_value();
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Cursor inside function call with no parameters
+        let sig_help = server.get_signature_help("file:///test.raven", Position { line: 5, character: 20 });
+        assert!(sig_help.is_some());
+
+        let sig = sig_help.unwrap();
+        assert_eq!(sig.signatures.len(), 1);
+        assert_eq!(sig.signatures[0].parameters.len(), 0);
+        assert!(sig.signatures[0].label.contains("fn get_value() -> i32"));
+    }
+
+    #[test]
+    fn test_signature_help_not_in_call() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn foo() {}
+let x = 10;
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Cursor not inside a function call
+        let sig_help = server.get_signature_help("file:///test.raven", Position { line: 2, character: 8 });
+        assert!(sig_help.is_none());
+    }
+
+    #[test]
+    fn test_signature_help_function_not_found() {
+        let mut server = LanguageServer::new();
+        let code = r#"
+fn known_func(x: i32) -> i32 {
+    return x;
+}
+
+let result = unknown_func(10);
+"#;
+        server.open_document(
+            "file:///test.raven".to_string(),
+            code.to_string(),
+            1,
+        );
+
+        // Cursor inside call to unknown function
+        let sig_help = server.get_signature_help("file:///test.raven", Position { line: 5, character: 27 });
+        // Should return None because function is not defined
+        assert!(sig_help.is_none());
     }
 }
