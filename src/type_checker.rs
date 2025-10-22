@@ -420,8 +420,57 @@ impl TypeChecker {
                 Ok(Type::Any)
             }
 
-            Expression::FieldAccess(_) => {
-                // For now, return Any for field access
+            Expression::FieldAccess(field_access) => {
+                // Infer object type
+                let object_type = self.infer_expression(&field_access.object)?;
+                let field_name = &field_access.field.value;
+
+                // For String methods, return function type with proper signature
+                if object_type == Type::String {
+                    return Ok(match field_name.as_str() {
+                        // Methods that return bool (with string argument)
+                        "contains" | "starts_with" | "ends_with" => {
+                            Type::Function {
+                                params: vec![Type::String],
+                                return_type: Box::new(Type::Bool),
+                            }
+                        },
+                        // Methods that return bool (no arguments)
+                        "is_empty" | "is_alphabetic" | "is_numeric" | "is_alphanumeric" => {
+                            Type::Function {
+                                params: vec![],
+                                return_type: Box::new(Type::Bool),
+                            }
+                        },
+                        // Methods that return String
+                        "to_uppercase" | "to_lowercase" | "trim" | "trim_start" | "trim_end" |
+                        "substring" | "replace" | "repeat" | "reverse" |
+                        "pad_start" | "pad_end" => {
+                            Type::Function {
+                                params: vec![],
+                                return_type: Box::new(Type::String),
+                            }
+                        },
+                        // Methods that return i32
+                        "len" | "count" => {
+                            Type::Function {
+                                params: vec![],
+                                return_type: Box::new(Type::Int),
+                            }
+                        },
+                        // Methods that return arrays
+                        "split" | "lines" => {
+                            Type::Function {
+                                params: vec![Type::String],
+                                return_type: Box::new(Type::Array(Box::new(Type::String))),
+                            }
+                        },
+                        // Default: return Any
+                        _ => Type::Any,
+                    });
+                }
+
+                // For other types, return Any for now
                 Ok(Type::Any)
             }
 

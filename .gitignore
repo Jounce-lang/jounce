@@ -7,6 +7,11 @@
 test-*.wasm
 test_*.wasm
 
+# Test executables (compiled from test_*.rs files)
+test_*_debug
+test_jsx_debug
+test_jsx_expr_debug
+
 # Compiler output (keep in examples/ for testing)
 !/examples/**/*.wasm
 

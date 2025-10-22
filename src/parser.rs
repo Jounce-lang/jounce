@@ -498,6 +498,34 @@ impl<'a> Parser<'a> {
             return Ok(TypeExpression::Reference(Box::new(inner_type)));
         }
 
+        // Check if this is a tuple type: (i32, String, bool)
+        if self.consume_if_matches(&TokenKind::LParen) {
+            let mut types = Vec::new();
+
+            // Handle empty tuple: ()
+            if self.current_token().kind == TokenKind::RParen {
+                self.expect_and_consume(&TokenKind::RParen)?;
+                return Ok(TypeExpression::Tuple(types));
+            }
+
+            // Parse tuple elements
+            loop {
+                types.push(self.parse_type_expression()?);
+
+                if !self.consume_if_matches(&TokenKind::Comma) {
+                    break;
+                }
+
+                // Allow trailing comma
+                if self.current_token().kind == TokenKind::RParen {
+                    break;
+                }
+            }
+
+            self.expect_and_consume(&TokenKind::RParen)?;
+            return Ok(TypeExpression::Tuple(types));
+        }
+
         let name = self.parse_identifier()?;
         if self.consume_if_matches(&TokenKind::LAngle) {
             let mut args = Vec::new();
