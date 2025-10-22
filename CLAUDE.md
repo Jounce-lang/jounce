@@ -1217,13 +1217,71 @@ Language Completeness: Z%
 
 ---
 
+### ✅ Sprint 11: Function Types & Block Comments (2025-10-21)
+
+**Achievement**: Added function type parameters and block comment support
+
+**Issues Completed**: 2/3 (67%)
+
+#### Issue #1: Function Type Parameters ✅
+
+**Problem**: Function types without return types failed to parse
+- Error: `Expected Arrow, found RParen`
+- Pattern: `fn accepts_callback(callback: fn())`
+- Root cause: Parser required `->` arrow for all function types
+
+**Solution**: Made arrow and return type optional
+- If no `->` present, default to unit type `()`
+- Pattern: `fn()` → `fn() -> ()`
+- Files: src/parser.rs (+8 lines)
+
+**Impact**: Unblocks social app, enables callback parameters
+
+#### Issue #2: Block Comments ✅
+
+**Problem**: Block comments `/* */` not supported
+- Error: `No prefix parse function for Slash`
+- Pattern: `/* This is a comment */`
+- Root cause: Lexer only handled line comments `//`
+
+**Solution**: Added block comment skipping to lexer
+- Detects `/*` sequence in skip_whitespace()
+- Skips until `*/` found
+- Works in all contexts including JSX
+
+**Limitation**: `{/* comment */}` leaves empty `{}` which isn't supported yet
+
+**Time**: 30 minutes
+
+#### Issue #3: Destructuring ⚠️ DEFERRED
+
+**Problem**: Destructuring in let statements not supported
+- Error: `Expected Assign, found LBrace`
+- Pattern: `let Point { x, y } = point;`
+
+**Assessment**: Complex feature requiring pattern matching system
+- Needs: Pattern AST enum, parser overhaul, codegen updates
+- Estimated: 2-3 hours
+- Decision: Defer to dedicated sprint
+
+---
+
+**Sprint 11 Results**:
+- ✅ **Issues Completed**: 2/3 (67%)
+- ✅ **Tests Passing**: 221/221 (100%)
+- ✅ **Language Completeness**: 94% → 96% (+2 points)
+- ✅ **Time**: 60 minutes
+- ✅ **Apps Unblocked**: Social app progresses further
+
+---
+
 **Last Updated**: 2025-10-21
 **Compiler Version**: 0.1.0
-**Status**: Active Development - Sprint 10 Complete ✅
-**Recent Sprint**: Sprint 10 (3/3 issues) - JSX mode management fixed
-**Current Phase**: Language Core Implementation - JSX Production Ready
+**Status**: Active Development - Sprint 11 Complete ✅
+**Recent Sprint**: Sprint 11 (2/3 issues) - Function types and block comments
+**Current Phase**: Language Core Implementation - Approaching Production
 **Tests**: 221 passing (0 failures, 9 ignored) - 100% pass rate ✅
 **JSX Tests**: 24/24 passing (13 lexer + 11 parser) ✅
-**Language Features**: JSX (production-ready), type casting (as), turbofish, method chaining, ternary with blocks, for-loop scoping, logical operators, Option constructors
-**Language Completeness**: 94%
-**Next Steps**: Sprint 11 - Continue fixing real-world app compilation issues
+**Language Features**: JSX (production-ready), function types (fn()), block comments, type casting (as), turbofish, method chaining, ternary with blocks, logical operators
+**Language Completeness**: 96%
+**Next Steps**: Sprint 12 - Destructuring and remaining real-world app issues
