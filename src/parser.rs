@@ -546,7 +546,8 @@ impl<'a> Parser<'a> {
         // Check for optional mut keyword: let mut x = ...
         let mutable = self.consume_if_matches(&TokenKind::Mut);
 
-        let name = self.parse_identifier()?;
+        // Parse pattern (identifier or tuple)
+        let pattern = self.parse_let_pattern()?;
 
         // Parse optional type annotation: let x: Type = value
         let type_annotation = if self.consume_if_matches(&TokenKind::Colon) {
@@ -557,7 +558,35 @@ impl<'a> Parser<'a> {
 
         self.expect_and_consume(&TokenKind::Assign)?;
         let value = self.parse_expression(Precedence::Lowest)?;
-        Ok(LetStatement { name, mutable, type_annotation, value })
+        Ok(LetStatement { pattern, mutable, type_annotation, value })
+    }
+
+    fn parse_let_pattern(&mut self) -> Result<Pattern, CompileError> {
+        if self.current_token().kind == TokenKind::LParen {
+            // Tuple pattern: (a, b, c)
+            self.expect_and_consume(&TokenKind::LParen)?;
+            let mut patterns = vec![];
+
+            // Parse first pattern
+            if self.current_token().kind != TokenKind::RParen {
+                patterns.push(self.parse_let_pattern()?);
+
+                // Parse remaining patterns
+                while self.consume_if_matches(&TokenKind::Comma) {
+                    if self.current_token().kind == TokenKind::RParen {
+                        break;  // Trailing comma
+                    }
+                    patterns.push(self.parse_let_pattern()?);
+                }
+            }
+
+            self.expect_and_consume(&TokenKind::RParen)?;
+            Ok(Pattern::Tuple(patterns))
+        } else {
+            // Simple identifier pattern
+            let ident = self.parse_identifier()?;
+            Ok(Pattern::Identifier(ident))
+        }
     }
 
     fn parse_return_statement(&mut self) -> Result<ReturnStatement, CompileError> {
@@ -710,15 +739,6 @@ impl<'a> Parser<'a> {
             iterator,
             body: BlockStatement { statements: body_statements },
         })
-    }
-
-    fn parse_assignment_statement(&mut self) -> Result<AssignmentStatement, CompileError> {
-        // This function is no longer used - assignment parsing is now integrated into parse_statement
-        // Keeping it for backwards compatibility
-        let target = Expression::Identifier(self.parse_identifier()?);
-        self.expect_and_consume(&TokenKind::Assign)?;
-        let value = self.parse_expression(Precedence::Lowest)?;
-        Ok(AssignmentStatement { target, value })
     }
 
     fn parse_expression_statement(&mut self) -> Result<Expression, CompileError> {
@@ -1445,32 +1465,6 @@ impl<'a> Parser<'a> {
         Ok(JsxOpeningTag { name, attributes, self_closing })
     }
 
-    fn parse_jsx_opening_tag(&mut self) -> Result<JsxOpeningTag, CompileError> {
-        self.expect_and_consume(&TokenKind::LAngle)?;
-        let name = self.parse_identifier()?;
-        let mut attributes = vec![];
-        while self.current_token().kind != TokenKind::RAngle &&
-              self.current_token().kind != TokenKind::Slash &&
-              self.current_token().kind != TokenKind::JsxSelfClose {
-            attributes.push(self.parse_jsx_attribute()?);
-        }
-        // Check for self-closing tag />
-        let self_closing = if self.consume_if_matches(&TokenKind::JsxSelfClose) {
-            // Self-closing tag doesn't enter JSX mode
-            true
-        } else if self.consume_if_matches(&TokenKind::Slash) {
-            // Self-closing with separate / and >
-            self.expect_and_consume(&TokenKind::RAngle)?;
-            true
-        } else {
-            // Regular opening tag
-            self.expect_and_consume(&TokenKind::RAngle)?;
-            // Lexer now manages JSX mode automatically via jsx_in_tag flag
-            false
-        };
-        Ok(JsxOpeningTag { name, attributes, self_closing })
-    }
-    
     fn parse_jsx_attribute(&mut self) -> Result<JsxAttribute, CompileError> {
         let name = self.parse_identifier()?;
         self.expect_and_consume(&TokenKind::Assign)?;
@@ -1571,7 +1565,7 @@ impl<'a> Parser<'a> {
         Ok(children)
     }
 
-    fn parse_jsx_closing_tag_with_mode_check(&mut self, was_jsx_mode: bool) -> Result<Identifier, CompileError> {
+    fn parse_jsx_closing_tag_with_mode_check(&mut self, _was_jsx_mode: bool) -> Result<Identifier, CompileError> {
         // Enter closing tag mode to prevent lexer from reading JSX text during closing tag parsing
         self.lexer.enter_closing_tag_mode();
 
@@ -1584,15 +1578,6 @@ impl<'a> Parser<'a> {
         self.lexer.exit_jsx_mode();
         self.lexer.exit_closing_tag_mode();
 
-        Ok(name)
-    }
-
-    fn parse_jsx_closing_tag(&mut self) -> Result<Identifier, CompileError> {
-        // Lexer manages JSX mode automatically via jsx_in_tag flag
-        self.expect_and_consume(&TokenKind::LAngle)?;
-        self.expect_and_consume(&TokenKind::Slash)?;
-        let name = self.parse_identifier()?;
-        self.expect_and_consume(&TokenKind::RAngle)?;
         Ok(name)
     }
 
@@ -1612,11 +1597,6 @@ impl<'a> Parser<'a> {
     fn current_precedence(&self) -> Precedence { PRECEDENCES.get(&self.current_token().kind).cloned().unwrap_or(Precedence::Lowest) }
     fn next_token(&mut self) {
         self.current = self.peek.clone();
-        self.peek = self.lexer.next_token();
-    }
-
-    // Re-fetch the peek token after changing lexer state (e.g., brace_depth, jsx_mode)
-    fn refresh_peek(&mut self) {
         self.peek = self.lexer.next_token();
     }
 

@@ -442,7 +442,7 @@ mod tests {
             start_function: None,
         };
 
-        let mut func = WasmFunction {
+        let func = WasmFunction {
             instructions: vec![
                 Instruction::I32Const(10),
                 Instruction::I32Const(20),

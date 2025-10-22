@@ -463,13 +463,16 @@ impl LanguageServer {
                     });
                 }
                 Statement::Let(let_stmt) => {
-                    completions.push(CompletionItem {
-                        label: let_stmt.name.value.clone(),
-                        kind: CompletionItemKind::Variable,
-                        detail: Some("Local variable".to_string()),
-                        documentation: None,
-                        insert_text: None,
-                    });
+                    // Add completions for all identifiers bound in the pattern
+                    for ident in let_stmt.pattern.bound_identifiers() {
+                        completions.push(CompletionItem {
+                            label: ident.value.clone(),
+                            kind: CompletionItemKind::Variable,
+                            detail: Some("Local variable".to_string()),
+                            documentation: None,
+                            insert_text: None,
+                        });
+                    }
                 }
                 Statement::Component(comp_def) => {
                     completions.push(CompletionItem {

@@ -92,7 +92,10 @@ impl TypeChecker {
         match stmt {
             Statement::Let(let_stmt) => {
                 let value_type = self.infer_expression(&let_stmt.value)?;
-                self.env.bind(let_stmt.name.value.clone(), value_type.clone());
+                // Register all identifiers from the pattern
+                for ident in let_stmt.pattern.bound_identifiers() {
+                    self.env.bind(ident.value.clone(), value_type.clone());
+                }
                 Ok(value_type)
             }
 
