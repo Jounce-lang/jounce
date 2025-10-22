@@ -1385,6 +1385,19 @@ impl<'a> Parser<'a> {
               self.current_token().kind != TokenKind::JsxSelfClose {
             attributes.push(self.parse_jsx_attribute()?);
         }
+
+        // Enter JSX mode now, before consuming closing tokens
+        // jsx_in_tag is still true, so > won't be read as JSX text
+        // For nested elements, we also increment jsx_depth to maintain proper tracking
+        if self.current_token().kind == TokenKind::RAngle {
+            if !was_jsx_mode {
+                self.lexer.enter_jsx_mode();
+            } else {
+                // Already in JSX mode, but increment depth for nested element
+                self.lexer.enter_jsx_mode();
+            }
+        }
+
         // Check for self-closing tag />
         let self_closing = if self.consume_if_matches(&TokenKind::JsxSelfClose) {
             // Self-closing tag doesn't enter JSX mode
@@ -1394,13 +1407,7 @@ impl<'a> Parser<'a> {
             self.expect_and_consume(&TokenKind::RAngle)?;
             true
         } else {
-            // Regular opening tag - enter JSX mode BEFORE consuming > if this is root element
-            if !was_jsx_mode {
-                self.lexer.enter_jsx_mode();
-                // Re-fetch peek token so it's tokenized with jsx_mode=true
-                self.refresh_peek();
-            }
-            // Now consume the > and the next tokens will be fetched with jsx_mode=true
+            // Regular opening tag - consume >
             self.expect_and_consume(&TokenKind::RAngle)?;
             false
         };
@@ -1497,8 +1504,6 @@ impl<'a> Parser<'a> {
             let is_lbrace = self.current_token().kind == TokenKind::LBrace;
             if is_jsx_open_brace || is_lbrace {
                 self.next_token(); // Consume the brace
-                // Re-fetch peek token because lexer's brace_depth was incremented when creating the { token
-                self.refresh_peek();
                 let expr = self.parse_expression(Precedence::Lowest)?;
                 if !self.consume_if_matches(&TokenKind::JsxCloseBrace) {
                     self.expect_and_consume(&TokenKind::RBrace)?;
@@ -1532,13 +1537,10 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::LAngle)?;
         self.expect_and_consume(&TokenKind::Slash)?;
         let name = self.parse_identifier()?;
-        // Exit JSX mode BEFORE consuming the closing > so the next token is parsed normally
-        if !was_jsx_mode {
-            self.lexer.exit_jsx_mode();
-            // Re-fetch peek token so it's tokenized with jsx_mode=false
-            self.refresh_peek();
-        }
+        // Consume the closing > FIRST, then exit JSX mode
         self.expect_and_consume(&TokenKind::RAngle)?;
+        // Always decrement jsx_depth for both root and nested elements
+        self.lexer.exit_jsx_mode();
         Ok(name)
     }
 
