@@ -42,7 +42,12 @@ impl Lexer {
         // Check if brace_depth is at or below the baseline for the current JSX element
         let baseline_brace_depth = self.jsx_baseline_brace_depths.last().copied().unwrap_or(0);
 
-        if self.jsx_mode && self.jsx_depth > 0 && self.brace_depth == baseline_brace_depth && !self.jsx_in_tag && !self.in_closing_tag && self.ch != '<' && self.ch != '{' && self.ch != '\0' {
+        // Read JSX text when at baseline brace depth (not inside expressions)
+        // OR when we've just finished parsing an opening tag (even if inside nested braces)
+        let at_baseline = self.brace_depth == baseline_brace_depth;
+        let can_read_jsx_text = self.jsx_mode && self.jsx_depth > 0 && at_baseline && !self.jsx_in_tag && !self.in_closing_tag && self.ch != '<' && self.ch != '{' && self.ch != '\0';
+
+        if can_read_jsx_text {
             return self.read_jsx_text();
         }
 
@@ -130,8 +135,15 @@ impl Lexer {
             '{' => {
                 // Track brace depth for JSX expressions
                 if self.jsx_mode {
+                    let baseline = self.jsx_baseline_brace_depths.last().copied().unwrap_or(0);
                     self.brace_depth += 1;
-                    Token::new(TokenKind::JsxOpenBrace, "{".to_string(), self.line, start_col)
+                    // Only use JsxOpenBrace for the first level (opening a JSX expression)
+                    // Nested braces should be regular LBrace tokens (for blocks, match, etc.)
+                    if self.brace_depth == baseline + 1 {
+                        Token::new(TokenKind::JsxOpenBrace, "{".to_string(), self.line, start_col)
+                    } else {
+                        Token::new(TokenKind::LBrace, "{".to_string(), self.line, start_col)
+                    }
                 } else {
                     Token::new(TokenKind::LBrace, "{".to_string(), self.line, start_col)
                 }
@@ -139,8 +151,16 @@ impl Lexer {
             '}' => {
                 // Track brace depth for JSX expressions
                 if self.jsx_mode && self.brace_depth > 0 {
+                    let baseline = self.jsx_baseline_brace_depths.last().copied().unwrap_or(0);
+                    // Only use JsxCloseBrace for the first level (closing a JSX expression)
+                    // Nested braces should be regular RBrace tokens
+                    let token = if self.brace_depth == baseline + 1 {
+                        Token::new(TokenKind::JsxCloseBrace, "}".to_string(), self.line, start_col)
+                    } else {
+                        Token::new(TokenKind::RBrace, "}".to_string(), self.line, start_col)
+                    };
                     self.brace_depth -= 1;
-                    Token::new(TokenKind::JsxCloseBrace, "}".to_string(), self.line, start_col)
+                    token
                 } else {
                     Token::new(TokenKind::RBrace, "}".to_string(), self.line, start_col)
                 }
@@ -692,25 +712,25 @@ mod tests {
 
         lexer.enter_jsx_mode();
 
-        // First { - JSX expression open
+        // First { - JSX expression open (baseline + 1)
         let token1 = lexer.next_token();
         assert_eq!(token1.kind, TokenKind::JsxOpenBrace);
 
-        // Inner { - still JSX brace because brace_depth was incremented
+        // Inner { - regular LBrace (baseline + 2)
+        // Nested braces inside JSX expressions are treated as regular braces
+        // to allow blocks, match expressions, etc.
         let token2 = lexer.next_token();
-        // The lexer treats nested braces in JSX mode as JSX braces
-        // This is actually correct behavior - all braces in JSX expressions are JSX braces
-        assert_eq!(token2.kind, TokenKind::JsxOpenBrace);
+        assert_eq!(token2.kind, TokenKind::LBrace);
 
         // Identifier
         let token3 = lexer.next_token();
         assert_eq!(token3.kind, TokenKind::Identifier);
 
-        // Inner } - JSX close brace
+        // Inner } - regular RBrace
         let token4 = lexer.next_token();
-        assert_eq!(token4.kind, TokenKind::JsxCloseBrace);
+        assert_eq!(token4.kind, TokenKind::RBrace);
 
-        // Outer } - JSX close brace
+        // Outer } - JSX close brace (back to baseline)
         let token5 = lexer.next_token();
         assert_eq!(token5.kind, TokenKind::JsxCloseBrace);
     }

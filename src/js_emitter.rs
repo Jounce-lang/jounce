@@ -599,16 +599,34 @@ impl JSEmitter {
                 let args = macro_call.arguments
                     .iter()
                     .map(|arg| self.generate_expression_js(arg))
-                    .collect::<Vec<_>>()
-                    .join(", ");
+                    .collect::<Vec<_>>();
 
                 // Map Rust-like macros to JavaScript equivalents
                 match macro_call.name.value.as_str() {
-                    "vec" => format!("[{}]", args),
-                    "println" => format!("console.log({})", args),
-                    "format" => format!("`{}`", args),
-                    "panic" => format!("throw new Error({})", args),
-                    _ => format!("{}({})", macro_call.name.value, args),
+                    "vec" => format!("[{}]", args.join(", ")),
+                    "println" => format!("console.log({})", args.join(", ")),
+                    "format" => {
+                        // Handle format! macro with string interpolation
+                        if args.is_empty() {
+                            "``".to_string()
+                        } else if args.len() == 1 {
+                            // Just a format string, no interpolation
+                            format!("`{}`", args[0].trim_matches('"'))
+                        } else {
+                            // Format string + arguments to interpolate
+                            let format_str = args[0].trim_matches('"');
+                            let mut result = format_str.to_string();
+
+                            // Replace each {} with ${arg}
+                            for arg in args.iter().skip(1) {
+                                result = result.replacen("{}", &format!("${{{}}}", arg), 1);
+                            }
+
+                            format!("`{}`", result)
+                        }
+                    }
+                    "panic" => format!("throw new Error({})", args.join(", ")),
+                    _ => format!("{}({})", macro_call.name.value, args.join(", ")),
                 }
             }
             Expression::IndexAccess(index) => {
