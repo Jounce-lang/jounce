@@ -36,6 +36,7 @@ pub mod rpc_generator; // RPC stub generation for client/server communication
 pub mod js_emitter; // JavaScript code generation for server and client bundles
 pub mod js_minifier; // JavaScript minification for production builds
 pub mod formatter; // Code formatter for consistent style
+pub mod watcher; // File watching and auto-recompilation
 
 use borrow_checker::BorrowChecker;
 use codegen::CodeGenerator;
