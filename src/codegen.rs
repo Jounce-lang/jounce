@@ -1537,8 +1537,8 @@ impl CodeGenerator {
                     // Look up user-defined function (direct call)
                     if let Some(&func_idx) = self.func_symbols.funcs.get(&ident.value) {
                         f.instruction(&Instruction::Call(func_idx));
-                    } else if ident.value == "Some" || ident.value == "None" {
-                        // Built-in Option constructors - skip WASM compilation
+                    } else if ident.value == "Some" || ident.value == "None" || ident.value == "Ok" || ident.value == "Err" {
+                        // Built-in Option/Result constructors - skip WASM compilation
                         // These are handled by JavaScript runtime
                         // For WASM, we just push a placeholder value (0)
                         f.instruction(&Instruction::I32Const(0));
@@ -1760,7 +1760,11 @@ impl CodeGenerator {
 
         let arm = &arms[arm_index];
 
-        match &arm.pattern {
+        // For OR patterns, use the first pattern for WASM generation
+        // TODO: Implement proper OR pattern matching in WASM
+        let pattern = &arm.patterns[0];
+
+        match pattern {
             Pattern::Wildcard | Pattern::Identifier(_) => {
                 // Wildcard or identifier patterns always match
                 // Just generate the body expression

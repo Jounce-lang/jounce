@@ -289,7 +289,7 @@ pub struct MatchExpression {
 
 #[derive(Debug, Clone)]
 pub struct MatchArm {
-    pub pattern: Pattern,
+    pub patterns: Vec<Pattern>,  // Support OR patterns: 3 | 4 | 5 => ...
     pub body: Box<Expression>,
 }
 
