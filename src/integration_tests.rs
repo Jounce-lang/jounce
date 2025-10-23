@@ -1898,4 +1898,148 @@ mod tests {
         assert!(client_js.contains(".value"),
                 "should generate .value unwrap for Option");
     }
+
+    // ========================================
+    // Generic Function Tests (Phase 5 Sprint 3)
+    // ========================================
+
+    #[test]
+    fn test_generic_identity_function() {
+        let source = r#"
+            fn identity<T>(value: T) -> T {
+                value
+            }
+
+            fn main() {
+                let x = identity(42);
+                let y = identity("hello");
+            }
+        "#;
+
+        let result = compile_source(source);
+        assert!(result.is_ok(), "generic identity function should compile");
+
+        let (_, client_js) = result.unwrap();
+        // Type parameters should be erased in JavaScript
+        assert!(client_js.contains("function identity(value)"),
+                "generic function should have type parameters erased");
+    }
+
+    #[test]
+    fn test_generic_multiple_type_params() {
+        let source = r#"
+            fn pair<T, U>(first: T, second: U) -> i32 {
+                42
+            }
+
+            fn main() {
+                let x = pair(1, "hello");
+                let y = pair("world", 3.14);
+            }
+        "#;
+
+        let result = compile_source(source);
+        assert!(result.is_ok(), "generic function with multiple type params should compile");
+
+        let (_, client_js) = result.unwrap();
+        assert!(client_js.contains("function pair(first, second)"),
+                "should generate function with multiple parameters");
+    }
+
+    #[test]
+    fn test_generic_with_array() {
+        let source = r#"
+            fn first<T>(items: [T]) -> T {
+                items[0]
+            }
+
+            fn main() {
+                let numbers = [1, 2, 3];
+                let x = first(numbers);
+            }
+        "#;
+
+        let result = compile_source(source);
+        assert!(result.is_ok(), "generic function with array should compile");
+
+        let (_, client_js) = result.unwrap();
+        assert!(client_js.contains("items[0]"),
+                "should generate array indexing");
+    }
+
+    #[test]
+    fn test_generic_with_option() {
+        let source = r#"
+            fn wrap<T>(value: T) -> Option<T> {
+                Some(value)
+            }
+
+            fn main() {
+                let wrapped = wrap(42);
+                match wrapped {
+                    Some(v) => println!("{}", v),
+                    None => println!("empty"),
+                }
+            }
+        "#;
+
+        let result = compile_source(source);
+        assert!(result.is_ok(), "generic function with Option should compile");
+
+        let (_, client_js) = result.unwrap();
+        assert!(client_js.contains("Some(value)"),
+                "should generate Option constructor");
+    }
+
+    #[test]
+    fn test_generic_with_result() {
+        let source = r#"
+            fn safe_divide<T>(a: i32, b: i32) -> Result<i32, String> {
+                if b == 0 {
+                    Err("division by zero")
+                } else {
+                    Ok(a / b)
+                }
+            }
+
+            fn main() {
+                let result = safe_divide(10, 2);
+                match result {
+                    Ok(v) => println!("{}", v),
+                    Err(e) => println!("{}", e),
+                }
+            }
+        "#;
+
+        let result = compile_source(source);
+        assert!(result.is_ok(), "generic function with Result should compile");
+
+        let (_, client_js) = result.unwrap();
+        assert!(client_js.contains("Err(") && client_js.contains("Ok("),
+                "should generate Result constructors");
+    }
+
+    #[test]
+    fn test_generic_higher_order_function() {
+        let source = r#"
+            fn apply<T, U>(value: T, f: fn(T) -> U) -> U {
+                f(value)
+            }
+
+            fn double(x: i32) -> i32 {
+                x * 2
+            }
+
+            fn main() {
+                let result = apply(5, double);
+            }
+        "#;
+
+        let result = compile_source(source);
+        assert!(result.is_ok(), "generic higher-order function should compile");
+
+        let (_, client_js) = result.unwrap();
+        assert!(client_js.contains("function apply(value, f)"),
+                "should generate higher-order function");
+    }
 }
