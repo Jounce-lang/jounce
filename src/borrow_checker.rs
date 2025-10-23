@@ -80,6 +80,16 @@ impl BorrowChecker {
             ResolvedType::ComplexType // Option<T> value
         );
 
+        // Add built-in Result constructors to global scope
+        checker.symbols.define(
+            "Ok".to_string(),
+            ResolvedType::ComplexType // Function that returns Result<T, E>
+        );
+        checker.symbols.define(
+            "Err".to_string(),
+            ResolvedType::ComplexType // Function that returns Result<T, E>
+        );
+
         checker
     }
 

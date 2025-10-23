@@ -1048,35 +1048,38 @@ impl SemanticAnalyzer {
         let mut has_wildcard = false;
 
         for arm in &match_expr.arms {
-            match &arm.pattern {
-                Pattern::Wildcard => {
-                    has_wildcard = true;
-                }
-                Pattern::Tuple(_) => {
-                    // TODO: Check tuple pattern exhaustiveness
-                    has_wildcard = true;  // Treat as wildcard for now
-                }
-                Pattern::EnumVariant { name, .. } => {
-                    // Extract the variant name (could be "Color::Red" format)
-                    let variant_name = if name.value.contains("::") {
-                        // Split "Color::Red" into ["Color", "Red"]
-                        let parts: Vec<&str> = name.value.split("::").collect();
-                        if parts.len() == 2 {
-                            parts[1].to_string()
+            // Check all patterns in OR pattern: 3 | 4 | 5 => ...
+            for pattern in &arm.patterns {
+                match pattern {
+                    Pattern::Wildcard => {
+                        has_wildcard = true;
+                    }
+                    Pattern::Tuple(_) => {
+                        // TODO: Check tuple pattern exhaustiveness
+                        has_wildcard = true;  // Treat as wildcard for now
+                    }
+                    Pattern::EnumVariant { name, .. } => {
+                        // Extract the variant name (could be "Color::Red" format)
+                        let variant_name = if name.value.contains("::") {
+                            // Split "Color::Red" into ["Color", "Red"]
+                            let parts: Vec<&str> = name.value.split("::").collect();
+                            if parts.len() == 2 {
+                                parts[1].to_string()
+                            } else {
+                                name.value.clone()
+                            }
                         } else {
                             name.value.clone()
-                        }
-                    } else {
-                        name.value.clone()
-                    };
-                    covered_variants.insert(variant_name);
-                }
-                Pattern::Identifier(_) => {
-                    // Identifier patterns act like wildcards
-                    has_wildcard = true;
-                }
-                Pattern::Literal(_) => {
-                    // Literals don't contribute to enum exhaustiveness
+                        };
+                        covered_variants.insert(variant_name);
+                    }
+                    Pattern::Identifier(_) => {
+                        // Identifier patterns act like wildcards
+                        has_wildcard = true;
+                    }
+                    Pattern::Literal(_) => {
+                        // Literals don't contribute to enum exhaustiveness
+                    }
                 }
             }
         }
@@ -1089,7 +1092,9 @@ impl SemanticAnalyzer {
         // Check if we're matching on an enum
         // Try to extract enum name from first variant pattern
         for arm in &match_expr.arms {
-            if let Pattern::EnumVariant { name, .. } = &arm.pattern {
+            // Check all patterns (handles OR patterns)
+            for pattern in &arm.patterns {
+            if let Pattern::EnumVariant { name, .. } = pattern {
                 if name.value.contains("::") {
                     let parts: Vec<&str> = name.value.split("::").collect();
                     if parts.len() == 2 {
@@ -1113,6 +1118,7 @@ impl SemanticAnalyzer {
                         break;
                     }
                 }
+            }
             }
         }
 

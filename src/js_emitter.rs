@@ -10,7 +10,7 @@
 // - server.js: Server-side code with HTTP server and RPC handlers
 // - client.js: Client-side code with RPC stubs and UI components
 
-use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression};
+use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression, ForInStatement, ForStatement};
 use crate::code_splitter::CodeSplitter;
 use crate::rpc_generator::RPCGenerator;
 use crate::source_map::SourceMapBuilder;
@@ -514,8 +514,71 @@ impl JSEmitter {
             Statement::Enum(enum_def) => {
                 self.generate_enum_js(enum_def)
             }
+            Statement::ForIn(for_in_stmt) => {
+                self.generate_for_in_js(for_in_stmt)
+            }
+            Statement::For(for_stmt) => {
+                self.generate_for_js(for_stmt)
+            }
             _ => "// Unsupported statement".to_string(),
         }
+    }
+
+    /// Generates JavaScript for a for-in loop
+    fn generate_for_in_js(&self, stmt: &ForInStatement) -> String {
+        // Check if the iterator is a range expression
+        if let Expression::Range(range) = &stmt.iterator {
+            // Generate a JavaScript for loop from the range
+            let start = if let Some(start_expr) = &range.start {
+                self.generate_expression_js(start_expr)
+            } else {
+                "0".to_string()
+            };
+
+            let end = if let Some(end_expr) = &range.end {
+                self.generate_expression_js(end_expr)
+            } else {
+                return "// ERROR: Range must have an end value".to_string();
+            };
+
+            let comparison = if range.inclusive { "<=" } else { "<" };
+            let body = self.generate_block_js(&stmt.body);
+
+            format!(
+                "for (let {} = {}; {} {} {}; {}++) {{\n{}\n  }}",
+                stmt.variable.value, start, stmt.variable.value, comparison, end, stmt.variable.value, body
+            )
+        } else {
+            // Regular for-in loop over an iterable
+            let iterator = self.generate_expression_js(&stmt.iterator);
+            let body = self.generate_block_js(&stmt.body);
+            format!("for (const {} of {}) {{\n{}\n  }}", stmt.variable.value, iterator, body)
+        }
+    }
+
+    /// Generates JavaScript for a C-style for loop
+    fn generate_for_js(&self, stmt: &ForStatement) -> String {
+        let init = if let Some(init_stmt) = &stmt.init {
+            // Strip semicolon from init statement if present
+            let init_str = self.generate_statement_js(init_stmt);
+            init_str.trim_end_matches(';').to_string()
+        } else {
+            "".to_string()
+        };
+
+        let condition = self.generate_expression_js(&stmt.condition);
+
+        let update = if let Some(update_stmt) = &stmt.update {
+            // Strip semicolon from update statement if present
+            let update_str = self.generate_statement_js(update_stmt);
+            update_str.trim_end_matches(';').to_string()
+        } else {
+            "".to_string()
+        };
+
+        let body = self.generate_block_js(&stmt.body);
+
+        format!("for ({}; {}; {}) {{\n{}\n  }}", init, condition, update, body)
     }
 
     /// Generates JavaScript helper functions for enum variants
@@ -771,12 +834,25 @@ impl JSEmitter {
 
         // Generate nested if-else for each arm
         for (i, arm) in match_expr.arms.iter().enumerate() {
-            let condition = self.generate_pattern_condition_js(&arm.pattern, "__match_value");
-            let body = self.generate_pattern_body_js(&arm.pattern, "__match_value", &arm.body);
+            // Generate OR condition for multiple patterns: pattern1 || pattern2 || pattern3
+            let conditions: Vec<String> = arm.patterns.iter()
+                .map(|p| self.generate_pattern_condition_js(p, "__match_value"))
+                .collect();
+            let condition = if conditions.len() == 1 {
+                conditions[0].clone()
+            } else {
+                format!("({})", conditions.join(" || "))
+            };
+
+            // Use the first pattern for body generation (all OR patterns must bind the same variables)
+            let body = self.generate_pattern_body_js(&arm.patterns[0], "__match_value", &arm.body);
+
+            // Check if all patterns are wildcards or identifiers (always match)
+            let is_wildcard_arm = arm.patterns.iter().all(|p| matches!(p, Pattern::Wildcard | Pattern::Identifier(_)));
 
             if i == 0 {
                 code.push_str(&format!("  if ({}) {{\n", condition));
-            } else if matches!(arm.pattern, Pattern::Wildcard | Pattern::Identifier(_)) {
+            } else if is_wildcard_arm {
                 // Wildcard or identifier patterns - no condition needed (always matches)
                 code.push_str("  else {\n");
             } else {
@@ -947,8 +1023,9 @@ mod tests {
 
         // Verify server.js contains expected code
         assert!(server_js.contains("HttpServer"));
-        assert!(server_js.contains("function get_user"));
-        assert!(server_js.contains("function format_name"));
+        // After Sprint 2 fix, server functions use module.exports.name = function() format
+        assert!(server_js.contains("module.exports.get_user = function"));
+        assert!(server_js.contains("module.exports.format_name = function"));
         assert!(server_js.contains("WebAssembly"));
         assert!(server_js.contains("server.rpc('get_user'"));
     }
