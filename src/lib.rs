@@ -182,3 +182,7 @@ impl LexerExt for Lexer {
         Ok(tokens)
     }
 }
+
+// Integration tests - tests that compile full programs end-to-end
+#[cfg(test)]
+mod integration_tests;

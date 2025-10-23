@@ -761,7 +761,13 @@ impl Formatter {
         self.indent_level += 1;
         for arm in &match_expr.arms {
             self.write_indent();
-            self.format_pattern(&arm.pattern);
+            // Format OR patterns: 3 | 4 | 5 => ...
+            for (i, pattern) in arm.patterns.iter().enumerate() {
+                if i > 0 {
+                    self.write(" | ");
+                }
+                self.format_pattern(pattern);
+            }
             self.write(" => ");
             self.format_expression(&arm.body);
             self.write(",");
@@ -1457,11 +1463,11 @@ mod tests {
                     })),
                     arms: vec![
                         MatchArm {
-                            pattern: Pattern::Literal(Expression::IntegerLiteral(1)),
+                            patterns: vec![Pattern::Literal(Expression::IntegerLiteral(1))],
                             body: Box::new(Expression::StringLiteral("one".to_string())),
                         },
                         MatchArm {
-                            pattern: Pattern::Wildcard,
+                            patterns: vec![Pattern::Wildcard],
                             body: Box::new(Expression::StringLiteral("other".to_string())),
                         },
                     ],

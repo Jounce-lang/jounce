@@ -11,6 +11,7 @@ enum Precedence {
     LogicalAnd,  // &&
     Equals,      // == !=
     LessGreater, // < > <= >=
+    Range,       // .. ..=
     Sum,         // + -
     Product,     // * / %
 }
@@ -26,6 +27,8 @@ lazy_static::lazy_static! {
         m.insert(TokenKind::RAngle, Precedence::LessGreater);
         m.insert(TokenKind::LtEq, Precedence::LessGreater);
         m.insert(TokenKind::GtEq, Precedence::LessGreater);
+        m.insert(TokenKind::DotDot, Precedence::Range);  // ..
+        m.insert(TokenKind::DotDotEq, Precedence::Range);  // ..=
         m.insert(TokenKind::Plus, Precedence::Sum);
         m.insert(TokenKind::Minus, Precedence::Sum);
         m.insert(TokenKind::Star, Precedence::Product);
@@ -658,9 +661,10 @@ impl<'a> Parser<'a> {
                     else_statements.push(self.parse_statement()?);
                 }
                 self.expect_and_consume(&TokenKind::RBrace)?;
-                Some(Box::new(Statement::Expression(Expression::Identifier(
-                    Identifier { value: "__else_block".to_string() }
-                )))) // Placeholder, will need better handling
+                // Wrap the parsed else block statements in a proper Block expression
+                Some(Box::new(Statement::Expression(Expression::Block(
+                    BlockStatement { statements: else_statements }
+                ))))
             }
         } else {
             None
@@ -1397,7 +1401,15 @@ impl<'a> Parser<'a> {
         // Parse match arms
         let mut arms = Vec::new();
         while self.current_token().kind != TokenKind::RBrace {
-            let pattern = self.parse_pattern()?;
+            // Parse patterns - support OR patterns: 3 | 4 | 5 => ...
+            let mut patterns = vec![self.parse_pattern()?];
+
+            // Collect additional patterns separated by |
+            while self.current_token().kind == TokenKind::Pipe {
+                self.next_token(); // consume |
+                patterns.push(self.parse_pattern()?);
+            }
+
             self.expect_and_consume(&TokenKind::FatArrow)?;
 
             // Parse body - can be a block { ... } or an expression
@@ -1414,7 +1426,7 @@ impl<'a> Parser<'a> {
                 Box::new(self.parse_expression(Precedence::Lowest)?)
             };
 
-            arms.push(MatchArm { pattern, body });
+            arms.push(MatchArm { patterns, body });
 
             // Optionally consume comma between arms
             self.consume_if_matches(&TokenKind::Comma);
@@ -1495,6 +1507,20 @@ impl<'a> Parser<'a> {
 
     fn parse_infix(&mut self, left: Expression, allow_struct_literals: bool) -> Result<Expression, CompileError> {
         let operator = self.current_token().clone();
+
+        // Handle range operators specially
+        if operator.kind == TokenKind::DotDot || operator.kind == TokenKind::DotDotEq {
+            let inclusive = operator.kind == TokenKind::DotDotEq;
+            self.next_token();
+            let precedence = self.current_precedence();
+            let right = self.parse_expression_internal(precedence, allow_struct_literals)?;
+            return Ok(Expression::Range(RangeExpression {
+                start: Some(Box::new(left)),
+                end: Some(Box::new(right)),
+                inclusive,
+            }));
+        }
+
         let precedence = self.current_precedence();
         self.next_token();
         let right = self.parse_expression_internal(precedence, allow_struct_literals)?;
