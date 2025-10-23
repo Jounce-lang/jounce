@@ -877,6 +877,13 @@ impl JSEmitter {
                 let inner = self.generate_expression_js(&await_expr.expression);
                 format!("await {}", inner)
             }
+            Expression::TryOperator(try_expr) => {
+                // Generate JavaScript for ? operator (error propagation)
+                // For now, simple unwrap - proper early return requires statement-level transformation
+                // TODO: Implement proper early return at function body level
+                let inner = self.generate_expression_js(&try_expr.expression);
+                format!("({}.value)", inner)
+            }
             Expression::Ternary(ternary) => {
                 // Generate JavaScript ternary expression: condition ? true_expr : false_expr
                 let condition = self.generate_expression_js(&ternary.condition);
