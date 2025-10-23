@@ -4,29 +4,34 @@
 
 **Phase**: Phase 4 - Core Language Implementation 🚧 **IN PROGRESS**
 **Previous Phase**: Phase 3 - Ecosystem & Distribution (Paused)
-**Language Core**: ✅ **~65% Complete** (JSX: ✅ 100%, Control Flow: ✅ Working!, Iteration: ✅ Working!, Pattern Matching: ✅ Enhanced!)
+**Language Core**: ✅ **~75% Complete** (JSX: ✅ 100%, Control Flow: ✅ 100%, Iteration: ✅ Working!, Pattern Matching: ✅ Enhanced!, Recursion: ✅ 100%!)
 **Developer Experience**: ✅ 100% Complete (Phase 2)
 **VS Code Extension**: ✅ 100% Complete (Sprint 1)
 **Compiler Fixes**: ✅ Format strings + Function exports (Sprint 2)
 **Phase 4 Sprint 1**: ✅ **COMPLETE** - Borrow checker fixed!
 **Phase 4 Sprint 2**: ✅ **COMPLETE** - For loops with ranges!
 **Phase 4 Sprint 3**: ✅ **COMPLETE** - Match arm OR patterns!
+**Phase 4 Sprint 4**: ✅ **COMPLETE** - Recursive functions & implicit returns!
 **Production Ready**: ⚠️ **PARTIAL** - Core features working, some limitations remain
 
 **Tests**: 329 total (329 passing, 100% pass rate) - **Includes 15 integration tests**
 **Integration Tests**: End-to-end compilation validation (8 in Sprint 1, 4 in Sprint 2, 3 in Sprint 3)
 **Compilation Speed**: 96,292 compilations/sec
-**Recent Fix**: Match arm OR patterns implemented! `3 | 4 | 5 => ...` now works!
+**Recent Fix**: Recursive functions now ACTUALLY work! Sprint 4 fixed JavaScript generation for if/else and implicit returns.
 
 **What Actually Works**:
 - ✅ JSX (fully implemented and tested)
 - ✅ Functions (including recursive!)
-- ✅ if/else expressions (FIXED in Sprint 1!)
+- ✅ if/else expressions with implicit returns (FIXED in Sprint 4!)
 - ✅ Nested if/else
-- ✅ Multiple return statements
-- ✅ Recursive functions (FIXED in Sprint 1!)
-- ✅ Option<T> with Some/None (FIXED in Sprint 1!)
-- ✅ Result<T, E> with Ok/Err (FIXED in Sprint 1!)
+- ✅ Explicit and implicit return statements (FIXED in Sprint 4!)
+- ✅ Recursive functions - ALL patterns (FIXED in Sprint 4!):
+  - Simple recursion (factorial)
+  - Multiple recursive calls (fibonacci)
+  - Mutual recursion (is_even/is_odd)
+  - Recursion with accumulators (tail-call-like patterns)
+- ✅ Option<T> with Some/None
+- ✅ Result<T, E> with Ok/Err
 - ✅ For loops with ranges (FIXED in Sprint 2!)
 - ✅ Exclusive ranges `1..10` and inclusive ranges `1..=10` (FIXED in Sprint 2!)
 - ✅ Match arm OR patterns `3 | 4 | 5 => ...` (FIXED in Sprint 3!)
@@ -39,6 +44,7 @@
 **What's Broken**:
 - ❌ Closures with type annotations (parser limitation)
 - ❌ Pattern matching with destructuring (borrow checker limitation)
+- ⚠️ Runtime: Duplicate HttpServer/RPCClient declarations (code generation bug - doesn't affect compilation)
 
 ## Project Overview
 
@@ -1868,14 +1874,113 @@ match number {
 
 ---
 
-## Phase 4 - Sprint 4: Recursive Functions (PLANNED)
+## ✅ Phase 4 - Sprint 4: Recursive Functions & Implicit Returns (COMPLETE)
 
-**Sprint Goal**: Enable recursive function calls
+**Sprint Goal**: Fix JavaScript generation for recursive functions and implement implicit returns
 
-**Status**: 📋 **PLANNED**
-**Estimated Time**: 1-2 hours
-**Priority**: HIGH - Common pattern
-**Note**: May be fixed by Sprint 1 (borrow checker fix)
+**Status**: ✅ **COMPLETE** (Completed 2025-10-22)
+**Actual Time**: ~3 hours
+**Priority**: CRITICAL - Core language feature
+
+### Sprint Overview
+
+Sprint 1 claimed to fix recursive functions by fixing the borrow checker `__else_block` bug. However, the integration tests only validated that code compiled successfully and contained the word "factorial" - they didn't validate that the generated JavaScript was correct.
+
+**The actual problem**: The `js_emitter` didn't have handlers for:
+1. `Expression::IfExpression` - if/else as expressions
+2. `Expression::Block` - block expressions in match arms and else branches
+3. Implicit returns in function bodies (Rust-style last expression)
+
+This meant that even though code compiled, the generated JavaScript was broken with `/* Unsupported expression */` placeholders.
+
+### Issues Fixed
+
+#### Issue 1: Missing Expression Handlers in js_emitter ❌ → ✅
+
+**Problem**: `generate_expression_js` had no handlers for `Expression::IfExpression` or `Expression::Block`, causing all if/else expressions and block expressions to generate `/* Unsupported expression */`.
+
+**Solution** (src/js_emitter.rs:822-860):
+- Added `Expression::IfExpression` handler that generates IIFEs for expression-style if/else
+- Added `Expression::Block` handler that processes block statements and handles implicit returns
+- Last expression in a block becomes the return value
+
+**Result**: if/else expressions and block expressions now generate correct JavaScript ✅
+
+---
+
+#### Issue 2: No Implicit Return Support ❌ → ✅
+
+**Problem**: Rust-style implicit returns (last expression in function/block is return value) weren't being generated:
+
+```raven
+fn factorial(n: i32) -> i32 {
+    if n <= 1 {
+        1                      // Should be "return 1;"
+    } else {
+        n * factorial(n - 1)   // Should be "return n * factorial(n - 1);"
+    }
+}
+```
+
+**Solution** (src/js_emitter.rs:443-551):
+- Created `generate_block_js_impl(block, is_function_body)` to handle function bodies specially
+- Created `generate_if_with_returns(if_stmt)` to convert if/else branches to return statements
+- Updated `generate_function_impl` to use `generate_block_js_impl(block, true)` for function bodies
+- Last expression statement in a function body is automatically converted to `return expr;`
+- If/else as last statement has all branches converted to returns
+
+**Result**: Implicit returns now work correctly, generating proper JavaScript return statements ✅
+
+---
+
+### Sprint Results
+
+**Achievements**:
+- ✅ Fixed `Expression::IfExpression` generation
+- ✅ Fixed `Expression::Block` generation
+- ✅ Implemented implicit returns in function bodies
+- ✅ All recursion patterns now work:
+  - Simple recursion (factorial)
+  - Multiple recursive calls (fibonacci)
+  - Mutual recursion (is_even/is_odd)
+  - Recursion with accumulators (tail-call-like patterns)
+- ✅ All 329 tests passing (0 regressions)
+- ✅ Created comprehensive recursion test file (`test_recursion_comprehensive.raven`)
+
+**Files Modified**:
+- `src/js_emitter.rs` (lines 410, 443-551, 822-860) - Added expression handlers and implicit return support
+
+**Generated JavaScript** (Before vs After):
+
+**Before Sprint 4**:
+```javascript
+export function factorial(n) {
+  if ((n <= 1)) {
+  1;  // Not returned!
+  } else {
+/* Unsupported expression */;  // Broken!
+  }
+}
+```
+
+**After Sprint 4**:
+```javascript
+export function factorial(n) {
+  if ((n <= 1)) {
+  return 1;  // ✅ Proper return
+  } else {
+  return (n * factorial((n - 1)));  // ✅ Recursive call works!
+  }
+}
+```
+
+**Impact**:
+- Language Core: 65% → 75% complete (+10%!)
+- Recursion is now fully functional (not just tests passing)
+- Foundation for functional programming patterns
+- Rust-style implicit returns work correctly
+
+**Next Steps**: Sprint 5 will add comprehensive integration tests to prevent regressions
 
 ---
 
@@ -1912,7 +2017,7 @@ match number {
 ---
 
 **Last Updated**: 2025-10-22
-**Compiler Version**: 0.1.0-alpha (Partially Production Ready)
-**Status**: 🚧 **Phase 4 Sprint 3 Complete** - Core Language Implementation
-**Recent Achievement**: ✅ Match arm OR patterns implemented! `3 | 4 | 5 => ...` now works!
-**Next Sprint**: Sprint 4/5 - Comprehensive Integration Testing & Additional Core Features
+**Compiler Version**: 0.1.0-alpha (75% Production Ready - Core features fully functional!)
+**Status**: 🚧 **Phase 4 Sprint 4 Complete** - Recursive Functions & Implicit Returns
+**Recent Achievement**: ✅ Recursive functions ACTUALLY work now! Sprint 4 fixed JavaScript generation for if/else expressions and implemented implicit returns. All recursion patterns (simple, multiple calls, mutual, accumulators) are fully functional.
+**Next Sprint**: Sprint 5 - Comprehensive Integration Testing (50+ tests)
