@@ -406,7 +406,8 @@ impl JSEmitter {
             .join(", ");
 
         let async_keyword = if func.is_async { "async " } else { "" };
-        let body = self.generate_block_js(&func.body);
+        // Use generate_block_js_impl with is_function_body=true to handle implicit returns
+        let body = self.generate_block_js_impl(&func.body, true);
 
         if is_server {
             // Server-side: module.exports.name = function() { ... }
@@ -441,16 +442,113 @@ impl JSEmitter {
     }
 
     /// Generates JavaScript code for a block statement
-    fn generate_block_js(&self, block: &BlockStatement) -> String {
+    /// If is_function_body is true, the last expression will be converted to a return statement
+    fn generate_block_js_impl(&self, block: &BlockStatement, is_function_body: bool) -> String {
         let mut output = String::new();
 
-        for stmt in &block.statements {
+        for (i, stmt) in block.statements.iter().enumerate() {
+            let is_last = i == block.statements.len() - 1;
+
             output.push_str("  ");
-            output.push_str(&self.generate_statement_js(stmt));
+
+            // If this is a function body and the last statement, handle implicit returns
+            if is_function_body && is_last {
+                match stmt {
+                    Statement::Expression(expr) => {
+                        // Last expression becomes a return
+                        output.push_str(&format!("return {};", self.generate_expression_js(expr)));
+                    }
+                    Statement::If(if_stmt) => {
+                        // Convert if/else branches to returns
+                        output.push_str(&self.generate_if_with_returns(if_stmt));
+                    }
+                    _ => {
+                        // Other statements (return, let, etc.) stay as-is
+                        output.push_str(&self.generate_statement_js(stmt));
+                    }
+                }
+            } else {
+                output.push_str(&self.generate_statement_js(stmt));
+            }
+
             output.push('\n');
         }
 
         output
+    }
+
+    /// Generates JavaScript code for a block statement (normal blocks, not function bodies)
+    fn generate_block_js(&self, block: &BlockStatement) -> String {
+        self.generate_block_js_impl(block, false)
+    }
+
+    /// Generates an if statement with return statements in each branch (for implicit returns)
+    fn generate_if_with_returns(&self, if_stmt: &crate::ast::IfStatement) -> String {
+        let condition = self.generate_expression_js(&if_stmt.condition);
+
+        // Generate then branch with returns
+        let mut then_code = String::new();
+        for (i, stmt) in if_stmt.then_branch.statements.iter().enumerate() {
+            let is_last = i == if_stmt.then_branch.statements.len() - 1;
+            then_code.push_str("  ");
+
+            if is_last {
+                match stmt {
+                    Statement::Expression(expr) => {
+                        then_code.push_str(&format!("return {};", self.generate_expression_js(expr)));
+                    }
+                    Statement::If(nested_if) => {
+                        then_code.push_str(&self.generate_if_with_returns(nested_if));
+                    }
+                    _ => {
+                        then_code.push_str(&self.generate_statement_js(stmt));
+                    }
+                }
+            } else {
+                then_code.push_str(&self.generate_statement_js(stmt));
+            }
+            then_code.push('\n');
+        }
+
+        if let Some(else_branch) = &if_stmt.else_branch {
+            let else_code = match &**else_branch {
+                Statement::If(nested_if) => {
+                    self.generate_if_with_returns(nested_if)
+                }
+                Statement::Expression(Expression::Block(block)) => {
+                    let mut code = String::new();
+                    for (i, stmt) in block.statements.iter().enumerate() {
+                        let is_last = i == block.statements.len() - 1;
+                        code.push_str("  ");
+
+                        if is_last {
+                            match stmt {
+                                Statement::Expression(expr) => {
+                                    code.push_str(&format!("return {};", self.generate_expression_js(expr)));
+                                }
+                                Statement::If(nested_if) => {
+                                    code.push_str(&self.generate_if_with_returns(nested_if));
+                                }
+                                _ => {
+                                    code.push_str(&self.generate_statement_js(stmt));
+                                }
+                            }
+                        } else {
+                            code.push_str(&self.generate_statement_js(stmt));
+                        }
+                        code.push('\n');
+                    }
+                    code
+                }
+                _ => {
+                    format!("  {}\n", self.generate_statement_js(else_branch))
+                }
+            };
+
+            format!("if ({}) {{\n{}\n  }} else {{\n{}\n  }}", condition, then_code, else_code)
+        } else {
+            format!("if ({}) {{\n{}\n  }}", condition, then_code)
+        }
     }
 
     /// Generates JavaScript code for a statement
@@ -818,6 +916,45 @@ impl JSEmitter {
             }
             Expression::Match(match_expr) => {
                 self.generate_match_expression_js(match_expr)
+            }
+            Expression::IfExpression(if_expr) => {
+                // Generate JavaScript for if/else expressions
+                let condition = self.generate_expression_js(&if_expr.condition);
+
+                // Check if branches are simple expressions or blocks
+                let then_code = self.generate_expression_js(&if_expr.then_expr);
+
+                if let Some(else_expr) = &if_expr.else_expr {
+                    let else_code = self.generate_expression_js(else_expr);
+                    // Use an IIFE to create an expression that returns a value
+                    format!("(() => {{ if ({}) {{ return {}; }} else {{ return {}; }} }})()",
+                            condition, then_code, else_code)
+                } else {
+                    // No else branch - just generate if statement (returns undefined if condition is false)
+                    format!("(() => {{ if ({}) {{ return {}; }} }})()", condition, then_code)
+                }
+            }
+            Expression::Block(block) => {
+                // Generate JavaScript for block expressions
+                // Blocks are used in match arms, if expressions, etc.
+                let mut code = String::new();
+                for (i, stmt) in block.statements.iter().enumerate() {
+                    // Check if this is the last statement and it's an expression (implicit return)
+                    if i == block.statements.len() - 1 {
+                        if let Statement::Expression(expr) = stmt {
+                            // Last expression in block is an implicit return
+                            code.push_str(&self.generate_expression_js(expr));
+                        } else {
+                            // Last statement is not an expression, generate normally
+                            code.push_str(&self.generate_statement_js(stmt));
+                        }
+                    } else {
+                        // Not the last statement, generate normally with newline
+                        code.push_str(&self.generate_statement_js(stmt));
+                        code.push_str("\n");
+                    }
+                }
+                code
             }
             _ => "/* Unsupported expression */".to_string(),
         }
