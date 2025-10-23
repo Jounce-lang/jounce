@@ -538,10 +538,18 @@ impl TypeChecker {
             }
 
             Expression::TryOperator(try_expr) => {
-                // Process the inner expression recursively
-                // In a full implementation, we would verify that the inner expression
-                // returns a Result<T, E> type and extract the T type
-                self.infer_expression(&try_expr.expression)
+                // Infer the type of the inner expression
+                let inner_type = self.infer_expression(&try_expr.expression)?;
+
+                // If the inner type is Option<T>, extract T
+                if let Type::Option(inner) = inner_type {
+                    return Ok(*inner);
+                }
+
+                // For Result<T, E> and other cases, return Any
+                // This is consistent with how Ok/Err are treated (line 304-307)
+                // TODO: Add proper Result<T, E> type support to the type system
+                Ok(Type::Any)
             }
 
             Expression::Ternary(ternary) => {

@@ -1274,17 +1274,11 @@ impl CodeGenerator {
                 // For now, push a dummy value
                 f.instruction(&Instruction::I32Const(0));
             }
-            Expression::TryOperator(_try_expr) => {
+            Expression::TryOperator(try_expr) => {
                 // Try operator for error propagation
-                // In a full implementation, this would:
-                // 1. Evaluate the inner expression (which should return Result<T, E>)
-                // 2. Check if it's Ok or Err
-                // 3. If Ok, unwrap and continue
-                // 4. If Err, propagate the error by returning early
-                // For now, return a placeholder comment
-                return Err(CompileError::Generic(
-                    "// Try operator".to_string()
-                ));
+                // For now, just compile the inner expression
+                // TODO: Implement proper Result unwrapping in WASM
+                self.generate_expression(&try_expr.expression, f)?;
             }
             Expression::Ternary(ternary) => {
                 // Generate code for ternary expression: condition ? true_expr : false_expr
