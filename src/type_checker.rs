@@ -33,7 +33,17 @@ impl TypeChecker {
                     "f32" | "f64" => Type::Float,
                     "bool" => Type::Bool,
                     "str" | "String" => Type::String,
-                    _ => Type::Named(ident.value.clone()),
+                    _ => {
+                        // Check if this is a generic type parameter in scope
+                        // If so, return Type::Any (type erasure)
+                        if let Some(ty) = self.env.lookup(&ident.value) {
+                            if ty == Type::Any {
+                                // This is a generic type parameter
+                                return Type::Any;
+                            }
+                        }
+                        Type::Named(ident.value.clone())
+                    }
                 }
             }
             TypeExpression::Generic(ident, args) => {
@@ -141,6 +151,13 @@ impl TypeChecker {
 
             Statement::Function(func_def) => {
                 self.env.push_scope();
+
+                // Bind generic type parameters as Type::Any
+                // This allows them to unify with any concrete type during type checking
+                // (Type erasure approach - generics are erased at runtime like TypeScript)
+                for type_param in &func_def.type_params {
+                    self.env.bind(type_param.value.clone(), Type::Any);
+                }
 
                 // Bind parameters to scope with their actual types
                 let mut param_types = Vec::new();
