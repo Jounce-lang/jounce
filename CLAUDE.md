@@ -80,13 +80,75 @@ ls -1 packages/ | wc -l
 
 ## 📂 Key Files
 
+### Compiler
 - `src/main.rs` - CLI (1340 lines)
 - `src/lexer.rs`, `src/parser.rs`, `src/js_emitter.rs` - Compiler
 - `src/module_loader.rs` - Import resolution
 - `src/cache/mod.rs` - Build cache
 - `packages/` - 35 complete packages
-- `ROADMAP.md` - Development roadmap
+
+### Documentation (NEW Strategy!)
+- **`FEATURES.md`** ⭐ - SINGLE SOURCE OF TRUTH for what's implemented
+- **`EXAMPLE_APPS.md`** ⭐ - User-facing app showcase and tutorials
+- **`CLAUDE.md`** (this file) - Session-by-session dev guide
+- **`ROADMAP.md`** - High-level phases and timeline
+- **`BUILDING_APPS.md`** - App development patterns
 - `CLAUDE_ARCHIVE.md` - Full history (archived)
+
+---
+
+## 📚 Documentation Strategy (Session 4)
+
+**Problem**: 90+ markdown files scattered everywhere - hard to find what's implemented!
+
+**Solution**: Two primary documents + supporting files
+
+### 1️⃣ **FEATURES.md** - For Developers (Us)
+**Purpose**: SINGLE SOURCE OF TRUTH - what's implemented, tested, working
+**When to use**: Before building ANY feature - check here first!
+
+**Contents**:
+- ✅ Complete feature inventory with examples
+- ✅ File locations (parser.rs:793, etc.)
+- ✅ What works, what's partial, what's broken
+- ✅ All 35 packages listed with test counts
+- ✅ Known limitations clearly marked
+- ⚠️ Update after every major feature
+
+**Rule**: Check FEATURES.md BEFORE building anything to avoid duplicates!
+
+### 2️⃣ **EXAMPLE_APPS.md** - For Users
+**Purpose**: Show what's possible + how to build it yourself
+**When to use**: For onboarding, tutorials, showcasing Jounce
+
+**Contents**:
+- 🎯 What each app demonstrates
+- ❌ What features we left out (and why)
+- 📝 How to recreate the app (ask LLM → compile → run)
+- 🎓 Learning progression (beginner → advanced)
+- 💬 Template code for new apps
+
+**Workflow**:
+```
+User: "How do I build X?"
+→ Check EXAMPLE_APPS.md
+→ See similar app
+→ Ask LLM for code
+→ Compile with jnc
+→ Deploy!
+```
+
+### 3️⃣ **Supporting Docs**
+- **CLAUDE.md** (this file) - Session-by-session progress, for continuity
+- **ROADMAP.md** - High-level phases, timeline, what's next
+- **BUILDING_APPS.md** - Detailed development patterns (keep for reference)
+
+### 4️⃣ **Archive Everything Else**
+- `docs/archive/` - Old progress files (300KB+ of history)
+- `docs/archived/` - Outdated technical docs
+- Ignore unless debugging old issues
+
+**Total**: 2 primary docs (FEATURES + EXAMPLE_APPS) + 3 supporting = MUCH clearer!
 
 ---
 
