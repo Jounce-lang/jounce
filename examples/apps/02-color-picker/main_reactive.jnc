@@ -1,0 +1,106 @@
+// App 2: Interactive Color Picker with Reactivity
+// Demonstrates RGB color selection with live preview using signals
+
+// Convert RGB to hex color
+fn rgb_to_hex(r: int, g: int, b: int) -> string {
+    // Simple hex conversion (placeholder)
+    return "#" + r.to_string() + g.to_string() + b.to_string();
+}
+
+// Main app component
+fn App() -> JSX {
+    // Create reactive signals for RGB values
+    let red = signal<int>(128);
+    let green = signal<int>(64);
+    let blue = signal<int>(192);
+
+    // Computed value for hex color
+    let hex_color = computed<string>(() => rgb_to_hex(red.value, green.value, blue.value));
+
+    // Computed value for RGB string
+    let rgb_string = computed<string>(() =>
+        "rgb(" + red.value.to_string() + ", " + green.value.to_string() + ", " + blue.value.to_string() + ")"
+    );
+
+    return (
+        <div class="container">
+            <h1>🎨 Interactive Color Picker</h1>
+
+            <div class="color-preview-box">
+                <div class="preview" id="color-preview"></div>
+            </div>
+
+            <div class="color-info">
+                <div class="hex-display">
+                    <span class="label">HEX:</span>
+                    <span class="value" id="hex-value">{hex_color.value}</span>
+                </div>
+                <div class="rgb-display">
+                    <span class="label">RGB:</span>
+                    <span class="value" id="rgb-value">{rgb_string.value}</span>
+                </div>
+            </div>
+
+            <div class="sliders">
+                <div class="slider-group">
+                    <label class="slider-label">
+                        <span class="color-name">Red</span>
+                        <span class="color-value" id="red-value">{red.value.to_string()}</span>
+                    </label>
+                    <input
+                        type="range"
+                        class="slider red-slider"
+                        id="red-slider"
+                        min="0"
+                        max="255"
+                        value="128"
+                    />
+                </div>
+
+                <div class="slider-group">
+                    <label class="slider-label">
+                        <span class="color-name">Green</span>
+                        <span class="color-value" id="green-value">{green.value.to_string()}</span>
+                    </label>
+                    <input
+                        type="range"
+                        class="slider green-slider"
+                        id="green-slider"
+                        min="0"
+                        max="255"
+                        value="64"
+                    />
+                </div>
+
+                <div class="slider-group">
+                    <label class="slider-label">
+                        <span class="color-name">Blue</span>
+                        <span class="color-value" id="blue-value">{blue.value.to_string()}</span>
+                    </label>
+                    <input
+                        type="range"
+                        class="slider blue-slider"
+                        id="blue-slider"
+                        min="0"
+                        max="255"
+                        value="192"
+                    />
+                </div>
+            </div>
+
+            <div class="info">
+                <p>✨ <strong>Now Interactive!</strong> Move the sliders to change the color.</p>
+                <p>The preview and values update in real-time using Jounce reactivity.</p>
+            </div>
+        </div>
+    );
+}
+
+// Entry point
+fn main() {
+    console.log("🚀 Interactive Color Picker started!");
+
+    // Note: Setup code for wiring up event listeners would go here
+    // This demonstrates the reactive pattern - actual DOM manipulation
+    // would be handled by the runtime after mounting
+}

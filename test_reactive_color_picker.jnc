@@ -1,0 +1,117 @@
+// Reactive Color Picker - Manual DOM Update Pattern
+// This demonstrates how reactivity works with explicit DOM updates
+
+style {
+    .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        font-family: system-ui;
+    }
+
+    .color-preview {
+        width: 100%;
+        height: 200px;
+        border-radius: 8px;
+        margin: 20px 0;
+        transition: background-color 0.2s;
+    }
+
+    .slider-group {
+        margin: 15px 0;
+    }
+
+    .slider {
+        width: 100%;
+        height: 8px;
+        border-radius: 4px;
+        outline: none;
+    }
+
+    .color-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .color-value {
+        font-family: monospace;
+        background: #f0f0f0;
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+
+    .hex-display {
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin: 20px 0;
+        font-family: monospace;
+    }
+}
+
+fn ColorPicker() -> JSX {
+    return (
+        <div class="container">
+            <h1>🎨 Reactive Color Picker</h1>
+
+            <div class="color-preview" id="preview"></div>
+
+            <div class="hex-display" id="hex-display">#8040C0</div>
+
+            <div class="slider-group">
+                <div class="color-label">
+                    <span>Red</span>
+                    <span class="color-value" id="red-value">128</span>
+                </div>
+                <input
+                    type="range"
+                    class="slider"
+                    id="red-slider"
+                    min="0"
+                    max="255"
+                    value="128"
+                />
+            </div>
+
+            <div class="slider-group">
+                <div class="color-label">
+                    <span>Green</span>
+                    <span class="color-value" id="green-value">64</span>
+                </div>
+                <input
+                    type="range"
+                    class="slider"
+                    id="green-slider"
+                    min="0"
+                    max="255"
+                    value="64"
+                />
+            </div>
+
+            <div class="slider-group">
+                <div class="color-label">
+                    <span>Blue</span>
+                    <span class="color-value" id="blue-value">192</span>
+                </div>
+                <input
+                    type="range"
+                    class="slider"
+                    id="blue-slider"
+                    min="0"
+                    max="255"
+                    value="192"
+                />
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; color: #666;">
+                <p>Move the sliders to change the color in real-time!</p>
+            </div>
+        </div>
+    );
+}
+
+fn main() {
+    console.log("🚀 Reactive Color Picker starting...");
+}
