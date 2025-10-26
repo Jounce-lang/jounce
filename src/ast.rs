@@ -310,6 +310,7 @@ pub enum Expression {
     ArrayLiteral(ArrayLiteral),
     TupleLiteral(TupleLiteral),
     StructLiteral(StructLiteral),
+    ObjectLiteral(ObjectLiteral),  // { key: value } JavaScript-style objects
     Prefix(PrefixExpression),
     Spread(SpreadExpression),  // ...expr (spread operator in arrays)
     Infix(InfixExpression),
@@ -434,6 +435,11 @@ pub struct TupleLiteral {
 pub struct StructLiteral {
     pub name: Identifier,
     pub fields: Vec<(Identifier, Expression)>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ObjectLiteral {
+    pub fields: Vec<(Identifier, Expression)>,  // { key: value, ... }
 }
 
 #[derive(Debug, Clone)]

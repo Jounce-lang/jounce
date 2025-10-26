@@ -763,6 +763,14 @@ impl SemanticAnalyzer {
                 // Return the struct type
                 Ok(ResolvedType::Struct(struct_lit.name.value.clone()))
             }
+            Expression::ObjectLiteral(obj_lit) => {
+                // Object literals are JavaScript objects - just analyze field values
+                for (_field_name, field_value) in &obj_lit.fields {
+                    self.analyze_expression_with_expected(field_value, None)?;
+                }
+                // Return Unknown type (JavaScript objects are dynamic)
+                Ok(ResolvedType::Unknown)
+            }
             Expression::FieldAccess(field_access) => {
                 // Analyze the object expression to get its type
                 let object_type =

@@ -1,0 +1,8 @@
+// Simple object literal test
+fn main() {
+    let post = {
+        id: 1,
+        title: "Hello",
+        tags: ["rust", "jounce"]
+    };
+}
