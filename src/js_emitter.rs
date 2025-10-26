@@ -647,6 +647,15 @@ impl JSEmitter {
             output.push_str(&self.generate_impl_block_js(impl_block));
         }
 
+        // Emit script blocks (raw JavaScript)
+        if !self.splitter.script_blocks.is_empty() {
+            output.push_str("// Script blocks (raw JavaScript)\n");
+            for script in &self.splitter.script_blocks {
+                output.push_str(&script.code);
+                output.push_str("\n\n");
+            }
+        }
+
         // Generate client function implementations
         output.push_str("// Client function implementations\n");
         for func in &self.splitter.client_functions {
