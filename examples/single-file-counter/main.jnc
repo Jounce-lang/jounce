@@ -7,8 +7,9 @@
 
   // Auto-update DOM when count changes
   effect(() => {
+    const value = count.value; // Read value FIRST to establish dependency
     const el = document.getElementById('count');
-    if (el) el.textContent = count.value;
+    if (el) el.textContent = value;
   });
 
   // Mount app to DOM
