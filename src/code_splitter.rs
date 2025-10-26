@@ -38,6 +38,7 @@ impl CodeSplitter {
             structs: Vec::new(),
             enums: Vec::new(),
             impl_blocks: Vec::new(),
+            script_blocks: Vec::new(),
         }
     }
 
@@ -66,6 +67,10 @@ impl CodeSplitter {
                 Statement::ImplBlock(impl_block) => {
                     // Impl blocks are shared across server and client
                     self.impl_blocks.push(impl_block.clone());
+                }
+                Statement::ScriptBlock(script_block) => {
+                    // Script blocks are raw JavaScript for the client
+                    self.script_blocks.push(script_block.clone());
                 }
                 // Other statements (traits, etc.) are currently ignored
                 // In the future, we may want to handle these differently
