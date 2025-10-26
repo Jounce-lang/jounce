@@ -1175,6 +1175,10 @@ impl JSEmitter {
             Statement::ImplBlock(impl_block) => {
                 self.generate_impl_block_js(impl_block)
             }
+            Statement::ScriptBlock(script) => {
+                // Emit raw JavaScript code directly
+                script.code.clone()
+            }
             _ => "// Unsupported statement".to_string(),
         }
     }

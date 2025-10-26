@@ -18,6 +18,7 @@ pub struct CodeSplitter {
     pub structs: Vec<crate::ast::StructDefinition>,
     pub enums: Vec<crate::ast::EnumDefinition>,
     pub impl_blocks: Vec<crate::ast::ImplBlock>,
+    pub script_blocks: Vec<crate::ast::ScriptBlock>,  // Raw JavaScript blocks
 }
 
 impl Default for CodeSplitter {

@@ -1,0 +1,17 @@
+// Test script block support
+<script>
+  // This is raw JavaScript that should be embedded directly
+  console.log("Script block loaded!");
+
+  function initApp() {
+    const posts = [];
+    const user = { name: "Alice", age: 30 };
+    console.log("App initialized with", posts.length, "posts");
+  }
+
+  initApp();
+</script>
+
+fn main() {
+    let message = "Hello from Jounce!";
+}

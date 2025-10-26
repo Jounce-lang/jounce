@@ -192,6 +192,7 @@ impl BorrowChecker {
             Statement::Trait(_) => Ok(()),
             Statement::Style(_) => Ok(()),  // Phase 13: Style blocks don't affect borrow checking
             Statement::Theme(_) => Ok(()),  // Phase 13: Theme blocks don't affect borrow checking
+            Statement::ScriptBlock(_) => Ok(()),  // Script blocks are raw JavaScript, don't affect borrow checking
         }
     }
 
