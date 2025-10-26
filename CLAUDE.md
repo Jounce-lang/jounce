@@ -1,8 +1,8 @@
 # CLAUDE.md - Jounce Development Guide
 
-**Version**: v0.8.5 "Compiler Fixes in Progress"
-**Current Status**: Session 6 - Fixing single-file workflow (Phase 1 ✅, Phase 2 🚧)
-**Last Updated**: October 26, 2025 (Session 6 - In Progress)
+**Version**: v0.8.6 "Session 6 - Compiler Fixes 75% Complete"
+**Current Status**: Fixing single-file workflow (Phase 1-3 ✅, Phase 4 next)
+**Last Updated**: October 26, 2025 (Session 6)
 
 ---
 
@@ -29,21 +29,7 @@ main.jnc (ONE FILE) → cargo compile → Working App
 
 ---
 
-## ⚠️ MEMORY MANAGEMENT
-
-**IMPORTANT**: Monitor token usage during long sessions.
-
-When usage reaches **70% (140k/200k tokens)**:
-1. **STOP** and notify user
-2. **Write next steps** to this file
-3. **Commit all work**
-4. User will clear memory and resume
-
-**Why 70%?** Leaves buffer for final commits and documentation updates before hitting limits.
-
----
-
-## 🎯 Current Status (v0.8.0)
+## 📍 Current Status (v0.8.6)
 
 **✅ MILESTONE ACHIEVED: 35/35 Packages Complete!**
 
@@ -52,793 +38,31 @@ When usage reaches **70% (140k/200k tokens)**:
 - Reactivity system: ✅ Complete (signal, computed, effect, batch)
 - Standard library: ✅ Complete (JSON, DateTime, Crypto, File I/O, YAML)
 - **Package ecosystem: ✅ 35 packages complete!**
-- Tests: **850+ passing** (core + packages)
+- Tests: **625+ passing** (core + packages)
 - Build speed: **102x faster** with cache
 
----
-
-## 📦 35-Package Ecosystem
-
-**Foundation (5):** router, http, forms, store, i18n
-**Backend (10):** auth, db, cache, websocket, rpc, queue, rate-limit, config, validation, metrics
-**Content (6):** markdown, email, image, pdf, xlsx, sanitizer
-**Dev Tools (6):** logger, testing, cli, deploy, docs, utils
-**Features (8):** ui, theme, animate, search, notification, storage, workflow, scheduler, templates
-**Integration (extras):** localization, analytics, payment, graphql
+**35-Package Ecosystem:**
+- **Foundation (5):** router, http, forms, store, i18n
+- **Backend (10):** auth, db, cache, websocket, rpc, queue, rate-limit, config, validation, metrics
+- **Content (6):** markdown, email, image, pdf, xlsx, sanitizer
+- **Dev Tools (6):** logger, testing, cli, deploy, docs, utils
+- **Features (8):** ui, theme, animate, search, notification, storage, workflow, scheduler, templates
+- **Integration (extras):** localization, analytics, payment, graphql
 
 ---
 
-## 🔄 Development Workflow
+## 🔴 SESSION 5 REALITY CHECK (October 26, 2025)
 
-1. Work on current task (track with TodoWrite)
-2. Commit frequently with detailed messages
-3. Update docs (README.md, ROADMAP.md)
-4. Push to GitHub
-5. Move to next task
+### **CRITICAL TRUTH: The Compiler Was NOT Built for Single-File Reactive Apps**
 
-**Goal**: Build example apps showcasing the 35-package ecosystem, then expand to 100 packages.
-
----
-
-## 🚀 Quick Commands
-
-```bash
-# Build & test
-cargo build --release && cargo test
-
-# Compile project
-cd my-app/ && jnc compile main.jnc
-
-# Run tests
-jnc test --verbose
-
-# Watch mode
-jnc watch src --output dist
-
-# Package count
-ls -1 packages/ | wc -l
-```
-
----
-
-## 📂 Key Files
-
-### Compiler
-- `src/main.rs` - CLI (1340 lines)
-- `src/lexer.rs`, `src/parser.rs`, `src/js_emitter.rs` - Compiler
-- `src/module_loader.rs` - Import resolution
-- `src/cache/mod.rs` - Build cache
-- `packages/` - 35 complete packages
-
-### Documentation (NEW Strategy!)
-- **`FEATURES.md`** ⭐ - SINGLE SOURCE OF TRUTH for what's implemented
-- **`EXAMPLE_APPS.md`** ⭐ - User-facing app showcase and tutorials
-- **`CLAUDE.md`** (this file) - Session-by-session dev guide
-- **`ROADMAP.md`** - High-level phases and timeline
-- **`BUILDING_APPS.md`** - App development patterns
-- `CLAUDE_ARCHIVE.md` - Full history (archived)
-
----
-
-## 📚 Documentation Strategy (Session 4)
-
-**Problem**: 90+ markdown files scattered everywhere - hard to find what's implemented!
-
-**Solution**: Two primary documents + supporting files
-
-### 1️⃣ **FEATURES.md** - For Developers (Us)
-**Purpose**: SINGLE SOURCE OF TRUTH - what's implemented, tested, working
-**When to use**: Before building ANY feature - check here first!
-
-**Contents**:
-- ✅ Complete feature inventory with examples
-- ✅ File locations (parser.rs:793, etc.)
-- ✅ What works, what's partial, what's broken
-- ✅ All 35 packages listed with test counts
-- ✅ Known limitations clearly marked
-- ⚠️ Update after every major feature
-
-**Rule**: Check FEATURES.md BEFORE building anything to avoid duplicates!
-
-### 2️⃣ **EXAMPLE_APPS.md** - For Users
-**Purpose**: Show what's possible + how to build it yourself
-**When to use**: For onboarding, tutorials, showcasing Jounce
-
-**Contents**:
-- 🎯 What each app demonstrates
-- ❌ What features we left out (and why)
-- 📝 How to recreate the app (ask LLM → compile → run)
-- 🎓 Learning progression (beginner → advanced)
-- 💬 Template code for new apps
-
-**Workflow**:
-```
-User: "How do I build X?"
-→ Check EXAMPLE_APPS.md
-→ See similar app
-→ Ask LLM for code
-→ Compile with jnc
-→ Deploy!
-```
-
-### 3️⃣ **Supporting Docs**
-- **CLAUDE.md** (this file) - Session-by-session progress, for continuity
-- **ROADMAP.md** - High-level phases, timeline, what's next
-- **BUILDING_APPS.md** - Detailed development patterns (keep for reference)
-
-### 4️⃣ **Archive Everything Else**
-- `docs/archive/` - Old progress files (300KB+ of history)
-- `docs/archived/` - Outdated technical docs
-- Ignore unless debugging old issues
-
-**Total**: 2 primary docs (FEATURES + EXAMPLE_APPS) + 3 supporting = MUCH clearer!
-
----
-
-## 📊 Test Status
-
-**✅ 625/625 tests passing (100%)**
-- Core compiler: 530+ tests
-- Standard library: 74 tests
-- Reactivity: 51 tests
-- Module loader: 2 tests (fixed!)
-- Test framework: 1 test (fixed!)
-- 35 packages: ~240+ tests
-- 10 ignored (intentional)
-
----
-
-## 🎯 Next Steps (Session 5) - Phase 15 Week 2: Blog Platform
-
-### IMMEDIATE PRIORITY: Build Blog Platform Example App
-
-**Context**: We completed Week 1 (Todo App) demonstrating @persist decorator. Now build Week 2 (Blog Platform) to showcase markdown, routing, and search.
-
-**Plan**: See detailed breakdown below in "Phase 15 Week 2 Plan" section.
-
-### Other Pending from Session 4:
-
-1. **Complete @persist implementation**
-   - Implement `@persist("backend")` code generation
-   - Implement `@persist("realtime")` code generation
-   - Test with real server functions
-
-2. **Build more example apps** (Weeks 3-4)
-   - E-Commerce Store (shopping cart)
-   - Dashboard (real-time data)
-
-3. **Package Integration**
-   - Fully integrate jounce-auth
-   - Fully integrate jounce-db
-   - Test multi-package apps
-
----
-
-## 📋 Phase 15 Week 2 Plan (Next Session)
-
-**Goal**: Build Blog Platform (~1000 lines) demonstrating content management
-
-### Architecture
-
-**Features to implement**:
-- Markdown editor (jounce-markdown)
-- Post management (CRUD operations)
-- Comment system (nested replies)
-- Search functionality (jounce-search)
-- Tag filtering
-- Draft/Published states
-
-**Packages to use**:
-- jounce-markdown - Parse and render markdown
-- jounce-router - Multi-page navigation
-- jounce-search - Full-text search
-- jounce-auth - User authentication
-- jounce-db - Post storage
-- jounce-ui - UI components
-
-### File Structure
-```
-examples/phase15-week2-blog/
-├── README.md
-├── main.jnc              # Entry point + routing
-├── components/
-│   ├── PostEditor.jnc    # Markdown editor
-│   ├── PostList.jnc      # List of posts
-│   ├── PostView.jnc      # Single post view
-│   ├── CommentSection.jnc # Comments
-│   └── SearchBar.jnc     # Search interface
-├── lib/
-│   ├── posts.jnc         # Post CRUD operations
-│   ├── comments.jnc      # Comment operations
-│   └── search.jnc        # Search logic
-└── dist/                 # Compiled output
-```
-
-### Implementation Steps
-
-**Step 1: Basic Structure** (100 lines)
-- Create file structure
-- Set up routing (home, post, editor, search)
-- Basic layout and navigation
-
-**Step 2: Post Management** (200 lines)
-- Create post editor with markdown preview
-- Implement CRUD operations (create, read, update, delete)
-- Draft vs published states
-- @persist("localStorage") for drafts
-
-**Step 3: Markdown Rendering** (150 lines)
-- Integrate jounce-markdown
-- Render markdown to HTML
-- Syntax highlighting for code blocks
-- Preview mode in editor
-
-**Step 4: Comment System** (200 lines)
-- Add comments to posts
-- Nested replies (one level)
-- Reactive comment updates
-- Comment count stats
-
-**Step 5: Search & Filtering** (150 lines)
-- Full-text search (jounce-search)
-- Tag-based filtering
-- Sort by date/popularity
-- Search results highlighting
-
-**Step 6: UI Polish** (200 lines)
-- Beautiful styling
-- Loading states
-- Error handling
-- Responsive design
-- Dark mode support
-
-### Success Criteria
-
-- [ ] Can create/edit/delete blog posts
-- [ ] Markdown renders correctly
-- [ ] Comments work with nesting
-- [ ] Search finds posts by title/content/tags
-- [ ] Beautiful, polished UI
-- [ ] ~1000 lines total
-- [ ] Compiles successfully
-- [ ] Documented with README
-
-### Code Examples
-
-**Post Editor Component**:
-```jounce
-component PostEditor() {
-    @persist("localStorage")
-    let draft = signal({
-        title: "",
-        content: "",
-        tags: []
-    });
-
-    let preview = computed(() =>
-        Markdown.render(draft.value.content)
-    );
-
-    return <div>
-        <input value={draft.value.title} onChange={updateTitle} />
-        <textarea value={draft.value.content} onChange={updateContent} />
-        <div class="preview">{preview.value}</div>
-    </div>;
-}
-```
-
-**Search Implementation**:
-```jounce
-component SearchBar() {
-    let query = signal("");
-    let results = computed(() =>
-        Search.find(posts, query.value)
-    );
-
-    return <div>
-        <input
-            placeholder="Search posts..."
-            value={query.value}
-            onChange={e => query.value = e.target.value}
-        />
-        <PostList posts={results.value} />
-    </div>;
-}
-```
-
-### Time Estimate
-
-- Step 1 (Structure): 30 min
-- Step 2 (Posts): 1 hour
-- Step 3 (Markdown): 45 min
-- Step 4 (Comments): 1 hour
-- Step 5 (Search): 45 min
-- Step 6 (Polish): 1 hour
-- **Total**: ~5 hours
-
-### Documentation Needed
-
-1. **README.md** - Architecture, how to run, features
-2. **COMPARISON.md** - Compare to traditional blog platforms
-3. **Update EXAMPLE_APPS.md** - Add blog platform section
-
----
-
-## 🎯 Next Steps (Session 5 - OLD, keep for reference)
-
-### IMMEDIATE PRIORITIES:
-
-1. **Build Example Apps with @persist**
-   - Counter app with localStorage persistence
-   - Todo app with backend persistence
-   - Shopping cart with realtime sync
-
-2. **Implement backend and realtime strategies**
-   - `@persist("backend")` - Generate RPC calls
-   - `@persist("realtime")` - Generate WebSocket sync
-
-3. **Documentation**
-   - Update `BUILDING_APPS.md` with @persist examples
-   - Add persistence migration guide
-   - Show upgrade path examples
-
-4. **Other Apps**
-   - Build Calculator app (validate reactive patterns with numbers)
-   - Build Temperature Converter (dual inputs, computed values)
-   - Build Color Mixer (RGB sliders, real-time preview)
-
----
-
-## 🏗️ Architecture Decisions (Session 3)
-
-### Frontend vs Backend Storage Strategy
-
-**Problem:** Users say "build me a todo app" - they shouldn't need to choose storage strategy.
-
-**Analysis:**
-- Option A (Auto-magic): Compiler auto-detects and adds persistence → **Unclear upgrade path**
-- Option B (Decorators): `@persist("strategy")` explicit opt-in → **Clear, easy upgrades** ✅
-- Option C (Manual): Write all storage code manually → **Too much boilerplate**
-
-**Decision:** Implement Option B - Decorator-based progressive enhancement
-
-**Reasoning:**
-1. **Explicit is better than implicit** - developers can SEE what's happening
-2. **One-line upgrades** - change decorator argument, not entire codebase
-3. **Clear progression** - `none → localStorage → backend → realtime`
-4. **No magic** - behavior is visible in source code
-
-### Storage Strategies:
-
-```
-@persist("none")         → No persistence (default, pure frontend)
-@persist("localStorage") → Browser storage (single device)
-@persist("backend")      → Server + database (multi-user)
-@persist("realtime")     → WebSocket sync (collaboration)
-```
-
-### Example Upgrade Path:
-
-```jounce
-// Day 1: Prototype
-let todos = signal([]);
-
-// Day 2: Want persistence
-@persist("localStorage")
-let todos = signal([]);
-
-// Week 1: Multi-user needed
-@persist("backend")
-let todos = signal([]);
-
-// Add server functions:
-server fn loadTodos() -> Vec<Todo> { ... }
-server fn saveTodo(todo: Todo) -> Todo { ... }
-
-// Month 1: Real-time collaboration
-@persist("realtime")
-let todos = signal([]);
-```
-
-### Key Insight:
-
-**Progressive enhancement shouldn't require rewrites.** Each upgrade is additive, not destructive.
-
----
-
-## 📝 Recent Achievements
-
-**October 25, 2025 (Session 4) - COMPLETE:**
-- ✅ **Documentation Strategy Implemented!**
-- Created FEATURES.md (800+ lines) - Single source of truth for all features
-- Created EXAMPLE_APPS.md (500+ lines) - User-facing tutorials and app showcase
-- Solved scattered documentation problem (90+ files → 2 primary docs)
-- ✅ **@persist Decorator Fully Working!**
-- Implemented localStorage code generation
-- Parser handles decorator syntax perfectly
-- All 625 tests passing (100%)
-- ✅ **Phase 15 Week 1: Todo App COMPLETE!**
-- Built v1_basic.jnc (180 lines) - Basic reactivity ✅ Compiling
-- Built v2_localStorage.jnc (240 lines) - @persist demo ✅ Compiling
-- Built v3_backend.jnc (450 lines) - Full-stack design 📝 Conceptual
-- Created comprehensive README (7.3KB)
-- Created COMPARISON.md (6KB) showing progression
-- Demonstrated progressive enhancement clearly
-
-**Key Deliverables (Session 4)**:
-- FEATURES.md - Complete feature inventory with locations
-- EXAMPLE_APPS.md - User tutorials with LLM workflow
-- examples/phase15-week1-todo/ - Complete working example
-  * v1_basic.jnc - Working reactive todo app
-  * v2_localStorage.jnc - Working with @persist pattern
-  * v3_backend_concept.jnc - Tutorial visualization
-  * README.md - Full architecture docs
-  * COMPARISON.md - Side-by-side comparison
-- Updated CLAUDE.md with documentation strategy
-- Total: 14 new files, 3000+ lines of code + docs
-
-**Progressive Enhancement Demonstrated**:
-```jounce
-// v1: No persistence (50 lines)
-let todos = signal([]);
-
-// v2: Add ONE LINE (+2 lines)
-@persist("localStorage")
-let todos = signal([]);
-
-// v3: Change ONE WORD (same lines, add server functions)
-@persist("backend")
-let todos = signal([]);
-```
-
-**Impact**:
-- ✅ Clear documentation strategy for future sessions
-- ✅ No more hunting through 90+ scattered files
-- ✅ Users can recreate apps with LLM assistance
-- ✅ Developers know exactly what's implemented
-- ✅ First production example app complete!
-
-**October 25, 2025 (Session 4 - Earlier):**
-- ✅ **@persist decorator fully implemented!**
-- Added `Decorator` AST node type (src/ast.rs:821-824)
-- Updated `LetStatement` to include decorators field
-- Implemented decorator parsing in parser.rs:
-  * `parse_decorators()` function (lines 2095-2128)
-  * Updated `parse_statement()` to handle `@` before `let`
-  * Updated `parse_let_statement()` to accept decorators
-- Implemented localStorage code generation in js_emitter.rs:
-  * Generates localStorage.getItem() on init
-  * Generates effect() to save on changes
-  * Supports "backend" and "realtime" (placeholders)
-- All 625 tests passing
-- Fixed formatter.rs to include decorators field (13 test cases)
-- Parser distinguishes between `@server/@client` and `@persist` decorators
-
-**Key Deliverables:**
-- `src/ast.rs` - Decorator struct + LetStatement.decorators
-- `src/parser.rs:2095-2128` - parse_decorators() function
-- `src/parser.rs:109-129` - Decorator handling in parse_statement()
-- `src/parser.rs:793-812` - Updated parse_let_statement()
-- `src/js_emitter.rs:1088-1115` - localStorage code generation
-- `test_decorator_parsing.jnc` - Test file demonstrating syntax
-- All compilation tests passing (625/625)
-
-**October 25, 2025 (Session 3):**
-- ✅ **First interactive apps working in browser!**
-- Fixed critical CSS bugs (hex colors, pseudo-classes)
-- Fixed ES6 module exports (`reactivity.js`)
-- Built Counter app (blue/yellow/green buttons, press effects)
-- Built Todo List app (add, complete, delete, stats)
-- Designed `@persist` decorator system (Option B selected)
-- Documented frontend/backend architecture decisions
-
-**Key Deliverables:**
-- `test_app_counter.jnc` - Working counter with visual feedback
-- `apps/11_todo_list.jnc` - Full todo app with reactive list rendering
-- CSS parser fixes:
-  * `src/parser.rs:3114-3116` - Hex color spacing fix (#3b82f6 not #3 b82f6)
-  * `src/parser.rs:3100-3106` - Pseudo-class spacing (:hover not : hover)
-  * `src/parser.rs:3069` - Track prev_was_hash for hex colors
-- `runtime/reactivity.js:504` - Added ES6 exports
-- Architecture documentation (this file)
-
-**Browser Testing Workflow:**
-```bash
-cd dist && python3 -m http.server 8080
-# Open http://localhost:8080/index.html
-# Hard refresh: Ctrl+Shift+R (bypass cache)
-```
-
-**CSS Fixes Applied:**
-- Hex colors: `#3b82f6` (no spaces)
-- Pseudo-classes: `.btn:hover` (no spaces)
-- Properties: `color: white` (space after colon)
-- Units: `600px` (no spaces)
-
-**October 25, 2025 (Session 2):**
-- ✅ **100% test pass rate achieved! 625/625 tests**
-- Fixed CSS spacing bug (no more "600 px" issues)
-- Built 2 example apps (Counter, Stopwatch)
-- Created comprehensive app building guide (BUILDING_APPS.md)
-- Designed reactive automation system (future v0.9.0)
-- Fixed module loader tests (raven-router test infrastructure)
-- Fixed test framework assertion test
-
-**Key Deliverables:**
-- `BUILDING_APPS.md` (693 lines) - Complete app development guide
-- `test_app_counter.jnc` - Simple counter with reactivity
-- `test_app_stopwatch.jnc` - Timer app with intervals
-- `TEST_IN_BROWSER.md` - Browser testing workflow
-- `docs/design/REACTIVE_AUTOMATION.md` - Future automation design
-- 100% test coverage (no failing tests!)
-
-**October 24, 2025 (Session 1):**
-- ✅ **35-package milestone complete!**
-- Built 13 packages in one session
-- Expanded test coverage (850+ tests)
-- All work committed and pushed
-
----
-
-## 🐛 Known Issues & Fixes
-
-### CSS Generation (`src/parser.rs`)
-- ✅ **FIXED** (Session 3): Hex colors had spaces (#3 b82f6)
-- ✅ **FIXED** (Session 3): Pseudo-classes had spaces (.btn: hover)
-- ✅ **FIXED** (Session 2): Units had spaces (600 px)
-
-**Solution:** Track previous token state, don't add spaces after `#` or before `:` in selectors.
-
-### ES6 Module Exports (`runtime/reactivity.js`)
-- ✅ **FIXED** (Session 3): Missing `export` statement for batch, untrack, etc.
-
-**Solution:** Added `export { signal, computed, effect, batch, untrack };` at end of file.
-
-### Manual Reactive Setup (Current State)
-- ⚠️ **WORKAROUND**: Must manually add reactive code to `dist/client.js` after compilation
-- 🔧 **FIX PLANNED**: `@persist` decorator will auto-generate this code (Session 4)
-
----
-
-## 📚 Resources
-
-### Documentation
-- `BUILDING_APPS.md` - App development patterns (693 lines)
-- `TEST_IN_BROWSER.md` - Browser testing guide
-- `docs/design/REACTIVE_AUTOMATION.md` - Future automation design
-- `CLAUDE_ARCHIVE.md` - Full historical context
-
-### Example Apps
-- `test_app_counter.jnc` - Simple counter (blue/yellow/green buttons)
-- `test_app_stopwatch.jnc` - Timer with intervals
-- `apps/11_todo_list.jnc` - Todo list with stats
-
-### Runtime Files
-- `runtime/reactivity.js` - Signal/effect/computed implementation
-- `runtime/client-runtime.js` - h() and mountComponent()
-- `dist/` - Generated output (auto-copied on compile)
-
----
-
-## 🔄 Workflow (Current Session Pattern)
-
-1. **Write `.jnc` file** with style block + component
-2. **Compile:** `cargo run -- compile app.jnc`
-3. **Add reactive setup** to `dist/client.js` (manual for now)
-4. **Test in browser:** `cd dist && python3 -m http.server 8080`
-5. **Hard refresh:** Ctrl+Shift+R to bypass cache
-
-**Next Session:** Steps 3-4 automated via `@persist` decorator!
-
----
-
-## 🟢 SESSION 6 PROGRESS (October 26, 2025)
-
-### **FIXING THE COMPILER - Phase 1 ✅, Phase 2 ✅, Phase 3 ✅ COMPLETE!**
-
-**Token Usage**: 84k/200k (42%) - Good progress, continuing
-
-### ✅ **Phase 1 COMPLETE: Object Literal Support**
-
-**Problem Solved:**
-```jounce
-// ❌ BEFORE: Parser error "No prefix parse function for Colon"
-let post = { id: 1, title: "Test" };
-
-// ✅ AFTER: Works perfectly!
-let post = { id: 1, title: "Hello", tags: ["rust", "jounce"] };
-```
-
-**Files Changed:**
-- `src/ast.rs` - Added `ObjectLiteral` variant + struct
-- `src/parser.rs` - Added `parse_object_literal()` + detection logic
-- `src/js_emitter.rs` - Generates `{ key: value }` JavaScript
-- `src/formatter.rs`, `src/borrow_checker.rs`, `src/codegen.rs`, `src/semantic_analyzer.rs`, `src/type_checker.rs` - Full compiler support
-
-**Test Result:** ✅ All 625 tests pass
-**Committed:** Yes (commit 5cde04d)
-
-**Generated Output:**
-```javascript
-let post = { id: 1, title: "Hello", tags: ["rust", "jounce"] };
-```
-
----
-
-### ✅ **Phase 2 COMPLETE: Script Block Support**
-
-**Goal:** Allow raw JavaScript in `.jnc` files:
-```jounce
-<script>
-  // Raw JavaScript code embedded directly
-  console.log("App initialized!");
-  function initApp() { ... }
-</script>
-```
-
-**What Works:**
-- ✅ Script blocks parse correctly from `.jnc` files
-- ✅ Raw JavaScript code is collected and stored
-- ✅ Code is emitted to `dist/client.js` output
-- ✅ All 625 tests still passing
-
-**Files Changed:**
-1. **src/code_splitter.rs**
-   - Added `script_blocks: Vec::new()` initialization in `new()` (line 41)
-   - Added `Statement::ScriptBlock` case in `split()` (lines 71-74)
-   - Collects script blocks from parsed program
-
-2. **src/js_emitter.rs**
-   - Added script block emission in `generate_client_js()` (lines 650-657)
-   - Emits raw JavaScript before client functions
-   - Adds "// Script blocks (raw JavaScript)" header
-
-**Test Results:**
-- ✅ Compiles: `cargo build` succeeds
-- ✅ All tests: `cargo test --lib` - 625 passed
-- ✅ Test file: `test_script_block.jnc` → script block in `dist/client.js`
-- ✅ Output verified: JavaScript code appears correctly
-
-**Example Output:**
-```javascript
-// Script blocks (raw JavaScript)
-console.log("Script block loaded!");
-function initApp() {
-  const posts = [];
-  const user = { name: "Alice", age: 30 };
-  console.log("App initialized with", posts.length, "posts");
-}
-initApp();
-```
-
-**Note:** Script blocks are tokenized (spaces between tokens) due to parser's token storage. This is expected behavior. Future optimization could store raw source text for better formatting.
-
-**Committed:** Yes (commit 47de187)
-
----
-
-### ✅ **Phase 3 COMPLETE: Event Handlers with Arrow Functions**
-
-**Goal:** Parse and emit inline event handlers in JSX:
-```jounce
-<button onClick={() => doSomething()}>Click</button>
-<input onChange={(e) => handleChange(e)} />
-```
-
-**Problem Solved:**
-Arrow functions with multiple parameters `(a, b) => ...` were being parsed as tuple literals, not lambdas, causing "No prefix parse function for FatArrow" errors.
-
-**Root Cause:**
-In `parse_lambda_or_grouped()`, when parsing `(a, b)`, the parser saw the comma and immediately treated it as a tuple literal, never checking for `=>` after the closing `)`.
-
-**Solution:**
-Modified `src/parser.rs:1542-1586` to check for `=>` after parsing tuple-like structures. If `=>` follows, convert tuple elements to lambda parameters.
-
-**Files Changed:**
-- `src/parser.rs` - Enhanced `parse_lambda_or_grouped()` function
-  * Lines 1556-1582: Added check for `=>` after tuple parsing
-  * Converts tuple elements to lambda parameters if `=>` found
-  * Validates all parameters are identifiers
-
-**What Works Now:**
-```jounce
-// Multi-param arrow functions
-let add = (a, b) => a + b;
-
-// No-param arrow functions
-let greet = () => "Hello";
-
-// Single-param arrow functions
-let double = (x) => x * 2;
-
-// In JSX attributes
-<button onClick={() => 42}>Click</button>
-<input onChange={(e) => e.target.value} />
-```
-
-**Generated JavaScript:**
-```javascript
-let add = (a, b) => (a + b);
-let greet = () => "Hello";
-h('button', { onClick: () => 42 }, "Click Me");
-h('input', { onChange: (e) => e }, "Type Here");
-```
-
-**Test Results:**
-- ✅ All 625 tests pass (no regressions)
-- ✅ `test_simple_arrow.jnc` - Lambdas in regular code
-- ✅ `test_jsx_arrow.jnc` - Event handlers in JSX
-- ✅ Arrow functions work in JSX attribute expressions `{...}`
-
-**Committed:** Yes (commit 9f45a5b)
-
----
-
-### **Next Steps (Continue Session 6):**
-
-**✅ Phases 1-3 Complete!**
-- ✅ Phase 1: Object literals (`{ key: value }`)
-- ✅ Phase 2: Script blocks (`<script>...</script>`)
-- ✅ Phase 3: Event handlers (`onClick={() => ...}`)
-
-**🎯 Phase 4: True Single-File App (NEXT)**
-
-**Goal:** Verify the single-file workflow actually works end-to-end
-
-**Current State:**
-- Object literals: ✅ Working
-- Script blocks: ✅ Working
-- Arrow functions in JSX: ✅ Working
-
-**Test Plan:**
-1. Create a complete interactive app in ONE .jnc file
-2. Use `<script>` blocks for initialization code
-3. Use event handlers for interactivity
-4. Verify: `cargo run -- compile app.jnc` → working app
-5. NO manual steps after compilation!
-
-**Example App to Build:**
-```jounce
-// Simple counter app - everything in one file
-<script>
-  const count = signal(0);
-  effect(() => {
-    document.getElementById('count').textContent = count.value;
-  });
-</script>
-
-fn main() {
-    let app = <div>
-        <h1 id="count">{count.value}</h1>
-        <button onClick={() => count.value++}>+</button>
-        <button onClick={() => count.value--}>-</button>
-    </div>;
-}
-```
-
-**Success Criteria:**
-- Compiles without errors
-- Opens in browser and works
-- No manual file copying or editing
-- TRUE single-file workflow achieved!
-
-**Future Phases:**
-- Phase 5: Reactive Auto-Wiring (v0.9.0) - Auto-generate effect() code
-
----
-
-## 🔴 SESSION 5 REALITY CHECK (October 26, 2025) - ARCHIVED
-
-### **CRITICAL TRUTH: The Compiler is NOT Built for Single-File Reactive Apps**
-
-**What I Screwed Up:**
-- Created Phase 15 Week 1 & 2 example apps with **FAKE single-file workflow**
+**What Was Wrong:**
+- Created Phase 15 example apps with **FAKE single-file workflow**
 - Required 690 lines of manual JavaScript (`client-app.js`) copied after compilation
 - Created build scripts (`build.sh`) to hide the broken workflow
-- Made it LOOK like "one .jnc file → working app" but it's a LIE
-- All example apps (Counter, Todo, Blog) require manual post-compilation steps
+- Made it LOOK like "one .jnc file → working app" but it was a **LIE**
+- All example apps (Counter, Todo, Blog) required manual post-compilation steps
 
-### **What the Compiler ACTUALLY Does:**
+### **What the Compiler ACTUALLY Did:**
 
 | Feature | Status | Reality |
 |---------|--------|---------|
@@ -855,179 +79,261 @@ fn main() {
 
 ### **Example of the Broken Workflow:**
 
-**What I Claimed:**
+**What Was Claimed:**
 ```bash
 cargo run -- compile main.jnc  # ONE COMMAND
 cd dist && python3 -m http.server 8080  # DONE!
 ```
 
-**What Actually Happens:**
+**What Actually Happened:**
 ```bash
 cargo run -- compile main.jnc           # Compile
-cp client-app.js dist/                  # Manual copy
-# Edit dist/index.html manually         # Add script tags
-# Add 690 lines of reactive JavaScript  # Wire everything up
+cp client-app.js dist/                  # ❌ Manual copy
+# Edit dist/index.html manually         # ❌ Manual step
+# Add 690 lines of reactive JavaScript  # ❌ Wire everything up
 cd dist && python3 -m http.server 8080  # Finally works
 ```
 
 ---
 
-## 🎯 NEXT SESSION (Session 6): FIX THE COMPILER
+## 🟢 SESSION 6 PROGRESS (October 26, 2025)
 
-**NO MORE SHORTCUTS. NO MORE WORKAROUNDS. FIX IT PROPERLY.**
+### **FIXING THE COMPILER - 3/4 Phases Complete (75%)**
 
-### **Option A: Fix the Compiler (Required)**
+**Token Usage**: 90k/200k (45%)
 
-**What Needs to Be Implemented:**
+### ✅ **Phase 1 COMPLETE: Object Literal Support**
 
-#### **1. Object Literal Support** (CRITICAL)
-**File:** `src/parser.rs`
-**What:** Parse JavaScript-style object literals with colons
+**What Works:**
 ```jounce
 let post = { id: 1, title: "Hello", tags: ["rust", "jounce"] };
 ```
-**Current:** Parser error "No prefix parse function for Colon"
-**Fix:** Add `parse_object_literal()` function, handle `:` in expression context
 
-#### **2. Script Block Support** (HIGH PRIORITY)
-**File:** `src/parser.rs`, `src/js_emitter.rs`
-**What:** Allow raw JavaScript in `.jnc` files
+**Files Changed:**
+- `src/ast.rs` - Added `ObjectLiteral` variant
+- `src/parser.rs` - Added `parse_object_literal()` function
+- `src/js_emitter.rs` - Generates `{ key: value }` JavaScript
+- All compiler passes updated
+
+**Commit**: 5cde04d
+
+---
+
+### ✅ **Phase 2 COMPLETE: Script Block Support**
+
+**What Works:**
 ```jounce
 <script>
-// This JavaScript gets embedded in compiled output
-function initApp() {
-    const posts = signal([]);
-    effect(() => renderPosts(posts.value));
-}
+  console.log("App initialized!");
+  function initApp() { ... }
 </script>
 ```
-**Fix:**
-- Add `ScriptBlock` AST node
-- Parse `<script>` tags in JSX context
-- Emit raw JavaScript to `client.js` without transformation
 
-#### **3. Auto-Reactive Code Generation** (MEDIUM PRIORITY)
-**File:** `src/js_emitter.rs`
-**What:** Auto-generate initialization code for reactive components
+**Files Changed:**
+- `src/code_splitter.rs:41` - Initialize script_blocks vector
+- `src/code_splitter.rs:71-74` - Collect ScriptBlock statements
+- `src/js_emitter.rs:650-657` - Emit raw JavaScript to client.js
+
+**Commit**: 47de187
+
+---
+
+### ✅ **Phase 3 COMPLETE: Event Handlers with Arrow Functions**
+
+**What Works:**
 ```jounce
+// Multi-param arrow functions
+let add = (a, b) => a + b;
+
+// No-param arrow functions
+let greet = () => "Hello";
+
+// In JSX attributes
+<button onClick={() => 42}>Click</button>
+<input onChange={(e) => e.target.value} />
+```
+
+**Problem Solved:** Arrow functions like `(a, b) => ...` were parsed as tuples, not lambdas
+
+**Files Changed:**
+- `src/parser.rs:1556-1582` - Enhanced `parse_lambda_or_grouped()`
+  * Check for `=>` after tuple parsing
+  * Convert tuple elements to lambda parameters if `=>` found
+
+**Commit**: 9f45a5b
+
+---
+
+## 🎯 PHASE 4: TRUE SINGLE-FILE APP (NEXT)
+
+### **Goal**: Build a complete interactive app in ONE .jnc file
+
+**What We Have Now:**
+- ✅ Object literals for data structures: `{ id: 1, name: "test" }`
+- ✅ Script blocks for initialization: `<script>...</script>`
+- ✅ Arrow functions for event handlers: `onClick={() => ...}`
+
+**Test Plan:**
+1. Create a simple counter app in ONE .jnc file
+2. Use `<script>` blocks for reactive setup
+3. Use event handlers for interactivity
+4. Compile: `cargo run -- compile app.jnc`
+5. Verify: Works in browser with ZERO manual steps
+
+### **Example App to Build:**
+
+```jounce
+// counter_app.jnc - Complete app in one file
+
+<script>
+  // Initialize reactive state
+  const count = signal(0);
+
+  // Auto-update DOM when count changes
+  effect(() => {
+    const el = document.getElementById('count');
+    if (el) el.textContent = count.value;
+  });
+
+  // Mount app to DOM
+  window.addEventListener('DOMContentLoaded', () => {
+    const root = document.getElementById('app');
+    if (root) mountComponent(Counter, root);
+  });
+</script>
+
 component Counter() {
-    let count = signal(0);
-    return <div onClick={() => count.value++}>{count.value}</div>;
+    return <div>
+        <h1>Counter: <span id="count">0</span></h1>
+        <button onClick={() => count.value++}>+</button>
+        <button onClick={() => count.value--}>-</button>
+        <button onClick={() => count.value = 0}>Reset</button>
+    </div>;
+}
+
+fn main() {
+    // Entry point (called from index.html)
 }
 ```
-**Should generate:**
-```javascript
-const count = signal(0);
-effect(() => {
-    const el = document.querySelector('#count');
-    if (el) el.textContent = count.value;
-});
-```
 
-#### **4. Event Handler Support** (HIGH PRIORITY)
-**File:** `src/parser.rs`, `src/js_emitter.rs`
-**What:** Parse and emit inline event handlers
-```jounce
-<button onClick={() => count.value++}>Increment</button>
-```
-**Current:** Ignored or broken
-**Fix:** Parse arrow functions in JSX attributes, generate proper event listeners
+### **Success Criteria:**
 
----
+- [ ] Compiles without errors
+- [ ] Generated `dist/client.js` contains script block code
+- [ ] Generated `dist/index.html` loads app correctly
+- [ ] Opens in browser at http://localhost:8080
+- [ ] Buttons work (increment, decrement, reset)
+- [ ] Count updates reactively
+- [ ] **ZERO manual steps** after compilation
 
-### **Implementation Plan (Session 6):**
+### **Testing Workflow:**
 
-**Phase 1: Object Literals (1-2 hours)**
-1. Add `ObjectLiteral` to AST
-2. Implement `parse_object_literal()` in parser
-3. Handle `:` token in expression context
-4. Emit JavaScript object syntax
-5. Test: `let x = { a: 1, b: "test" };`
-
-**Phase 2: Script Blocks (1-2 hours)**
-1. Add `ScriptBlock` to AST
-2. Parse `<script>` tags alongside JSX
-3. Emit raw JavaScript to output
-4. Test: `<script>console.log("hello");</script>`
-
-**Phase 3: Event Handlers (1-2 hours)**
-1. Parse arrow functions in JSX attributes
-2. Generate event listener code
-3. Test: `<button onClick={() => alert("hi")}>Click</button>`
-
-**Phase 4: Integration Test (1 hour)**
-1. Rebuild blog platform as TRUE single file
-2. Verify: `cargo compile → working app` (NO MANUAL STEPS)
-3. Delete all build scripts and helper files
-
----
-
-### **Success Criteria (Session 6):**
-
-**BEFORE Session 6:**
 ```bash
-# Broken workflow
+# 1. Compile
+cargo run -- compile counter_app.jnc
+
+# 2. Serve (no manual file copying!)
+cd dist && python3 -m http.server 8080
+
+# 3. Open browser
+# Open http://localhost:8080/index.html
+
+# 4. Test interactivity
+# Click +, -, Reset buttons
+# Verify count updates
+```
+
+---
+
+## 📝 Documentation Strategy
+
+**Primary Documents:**
+- **FEATURES.md** - Single source of truth for what's implemented
+- **EXAMPLE_APPS.md** - User-facing tutorials and app showcase
+- **CLAUDE.md** (this file) - Current status and next steps
+- **ROADMAP.md** - High-level phases and timeline
+- **CLAUDE_ARCHIVE.md** - Full historical context
+
+**Rule**: Check FEATURES.md BEFORE building anything to avoid duplicates!
+
+---
+
+## 📊 Test Status
+
+**✅ 625/625 tests passing (100%)**
+- Core compiler: 530+ tests
+- Standard library: 74 tests
+- Reactivity: 51 tests
+- 35 packages: ~240+ tests
+- 10 ignored (intentional)
+
+---
+
+## 🚀 Quick Commands
+
+```bash
+# Build & test
+cargo build --release && cargo test
+
+# Compile project
 cargo run -- compile main.jnc
-cp client-app.js dist/        # ❌ Manual step
-edit dist/index.html          # ❌ Manual step
+
+# Run tests
+cargo test --lib
+
+# Serve app
 cd dist && python3 -m http.server 8080
 ```
 
-**AFTER Session 6:**
-```bash
-# Working workflow
-cargo run -- compile main.jnc  # ✅ ONE COMMAND
-cd dist && python3 -m http.server 8080  # ✅ WORKS!
-```
+---
 
-**Files After Session 6:**
-```
-examples/phase15-week2-blog/
-├── main.jnc     # ONLY FILE (1300 lines: HTML + CSS + JS)
-└── README.md    # Documentation
-```
+## 📚 Key Files
 
-**Deleted After Session 6:**
-```
-❌ client-app.js (690 lines) - NOW IN main.jnc
-❌ build.sh - NO LONGER NEEDED
-❌ server.js - Use python -m http.server
-❌ components/ - Empty
-❌ lib/ - Empty
-```
+### Compiler
+- `src/main.rs` - CLI (1340 lines)
+- `src/lexer.rs`, `src/parser.rs`, `src/js_emitter.rs` - Compiler
+- `src/code_splitter.rs` - Code splitting logic
+- `src/module_loader.rs` - Import resolution
+- `src/cache/mod.rs` - Build cache
+- `packages/` - 35 complete packages
+
+### Documentation
+- `FEATURES.md` - What's implemented (800+ lines)
+- `EXAMPLE_APPS.md` - User tutorials (500+ lines)
+- `BUILDING_APPS.md` - Development patterns (693 lines)
+- `CLAUDE_ARCHIVE.md` - Full history
+
+### Runtime
+- `runtime/reactivity.js` - Signal/effect/computed
+- `runtime/client-runtime.js` - h() and mountComponent()
+- `dist/` - Generated output
 
 ---
 
-## 📝 Commit Plan (End of Session 5)
+## ⏭️ Next Session (Session 7)
 
-```bash
-git add -A
-git commit -m "docs: Session 5 - Reality check and compiler fix plan
+**IMMEDIATE TASK: Phase 4 - Build Single-File Test App**
 
-BREAKING TRUTH:
-- Admitted Phase 15 apps are NOT single-file (require manual steps)
-- Documented what's actually broken in the compiler
-- Added CRITICAL PRINCIPLE: ONE .jnc FILE → FULL APP
-- Outlined Session 6 plan to fix the compiler properly
+1. Create `examples/single-file-counter/main.jnc`
+2. Implement counter with `<script>` + event handlers
+3. Compile: `cargo run -- compile main.jnc`
+4. Test in browser
+5. Verify ZERO manual steps needed
+6. Document workflow
 
-Key Changes:
-- Updated CLAUDE.md with reality check
-- Documented broken workflow vs claimed workflow
-- Added detailed implementation plan for Session 6:
-  1. Object literal support (parse { key: value })
-  2. Script block support (<script> tags)
-  3. Event handler support (onClick={...})
-  4. Auto-reactive code generation
+**If successful:**
+- ✅ Single-file workflow WORKS!
+- ✅ Can delete all build scripts from example apps
+- ✅ Can rebuild blog platform as true single file
+- ✅ Ready for production use!
 
-NO MORE SHORTCUTS. Session 6 will fix the compiler.
+**If issues found:**
+- Debug and fix compiler
+- Update FEATURES.md with limitations
+- Plan additional fixes
 
-Files changed:
-- CLAUDE.md - Added Session 5 reality check + Session 6 plan
-- examples/phase15-week2-blog/* - Tagged as broken/incomplete
-
-Next Session: Fix parser.rs and js_emitter.rs"
-```
+**Token Budget**: Have 110k tokens remaining (55%) - plenty of room!
 
 ---
 
-**For full history, see `CLAUDE_ARCHIVE.md`**
+**For full session history, see `CLAUDE_ARCHIVE.md`**
