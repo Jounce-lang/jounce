@@ -1,0 +1,107 @@
+// App 8: Timer & Stopwatch
+// Demonstrates time tracking UI with controls
+
+// Main app component
+fn App() -> JSX {
+    return (
+        <div class="container">
+            <div class="mode-selector">
+                <button class="mode-btn active">⏱️ Stopwatch</button>
+                <button class="mode-btn">⏲️ Timer</button>
+            </div>
+
+            <div class="timer-card">
+                <h1 class="app-title">Stopwatch</h1>
+
+                <div class="time-display">
+                    <span class="time-digit">00</span>
+                    <span class="time-separator">:</span>
+                    <span class="time-digit">00</span>
+                    <span class="time-separator">:</span>
+                    <span class="time-digit">00</span>
+                    <span class="time-ms">000</span>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary">
+                        <span class="btn-icon">▶️</span>
+                        <span class="btn-text">Start</span>
+                    </button>
+                    <button class="btn btn-secondary">
+                        <span class="btn-icon">⏸️</span>
+                        <span class="btn-text">Pause</span>
+                    </button>
+                    <button class="btn btn-danger">
+                        <span class="btn-icon">🔄</span>
+                        <span class="btn-text">Reset</span>
+                    </button>
+                </div>
+
+                <div class="laps-section">
+                    <h2 class="laps-title">Lap Times</h2>
+                    <div class="laps-list">
+                        <div class="lap-item">
+                            <span class="lap-number">#1</span>
+                            <span class="lap-time">00:15:342</span>
+                            <span class="lap-badge fastest">Fastest</span>
+                        </div>
+                        <div class="lap-item">
+                            <span class="lap-number">#2</span>
+                            <span class="lap-time">00:18:567</span>
+                            <span class="lap-badge"></span>
+                        </div>
+                        <div class="lap-item">
+                            <span class="lap-number">#3</span>
+                            <span class="lap-time">00:22:891</span>
+                            <span class="lap-badge slowest">Slowest</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-lap">
+                        <span class="btn-icon">🏁</span>
+                        <span class="btn-text">Lap</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="timer-presets">
+                <h3 class="presets-title">Quick Presets</h3>
+                <div class="presets-grid">
+                    <button class="preset-btn">
+                        <span class="preset-icon">🍳</span>
+                        <span class="preset-label">Egg Timer</span>
+                        <span class="preset-time">3 min</span>
+                    </button>
+                    <button class="preset-btn">
+                        <span class="preset-icon">☕</span>
+                        <span class="preset-label">Coffee Break</span>
+                        <span class="preset-time">15 min</span>
+                    </button>
+                    <button class="preset-btn">
+                        <span class="preset-icon">🧘</span>
+                        <span class="preset-label">Meditation</span>
+                        <span class="preset-time">20 min</span>
+                    </button>
+                    <button class="preset-btn">
+                        <span class="preset-icon">🍕</span>
+                        <span class="preset-label">Pizza</span>
+                        <span class="preset-time">25 min</span>
+                    </button>
+                </div>
+            </div>
+
+            <footer class="info">
+                <p><strong>App 8: Timer & Stopwatch</strong></p>
+                <p>Static time tracking UI - Interactive timing with signal coming soon!</p>
+            </footer>
+        </div>
+    );
+}
+
+// Entry point
+fn main() {
+    console.log("App 8: Timer & Stopwatch started!");
+    console.log("Future: Real-time updates with setInterval + signal");
+
+    let app_html = App();
+    console.log("Timer component created successfully!");
+}

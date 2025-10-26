@@ -1,0 +1,128 @@
+// App 6: Weather Widget
+// Demonstrates weather display UI with icons and metrics
+
+// Main app component
+fn App() -> JSX {
+    return (
+        <div class="container">
+            <div class="weather-card">
+                <div class="location-header">
+                    <h1 class="city-name">San Francisco</h1>
+                    <p class="date-time">Monday, October 25, 2025 • 3:45 PM</p>
+                </div>
+
+                <div class="current-weather">
+                    <div class="weather-icon">☀️</div>
+                    <div class="temperature">
+                        <span class="temp-value">72</span>
+                        <span class="temp-unit">°F</span>
+                    </div>
+                    <p class="condition">Sunny</p>
+                    <p class="feels-like">Feels like 70°F</p>
+                </div>
+
+                <div class="weather-metrics">
+                    <div class="metric">
+                        <div class="metric-icon">💧</div>
+                        <div class="metric-data">
+                            <span class="metric-label">Humidity</span>
+                            <span class="metric-value">45%</span>
+                        </div>
+                    </div>
+
+                    <div class="metric">
+                        <div class="metric-icon">💨</div>
+                        <div class="metric-data">
+                            <span class="metric-label">Wind Speed</span>
+                            <span class="metric-value">12 mph</span>
+                        </div>
+                    </div>
+
+                    <div class="metric">
+                        <div class="metric-icon">🌡️</div>
+                        <div class="metric-data">
+                            <span class="metric-label">Pressure</span>
+                            <span class="metric-value">30.2 in</span>
+                        </div>
+                    </div>
+
+                    <div class="metric">
+                        <div class="metric-icon">👁️</div>
+                        <div class="metric-data">
+                            <span class="metric-label">Visibility</span>
+                            <span class="metric-value">10 mi</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="forecast">
+                    <h2 class="forecast-title">5-Day Forecast</h2>
+                    <div class="forecast-days">
+                        <div class="forecast-day">
+                            <p class="day-name">Tue</p>
+                            <div class="day-icon">⛅</div>
+                            <p class="day-temp">75° / 62°</p>
+                        </div>
+
+                        <div class="forecast-day">
+                            <p class="day-name">Wed</p>
+                            <div class="day-icon">🌤️</div>
+                            <p class="day-temp">78° / 64°</p>
+                        </div>
+
+                        <div class="forecast-day">
+                            <p class="day-name">Thu</p>
+                            <div class="day-icon">🌧️</div>
+                            <p class="day-temp">68° / 58°</p>
+                        </div>
+
+                        <div class="forecast-day">
+                            <p class="day-name">Fri</p>
+                            <div class="day-icon">⛈️</div>
+                            <p class="day-temp">65° / 55°</p>
+                        </div>
+
+                        <div class="forecast-day">
+                            <p class="day-name">Sat</p>
+                            <div class="day-icon">🌤️</div>
+                            <p class="day-temp">73° / 60°</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="weather-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Sunrise:</span>
+                        <span class="detail-value">6:42 AM</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Sunset:</span>
+                        <span class="detail-value">6:18 PM</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">UV Index:</span>
+                        <span class="detail-value">7 (High)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Air Quality:</span>
+                        <span class="detail-value">Good (42 AQI)</span>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="info">
+                <p><strong>App 6: Weather Widget</strong></p>
+                <p>Static weather UI demo - API integration with jounce-http coming soon!</p>
+            </footer>
+        </div>
+    );
+}
+
+// Entry point
+fn main() {
+    console.log("App 6: Weather Widget started!");
+    console.log("Future: API integration with OpenWeatherMap + jounce-http");
+
+    let app_html = App();
+    console.log("Weather widget component created successfully!");
+}
