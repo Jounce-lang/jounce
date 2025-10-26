@@ -2385,8 +2385,13 @@ impl CodeGenerator {
     /// Generate CSS from a style block (creates scoped classes)
     /// style Button { background: blue; } -> .Button_a1b2c3 { background: blue; }
     fn generate_style_block_css(&mut self, style: &StyleBlock) -> Result<(), CompileError> {
+        // Skip global style blocks (they have raw CSS that's handled elsewhere)
+        if style.name.is_none() {
+            return Ok(());
+        }
+
         // Generate scoped class name with hash
-        let class_name = self.generate_scoped_class_name(&style.name.value);
+        let class_name = self.generate_scoped_class_name(&style.name.as_ref().unwrap().value);
 
         // Generate main rule
         if !style.properties.is_empty() {
