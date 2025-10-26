@@ -153,6 +153,16 @@ impl<'a> Parser<'a> {
             },
             TokenKind::Style => self.parse_style_block().map(Statement::Style),  // Phase 13
             TokenKind::Theme => self.parse_theme_block().map(Statement::Theme),  // Phase 13
+            TokenKind::LAngle => {
+                // Check if this is <script> or a JSX element
+                if self.peek_token().kind == TokenKind::Identifier && self.peek_token().lexeme == "script" {
+                    self.parse_script_block().map(Statement::ScriptBlock)
+                } else {
+                    // It's a JSX element used as a statement
+                    let expr = self.parse_expression(Precedence::Lowest)?;
+                    Ok(Statement::Expression(expr))
+                }
+            },
             _ => {
                 // Parse as expression first, then check if it's actually an assignment
                 // This handles: x = 5, obj.field = 5, arr[0] = 5, *ptr = 5, etc.
@@ -3164,6 +3174,63 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::RBrace)?;
 
         Ok(ThemeBlock { name, properties })
+    }
+
+    /// Parse a script block: <script>raw JavaScript code</script>
+    fn parse_script_block(&mut self) -> Result<ScriptBlock, CompileError> {
+        // Current token is <, next is "script"
+        self.expect_and_consume(&TokenKind::LAngle)?;
+
+        // Consume "script"
+        if self.current_token().kind != TokenKind::Identifier || self.current_token().lexeme != "script" {
+            return Err(CompileError::ParserError {
+                message: format!("Expected 'script' after '<', found '{}'", self.current_token().lexeme),
+                line: self.current_token().line,
+                column: self.current_token().column,
+            });
+        }
+        self.next_token();
+
+        // Consume >
+        self.expect_and_consume(&TokenKind::RAngle)?;
+
+        // Collect all tokens until we see </script>
+        let mut code = String::new();
+
+        while !(self.current_token().kind == TokenKind::LAngle
+                && self.peek_token().kind == TokenKind::Slash) {
+            if self.current_token().kind == TokenKind::Eof {
+                return Err(CompileError::ParserError {
+                    message: "Unexpected EOF in script block, expected </script>".to_string(),
+                    line: self.current_token().line,
+                    column: self.current_token().column,
+                });
+            }
+
+            // Add the lexeme with appropriate spacing
+            if !code.is_empty() && !code.ends_with('\n') {
+                code.push(' ');
+            }
+            code.push_str(&self.current_token().lexeme);
+            self.next_token();
+        }
+
+        // Consume </script>
+        self.expect_and_consume(&TokenKind::LAngle)?;
+        self.expect_and_consume(&TokenKind::Slash)?;
+
+        if self.current_token().kind != TokenKind::Identifier || self.current_token().lexeme != "script" {
+            return Err(CompileError::ParserError {
+                message: format!("Expected 'script' in closing tag, found '{}'", self.current_token().lexeme),
+                line: self.current_token().line,
+                column: self.current_token().column,
+            });
+        }
+        self.next_token();
+
+        self.expect_and_consume(&TokenKind::RAngle)?;
+
+        Ok(ScriptBlock { code: code.trim().to_string() })
     }
 
     /// Parse a style block:

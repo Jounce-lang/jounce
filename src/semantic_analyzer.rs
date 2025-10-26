@@ -365,6 +365,7 @@ impl SemanticAnalyzer {
             Statement::Trait(_) => Ok(ResolvedType::Unit),
             Statement::Style(_) => Ok(ResolvedType::Unit),  // Phase 13: Style blocks analyzed separately
             Statement::Theme(_) => Ok(ResolvedType::Unit),  // Phase 13: Theme blocks analyzed separately
+            Statement::ScriptBlock(_) => Ok(ResolvedType::Unit),  // Script blocks are raw JavaScript
         }
     }
 
