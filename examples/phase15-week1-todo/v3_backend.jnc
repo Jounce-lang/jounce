@@ -1,0 +1,473 @@
+// Phase 15, Week 1: Todo App - Version 3 (Full-Stack with Backend)
+// Demonstrates: @persist("backend"), authentication, database
+// Enhancement: Multi-user support + cross-device sync!
+// Change from v2: Added server functions + auth (lines 200-280)
+
+// Note: Package imports removed for now (packages are placeholders)
+// In the future, this would be:
+// use jounce_auth::{Auth, hash_password, verify_password, create_token, validate_token};
+// use jounce_db::{Database, connect, execute, query, query_one};
+
+// ============================================================================
+// SERVER-SIDE DATA LAYER
+// ============================================================================
+
+server fn initDatabase() {
+    let db = Database.connect("sqlite://todos.db");
+
+    // Create users table
+    db.execute("
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+
+    // Create todos table
+    db.execute("
+        CREATE TABLE IF NOT EXISTS todos (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            text TEXT NOT NULL,
+            completed BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    ");
+
+    console.log("✅ Database initialized");
+}
+
+server fn signup(email: String, password: String) -> Result<String, String> {
+    let db = Database.connect("sqlite://todos.db");
+
+    // Hash password
+    let hash = Auth.hash_password(password);
+
+    // Generate user ID
+    let userId = Crypto.uuid_v4();
+
+    // Insert user
+    let result = db.execute(
+        "INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)",
+        [userId, email, hash]
+    );
+
+    if result.is_err() {
+        return Err("Email already exists");
+    }
+
+    // Generate JWT token
+    let token = Auth.create_token(userId, "7d");
+
+    Ok(token)
+}
+
+server fn login(email: String, password: String) -> Result<String, String> {
+    let db = Database.connect("sqlite://todos.db");
+
+    // Find user
+    let user = db.query_one(
+        "SELECT id, password_hash FROM users WHERE email = ?",
+        [email]
+    );
+
+    if user.is_none() {
+        return Err("Invalid credentials");
+    }
+
+    // Verify password
+    let userData = user.unwrap();
+    let isValid = Auth.verify_password(password, userData.password_hash);
+
+    if !isValid {
+        return Err("Invalid credentials");
+    }
+
+    // Generate token
+    let token = Auth.create_token(userData.id, "7d");
+
+    Ok(token)
+}
+
+server fn loadTodos(token: String) -> Result<Vec<Todo>, String> {
+    // Validate token
+    let userId = Auth.validate_token(token);
+    if userId.is_err() {
+        return Err("Invalid or expired token");
+    }
+
+    let db = Database.connect("sqlite://todos.db");
+
+    // Load user's todos
+    let todos = db.query(
+        "SELECT id, text, completed FROM todos WHERE user_id = ? ORDER BY created_at DESC",
+        [userId.unwrap()]
+    );
+
+    Ok(todos)
+}
+
+server fn saveTodo(token: String, text: String) -> Result<Todo, String> {
+    // Validate token
+    let userId = Auth.validate_token(token);
+    if userId.is_err() {
+        return Err("Invalid or expired token");
+    }
+
+    let db = Database.connect("sqlite://todos.db");
+    let todoId = Crypto.uuid_v4();
+
+    // Insert todo
+    db.execute(
+        "INSERT INTO todos (id, user_id, text, completed) VALUES (?, ?, ?, ?)",
+        [todoId, userId.unwrap(), text, false]
+    );
+
+    Ok(Todo {
+        id: todoId,
+        text: text,
+        completed: false
+    })
+}
+
+server fn updateTodo(token: String, id: String, completed: bool) -> Result<bool, String> {
+    // Validate token
+    let userId = Auth.validate_token(token);
+    if userId.is_err() {
+        return Err("Invalid or expired token");
+    }
+
+    let db = Database.connect("sqlite://todos.db");
+
+    // Update todo
+    db.execute(
+        "UPDATE todos SET completed = ? WHERE id = ? AND user_id = ?",
+        [completed, id, userId.unwrap()]
+    );
+
+    Ok(true)
+}
+
+server fn deleteTodo(token: String, id: String) -> Result<bool, String> {
+    // Validate token
+    let userId = Auth.validate_token(token);
+    if userId.is_err() {
+        return Err("Invalid or expired token");
+    }
+
+    let db = Database.connect("sqlite://todos.db");
+
+    // Delete todo
+    db.execute(
+        "DELETE FROM todos WHERE id = ? AND user_id = ?",
+        [id, userId.unwrap()]
+    );
+
+    Ok(true)
+}
+
+// ============================================================================
+// DATA STRUCTURES
+// ============================================================================
+
+struct Todo {
+    id: String,
+    text: String,
+    completed: bool
+}
+
+// ============================================================================
+// CLIENT-SIDE UI
+// ============================================================================
+
+style {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .auth-container {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 400px;
+        width: 100%;
+    }
+
+    .todo-container {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 600px;
+        width: 100%;
+    }
+
+    .title {
+        font-size: 32px;
+        color: #333;
+        margin-bottom: 10px;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: #3b82f6;
+        font-size: 14px;
+        margin-bottom: 30px;
+        font-weight: 600;
+    }
+
+    .persist-badge {
+        background: #3b82f6;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 10px;
+    }
+
+    .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .form-input {
+        padding: 15px 20px;
+        font-size: 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .btn-primary {
+        padding: 15px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+        padding: 10px 20px;
+        font-size: 14px;
+        background: transparent;
+        color: #667eea;
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+        background: #667eea;
+        color: white;
+    }
+
+    .user-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .user-email {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .logout-btn {
+        padding: 8px 16px;
+        background: #ff4757;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .error-message {
+        padding: 10px;
+        background: #fee;
+        color: #c00;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-size: 14px;
+    }
+
+    .input-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 30px;
+    }
+
+    .todo-input {
+        flex: 1;
+        padding: 15px 20px;
+        font-size: 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+    }
+
+    .add-btn {
+        padding: 15px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+    }
+
+    .stats {
+        display: flex;
+        justify-content: space-between;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 15px;
+    }
+
+    .todo-list {
+        list-style: none;
+        margin-bottom: 20px;
+    }
+
+    .todo-item {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+
+    .todo-checkbox {
+        width: 20px;
+        height: 20px;
+        margin-right: 15px;
+        cursor: pointer;
+    }
+
+    .todo-text {
+        flex: 1;
+        font-size: 16px;
+        color: #333;
+    }
+
+    .delete-btn {
+        padding: 8px 16px;
+        background: #ff4757;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+}
+
+fn LoginForm() -> JSX {
+    return (
+        <div class="auth-container">
+            <h1 class="title">Todo App v3</h1>
+            <p class="subtitle">🔐 Login to continue</p>
+
+            <div class="auth-form">
+                <input type="email" class="form-input" id="email" placeholder="Email" />
+                <input type="password" class="form-input" id="password" placeholder="Password" />
+                <button class="btn-primary" id="login-btn">Login</button>
+                <button class="btn-secondary" id="signup-btn">Create Account</button>
+            </div>
+
+            <div class="error-message" id="error" style="display: none;"></div>
+        </div>
+    );
+}
+
+fn TodoApp() -> JSX {
+    return (
+        <div class="todo-container">
+            <h1 class="title">
+                Todo List v3
+                <span class="persist-badge">🔐 Backend</span>
+            </h1>
+
+            <div class="user-info">
+                <span class="user-email" id="user-email">user@example.com</span>
+                <button class="logout-btn" id="logout-btn">Logout</button>
+            </div>
+
+            <div class="input-group">
+                <input
+                    type="text"
+                    class="todo-input"
+                    id="todo-input"
+                    placeholder="What needs to be done?"
+                />
+                <button class="add-btn" id="add-btn">Add</button>
+            </div>
+
+            <div class="stats" id="stats">
+                <div>Total: <span id="total">0</span></div>
+                <div>Active: <span id="active">0</span></div>
+                <div>Completed: <span id="completed">0</span></div>
+            </div>
+
+            <ul class="todo-list" id="todo-list"></ul>
+        </div>
+    );
+}
+
+fn main() {
+    console.log("📝 Todo App v3 (Full-Stack Backend)");
+    console.log("🔐 Multi-user support with authentication");
+    console.log("💾 Data syncs across all your devices");
+
+    initDatabase();
+
+    // NOTE: In a real implementation with @persist("backend"):
+    //
+    // @persist("backend")
+    // let todos = signal([]);
+    //
+    // The @persist decorator automatically calls:
+    // - loadTodos(token) on startup
+    // - saveTodo(token, text) when adding
+    // - updateTodo(token, id, completed) when toggling
+    // - deleteTodo(token, id) when deleting
+}
