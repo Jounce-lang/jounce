@@ -165,7 +165,183 @@ User: "How do I build X?"
 
 ---
 
-## 🎯 Next Steps (Session 5)
+## 🎯 Next Steps (Session 5) - Phase 15 Week 2: Blog Platform
+
+### IMMEDIATE PRIORITY: Build Blog Platform Example App
+
+**Context**: We completed Week 1 (Todo App) demonstrating @persist decorator. Now build Week 2 (Blog Platform) to showcase markdown, routing, and search.
+
+**Plan**: See detailed breakdown below in "Phase 15 Week 2 Plan" section.
+
+### Other Pending from Session 4:
+
+1. **Complete @persist implementation**
+   - Implement `@persist("backend")` code generation
+   - Implement `@persist("realtime")` code generation
+   - Test with real server functions
+
+2. **Build more example apps** (Weeks 3-4)
+   - E-Commerce Store (shopping cart)
+   - Dashboard (real-time data)
+
+3. **Package Integration**
+   - Fully integrate jounce-auth
+   - Fully integrate jounce-db
+   - Test multi-package apps
+
+---
+
+## 📋 Phase 15 Week 2 Plan (Next Session)
+
+**Goal**: Build Blog Platform (~1000 lines) demonstrating content management
+
+### Architecture
+
+**Features to implement**:
+- Markdown editor (jounce-markdown)
+- Post management (CRUD operations)
+- Comment system (nested replies)
+- Search functionality (jounce-search)
+- Tag filtering
+- Draft/Published states
+
+**Packages to use**:
+- jounce-markdown - Parse and render markdown
+- jounce-router - Multi-page navigation
+- jounce-search - Full-text search
+- jounce-auth - User authentication
+- jounce-db - Post storage
+- jounce-ui - UI components
+
+### File Structure
+```
+examples/phase15-week2-blog/
+├── README.md
+├── main.jnc              # Entry point + routing
+├── components/
+│   ├── PostEditor.jnc    # Markdown editor
+│   ├── PostList.jnc      # List of posts
+│   ├── PostView.jnc      # Single post view
+│   ├── CommentSection.jnc # Comments
+│   └── SearchBar.jnc     # Search interface
+├── lib/
+│   ├── posts.jnc         # Post CRUD operations
+│   ├── comments.jnc      # Comment operations
+│   └── search.jnc        # Search logic
+└── dist/                 # Compiled output
+```
+
+### Implementation Steps
+
+**Step 1: Basic Structure** (100 lines)
+- Create file structure
+- Set up routing (home, post, editor, search)
+- Basic layout and navigation
+
+**Step 2: Post Management** (200 lines)
+- Create post editor with markdown preview
+- Implement CRUD operations (create, read, update, delete)
+- Draft vs published states
+- @persist("localStorage") for drafts
+
+**Step 3: Markdown Rendering** (150 lines)
+- Integrate jounce-markdown
+- Render markdown to HTML
+- Syntax highlighting for code blocks
+- Preview mode in editor
+
+**Step 4: Comment System** (200 lines)
+- Add comments to posts
+- Nested replies (one level)
+- Reactive comment updates
+- Comment count stats
+
+**Step 5: Search & Filtering** (150 lines)
+- Full-text search (jounce-search)
+- Tag-based filtering
+- Sort by date/popularity
+- Search results highlighting
+
+**Step 6: UI Polish** (200 lines)
+- Beautiful styling
+- Loading states
+- Error handling
+- Responsive design
+- Dark mode support
+
+### Success Criteria
+
+- [ ] Can create/edit/delete blog posts
+- [ ] Markdown renders correctly
+- [ ] Comments work with nesting
+- [ ] Search finds posts by title/content/tags
+- [ ] Beautiful, polished UI
+- [ ] ~1000 lines total
+- [ ] Compiles successfully
+- [ ] Documented with README
+
+### Code Examples
+
+**Post Editor Component**:
+```jounce
+component PostEditor() {
+    @persist("localStorage")
+    let draft = signal({
+        title: "",
+        content: "",
+        tags: []
+    });
+
+    let preview = computed(() =>
+        Markdown.render(draft.value.content)
+    );
+
+    return <div>
+        <input value={draft.value.title} onChange={updateTitle} />
+        <textarea value={draft.value.content} onChange={updateContent} />
+        <div class="preview">{preview.value}</div>
+    </div>;
+}
+```
+
+**Search Implementation**:
+```jounce
+component SearchBar() {
+    let query = signal("");
+    let results = computed(() =>
+        Search.find(posts, query.value)
+    );
+
+    return <div>
+        <input
+            placeholder="Search posts..."
+            value={query.value}
+            onChange={e => query.value = e.target.value}
+        />
+        <PostList posts={results.value} />
+    </div>;
+}
+```
+
+### Time Estimate
+
+- Step 1 (Structure): 30 min
+- Step 2 (Posts): 1 hour
+- Step 3 (Markdown): 45 min
+- Step 4 (Comments): 1 hour
+- Step 5 (Search): 45 min
+- Step 6 (Polish): 1 hour
+- **Total**: ~5 hours
+
+### Documentation Needed
+
+1. **README.md** - Architecture, how to run, features
+2. **COMPARISON.md** - Compare to traditional blog platforms
+3. **Update EXAMPLE_APPS.md** - Add blog platform section
+
+---
+
+## 🎯 Next Steps (Session 5 - OLD, keep for reference)
 
 ### IMMEDIATE PRIORITIES:
 
@@ -249,7 +425,57 @@ let todos = signal([]);
 
 ## 📝 Recent Achievements
 
-**October 25, 2025 (Session 4):**
+**October 25, 2025 (Session 4) - COMPLETE:**
+- ✅ **Documentation Strategy Implemented!**
+- Created FEATURES.md (800+ lines) - Single source of truth for all features
+- Created EXAMPLE_APPS.md (500+ lines) - User-facing tutorials and app showcase
+- Solved scattered documentation problem (90+ files → 2 primary docs)
+- ✅ **@persist Decorator Fully Working!**
+- Implemented localStorage code generation
+- Parser handles decorator syntax perfectly
+- All 625 tests passing (100%)
+- ✅ **Phase 15 Week 1: Todo App COMPLETE!**
+- Built v1_basic.jnc (180 lines) - Basic reactivity ✅ Compiling
+- Built v2_localStorage.jnc (240 lines) - @persist demo ✅ Compiling
+- Built v3_backend.jnc (450 lines) - Full-stack design 📝 Conceptual
+- Created comprehensive README (7.3KB)
+- Created COMPARISON.md (6KB) showing progression
+- Demonstrated progressive enhancement clearly
+
+**Key Deliverables (Session 4)**:
+- FEATURES.md - Complete feature inventory with locations
+- EXAMPLE_APPS.md - User tutorials with LLM workflow
+- examples/phase15-week1-todo/ - Complete working example
+  * v1_basic.jnc - Working reactive todo app
+  * v2_localStorage.jnc - Working with @persist pattern
+  * v3_backend_concept.jnc - Tutorial visualization
+  * README.md - Full architecture docs
+  * COMPARISON.md - Side-by-side comparison
+- Updated CLAUDE.md with documentation strategy
+- Total: 14 new files, 3000+ lines of code + docs
+
+**Progressive Enhancement Demonstrated**:
+```jounce
+// v1: No persistence (50 lines)
+let todos = signal([]);
+
+// v2: Add ONE LINE (+2 lines)
+@persist("localStorage")
+let todos = signal([]);
+
+// v3: Change ONE WORD (same lines, add server functions)
+@persist("backend")
+let todos = signal([]);
+```
+
+**Impact**:
+- ✅ Clear documentation strategy for future sessions
+- ✅ No more hunting through 90+ scattered files
+- ✅ Users can recreate apps with LLM assistance
+- ✅ Developers know exactly what's implemented
+- ✅ First production example app complete!
+
+**October 25, 2025 (Session 4 - Earlier):**
 - ✅ **@persist decorator fully implemented!**
 - Added `Decorator` AST node type (src/ast.rs:821-824)
 - Updated `LetStatement` to include decorators field
