@@ -278,6 +278,7 @@ impl BorrowChecker {
             Expression::BoolLiteral(_) => Ok(ResolvedType::Bool),
             Expression::UnitLiteral => Ok(ResolvedType::Unknown),  // Unit type
             Expression::StringLiteral(_) => Ok(ResolvedType::String),
+            Expression::CharLiteral(_) => Ok(ResolvedType::String),  // Char literals treated as strings
             Expression::Identifier(ident) => {
                 // Check if this is a namespaced identifier (e.g., Math::PI, console::log)
                 // Treat all namespaced identifiers as external/built-in and skip ownership checking
