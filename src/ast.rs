@@ -249,7 +249,8 @@ pub enum CssValue {
 // Style block: style Button { background: blue; &:hover { ... } }
 #[derive(Debug, Clone)]
 pub struct StyleBlock {
-    pub name: Identifier,
+    pub name: Option<Identifier>,     // None for global style { ... }, Some for style Button { ... }
+    pub raw_css: Option<String>,       // Raw CSS content for global blocks
     pub properties: Vec<StyleProperty>,
     pub nested: Vec<NestedSelector>,
 }
