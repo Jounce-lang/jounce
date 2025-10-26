@@ -1,0 +1,27 @@
+// Test @persist decorator - simple version
+
+component Counter() {
+    // Persistent count - survives page refreshes!
+    @persist("localStorage")
+    let count = signal(0);
+
+    let increment = || {
+        count.value = count.value + 1;
+    };
+
+    let decrement = || {
+        count.value = count.value - 1;
+    };
+
+    let reset = || {
+        count.value = 0;
+    };
+
+    return <div>
+        <h1>Persistent Counter</h1>
+        <p>Count: {count.value}</p>
+        <button onClick={increment}>Increment</button>
+        <button onClick={decrement}>Decrement</button>
+        <button onClick={reset}>Reset</button>
+    </div>;
+}
