@@ -739,11 +739,25 @@ impl<'a> Parser<'a> {
         let name = self.parse_identifier()?;
         if self.consume_if_matches(&TokenKind::LAngle) {
             let mut args = Vec::new();
-            while self.current_token().kind != TokenKind::RAngle {
+            while self.current_token().kind != TokenKind::RAngle
+                && self.current_token().kind != TokenKind::RightShift {
                 args.push(self.parse_type_expression()?);
                 if !self.consume_if_matches(&TokenKind::Comma) { break; }
             }
-            self.expect_and_consume(&TokenKind::RAngle)?;
+
+            // Handle >> as two > for nested generics like Option<Option<T>>
+            if self.current_token().kind == TokenKind::RightShift {
+                // Replace >> with > by modifying the current token
+                // This simulates consuming one > and leaving one >
+                self.current = Token {
+                    kind: TokenKind::RAngle,
+                    lexeme: ">".to_string(),
+                    line: self.current.line,
+                    column: self.current.column,
+                };
+            } else {
+                self.expect_and_consume(&TokenKind::RAngle)?;
+            }
             Ok(TypeExpression::Generic(name, args))
         } else {
             Ok(TypeExpression::Named(name))
@@ -1782,7 +1796,10 @@ impl<'a> Parser<'a> {
             // Literal patterns
             TokenKind::Integer(_) | TokenKind::Float(_) | TokenKind::String(_) |
             TokenKind::Bool(_) | TokenKind::True | TokenKind::False => {
-                let literal_expr = self.parse_expression(Precedence::Lowest)?;
+                // Parse only the literal token, NOT a full expression
+                // This prevents `3 | 4 | 5` from being parsed as `(3 | 4) | 5` (bitwise OR)
+                // Instead, the match arm parser handles multiple patterns separated by `|`
+                let literal_expr = self.parse_prefix()?;
                 Ok(Pattern::Literal(literal_expr))
             }
             _ => Err(self.error(&format!("Expected pattern, found {:?}", token.kind)))

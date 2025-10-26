@@ -337,59 +337,13 @@ const client = new RPCClient(window.location.origin + '/_rpc');
 // Implementations
 // Client function implementations
 // Shared utility functions
-export function App() {
-  return h('div', { class: "container" }, h('header', { class: "header" }, h('h1', "Markdown Previewer 📝"), h('p', { class: "subtitle" }, "Write markdown on the left, see HTML preview on the right")), h('div', { class: "editor-container" }, h('div', { class: "editor-pane" }, h('div', { class: "pane-header" }, h('h2', "Markdown Input"), h('span', { class: "badge" }, "Editor")), h('textarea', { class: "markdown-input", placeholder: "# Welcome to Markdown!\n\n## Features\n- **Bold text**\n- *Italic text*\n- `Code snippets`\n- [Links](https://example.com)\n\n```javascript\nconst code = 'blocks';\n```\n\n> Blockquotes are cool too!\n\n---\n\nTry typing some markdown!" }, "# Hello, Jounce! 🚀
-
-## What is Markdown?
-
-Markdown is a **lightweight markup language** for creating formatted text.
-
-### Features
-
-- Easy to write
-- Easy to read
-- Converts to HTML
-
-### Code Example
-
-```jounce
-let greeting = "Hello, World!";
-console.log(greeting);
-```
-
-### Formatting
-
-You can use:
-- **Bold text** with `**text**`
-- *Italic text* with `*text*`
-- `Inline code` with backticks
-
-### Links
-
-Visit [Jounce](https://github.com/jounce) for more!
-
----
-
-> "Markdown is a simple way to format text that looks great everywhere."
-
-### Task List
-
-- [x] Create markdown parser
-- [x] Add syntax highlighting
-- [ ] Build live preview
-- [ ] Deploy to production
-
-**Try editing the markdown!** The preview updates as you type.")), h('div', { class: "preview-pane" }, h('div', { class: "pane-header" }, h('h2', "HTML Preview"), h('span', { class: "badge" }, "Live")), h('div', { class: "markdown-preview" }, h('h1', "Hello, Jounce! 🚀"), h('h2', "What is Markdown?"), h('p', "Markdown is a", h('strong', "lightweight markup language"), "for", "creating formatted text."), h('h3', "Features"), h('ul', h('li', "Easy to write"), h('li', "Easy to read"), h('li', "Converts to HTML")), h('h3', "Code Example"), h('pre', h('code', { class: "language-jounce" }, "let greeting = "Hello, World!";
-console.log(greeting);")), h('h3', "Formatting"), h('p', "You can use:"), h('ul', h('li', h('strong', "Bold text"), "with", h('code', "**text**")), h('li', h('em', "Italic text"), "with", h('code', "*text*")), h('li', h('code', "Inline code"), "with", "backticks")), h('h3', "Links"), h('p', "Visit", h('a', { href: "https://github.com/jounce" }, "Jounce"), "for", "more!"), h('hr', null), h('blockquote', h('p', ""Markdown is a simple way to format text that looks great everywhere."")), h('h3', "Task List"), h('ul', h('li', "✓ Create markdown parser"), h('li', "✓ Add syntax highlighting"), h('li', "☐ Build live preview"), h('li', "☐ Deploy to production")), h('p', h('strong', "Try editing the markdown!"), "The", "preview updates as you type.")))), h('footer', { class: "info" }, h('p', h('strong', "App 3: Markdown Previewer")), h('p', "This demo shows static markdown rendering. Interactive preview with signal and computed coming soon!"), h('p', "Packages: jounce-markdown for parsing and jounce-sanitizer for XSS protection")));
+export function TodoApp() {
+  return h('div', { class: "container" }, h('header', { class: "header" }, h('h1', "✓ Todo List"), h('p', { class: "subtitle" }, "Fully reactive task management")), h('div', { class: "add-task" }, h('input', { type: "text", class: "task-input", id: "new-task-input", placeholder: "What needs to be done?" }, null), h('button', { class: "btn-add", id: "add-btn" }, "Add Task")), h('div', { class: "task-list", id: "task-list" }, h('div', { class: "empty-state" }, h('p', "📝 No tasks yet"), h('p', { style: "font-size: 14px;" }, "Add your first task above!"))), h('footer', { class: "task-footer" }, h('span', { class: "task-count", id: "task-count" }, "0 tasks"), h('button', { class: "btn-clear", id: "clear-btn" }, "Clear completed")));
 
 }
 
 export function main() {
-  console.log("App 3: Markdown Previewer started!");
-  console.log("Features: Split-pane editor, markdown syntax reference");
-  console.log("Coming soon: Package integration for live markdown parsing!");
-  let app_html = App();
-  return console.log("Markdown previewer component created successfully!");
+  return console.log("🚀 Interactive Todo List starting...");
 
 }
 
@@ -471,7 +425,120 @@ const yaml = {
 // Initialize application
 window.addEventListener('DOMContentLoaded', () => {
   console.log('Jounce client initialized');
-  mountComponent(App);
+
+  // Mount the TodoApp component
+  mountComponent(TodoApp);
+
+  // Todo list reactive state
+  let nextId = 1;
+  const todos = signal([]);
+
+  // Computed values
+  const activeTodos = computed(() => todos.value.filter(t => !t.completed));
+  const completedTodos = computed(() => todos.value.filter(t => t.completed));
+  const taskCount = computed(() => activeTodos.value.length);
+
+  // Get DOM elements
+  const taskList = document.getElementById('task-list');
+  const newTaskInput = document.getElementById('new-task-input');
+  const addBtn = document.getElementById('add-btn');
+  const clearBtn = document.getElementById('clear-btn');
+  const taskCountEl = document.getElementById('task-count');
+
+  // Function to render todos
+  function renderTodos() {
+    if (todos.value.length === 0) {
+      taskList.innerHTML = `
+        <div class="empty-state">
+          <p>📝 No tasks yet</p>
+          <p style="font-size: 14px;">Add your first task above!</p>
+        </div>
+      `;
+      return;
+    }
+
+    taskList.innerHTML = '';
+    todos.value.forEach((todo, index) => {
+      const item = document.createElement('div');
+      item.className = 'task-item' + (todo.completed ? ' completed' : '');
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'task-checkbox';
+      checkbox.checked = todo.completed;
+      checkbox.addEventListener('change', () => toggleTodo(index));
+
+      const text = document.createElement('span');
+      text.className = 'task-text';
+      text.textContent = todo.text;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn-delete';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', () => deleteTodo(index));
+
+      item.appendChild(checkbox);
+      item.appendChild(text);
+      item.appendChild(deleteBtn);
+      taskList.appendChild(item);
+    });
+  }
+
+  // Add todo
+  function addTodo() {
+    const text = newTaskInput.value.trim();
+    if (!text) return;
+
+    todos.value = [...todos.value, { id: nextId++, text, completed: false }];
+    newTaskInput.value = '';
+    newTaskInput.focus();
+  }
+
+  // Toggle todo
+  function toggleTodo(index) {
+    const newTodos = [...todos.value];
+    newTodos[index] = { ...newTodos[index], completed: !newTodos[index].completed };
+    todos.value = newTodos;
+  }
+
+  // Delete todo
+  function deleteTodo(index) {
+    todos.value = todos.value.filter((_, i) => i !== index);
+  }
+
+  // Clear completed
+  function clearCompleted() {
+    todos.value = activeTodos.value;
+  }
+
+  // Event listeners
+  if (addBtn) {
+    addBtn.addEventListener('click', addTodo);
+  }
+
+  if (newTaskInput) {
+    newTaskInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addTodo();
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', clearCompleted);
+  }
+
+  // Effects to update UI
+  effect(() => {
+    renderTodos();
+  });
+
+  effect(() => {
+    if (taskCountEl) {
+      const count = taskCount.value;
+      taskCountEl.textContent = `${count} task${count !== 1 ? 's' : ''} remaining`;
+    }
+  });
+
+  console.log('✅ Reactive todo list initialized!');
 });
 
 //# sourceMappingURL=client.js.map
