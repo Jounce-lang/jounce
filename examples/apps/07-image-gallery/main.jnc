@@ -1,0 +1,163 @@
+// App 7: Image Gallery
+// Demonstrates image grid layout with cards and captions
+
+// Main app component
+fn App() -> JSX {
+    return (
+        <div class="container">
+            <header class="header">
+                <h1>Photo Gallery 📷</h1>
+                <p class="subtitle">Explore our collection of stunning images</p>
+                <div class="filters">
+                    <button class="filter-btn active">All</button>
+                    <button class="filter-btn">Nature</button>
+                    <button class="filter-btn">Urban</button>
+                    <button class="filter-btn">People</button>
+                    <button class="filter-btn">Architecture</button>
+                </div>
+            </header>
+
+            <div class="gallery">
+                <div class="gallery-item">
+                    <div class="image-placeholder nature">
+                        <span class="placeholder-text">🌲</span>
+                    </div>
+                    <div class="image-info">
+                        <h3 class="image-title">Mountain Sunrise</h3>
+                        <p class="image-meta">Nature • 1920x1080</p>
+                        <div class="image-stats">
+                            <span class="stat">❤️ 342</span>
+                            <span class="stat">👁️ 1.2k</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="image-placeholder urban">
+                        <span class="placeholder-text">🏙️</span>
+                    </div>
+                    <div class="image-info">
+                        <h3 class="image-title">City Lights</h3>
+                        <p class="image-meta">Urban • 1920x1080</p>
+                        <div class="image-stats">
+                            <span class="stat">❤️ 528</span>
+                            <span class="stat">👁️ 2.4k</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="image-placeholder people">
+                        <span class="placeholder-text">👥</span>
+                    </div>
+                    <div class="image-info">
+                        <h3 class="image-title">Street Portrait</h3>
+                        <p class="image-meta">People • 1080x1920</p>
+                        <div class="image-stats">
+                            <span class="stat">❤️ 891</span>
+                            <span class="stat">👁️ 3.1k</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="image-placeholder architecture">
+                        <span class="placeholder-text">🏛️</span>
+                    </div>
+                    <div class="image-info">
+                        <h3 class="image-title">Modern Building</h3>
+                        <p class="image-meta">Architecture • 1920x1080</p>
+                        <div class="image-stats">
+                            <span class="stat">❤️ 612</span>
+                            <span class="stat">👁️ 1.8k</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="image-placeholder nature">
+                        <span class="placeholder-text">🌊</span>
+                    </div>
+                    <div class="image-info">
+                        <h3 class="image-title">Ocean Waves</h3>
+                        <p class="image-meta">Nature • 1920x1080</p>
+                        <div class="image-stats">
+                            <span class="stat">❤️ 723</span>
+                            <span class="stat">👁️ 2.9k</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="image-placeholder urban">
+                        <span class="placeholder-text">🌃</span>
+                    </div>
+                    <div class="image-info">
+                        <h3 class="image-title">Night Skyline</h3>
+                        <p class="image-meta">Urban • 1920x1080</p>
+                        <div class="image-stats">
+                            <span class="stat">❤️ 945</span>
+                            <span class="stat">👁️ 4.2k</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="image-placeholder people">
+                        <span class="placeholder-text">🎭</span>
+                    </div>
+                    <div class="image-info">
+                        <h3 class="image-title">Festival Crowd</h3>
+                        <p class="image-meta">People • 1920x1080</p>
+                        <div class="image-stats">
+                            <span class="stat">❤️ 1.2k</span>
+                            <span class="stat">👁️ 5.7k</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="image-placeholder architecture">
+                        <span class="placeholder-text">🗼</span>
+                    </div>
+                    <div class="image-info">
+                        <h3 class="image-title">Tower Bridge</h3>
+                        <p class="image-meta">Architecture • 1920x1080</p>
+                        <div class="image-stats">
+                            <span class="stat">❤️ 834</span>
+                            <span class="stat">👁️ 3.5k</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="image-placeholder nature">
+                        <span class="placeholder-text">🌺</span>
+                    </div>
+                    <div class="image-info">
+                        <h3 class="image-title">Flower Garden</h3>
+                        <p class="image-meta">Nature • 1080x1920</p>
+                        <div class="image-stats">
+                            <span class="stat">❤️ 567</span>
+                            <span class="stat">👁️ 2.1k</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="info">
+                <p><strong>App 7: Image Gallery</strong></p>
+                <p>Static gallery demo - Interactive lightbox and jounce-image coming soon!</p>
+            </footer>
+        </div>
+    );
+}
+
+// Entry point
+fn main() {
+    console.log("App 7: Image Gallery started!");
+    console.log("Future: Image loading, lightbox, infinite scroll");
+
+    let app_html = App();
+    console.log("Image gallery component created successfully!");
+}
