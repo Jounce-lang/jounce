@@ -1,0 +1,57 @@
+// Test all common event handlers
+
+fn handleClick() {
+    console.log("Button clicked!");
+}
+
+fn handleInput() {
+    console.log("Input changed!");
+}
+
+fn handleChange() {
+    console.log("Selection changed!");
+}
+
+fn handleSubmit() {
+    console.log("Form submitted!");
+}
+
+fn App() -> JSX {
+    return (
+        <div>
+            <h1>Event Handler Tests</h1>
+
+            <div>
+                <h2>onClick</h2>
+                <button onClick={handleClick}>Click Me</button>
+            </div>
+
+            <div>
+                <h2>onInput</h2>
+                <input type="text" onInput={handleInput} placeholder="Type something..." />
+            </div>
+
+            <div>
+                <h2>onChange</h2>
+                <select onChange={handleChange}>
+                    <option value="red">Red</option>
+                    <option value="green">Green</option>
+                    <option value="blue">Blue</option>
+                </select>
+            </div>
+
+            <div>
+                <h2>onSubmit</h2>
+                <form onSubmit={handleSubmit}>
+                    <input type="text" placeholder="Enter text" />
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+fn main() {
+    let app = App();
+    console.log("Event test app created");
+}

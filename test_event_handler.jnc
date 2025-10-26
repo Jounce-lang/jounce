@@ -1,0 +1,19 @@
+// Test event handler support
+
+fn handleClick() {
+    console.log("Button clicked!");
+}
+
+fn App() -> JSX {
+    return (
+        <div>
+            <h1>Event Handler Test</h1>
+            <button onClick={handleClick}>Click Me</button>
+        </div>
+    );
+}
+
+fn main() {
+    let app = App();
+    console.log("App created");
+}
