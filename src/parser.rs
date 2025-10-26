@@ -3238,10 +3238,25 @@ impl<'a> Parser<'a> {
             }
 
             // Add the lexeme with appropriate spacing
-            if !code.is_empty() && !code.ends_with('\n') {
+            // Preserve exact spacing for strings and avoid extra spaces around punctuation
+            let current_kind = &self.current_token().kind;
+            let current_lexeme = &self.current_token().lexeme;
+
+            // Don't add space before these tokens
+            let no_space_before = matches!(current_kind,
+                TokenKind::Comma | TokenKind::Semicolon | TokenKind::RParen |
+                TokenKind::RBracket | TokenKind::RBrace | TokenKind::Dot);
+
+            // Don't add space if previous token was one of these
+            let prev_was_no_space_after = code.ends_with('(') || code.ends_with('[') ||
+                code.ends_with('{') || code.ends_with('.');
+
+            // Add space if needed
+            if !code.is_empty() && !code.ends_with('\n') && !no_space_before && !prev_was_no_space_after {
                 code.push(' ');
             }
-            code.push_str(&self.current_token().lexeme);
+
+            code.push_str(current_lexeme);
             self.next_token();
         }
 
