@@ -499,3 +499,6 @@ if (typeof window !== 'undefined') {
         untrack,
     };
 }
+
+// ES6 exports for browser modules
+export { signal, computed, effect, batch, untrack };

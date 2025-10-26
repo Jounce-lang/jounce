@@ -337,13 +337,13 @@ const client = new RPCClient(window.location.origin + '/_rpc');
 // Implementations
 // Client function implementations
 // Shared utility functions
-export function Stopwatch() {
-  return h('div', { class: "stopwatch-card" }, h('h1', { class: "title" }, "⏱️ Stopwatch"), h('div', { class: "time-display", id: "time" }, "00:00.00"), h('div', { class: "status", id: "status" }, "Ready"), h('div', { class: "button-group" }, h('button', { class: "btn btn-start", id: "start-btn" }, "Start"), h('button', { class: "btn btn-stop", id: "stop-btn" }, "Stop"), h('button', { class: "btn btn-reset", id: "reset-btn" }, "Reset")));
+export function TodoApp() {
+  return h('div', { class: "todo-container" }, h('h1', { class: "title" }, "📝 Todo List"), h('div', { class: "input-group" }, h('input', { type: "text", class: "todo-input", id: "todo-input", placeholder: "What needs to be done?" }, null), h('button', { class: "add-btn", id: "add-btn" }, "Add")), h('div', { id: "stats-container" }, null), h('ul', { class: "todo-list", id: "todo-list" }, null), h('button', { class: "clear-completed", id: "clear-completed" }, "Clear Completed"));
 
 }
 
 export function main() {
-  return console.log("⏱️ Stopwatch app starting...");
+  return console.log("📝 Todo List app starting...");
 
 }
 
@@ -426,82 +426,128 @@ const yaml = {
 window.addEventListener('DOMContentLoaded', () => {
   console.log('Jounce client initialized');
 
-  // Mount the Stopwatch component
-  mountComponent(Stopwatch);
+  // Mount the TodoApp component
+  mountComponent(TodoApp);
 
-  // Create reactive state
-  const elapsed = signal(0);  // milliseconds
-  const isRunning = signal(false);
-  let intervalId = null;
+  // Reactive state: array of todos
+  const todos = signal([]);
+  let nextId = 1;
 
   // Get DOM elements
-  const timeDisplay = document.getElementById('time');
-  const statusDisplay = document.getElementById('status');
-  const startBtn = document.getElementById('start-btn');
-  const stopBtn = document.getElementById('stop-btn');
-  const resetBtn = document.getElementById('reset-btn');
+  const todoInput = document.getElementById('todo-input');
+  const addBtn = document.getElementById('add-btn');
+  const todoList = document.getElementById('todo-list');
+  const statsContainer = document.getElementById('stats-container');
+  const clearCompletedBtn = document.getElementById('clear-completed');
 
-  // Format time as MM:SS.ms
-  function formatTime(ms) {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    const centiseconds = Math.floor((ms % 1000) / 10);
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
+  // Add todo function
+  function addTodo() {
+    const text = todoInput.value.trim();
+    if (!text) return;
+
+    todos.value = [...todos.value, {
+      id: nextId++,
+      text: text,
+      completed: false
+    }];
+
+    todoInput.value = '';
+  }
+
+  // Toggle todo completion
+  function toggleTodo(id) {
+    todos.value = todos.value.map(todo =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    );
+  }
+
+  // Delete todo
+  function deleteTodo(id) {
+    todos.value = todos.value.filter(todo => todo.id !== id);
+  }
+
+  // Clear completed todos
+  function clearCompleted() {
+    todos.value = todos.value.filter(todo => !todo.completed);
   }
 
   // Event listeners
-  if (startBtn) {
-    startBtn.addEventListener('click', () => {
-      if (!isRunning.value) {
-        isRunning.value = true;
-        const startTime = Date.now() - elapsed.value;
-        intervalId = setInterval(() => {
-          elapsed.value = Date.now() - startTime;
-        }, 10); // Update every 10ms
+  if (addBtn) {
+    addBtn.addEventListener('click', addTodo);
+  }
+
+  if (todoInput) {
+    todoInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        addTodo();
       }
     });
   }
 
-  if (stopBtn) {
-    stopBtn.addEventListener('click', () => {
-      if (isRunning.value && intervalId) {
-        isRunning.value = false;
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    });
+  if (clearCompletedBtn) {
+    clearCompletedBtn.addEventListener('click', clearCompleted);
   }
 
-  if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-      isRunning.value = false;
-      elapsed.value = 0;
-    });
-  }
-
-  // Effects to update UI
+  // Effect: Render todo list
   effect(() => {
-    if (timeDisplay) {
-      timeDisplay.textContent = formatTime(elapsed.value);
+    if (!todoList) return;
+
+    const currentTodos = todos.value;
+
+    if (currentTodos.length === 0) {
+      todoList.innerHTML = '<div class="empty-state">No todos yet. Add one above!</div>';
+      return;
     }
+
+    todoList.innerHTML = '';
+
+    currentTodos.forEach(todo => {
+      const li = document.createElement('li');
+      li.className = `todo-item${todo.completed ? ' completed' : ''}`;
+      li.innerHTML = `
+        <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} data-id="${todo.id}">
+        <span class="todo-text">${todo.text}</span>
+        <button class="delete-btn" data-id="${todo.id}">Delete</button>
+      `;
+
+      // Add event listeners to the new elements
+      const checkbox = li.querySelector('.todo-checkbox');
+      const deleteBtn = li.querySelector('.delete-btn');
+
+      if (checkbox) {
+        checkbox.addEventListener('change', () => toggleTodo(todo.id));
+      }
+
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => deleteTodo(todo.id));
+      }
+
+      todoList.appendChild(li);
+    });
   });
 
+  // Effect: Update stats
   effect(() => {
-    if (statusDisplay) {
-      statusDisplay.textContent = isRunning.value ? 'Running...' : 'Stopped';
-    }
+    if (!statsContainer) return;
+
+    const currentTodos = todos.value;
+    const total = currentTodos.length;
+    const completed = currentTodos.filter(t => t.completed).length;
+    const remaining = total - completed;
+
+    statsContainer.innerHTML = `
+      <div class="stats">
+        <span><strong>${total}</strong> total</span>
+        <span><strong>${remaining}</strong> remaining</span>
+        <span><strong>${completed}</strong> completed</span>
+      </div>
+    `;
   });
 
-  effect(() => {
-    if (startBtn) startBtn.disabled = isRunning.value;
-    if (stopBtn) stopBtn.disabled = !isRunning.value;
-  });
+  // Call main function
+  main();
 
-  console.log('✅ Stopwatch app initialized!');
+  console.log('✅ Todo List app initialized!');
 });
 
 //# sourceMappingURL=client.js.map
