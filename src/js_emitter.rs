@@ -1879,8 +1879,9 @@ impl JSEmitter {
         let tag = &jsx.opening_tag.name.value;
 
         // Generate attributes
+        // Always output ", null" or ", { attrs }" to fill the props parameter
         let attrs = if jsx.opening_tag.attributes.is_empty() {
-            String::new()
+            ", null".to_string()
         } else {
             let attrs_str = jsx.opening_tag.attributes
                 .iter()
@@ -1905,7 +1906,7 @@ impl JSEmitter {
             .join(", ");
 
         if children.is_empty() {
-            format!("h('{}'{}, null)", tag, attrs)
+            format!("h('{}'{})", tag, attrs)
         } else {
             format!("h('{}'{}, {})", tag, attrs, children)
         }
