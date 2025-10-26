@@ -1,0 +1,6 @@
+// Test arrow functions in JSX
+
+fn main() {
+    let button = <button onClick={() => 42}>Click Me</button>;
+    let input = <input onChange={(e) => e}>Type Here</input>;
+}
