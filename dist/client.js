@@ -337,13 +337,13 @@ const client = new RPCClient(window.location.origin + '/_rpc');
 // Implementations
 // Client function implementations
 // Shared utility functions
-export function TodoApp() {
-  return h('div', { class: "container" }, h('header', { class: "header" }, h('h1', "✓ Todo List"), h('p', { class: "subtitle" }, "Fully reactive task management")), h('div', { class: "add-task" }, h('input', { type: "text", class: "task-input", id: "new-task-input", placeholder: "What needs to be done?" }, null), h('button', { class: "btn-add", id: "add-btn" }, "Add Task")), h('div', { class: "task-list", id: "task-list" }, h('div', { class: "empty-state" }, h('p', "📝 No tasks yet"), h('p', { style: "font-size: 14px;" }, "Add your first task above!"))), h('footer', { class: "task-footer" }, h('span', { class: "task-count", id: "task-count" }, "0 tasks"), h('button', { class: "btn-clear", id: "clear-btn" }, "Clear completed")));
+export function ColorPicker() {
+  return h('div', { class: "container" }, h('h1', "🎨 Reactive Color Picker"), h('div', { class: "color-preview", id: "preview" }, null), h('div', { class: "hex-display", id: "hex-display" }, "#8040C0"), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Red"), h('span', { class: "color-value", id: "red-value" }, "128")), h('input', { type: "range", class: "slider", id: "red-slider", min: "0", max: "255", value: "128" }, null)), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Green"), h('span', { class: "color-value", id: "green-value" }, "64")), h('input', { type: "range", class: "slider", id: "green-slider", min: "0", max: "255", value: "64" }, null)), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Blue"), h('span', { class: "color-value", id: "blue-value" }, "192")), h('input', { type: "range", class: "slider", id: "blue-slider", min: "0", max: "255", value: "192" }, null)), h('div', { style: "text-align: center; margin-top: 30px; color: #666;" }, h('p', "Move the sliders to change the color in real-time!")));
 
 }
 
 export function main() {
-  return console.log("🚀 Interactive Todo List starting...");
+  return console.log("🚀 Reactive Color Picker starting...");
 
 }
 
@@ -426,119 +426,74 @@ const yaml = {
 window.addEventListener('DOMContentLoaded', () => {
   console.log('Jounce client initialized');
 
-  // Mount the TodoApp component
-  mountComponent(TodoApp);
+  // Mount the ColorPicker component
+  mountComponent(ColorPicker);
 
-  // Todo list reactive state
-  let nextId = 1;
-  const todos = signal([]);
+  // Set up reactivity
+  const red = signal(128);
+  const green = signal(64);
+  const blue = signal(192);
 
   // Computed values
-  const activeTodos = computed(() => todos.value.filter(t => !t.completed));
-  const completedTodos = computed(() => todos.value.filter(t => t.completed));
-  const taskCount = computed(() => activeTodos.value.length);
+  const rgb = computed(() => `rgb(${red.value}, ${green.value}, ${blue.value})`);
+  const hex = computed(() => {
+    const r = red.value.toString(16).padStart(2, '0');
+    const g = green.value.toString(16).padStart(2, '0');
+    const b = blue.value.toString(16).padStart(2, '0');
+    return `#${r}${g}${b}`;
+  });
 
   // Get DOM elements
-  const taskList = document.getElementById('task-list');
-  const newTaskInput = document.getElementById('new-task-input');
-  const addBtn = document.getElementById('add-btn');
-  const clearBtn = document.getElementById('clear-btn');
-  const taskCountEl = document.getElementById('task-count');
+  const redSlider = document.getElementById('red-slider');
+  const greenSlider = document.getElementById('green-slider');
+  const blueSlider = document.getElementById('blue-slider');
+  const preview = document.getElementById('preview');
+  const hexDisplay = document.getElementById('hex-display');
 
-  // Function to render todos
-  function renderTodos() {
-    if (todos.value.length === 0) {
-      taskList.innerHTML = `
-        <div class="empty-state">
-          <p>📝 No tasks yet</p>
-          <p style="font-size: 14px;">Add your first task above!</p>
-        </div>
-      `;
-      return;
-    }
-
-    taskList.innerHTML = '';
-    todos.value.forEach((todo, index) => {
-      const item = document.createElement('div');
-      item.className = 'task-item' + (todo.completed ? ' completed' : '');
-
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.className = 'task-checkbox';
-      checkbox.checked = todo.completed;
-      checkbox.addEventListener('change', () => toggleTodo(index));
-
-      const text = document.createElement('span');
-      text.className = 'task-text';
-      text.textContent = todo.text;
-
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'btn-delete';
-      deleteBtn.textContent = 'Delete';
-      deleteBtn.addEventListener('click', () => deleteTodo(index));
-
-      item.appendChild(checkbox);
-      item.appendChild(text);
-      item.appendChild(deleteBtn);
-      taskList.appendChild(item);
+  // Wire up event listeners
+  if (redSlider) {
+    redSlider.addEventListener('input', (e) => {
+      red.value = parseInt(e.target.value);
     });
   }
 
-  // Add todo
-  function addTodo() {
-    const text = newTaskInput.value.trim();
-    if (!text) return;
-
-    todos.value = [...todos.value, { id: nextId++, text, completed: false }];
-    newTaskInput.value = '';
-    newTaskInput.focus();
-  }
-
-  // Toggle todo
-  function toggleTodo(index) {
-    const newTodos = [...todos.value];
-    newTodos[index] = { ...newTodos[index], completed: !newTodos[index].completed };
-    todos.value = newTodos;
-  }
-
-  // Delete todo
-  function deleteTodo(index) {
-    todos.value = todos.value.filter((_, i) => i !== index);
-  }
-
-  // Clear completed
-  function clearCompleted() {
-    todos.value = activeTodos.value;
-  }
-
-  // Event listeners
-  if (addBtn) {
-    addBtn.addEventListener('click', addTodo);
-  }
-
-  if (newTaskInput) {
-    newTaskInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') addTodo();
+  if (greenSlider) {
+    greenSlider.addEventListener('input', (e) => {
+      green.value = parseInt(e.target.value);
     });
   }
 
-  if (clearBtn) {
-    clearBtn.addEventListener('click', clearCompleted);
+  if (blueSlider) {
+    blueSlider.addEventListener('input', (e) => {
+      blue.value = parseInt(e.target.value);
+    });
   }
 
-  // Effects to update UI
+  // Create effects to update UI
   effect(() => {
-    renderTodos();
+    const redValue = document.getElementById('red-value');
+    if (redValue) redValue.textContent = red.value;
   });
 
   effect(() => {
-    if (taskCountEl) {
-      const count = taskCount.value;
-      taskCountEl.textContent = `${count} task${count !== 1 ? 's' : ''} remaining`;
-    }
+    const greenValue = document.getElementById('green-value');
+    if (greenValue) greenValue.textContent = green.value;
   });
 
-  console.log('✅ Reactive todo list initialized!');
+  effect(() => {
+    const blueValue = document.getElementById('blue-value');
+    if (blueValue) blueValue.textContent = blue.value;
+  });
+
+  effect(() => {
+    if (preview) preview.style.backgroundColor = rgb.value;
+  });
+
+  effect(() => {
+    if (hexDisplay) hexDisplay.textContent = hex.value;
+  });
+
+  console.log('✅ Reactive color picker initialized!');
 });
 
 //# sourceMappingURL=client.js.map
