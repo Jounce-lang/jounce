@@ -1,0 +1,10 @@
+// Test decorator parsing
+
+@persist("localStorage")
+let count = signal(0);
+
+@persist("backend")
+let todos = signal([]);
+
+// Without decorator
+let normalVar = signal(5);

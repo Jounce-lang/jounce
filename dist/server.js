@@ -17,16 +17,6 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {
 
 // Server function implementations
 // Shared utility functions
-module.exports.TodoApp = function() {
-  return h('div', { class: "todo-container" }, h('h1', { class: "title" }, "📝 Todo List"), h('div', { class: "input-group" }, h('input', { type: "text", class: "todo-input", id: "todo-input", placeholder: "What needs to be done?" }, null), h('button', { class: "add-btn", id: "add-btn" }, "Add")), h('div', { id: "stats-container" }, null), h('ul', { class: "todo-list", id: "todo-list" }, null), h('button', { class: "clear-completed", id: "clear-completed" }, "Clear Completed"));
-
-}
-
-module.exports.main = function() {
-  return console.log("📝 Todo List app starting...");
-
-}
-
 // RPC Server Setup
 // Auto-generated RPC server handlers
 const server = new HttpServer(process.env.PORT || 3000);

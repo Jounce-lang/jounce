@@ -1083,7 +1083,38 @@ impl JSEmitter {
                 if pattern_str == "_" {
                     format!("{};", value)
                 } else {
-                    format!("let {} = {};", pattern_str, value)
+                    let mut code = format!("let {} = {};", pattern_str, value);
+
+                    // Check for @persist decorator
+                    for decorator in &let_stmt.decorators {
+                        if decorator.name.value == "persist" && !decorator.arguments.is_empty() {
+                            if let Expression::StringLiteral(strategy) = &decorator.arguments[0] {
+                                match strategy.as_str() {
+                                    "localStorage" => {
+                                        // Generate localStorage persistence code
+                                        code.push_str(&format!("\n\n  // Load from localStorage\n  const __stored_{} = localStorage.getItem('{}');\n  if (__stored_{} !== null) {{\n    {}.value = JSON.parse(__stored_{});\n  }}",
+                                            pattern_str, pattern_str, pattern_str, pattern_str, pattern_str));
+
+                                        code.push_str(&format!("\n\n  // Save to localStorage on changes\n  effect(() => {{\n    localStorage.setItem('{}', JSON.stringify({}.value));\n  }});",
+                                            pattern_str, pattern_str));
+                                    }
+                                    "backend" => {
+                                        // TODO: Generate backend RPC calls
+                                        code.push_str("\n  // @persist(\"backend\") - not yet implemented");
+                                    }
+                                    "realtime" => {
+                                        // TODO: Generate WebSocket sync code
+                                        code.push_str("\n  // @persist(\"realtime\") - not yet implemented");
+                                    }
+                                    _ => {
+                                        // Unknown strategy - ignore
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    code
                 }
             }
             Statement::Const(const_decl) => {
