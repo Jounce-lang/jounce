@@ -352,6 +352,7 @@ impl TypeChecker {
             Expression::IntegerLiteral(_) => Ok(Type::Int),
             Expression::FloatLiteral(_) => Ok(Type::Float),
             Expression::StringLiteral(_) => Ok(Type::String),
+            Expression::CharLiteral(_) => Ok(Type::String),  // Chars treated as strings
             Expression::BoolLiteral(_) => Ok(Type::Bool),
             Expression::UnitLiteral => Ok(Type::Void),  // Unit type () maps to Void
 
