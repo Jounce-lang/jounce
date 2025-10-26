@@ -53,38 +53,65 @@ style {
         border: none;
         border-radius: 10px;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.1s;
         min-width: 120px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
     }
 
     .btn-decrement {
-        background: #ff4757;
+        background: #3b82f6;
         color: white;
     }
 
     .btn-decrement:hover {
-        background: #ee5a6f;
-        transform: translateY(-2px);
+        background: #2563eb;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-decrement:active {
+        background: #1d4ed8;
+        transform: translateY(4px);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     .btn-reset {
-        background: #f1f2f6;
-        color: #333;
+        background: #fbbf24;
+        color: #111;
     }
 
     .btn-reset:hover {
-        background: #dfe4ea;
-        transform: translateY(-2px);
+        background: #f59e0b;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 12px rgba(251, 191, 36, 0.4);
+    }
+
+    .btn-reset:active {
+        background: #d97706;
+        transform: translateY(4px);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     .btn-increment {
-        background: #1e90ff;
+        background: #10b981;
         color: white;
     }
 
     .btn-increment:hover {
-        background: #3da0ff;
-        transform: translateY(-2px);
+        background: #059669;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-increment:active {
+        background: #047857;
+        transform: translateY(4px);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 }
 

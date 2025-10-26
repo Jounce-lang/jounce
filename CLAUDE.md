@@ -1,8 +1,8 @@
 # CLAUDE.md - Jounce Development Guide
 
-**Version**: v0.8.1 "Perfect Test Suite"
-**Current Status**: 625/625 tests passing + App building workflow! 🎉
-**Last Updated**: October 25, 2025
+**Version**: v0.8.2 "Interactive Apps Working"
+**Current Status**: 2 working browser apps + Persistence architecture designed! 🎉
+**Last Updated**: October 25, 2025 (Session 3)
 
 ---
 
@@ -101,24 +101,152 @@ ls -1 packages/ | wc -l
 
 ---
 
-## 🎯 Next Steps
+## 🎯 Next Steps (Session 4)
 
-### Immediate
-1. ✅ Complete 35-package ecosystem
-2. Build example applications
-3. Create portfolio projects
-4. Expand to 50 packages
-5. Target: 100 packages for v1.0.0
+### IMMEDIATE PRIORITY: Implement @persist Decorator System
 
-### Future
-- More example apps (todo, blog, e-commerce, dashboard)
-- Package documentation
-- Performance optimizations
-- Language improvements
+**Context:** We discovered a critical UX issue - users shouldn't need to understand frontend vs backend architecture to build apps. Solution: progressive enhancement via decorators.
+
+**Design Decision:** Option B - `@persist` decorator (makes upgrades easiest)
+
+```jounce
+// Step 1: Start simple
+let todos = signal([]);
+
+// Step 2: Add persistence (ONE LINE)
+@persist("localStorage")
+let todos = signal([]);
+
+// Step 3: Upgrade to backend (CHANGE ONE WORD)
+@persist("backend")
+let todos = signal([]);
+```
+
+### Implementation Tasks:
+
+1. **Parser Changes** (`src/parser.rs`)
+   - Add decorator syntax: `@persist("strategy")`
+   - Parse decorator arguments: `localStorage`, `backend`, `realtime`
+   - Attach decorators to variable declarations
+
+2. **AST Changes** (`src/ast.rs`)
+   - Add `Decorator` node type
+   - Add `decorators: Vec<Decorator>` to `LetStatement`
+
+3. **Code Generation** (`src/js_emitter.rs`)
+   - For `@persist("localStorage")`: Generate localStorage save/load code
+   - For `@persist("backend")`: Generate RPC calls
+   - Auto-wrap in effects for reactivity
+
+4. **Testing**
+   - Test localStorage persistence (refresh browser, data stays)
+   - Test backend persistence (requires server functions)
+   - Test upgrade path (change decorator, code still works)
+
+5. **Documentation**
+   - Update `BUILDING_APPS.md` with @persist examples
+   - Add persistence guide
+   - Show upgrade progression
+
+### Other Pending:
+
+- Build Calculator app (validate reactive patterns with numbers)
+- Build Temperature Converter (dual inputs, computed values)
+- Build Color Mixer (RGB sliders, real-time preview)
+- Commit all Session 3 work
+
+---
+
+## 🏗️ Architecture Decisions (Session 3)
+
+### Frontend vs Backend Storage Strategy
+
+**Problem:** Users say "build me a todo app" - they shouldn't need to choose storage strategy.
+
+**Analysis:**
+- Option A (Auto-magic): Compiler auto-detects and adds persistence → **Unclear upgrade path**
+- Option B (Decorators): `@persist("strategy")` explicit opt-in → **Clear, easy upgrades** ✅
+- Option C (Manual): Write all storage code manually → **Too much boilerplate**
+
+**Decision:** Implement Option B - Decorator-based progressive enhancement
+
+**Reasoning:**
+1. **Explicit is better than implicit** - developers can SEE what's happening
+2. **One-line upgrades** - change decorator argument, not entire codebase
+3. **Clear progression** - `none → localStorage → backend → realtime`
+4. **No magic** - behavior is visible in source code
+
+### Storage Strategies:
+
+```
+@persist("none")         → No persistence (default, pure frontend)
+@persist("localStorage") → Browser storage (single device)
+@persist("backend")      → Server + database (multi-user)
+@persist("realtime")     → WebSocket sync (collaboration)
+```
+
+### Example Upgrade Path:
+
+```jounce
+// Day 1: Prototype
+let todos = signal([]);
+
+// Day 2: Want persistence
+@persist("localStorage")
+let todos = signal([]);
+
+// Week 1: Multi-user needed
+@persist("backend")
+let todos = signal([]);
+
+// Add server functions:
+server fn loadTodos() -> Vec<Todo> { ... }
+server fn saveTodo(todo: Todo) -> Todo { ... }
+
+// Month 1: Real-time collaboration
+@persist("realtime")
+let todos = signal([]);
+```
+
+### Key Insight:
+
+**Progressive enhancement shouldn't require rewrites.** Each upgrade is additive, not destructive.
 
 ---
 
 ## 📝 Recent Achievements
+
+**October 25, 2025 (Session 3):**
+- ✅ **First interactive apps working in browser!**
+- Fixed critical CSS bugs (hex colors, pseudo-classes)
+- Fixed ES6 module exports (`reactivity.js`)
+- Built Counter app (blue/yellow/green buttons, press effects)
+- Built Todo List app (add, complete, delete, stats)
+- Designed `@persist` decorator system (Option B selected)
+- Documented frontend/backend architecture decisions
+
+**Key Deliverables:**
+- `test_app_counter.jnc` - Working counter with visual feedback
+- `apps/11_todo_list.jnc` - Full todo app with reactive list rendering
+- CSS parser fixes:
+  * `src/parser.rs:3114-3116` - Hex color spacing fix (#3b82f6 not #3 b82f6)
+  * `src/parser.rs:3100-3106` - Pseudo-class spacing (:hover not : hover)
+  * `src/parser.rs:3069` - Track prev_was_hash for hex colors
+- `runtime/reactivity.js:504` - Added ES6 exports
+- Architecture documentation (this file)
+
+**Browser Testing Workflow:**
+```bash
+cd dist && python3 -m http.server 8080
+# Open http://localhost:8080/index.html
+# Hard refresh: Ctrl+Shift+R (bypass cache)
+```
+
+**CSS Fixes Applied:**
+- Hex colors: `#3b82f6` (no spaces)
+- Pseudo-classes: `.btn:hover` (no spaces)
+- Properties: `color: white` (space after colon)
+- Units: `600px` (no spaces)
 
 **October 25, 2025 (Session 2):**
 - ✅ **100% test pass rate achieved! 625/625 tests**
@@ -142,6 +270,58 @@ ls -1 packages/ | wc -l
 - Built 13 packages in one session
 - Expanded test coverage (850+ tests)
 - All work committed and pushed
+
+---
+
+## 🐛 Known Issues & Fixes
+
+### CSS Generation (`src/parser.rs`)
+- ✅ **FIXED** (Session 3): Hex colors had spaces (#3 b82f6)
+- ✅ **FIXED** (Session 3): Pseudo-classes had spaces (.btn: hover)
+- ✅ **FIXED** (Session 2): Units had spaces (600 px)
+
+**Solution:** Track previous token state, don't add spaces after `#` or before `:` in selectors.
+
+### ES6 Module Exports (`runtime/reactivity.js`)
+- ✅ **FIXED** (Session 3): Missing `export` statement for batch, untrack, etc.
+
+**Solution:** Added `export { signal, computed, effect, batch, untrack };` at end of file.
+
+### Manual Reactive Setup (Current State)
+- ⚠️ **WORKAROUND**: Must manually add reactive code to `dist/client.js` after compilation
+- 🔧 **FIX PLANNED**: `@persist` decorator will auto-generate this code (Session 4)
+
+---
+
+## 📚 Resources
+
+### Documentation
+- `BUILDING_APPS.md` - App development patterns (693 lines)
+- `TEST_IN_BROWSER.md` - Browser testing guide
+- `docs/design/REACTIVE_AUTOMATION.md` - Future automation design
+- `CLAUDE_ARCHIVE.md` - Full historical context
+
+### Example Apps
+- `test_app_counter.jnc` - Simple counter (blue/yellow/green buttons)
+- `test_app_stopwatch.jnc` - Timer with intervals
+- `apps/11_todo_list.jnc` - Todo list with stats
+
+### Runtime Files
+- `runtime/reactivity.js` - Signal/effect/computed implementation
+- `runtime/client-runtime.js` - h() and mountComponent()
+- `dist/` - Generated output (auto-copied on compile)
+
+---
+
+## 🔄 Workflow (Current Session Pattern)
+
+1. **Write `.jnc` file** with style block + component
+2. **Compile:** `cargo run -- compile app.jnc`
+3. **Add reactive setup** to `dist/client.js` (manual for now)
+4. **Test in browser:** `cd dist && python3 -m http.server 8080`
+5. **Hard refresh:** Ctrl+Shift+R to bypass cache
+
+**Next Session:** Steps 3-4 automated via `@persist` decorator!
 
 ---
 
