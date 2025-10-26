@@ -722,6 +722,7 @@ impl Formatter {
             Expression::ArrayLiteral(arr) => self.format_array_literal(arr),
             Expression::TupleLiteral(tuple) => self.format_tuple_literal(tuple),
             Expression::StructLiteral(struct_lit) => self.format_struct_literal(struct_lit),
+            Expression::ObjectLiteral(obj_lit) => self.format_object_literal(obj_lit),
             Expression::Prefix(prefix) => self.format_prefix_expression(prefix),
             Expression::Spread(spread) => self.format_spread_expression(spread),
             Expression::Infix(infix) => self.format_infix_expression(infix),
@@ -807,6 +808,25 @@ impl Formatter {
         if !struct_lit.fields.is_empty() {
             self.write(" ");
             for (i, (name, value)) in struct_lit.fields.iter().enumerate() {
+                if i > 0 {
+                    self.write(", ");
+                }
+                self.write(&name.value);
+                self.write(": ");
+                self.format_expression(value);
+            }
+            self.write(" ");
+        }
+
+        self.write("}");
+    }
+
+    fn format_object_literal(&mut self, obj_lit: &ObjectLiteral) {
+        self.write("{");
+
+        if !obj_lit.fields.is_empty() {
+            self.write(" ");
+            for (i, (name, value)) in obj_lit.fields.iter().enumerate() {
                 if i > 0 {
                     self.write(", ");
                 }

@@ -496,6 +496,11 @@ impl TypeChecker {
                 Ok(Type::Any)
             }
 
+            Expression::ObjectLiteral(_) => {
+                // Object literals are JavaScript objects
+                Ok(Type::Any)
+            }
+
             Expression::FieldAccess(field_access) => {
                 // Infer object type
                 let object_type = self.infer_expression(&field_access.object)?;

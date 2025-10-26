@@ -1250,18 +1250,28 @@ impl<'a> Parser<'a> {
                 })
             },
             TokenKind::LBrace | TokenKind::JsxOpenBrace => {
-                // Parse block as expression: { statements... }
-                // Accept both LBrace and JsxOpenBrace since in JSX mode { is tokenized as JsxOpenBrace
-                self.next_token(); // consume {
-                let mut statements = Vec::new();
-                while self.current_token().kind != TokenKind::RBrace && self.current_token().kind != TokenKind::JsxCloseBrace {
-                    statements.push(self.parse_statement()?);
+                // Differentiate between object literal and block expression
+                // Object literal: { key: value, ... }
+                // Block expression: { statements... }
+
+                // Check if it looks like an object literal
+                if self.is_object_literal_ahead() {
+                    // Parse as object literal
+                    self.parse_object_literal()?
+                } else {
+                    // Parse block as expression: { statements... }
+                    // Accept both LBrace and JsxOpenBrace since in JSX mode { is tokenized as JsxOpenBrace
+                    self.next_token(); // consume {
+                    let mut statements = Vec::new();
+                    while self.current_token().kind != TokenKind::RBrace && self.current_token().kind != TokenKind::JsxCloseBrace {
+                        statements.push(self.parse_statement()?);
+                    }
+                    // Accept either RBrace or JsxCloseBrace
+                    if !self.consume_if_matches(&TokenKind::RBrace) {
+                        self.expect_and_consume(&TokenKind::JsxCloseBrace)?;
+                    }
+                    Expression::Block(BlockStatement { statements })
                 }
-                // Accept either RBrace or JsxCloseBrace
-                if !self.consume_if_matches(&TokenKind::RBrace) {
-                    self.expect_and_consume(&TokenKind::JsxCloseBrace)?;
-                }
-                Expression::Block(BlockStatement { statements })
             },
             TokenKind::CssMacro => self.parse_css_macro()?,
             _ => return Err(self.error(&format!("No prefix parse function for {:?}", token.kind))),
@@ -1650,6 +1660,42 @@ impl<'a> Parser<'a> {
 
         self.expect_and_consume(&TokenKind::RBrace)?;
         Ok(Expression::StructLiteral(StructLiteral { name, fields }))
+    }
+
+    fn parse_object_literal(&mut self) -> Result<Expression, CompileError> {
+        // Parse JavaScript-style object literal: { key: value, ... }
+        self.expect_and_consume(&TokenKind::LBrace)?;
+        let mut fields = Vec::new();
+
+        // Handle empty object literal {}
+        if self.current_token().kind == TokenKind::RBrace {
+            self.expect_and_consume(&TokenKind::RBrace)?;
+            return Ok(Expression::ObjectLiteral(ObjectLiteral { fields }));
+        }
+
+        // Parse comma-separated field: value pairs
+        while self.current_token().kind != TokenKind::RBrace {
+            let field_name = self.parse_identifier()?;
+
+            // Check for field shorthand: if followed by comma or }, use field_name as both key and value
+            if self.current_token().kind == TokenKind::Comma || self.current_token().kind == TokenKind::RBrace {
+                // Field shorthand: `username,` is equivalent to `username: username,`
+                let field_value = Expression::Identifier(field_name.clone());
+                fields.push((field_name, field_value));
+            } else {
+                // Regular field: value syntax
+                self.expect_and_consume(&TokenKind::Colon)?;
+                let field_value = self.parse_expression(Precedence::Lowest)?;
+                fields.push((field_name, field_value));
+            }
+
+            if !self.consume_if_matches(&TokenKind::Comma) {
+                break;
+            }
+        }
+
+        self.expect_and_consume(&TokenKind::RBrace)?;
+        Ok(Expression::ObjectLiteral(ObjectLiteral { fields }))
     }
 
     // Parse an expression without treating { as struct literal
@@ -2199,6 +2245,23 @@ impl<'a> Parser<'a> {
                 )
             }
             _ => false,  // Keywords or other tokens: not a struct literal
+        }
+    }
+
+    fn is_object_literal_ahead(&self) -> bool {
+        // Similar to is_struct_literal_ahead, but for anonymous object literals
+        // Current token should be {, peek token tells us what's inside
+        match self.peek_token().kind {
+            TokenKind::RBrace => true,  // Empty object literal: {}
+            TokenKind::Identifier => {
+                let mut temp_lexer = self.lexer.clone();
+                let after_ident = temp_lexer.next_token();
+                matches!(
+                    after_ident.kind,
+                    TokenKind::Colon | TokenKind::Comma | TokenKind::RBrace
+                )
+            }
+            _ => false,  // Keywords or other tokens: not an object literal
         }
     }
 
