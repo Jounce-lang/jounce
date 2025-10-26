@@ -3,28 +3,45 @@
 
 <script>
   // Initialize reactive state
+  console.log('[Jounce] Initializing counter app...');
   const count = signal(0);
+  console.log('[Jounce] Signal created:', count);
 
   // Auto-update DOM when count changes
   effect(() => {
     const value = count.value; // Read value FIRST to establish dependency
+    console.log('[Jounce] Effect running, count =', value);
     const el = document.getElementById('count');
-    if (el) el.textContent = value;
+    console.log('[Jounce] Element found:', el);
+    if (el) {
+      el.textContent = value;
+      console.log('[Jounce] Updated textContent to:', value);
+    }
   });
 
   // Mount app to DOM
   window.addEventListener('DOMContentLoaded', () => {
+    console.log('[Jounce] DOMContentLoaded fired');
     const root = document.getElementById('app');
-    if (root) mountComponent(Counter, root);
+    console.log('[Jounce] Root element:', root);
+    if (root) {
+      console.log('[Jounce] Mounting Counter...');
+      mountComponent(Counter, root);
+      console.log('[Jounce] Counter mounted');
+      console.log('[Jounce] App HTML:', root.innerHTML);
+      console.log('[Jounce] Looking for count element...');
+      const countEl = document.getElementById('count');
+      console.log('[Jounce] Count element:', countEl);
+    }
   });
 </script>
 
 component Counter() {
     return <div>
         <h1>Counter: <span id="count">0</span></h1>
-        <button onClick={() => { count.value = count.value + 1; }}>+</button>
-        <button onClick={() => { count.value = count.value - 1; }}>-</button>
-        <button onClick={() => { count.value = 0; }}>Reset</button>
+        <button onClick={() => { console.log("+ clicked"); count.value = count.value + 1; console.log("count is now", count.value); }}>+</button>
+        <button onClick={() => { console.log("- clicked"); count.value = count.value - 1; console.log("count is now", count.value); }}>-</button>
+        <button onClick={() => { console.log("Reset clicked"); count.value = 0; console.log("count is now", count.value); }}>Reset</button>
     </div>;
 }
 
