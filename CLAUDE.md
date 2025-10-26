@@ -10,11 +10,13 @@
 
 **IMPORTANT**: Monitor token usage during long sessions.
 
-When usage reaches **80% (160k/200k tokens)**:
+When usage reaches **70% (140k/200k tokens)**:
 1. **STOP** and notify user
 2. **Write next steps** to this file
 3. **Commit all work**
 4. User will clear memory and resume
+
+**Why 70%?** Leaves buffer for final commits and documentation updates before hitting limits.
 
 ---
 
