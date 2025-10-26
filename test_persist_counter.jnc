@@ -1,0 +1,38 @@
+// Test @persist decorator with a counter component
+
+style CounterApp {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+style button {
+    font-size: 18px;
+    padding: 10px 20px;
+    margin: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background: #3b82f6;
+    color: white;
+}
+
+style button:hover {
+    background: #2563eb;
+}
+
+component CounterApp() {
+    // Persistent count - survives page refreshes!
+    @persist("localStorage")
+    let count = signal(0);
+
+    return <div class="CounterApp">
+        <h1>Persistent Counter</h1>
+        <p>Count: {count.value}</p>
+        <button onClick={() => count.value = count.value + 1}>Increment</button>
+        <button onClick={() => count.value = count.value - 1}>Decrement</button>
+        <button onClick={() => count.value = 0}>Reset</button>
+        <p><em>Try refreshing the page - your count persists!</em></p>
+    </div>;
+}

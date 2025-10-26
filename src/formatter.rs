@@ -1424,6 +1424,7 @@ mod tests {
     fn test_format_simple_let() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "x".to_string(),
                 }),
@@ -1571,6 +1572,7 @@ mod tests {
     fn test_format_match_expression() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "result".to_string(),
                 }),
@@ -1606,6 +1608,7 @@ mod tests {
     fn test_format_jsx_simple_inline() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "elem".to_string(),
                 }),
@@ -1637,6 +1640,7 @@ mod tests {
     fn test_format_jsx_multiline_nested() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "elem".to_string(),
                 }),
@@ -1695,6 +1699,7 @@ mod tests {
     fn test_format_jsx_many_attributes() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "elem".to_string(),
                 }),
@@ -1755,6 +1760,7 @@ mod tests {
     fn test_format_lambda() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "add".to_string(),
                 }),
@@ -1800,6 +1806,7 @@ mod tests {
     fn test_format_ternary() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "result".to_string(),
                 }),
@@ -1823,6 +1830,7 @@ mod tests {
     fn test_format_array_literal() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "arr".to_string(),
                 }),
@@ -1848,6 +1856,7 @@ mod tests {
     fn test_format_if_expression() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "result".to_string(),
                 }),
@@ -1958,6 +1967,7 @@ mod tests {
     fn test_format_spread_operator() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "arr".to_string(),
                 }),
@@ -1986,6 +1996,7 @@ mod tests {
     fn test_format_type_cast() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "x".to_string(),
                 }),
@@ -2010,6 +2021,7 @@ mod tests {
     fn test_format_struct_literal() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "point".to_string(),
                 }),
@@ -2074,6 +2086,7 @@ mod tests {
     fn test_format_tuple_literal() {
         let program = Program {
             statements: vec![Statement::Let(LetStatement {
+                decorators: vec![],
                 pattern: Pattern::Identifier(Identifier {
                     value: "tuple".to_string(),
                 }),

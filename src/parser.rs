@@ -107,13 +107,28 @@ impl<'a> Parser<'a> {
             TokenKind::Trait => self.parse_trait_definition().map(Statement::Trait),
             TokenKind::Component => self.parse_component_definition().map(Statement::Component),
             TokenKind::At => {
-                // Annotations can be on functions or components
-                // Try parsing as function first, which handles @server/@client fn
-                // Components are marked with "component" keyword, not @client
-                self.parse_function_definition().map(Statement::Function)
+                // Check what follows the @ to determine what to parse
+                // @server/@client -> function annotations
+                // @persist/etc -> decorators on let statements
+                if matches!(self.peek_token().kind, TokenKind::Server | TokenKind::Client) {
+                    // Parse as function annotation: @server fn or @client fn
+                    self.parse_function_definition().map(Statement::Function)
+                } else {
+                    // Parse as decorator: @persist("localStorage") let x = ...
+                    let decorators = self.parse_decorators()?;
+                    if self.current_token().kind == TokenKind::Let {
+                        self.parse_let_statement(decorators).map(Statement::Let)
+                    } else {
+                        return Err(CompileError::ParserError {
+                            message: "Decorators are currently only supported on 'let' statements".to_string(),
+                            line: self.current_token().line,
+                            column: self.current_token().column,
+                        });
+                    }
+                }
             }
             TokenKind::Fn | TokenKind::Server | TokenKind::Client | TokenKind::Async => self.parse_function_definition().map(Statement::Function),
-            TokenKind::Let => self.parse_let_statement().map(Statement::Let),
+            TokenKind::Let => self.parse_let_statement(vec![]).map(Statement::Let),
             TokenKind::Const => self.parse_const_declaration().map(Statement::Const),
             TokenKind::Return => self.parse_return_statement().map(Statement::Return),
             TokenKind::If => self.parse_if_statement().map(Statement::If),
@@ -780,7 +795,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_let_statement(&mut self) -> Result<LetStatement, CompileError> {
+    fn parse_let_statement(&mut self, decorators: Vec<Decorator>) -> Result<LetStatement, CompileError> {
         self.expect_and_consume(&TokenKind::Let)?;
 
         // Check for optional mut keyword: let mut x = ...
@@ -798,7 +813,7 @@ impl<'a> Parser<'a> {
 
         self.expect_and_consume(&TokenKind::Assign)?;
         let value = self.parse_expression(Precedence::Lowest)?;
-        Ok(LetStatement { pattern, mutable, type_annotation, value })
+        Ok(LetStatement { decorators, pattern, mutable, type_annotation, value })
     }
 
     fn parse_const_declaration(&mut self) -> Result<ConstDeclaration, CompileError> {
@@ -2089,6 +2104,42 @@ impl<'a> Parser<'a> {
         } else {
             Err(self.error(&format!("Expected Identifier, found {:?}", token.kind)))
         }
+    }
+
+    /// Parse decorators like @persist("localStorage")
+    fn parse_decorators(&mut self) -> Result<Vec<Decorator>, CompileError> {
+        let mut decorators = Vec::new();
+
+        while self.current_token().kind == TokenKind::At {
+            self.next_token(); // consume @
+
+            // Parse decorator name
+            let name = self.parse_identifier()?;
+
+            // Parse arguments: @persist("localStorage")
+            let mut arguments = Vec::new();
+            if self.current_token().kind == TokenKind::LParen {
+                self.next_token(); // consume (
+
+                // Parse arguments (comma-separated expressions)
+                if self.current_token().kind != TokenKind::RParen {
+                    arguments.push(self.parse_expression(Precedence::Lowest)?);
+
+                    while self.consume_if_matches(&TokenKind::Comma) {
+                        if self.current_token().kind == TokenKind::RParen {
+                            break;
+                        }
+                        arguments.push(self.parse_expression(Precedence::Lowest)?);
+                    }
+                }
+
+                self.expect_and_consume(&TokenKind::RParen)?;
+            }
+
+            decorators.push(Decorator { name, arguments });
+        }
+
+        Ok(decorators)
     }
 
     fn current_token(&self) -> &Token { &self.current }

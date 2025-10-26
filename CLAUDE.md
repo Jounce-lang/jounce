@@ -1,8 +1,8 @@
 # CLAUDE.md - Jounce Development Guide
 
-**Version**: v0.8.2 "Interactive Apps Working"
-**Current Status**: 2 working browser apps + Persistence architecture designed! 🎉
-**Last Updated**: October 25, 2025 (Session 3)
+**Version**: v0.8.3 "@persist Decorator Implemented"
+**Current Status**: @persist decorator working! Progressive enhancement ready! 🎉
+**Last Updated**: October 25, 2025 (Session 4)
 
 ---
 
@@ -103,59 +103,28 @@ ls -1 packages/ | wc -l
 
 ---
 
-## 🎯 Next Steps (Session 4)
+## 🎯 Next Steps (Session 5)
 
-### IMMEDIATE PRIORITY: Implement @persist Decorator System
+### IMMEDIATE PRIORITIES:
 
-**Context:** We discovered a critical UX issue - users shouldn't need to understand frontend vs backend architecture to build apps. Solution: progressive enhancement via decorators.
+1. **Build Example Apps with @persist**
+   - Counter app with localStorage persistence
+   - Todo app with backend persistence
+   - Shopping cart with realtime sync
 
-**Design Decision:** Option B - `@persist` decorator (makes upgrades easiest)
+2. **Implement backend and realtime strategies**
+   - `@persist("backend")` - Generate RPC calls
+   - `@persist("realtime")` - Generate WebSocket sync
 
-```jounce
-// Step 1: Start simple
-let todos = signal([]);
-
-// Step 2: Add persistence (ONE LINE)
-@persist("localStorage")
-let todos = signal([]);
-
-// Step 3: Upgrade to backend (CHANGE ONE WORD)
-@persist("backend")
-let todos = signal([]);
-```
-
-### Implementation Tasks:
-
-1. **Parser Changes** (`src/parser.rs`)
-   - Add decorator syntax: `@persist("strategy")`
-   - Parse decorator arguments: `localStorage`, `backend`, `realtime`
-   - Attach decorators to variable declarations
-
-2. **AST Changes** (`src/ast.rs`)
-   - Add `Decorator` node type
-   - Add `decorators: Vec<Decorator>` to `LetStatement`
-
-3. **Code Generation** (`src/js_emitter.rs`)
-   - For `@persist("localStorage")`: Generate localStorage save/load code
-   - For `@persist("backend")`: Generate RPC calls
-   - Auto-wrap in effects for reactivity
-
-4. **Testing**
-   - Test localStorage persistence (refresh browser, data stays)
-   - Test backend persistence (requires server functions)
-   - Test upgrade path (change decorator, code still works)
-
-5. **Documentation**
+3. **Documentation**
    - Update `BUILDING_APPS.md` with @persist examples
-   - Add persistence guide
-   - Show upgrade progression
+   - Add persistence migration guide
+   - Show upgrade path examples
 
-### Other Pending:
-
-- Build Calculator app (validate reactive patterns with numbers)
-- Build Temperature Converter (dual inputs, computed values)
-- Build Color Mixer (RGB sliders, real-time preview)
-- Commit all Session 3 work
+4. **Other Apps**
+   - Build Calculator app (validate reactive patterns with numbers)
+   - Build Temperature Converter (dual inputs, computed values)
+   - Build Color Mixer (RGB sliders, real-time preview)
 
 ---
 
@@ -217,6 +186,31 @@ let todos = signal([]);
 ---
 
 ## 📝 Recent Achievements
+
+**October 25, 2025 (Session 4):**
+- ✅ **@persist decorator fully implemented!**
+- Added `Decorator` AST node type (src/ast.rs:821-824)
+- Updated `LetStatement` to include decorators field
+- Implemented decorator parsing in parser.rs:
+  * `parse_decorators()` function (lines 2095-2128)
+  * Updated `parse_statement()` to handle `@` before `let`
+  * Updated `parse_let_statement()` to accept decorators
+- Implemented localStorage code generation in js_emitter.rs:
+  * Generates localStorage.getItem() on init
+  * Generates effect() to save on changes
+  * Supports "backend" and "realtime" (placeholders)
+- All 625 tests passing
+- Fixed formatter.rs to include decorators field (13 test cases)
+- Parser distinguishes between `@server/@client` and `@persist` decorators
+
+**Key Deliverables:**
+- `src/ast.rs` - Decorator struct + LetStatement.decorators
+- `src/parser.rs:2095-2128` - parse_decorators() function
+- `src/parser.rs:109-129` - Decorator handling in parse_statement()
+- `src/parser.rs:793-812` - Updated parse_let_statement()
+- `src/js_emitter.rs:1088-1115` - localStorage code generation
+- `test_decorator_parsing.jnc` - Test file demonstrating syntax
+- All compilation tests passing (625/625)
 
 **October 25, 2025 (Session 3):**
 - ✅ **First interactive apps working in browser!**

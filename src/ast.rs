@@ -40,6 +40,7 @@ pub struct UseStatement {
 
 #[derive(Debug, Clone)]
 pub struct LetStatement {
+    pub decorators: Vec<Decorator>,  // Decorators like @persist("localStorage")
     pub pattern: Pattern,  // Changed from 'name' to support destructuring
     pub mutable: bool,
     pub type_annotation: Option<TypeExpression>,
@@ -809,4 +810,16 @@ pub struct EffectExpression {
 #[derive(Debug, Clone)]
 pub struct BatchExpression {
     pub body: Box<Expression>,  // Must be a lambda/closure
+}
+
+// ============================================================================
+// Decorators (Phase 14: @persist decorator for progressive enhancement)
+// ============================================================================
+
+/// Decorator expression: @persist("localStorage")
+/// Provides progressive enhancement capabilities for variables
+#[derive(Debug, Clone)]
+pub struct Decorator {
+    pub name: Identifier,           // Decorator name (e.g., "persist")
+    pub arguments: Vec<Expression>,  // Arguments (e.g., StringLiteral("localStorage"))
 }
