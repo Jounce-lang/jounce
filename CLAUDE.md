@@ -1,8 +1,8 @@
 # CLAUDE.md - Jounce Development Guide
 
-**Version**: v0.8.4 "Single-File Principle"
-**Current Status**: Phase 15 Week 2 - Blog Platform (refactoring to single file)
-**Last Updated**: October 26, 2025 (Session 5)
+**Version**: v0.8.5 "Compiler Fixes in Progress"
+**Current Status**: Session 6 - Fixing single-file workflow (Phase 1 ✅, Phase 2 🚧)
+**Last Updated**: October 26, 2025 (Session 6 - In Progress)
 
 ---
 
@@ -632,7 +632,132 @@ cd dist && python3 -m http.server 8080
 
 ---
 
-## 🔴 SESSION 5 REALITY CHECK (October 26, 2025)
+## 🟢 SESSION 6 PROGRESS (October 26, 2025)
+
+### **FIXING THE COMPILER - Phase 1 ✅ Complete, Phase 2 🚧 In Progress**
+
+**Token Usage**: 102k/200k (51%) - Pausing to clear memory
+
+### ✅ **Phase 1 COMPLETE: Object Literal Support**
+
+**Problem Solved:**
+```jounce
+// ❌ BEFORE: Parser error "No prefix parse function for Colon"
+let post = { id: 1, title: "Test" };
+
+// ✅ AFTER: Works perfectly!
+let post = { id: 1, title: "Hello", tags: ["rust", "jounce"] };
+```
+
+**Files Changed:**
+- `src/ast.rs` - Added `ObjectLiteral` variant + struct
+- `src/parser.rs` - Added `parse_object_literal()` + detection logic
+- `src/js_emitter.rs` - Generates `{ key: value }` JavaScript
+- `src/formatter.rs`, `src/borrow_checker.rs`, `src/codegen.rs`, `src/semantic_analyzer.rs`, `src/type_checker.rs` - Full compiler support
+
+**Test Result:** ✅ All 625 tests pass
+**Committed:** Yes (commit 5cde04d)
+
+**Generated Output:**
+```javascript
+let post = { id: 1, title: "Hello", tags: ["rust", "jounce"] };
+```
+
+---
+
+### 🚧 **Phase 2 IN PROGRESS: Script Block Support**
+
+**Goal:** Allow raw JavaScript in `.jnc` files:
+```jounce
+<script>
+  // Raw JavaScript code embedded directly
+  console.log("App initialized!");
+  function initApp() { ... }
+</script>
+```
+
+**Progress So Far (80% complete):**
+
+✅ **1. AST Support** (src/ast.rs)
+- Added `ScriptBlock` statement variant
+- Added `ScriptBlock` struct with `code: String`
+
+✅ **2. Parser Support** (src/parser.rs:3179-3234)
+- Added `parse_script_block()` function
+- Handles `<script>...</script>` tags
+- Collects all tokens between tags
+
+✅ **3. Compiler Support**
+- ✅ `src/formatter.rs:100-104` - Formats script blocks
+- ✅ `src/borrow_checker.rs:195` - Skips borrow checking
+- ✅ `src/semantic_analyzer.rs:368` - Returns Unit type
+- ✅ `src/js_emitter.rs:1178-1181` - Emits raw JavaScript code
+
+✅ **4. Build Test**
+- Compiles successfully: `cargo build` ✅
+- Test file compiles: `test_script_block.jnc` ✅
+
+**❌ PROBLEM: Script blocks NOT appearing in output!**
+
+**Root Cause:** `CodeSplitter` only stores functions/components, ignores top-level statements like `ScriptBlock`.
+
+**What's Left (20%):**
+
+1. **Update `src/code_splitter.rs`:**
+   - ✅ Added `script_blocks: Vec<ScriptBlock>` field (line 21)
+   - ❌ Need to initialize in `new()` → add `script_blocks: Vec::new()`
+   - ❌ Need to collect in `split_program()` → add case for `Statement::ScriptBlock(sb) => self.script_blocks.push(sb.clone())`
+
+2. **Update `src/js_emitter.rs::generate_client_js()`:**
+   - ❌ After line ~650 (before functions), emit script blocks:
+   ```rust
+   // Emit script blocks (raw JavaScript)
+   for script in &self.splitter.script_blocks {
+       output.push_str("\n// Script block\n");
+       output.push_str(&script.code);
+       output.push_str("\n\n");
+   }
+   ```
+
+3. **Test & Verify:**
+   - Recompile `test_script_block.jnc`
+   - Check `dist/client.js` contains the raw JavaScript
+   - Run tests: `cargo test --lib`
+
+4. **Commit Phase 2:**
+   ```bash
+   git add -A
+   git commit -m "feat: Phase 2 complete - Script block support <script>"
+   ```
+
+---
+
+### **Next Steps (Session 7):**
+
+**FINISH Phase 2 (15 minutes):**
+1. Update `CodeSplitter::new()` in `src/code_splitter.rs`
+2. Update `split_program()` to collect script blocks
+3. Update `generate_client_js()` to emit script blocks
+4. Test with `test_script_block.jnc`
+5. Verify output in `dist/client.js`
+6. Run tests: `cargo test --lib`
+7. Commit Phase 2
+
+**Then Phase 3: Event Handlers (1 hour):**
+```jounce
+<button onClick={() => count.value++}>Increment</button>
+```
+- Parse arrow functions in JSX attributes
+- Generate event listener code
+
+**Then Phase 4: True Single-File App (30 minutes):**
+- Rebuild blog platform without manual steps
+- Verify: `cargo compile main.jnc` → working app (no cp, no edits)
+- Delete build scripts
+
+---
+
+## 🔴 SESSION 5 REALITY CHECK (October 26, 2025) - ARCHIVED
 
 ### **CRITICAL TRUTH: The Compiler is NOT Built for Single-File Reactive Apps**
 

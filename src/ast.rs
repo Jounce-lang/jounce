@@ -30,6 +30,7 @@ pub enum Statement {
     Trait(TraitDefinition),
     Style(StyleBlock),       // Phase 13: style Button { ... }
     Theme(ThemeBlock),       // Phase 13: theme DarkMode { ... }
+    ScriptBlock(ScriptBlock), // Raw JavaScript code: <script>...</script>
 }
 
 #[derive(Debug, Clone)]
@@ -261,6 +262,12 @@ pub struct StyleBlock {
 pub struct ThemeBlock {
     pub name: Identifier,
     pub properties: Vec<ThemeProperty>,
+}
+
+// Script block: <script>raw JavaScript code</script>
+#[derive(Debug, Clone)]
+pub struct ScriptBlock {
+    pub code: String,  // Raw JavaScript code to be embedded in output
 }
 
 // Style property: background: blue; or color: theme.DarkMode.text;

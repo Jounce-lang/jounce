@@ -97,6 +97,11 @@ impl Formatter {
             Statement::Trait(trait_def) => self.format_trait_definition(trait_def),
             Statement::Style(_) => self.write("/* style block */\n"),  // Phase 13: TODO - implement formatter
             Statement::Theme(_) => self.write("/* theme block */\n"),  // Phase 13: TODO - implement formatter
+            Statement::ScriptBlock(script) => {
+                self.write("<script>\n");
+                self.write(&script.code);
+                self.write("\n</script>\n");
+            }
         }
     }
 
