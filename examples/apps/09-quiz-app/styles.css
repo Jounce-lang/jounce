@@ -59,10 +59,6 @@ body {
     transition: width 0.3s ease;
 }
 
-.progress-40 {
-    width: 40%;
-}
-
 .progress-text {
     text-align: center;
     font-size: 14px;

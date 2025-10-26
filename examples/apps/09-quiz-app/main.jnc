@@ -10,7 +10,7 @@ fn App() -> JSX {
                     <h1 class="quiz-title">🧠 Jounce Programming Quiz</h1>
                     <div class="quiz-progress">
                         <div class="progress-bar">
-                            <div class="progress-fill progress-40"></div>
+                            <div class="progress-fill" style="width: 40%"></div>
                         </div>
                         <p class="progress-text">Question 2 of 5</p>
                     </div>
