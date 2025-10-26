@@ -17,13 +17,13 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {
 
 // Server function implementations
 // Shared utility functions
-module.exports.TodoApp = function() {
-  return h('div', { class: "container" }, h('header', { class: "header" }, h('h1', "✓ Todo List"), h('p', { class: "subtitle" }, "Fully reactive task management")), h('div', { class: "add-task" }, h('input', { type: "text", class: "task-input", id: "new-task-input", placeholder: "What needs to be done?" }, null), h('button', { class: "btn-add", id: "add-btn" }, "Add Task")), h('div', { class: "task-list", id: "task-list" }, h('div', { class: "empty-state" }, h('p', "📝 No tasks yet"), h('p', { style: "font-size: 14px;" }, "Add your first task above!"))), h('footer', { class: "task-footer" }, h('span', { class: "task-count", id: "task-count" }, "0 tasks"), h('button', { class: "btn-clear", id: "clear-btn" }, "Clear completed")));
+module.exports.ColorPicker = function() {
+  return h('div', { class: "container" }, h('h1', "🎨 Reactive Color Picker"), h('div', { class: "color-preview", id: "preview" }, null), h('div', { class: "hex-display", id: "hex-display" }, "#8040C0"), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Red"), h('span', { class: "color-value", id: "red-value" }, "128")), h('input', { type: "range", class: "slider", id: "red-slider", min: "0", max: "255", value: "128" }, null)), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Green"), h('span', { class: "color-value", id: "green-value" }, "64")), h('input', { type: "range", class: "slider", id: "green-slider", min: "0", max: "255", value: "64" }, null)), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Blue"), h('span', { class: "color-value", id: "blue-value" }, "192")), h('input', { type: "range", class: "slider", id: "blue-slider", min: "0", max: "255", value: "192" }, null)), h('div', { style: "text-align: center; margin-top: 30px; color: #666;" }, h('p', "Move the sliders to change the color in real-time!")));
 
 }
 
 module.exports.main = function() {
-  return console.log("🚀 Interactive Todo List starting...");
+  return console.log("🚀 Reactive Color Picker starting...");
 
 }
 
