@@ -1,0 +1,9 @@
+// Simpler arrow function test
+
+fn main() {
+    // Test 1: Arrow function in regular code
+    let add = (a, b) => a + b;
+
+    // Test 2: Arrow function with empty params
+    let greet = () => "Hello";
+}

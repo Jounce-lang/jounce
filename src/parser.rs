@@ -1540,7 +1540,7 @@ impl<'a> Parser<'a> {
 
         // Check if this is a tuple (has comma after first element)
         if self.consume_if_matches(&TokenKind::Comma) {
-            // This is a tuple: (expr, ...)
+            // Could be tuple OR lambda with multiple params
             let mut elements = vec![first_expr];
 
             // Parse remaining elements
@@ -1552,6 +1552,36 @@ impl<'a> Parser<'a> {
             }
 
             self.expect_and_consume(&TokenKind::RParen)?;
+
+            // Check if followed by => (lambda with multiple untyped params)
+            if self.consume_if_matches(&TokenKind::FatArrow) {
+                // Convert tuple elements to lambda parameters
+                let mut parameters = Vec::new();
+                for elem in elements {
+                    if let Expression::Identifier(id) = elem {
+                        parameters.push(LambdaParameter {
+                            name: id,
+                            type_annotation: None
+                        });
+                    } else {
+                        return Err(CompileError::ParserError {
+                            message: "Lambda parameters must be identifiers".to_string(),
+                            line: self.current_token().line,
+                            column: self.current_token().column,
+                        });
+                    }
+                }
+
+                let body = self.parse_expression(Precedence::Lowest)?;
+                return Ok(Expression::Lambda(LambdaExpression {
+                    parameters,
+                    return_type: None,
+                    body: Box::new(body),
+                    captures: vec![],  // Will be analyzed later
+                }));
+            }
+
+            // Just a tuple
             return Ok(Expression::TupleLiteral(TupleLiteral { elements }));
         }
 
