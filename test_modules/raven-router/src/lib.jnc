@@ -1,0 +1,10 @@
+// Test module for module loader tests
+// This is a minimal module used to test snake_case to kebab-case conversion
+
+pub fn route(path: String) -> String {
+    return path;
+}
+
+pub struct Router {
+    routes: Vec<String>,
+}
