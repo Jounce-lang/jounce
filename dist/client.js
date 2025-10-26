@@ -337,13 +337,13 @@ const client = new RPCClient(window.location.origin + '/_rpc');
 // Implementations
 // Client function implementations
 // Shared utility functions
-export function ColorPicker() {
-  return h('div', { class: "container" }, h('h1', "🎨 Reactive Color Picker"), h('div', { class: "color-preview", id: "preview" }, null), h('div', { class: "hex-display", id: "hex-display" }, "#8040C0"), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Red"), h('span', { class: "color-value", id: "red-value" }, "128")), h('input', { type: "range", class: "slider", id: "red-slider", min: "0", max: "255", value: "128" }, null)), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Green"), h('span', { class: "color-value", id: "green-value" }, "64")), h('input', { type: "range", class: "slider", id: "green-slider", min: "0", max: "255", value: "64" }, null)), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Blue"), h('span', { class: "color-value", id: "blue-value" }, "192")), h('input', { type: "range", class: "slider", id: "blue-slider", min: "0", max: "255", value: "192" }, null)), h('div', { style: "text-align: center; margin-top: 30px; color: #666;" }, h('p', "Move the sliders to change the color in real-time!")));
+export function Stopwatch() {
+  return h('div', { class: "stopwatch-card" }, h('h1', { class: "title" }, "⏱️ Stopwatch"), h('div', { class: "time-display", id: "time" }, "00:00.00"), h('div', { class: "status", id: "status" }, "Ready"), h('div', { class: "button-group" }, h('button', { class: "btn btn-start", id: "start-btn" }, "Start"), h('button', { class: "btn btn-stop", id: "stop-btn" }, "Stop"), h('button', { class: "btn btn-reset", id: "reset-btn" }, "Reset")));
 
 }
 
 export function main() {
-  return console.log("🚀 Reactive Color Picker starting...");
+  return console.log("⏱️ Stopwatch app starting...");
 
 }
 
@@ -426,74 +426,82 @@ const yaml = {
 window.addEventListener('DOMContentLoaded', () => {
   console.log('Jounce client initialized');
 
-  // Mount the ColorPicker component
-  mountComponent(ColorPicker);
+  // Mount the Stopwatch component
+  mountComponent(Stopwatch);
 
-  // Set up reactivity
-  const red = signal(128);
-  const green = signal(64);
-  const blue = signal(192);
-
-  // Computed values
-  const rgb = computed(() => `rgb(${red.value}, ${green.value}, ${blue.value})`);
-  const hex = computed(() => {
-    const r = red.value.toString(16).padStart(2, '0');
-    const g = green.value.toString(16).padStart(2, '0');
-    const b = blue.value.toString(16).padStart(2, '0');
-    return `#${r}${g}${b}`;
-  });
+  // Create reactive state
+  const elapsed = signal(0);  // milliseconds
+  const isRunning = signal(false);
+  let intervalId = null;
 
   // Get DOM elements
-  const redSlider = document.getElementById('red-slider');
-  const greenSlider = document.getElementById('green-slider');
-  const blueSlider = document.getElementById('blue-slider');
-  const preview = document.getElementById('preview');
-  const hexDisplay = document.getElementById('hex-display');
+  const timeDisplay = document.getElementById('time');
+  const statusDisplay = document.getElementById('status');
+  const startBtn = document.getElementById('start-btn');
+  const stopBtn = document.getElementById('stop-btn');
+  const resetBtn = document.getElementById('reset-btn');
 
-  // Wire up event listeners
-  if (redSlider) {
-    redSlider.addEventListener('input', (e) => {
-      red.value = parseInt(e.target.value);
+  // Format time as MM:SS.ms
+  function formatTime(ms) {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    const centiseconds = Math.floor((ms % 1000) / 10);
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
+  }
+
+  // Event listeners
+  if (startBtn) {
+    startBtn.addEventListener('click', () => {
+      if (!isRunning.value) {
+        isRunning.value = true;
+        const startTime = Date.now() - elapsed.value;
+        intervalId = setInterval(() => {
+          elapsed.value = Date.now() - startTime;
+        }, 10); // Update every 10ms
+      }
     });
   }
 
-  if (greenSlider) {
-    greenSlider.addEventListener('input', (e) => {
-      green.value = parseInt(e.target.value);
+  if (stopBtn) {
+    stopBtn.addEventListener('click', () => {
+      if (isRunning.value && intervalId) {
+        isRunning.value = false;
+        clearInterval(intervalId);
+        intervalId = null;
+      }
     });
   }
 
-  if (blueSlider) {
-    blueSlider.addEventListener('input', (e) => {
-      blue.value = parseInt(e.target.value);
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+      isRunning.value = false;
+      elapsed.value = 0;
     });
   }
 
-  // Create effects to update UI
+  // Effects to update UI
   effect(() => {
-    const redValue = document.getElementById('red-value');
-    if (redValue) redValue.textContent = red.value;
+    if (timeDisplay) {
+      timeDisplay.textContent = formatTime(elapsed.value);
+    }
   });
 
   effect(() => {
-    const greenValue = document.getElementById('green-value');
-    if (greenValue) greenValue.textContent = green.value;
+    if (statusDisplay) {
+      statusDisplay.textContent = isRunning.value ? 'Running...' : 'Stopped';
+    }
   });
 
   effect(() => {
-    const blueValue = document.getElementById('blue-value');
-    if (blueValue) blueValue.textContent = blue.value;
+    if (startBtn) startBtn.disabled = isRunning.value;
+    if (stopBtn) stopBtn.disabled = !isRunning.value;
   });
 
-  effect(() => {
-    if (preview) preview.style.backgroundColor = rgb.value;
-  });
-
-  effect(() => {
-    if (hexDisplay) hexDisplay.textContent = hex.value;
-  });
-
-  console.log('✅ Reactive color picker initialized!');
+  console.log('✅ Stopwatch app initialized!');
 });
 
 //# sourceMappingURL=client.js.map
