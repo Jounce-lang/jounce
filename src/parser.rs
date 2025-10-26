@@ -3066,6 +3066,7 @@ impl<'a> Parser<'a> {
 
             let mut raw_css = String::new();
             let mut brace_depth = 1;
+            let mut prev_was_hash = false;  // Track if previous token was #
 
             // Capture everything until matching }
             while brace_depth > 0 && self.current_token().kind != TokenKind::Eof {
@@ -3095,9 +3096,13 @@ impl<'a> Parser<'a> {
                 else if token.kind == TokenKind::Semicolon && next.kind != TokenKind::RBrace {
                     raw_css.push(' ');
                 }
-                // Add space after colon in properties
+                // Add space after colon in properties (but not in pseudo-classes like :hover)
                 else if token.kind == TokenKind::Colon {
-                    raw_css.push(' ');
+                    // If brace_depth >= 2, we're inside a CSS rule (property: value)
+                    // If brace_depth == 1, we're in a selector (.class:hover)
+                    if brace_depth >= 2 {
+                        raw_css.push(' ');
+                    }
                 }
                 // Add space before opening brace
                 else if next.kind == TokenKind::LBrace {
@@ -3105,18 +3110,20 @@ impl<'a> Parser<'a> {
                 }
                 // Don't add space before/after these
                 else if next.kind == TokenKind::Semicolon
-                    || next.kind == TokenKind::Colon
                     || next.kind == TokenKind::Comma
                     || next.kind == TokenKind::RBrace
                     || token.kind == TokenKind::Dot
                     || next.kind == TokenKind::Dot
                     || token.kind == TokenKind::Minus  // for property names like max-width
                     || next.kind == TokenKind::Minus
-                    || (token.lexeme == "#" || next.lexeme == "#")  // for hex colors like #333
+                    || token.lexeme == "#"  // after # in hex colors: #3b82f6
+                    || prev_was_hash  // after # in hex colors: don't add space
+                    || next.lexeme == "#"   // before # in hex colors
                     || is_css_unit(&next.lexeme)  // before units: 600 -> 600px (no space before px)
                     || token.kind == TokenKind::LParen  // for functions: rgba(
                     || next.kind == TokenKind::RParen  // for functions: )
                     || next.kind == TokenKind::LParen  // before (: rgba(
+                    || next.kind == TokenKind::Colon  // before : in pseudo-classes and properties
                 {
                     // no space
                 }
@@ -3124,6 +3131,9 @@ impl<'a> Parser<'a> {
                 else {
                     raw_css.push(' ');
                 }
+
+                // Track if this token was a hash (for hex colors)
+                prev_was_hash = token.lexeme == "#";
 
                 self.next_token();
             }

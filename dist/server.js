@@ -17,13 +17,13 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {
 
 // Server function implementations
 // Shared utility functions
-module.exports.Stopwatch = function() {
-  return h('div', { class: "stopwatch-card" }, h('h1', { class: "title" }, "⏱️ Stopwatch"), h('div', { class: "time-display", id: "time" }, "00:00.00"), h('div', { class: "status", id: "status" }, "Ready"), h('div', { class: "button-group" }, h('button', { class: "btn btn-start", id: "start-btn" }, "Start"), h('button', { class: "btn btn-stop", id: "stop-btn" }, "Stop"), h('button', { class: "btn btn-reset", id: "reset-btn" }, "Reset")));
+module.exports.TodoApp = function() {
+  return h('div', { class: "todo-container" }, h('h1', { class: "title" }, "📝 Todo List"), h('div', { class: "input-group" }, h('input', { type: "text", class: "todo-input", id: "todo-input", placeholder: "What needs to be done?" }, null), h('button', { class: "add-btn", id: "add-btn" }, "Add")), h('div', { id: "stats-container" }, null), h('ul', { class: "todo-list", id: "todo-list" }, null), h('button', { class: "clear-completed", id: "clear-completed" }, "Clear Completed"));
 
 }
 
 module.exports.main = function() {
-  return console.log("⏱️ Stopwatch app starting...");
+  return console.log("📝 Todo List app starting...");
 
 }
 
