@@ -1,0 +1,102 @@
+// App 9: Quiz App
+// Demonstrates quiz interface with questions and answers
+
+// Main app component
+fn App() -> JSX {
+    return (
+        <div class="container">
+            <div class="quiz-card">
+                <div class="quiz-header">
+                    <h1 class="quiz-title">🧠 Jounce Programming Quiz</h1>
+                    <div class="quiz-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-40"></div>
+                        </div>
+                        <p class="progress-text">Question 2 of 5</p>
+                    </div>
+                </div>
+
+                <div class="question-section">
+                    <div class="question-number">Question 2</div>
+                    <h2 class="question-text">
+                        What keyword is used to create a reactive value in Jounce?
+                    </h2>
+
+                    <div class="answers">
+                        <button class="answer-btn">
+                            <span class="answer-letter">A</span>
+                            <span class="answer-text">reactive</span>
+                        </button>
+
+                        <button class="answer-btn correct selected">
+                            <span class="answer-letter">B</span>
+                            <span class="answer-text">signal</span>
+                            <span class="answer-check">✓</span>
+                        </button>
+
+                        <button class="answer-btn">
+                            <span class="answer-letter">C</span>
+                            <span class="answer-text">state</span>
+                        </button>
+
+                        <button class="answer-btn wrong">
+                            <span class="answer-letter">D</span>
+                            <span class="answer-text">observable</span>
+                            <span class="answer-x">✗</span>
+                        </button>
+                    </div>
+
+                    <div class="explanation">
+                        <div class="explanation-header">💡 Explanation</div>
+                        <p class="explanation-text">
+                            In Jounce, the <strong>signal</strong> function creates reactive values
+                            that automatically update the UI when changed. Example:
+                            <code>let count = signal(0)</code>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="quiz-actions">
+                    <button class="btn btn-secondary">← Previous</button>
+                    <button class="btn btn-primary">Next →</button>
+                </div>
+            </div>
+
+            <div class="score-card">
+                <h3 class="score-title">Your Score</h3>
+                <div class="score-display">
+                    <div class="score-value">1<span class="score-total">/2</span></div>
+                    <div class="score-percent">50%</div>
+                </div>
+                <div class="score-breakdown">
+                    <div class="score-item correct">
+                        <span class="score-label">Correct</span>
+                        <span class="score-count">1</span>
+                    </div>
+                    <div class="score-item wrong">
+                        <span class="score-label">Wrong</span>
+                        <span class="score-count">1</span>
+                    </div>
+                    <div class="score-item unanswered">
+                        <span class="score-label">Unanswered</span>
+                        <span class="score-count">3</span>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="info">
+                <p><strong>App 9: Quiz App</strong></p>
+                <p>Static quiz UI demo - Interactive quiz with signal coming soon!</p>
+            </footer>
+        </div>
+    );
+}
+
+// Entry point
+fn main() {
+    console.log("App 9: Quiz App started!");
+    console.log("Future: Dynamic questions with signal + arrays");
+
+    let app_html = App();
+    console.log("Quiz component created successfully!");
+}

@@ -1,0 +1,158 @@
+// App 10: Expense Tracker
+// Demonstrates expense tracking UI with transactions and budgets
+
+// Main app component
+fn App() -> JSX {
+    return (
+        <div class="container">
+            <header class="header">
+                <h1 class="app-title">💰 Expense Tracker</h1>
+                <p class="subtitle">Track your spending and stay on budget</p>
+            </header>
+
+            <div class="summary-cards">
+                <div class="summary-card income">
+                    <div class="card-icon">📈</div>
+                    <div class="card-content">
+                        <span class="card-label">Total Income</span>
+                        <span class="card-value">$5,240.00</span>
+                    </div>
+                </div>
+
+                <div class="summary-card expense">
+                    <div class="card-icon">📉</div>
+                    <div class="card-content">
+                        <span class="card-label">Total Expenses</span>
+                        <span class="card-value">$3,120.50</span>
+                    </div>
+                </div>
+
+                <div class="summary-card balance">
+                    <div class="card-icon">💵</div>
+                    <div class="card-content">
+                        <span class="card-label">Balance</span>
+                        <span class="card-value">$2,119.50</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="transactions-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Recent Transactions</h2>
+                        <button class="btn-add">+ Add</button>
+                    </div>
+
+                    <div class="transactions-list">
+                        <div class="transaction-item expense">
+                            <div class="transaction-icon food">🍔</div>
+                            <div class="transaction-info">
+                                <span class="transaction-title">Lunch at Restaurant</span>
+                                <span class="transaction-date">Oct 25, 2025</span>
+                            </div>
+                            <div class="transaction-amount">-$45.00</div>
+                        </div>
+
+                        <div class="transaction-item income">
+                            <div class="transaction-icon salary">💼</div>
+                            <div class="transaction-info">
+                                <span class="transaction-title">Monthly Salary</span>
+                                <span class="transaction-date">Oct 24, 2025</span>
+                            </div>
+                            <div class="transaction-amount">+$5,000.00</div>
+                        </div>
+
+                        <div class="transaction-item expense">
+                            <div class="transaction-icon transport">🚗</div>
+                            <div class="transaction-info">
+                                <span class="transaction-title">Gas Station</span>
+                                <span class="transaction-date">Oct 23, 2025</span>
+                            </div>
+                            <div class="transaction-amount">-$60.00</div>
+                        </div>
+
+                        <div class="transaction-item expense">
+                            <div class="transaction-icon shopping">🛒</div>
+                            <div class="transaction-info">
+                                <span class="transaction-title">Grocery Shopping</span>
+                                <span class="transaction-date">Oct 22, 2025</span>
+                            </div>
+                            <div class="transaction-amount">-$135.50</div>
+                        </div>
+
+                        <div class="transaction-item expense">
+                            <div class="transaction-icon entertainment">🎬</div>
+                            <div class="transaction-info">
+                                <span class="transaction-title">Movie Tickets</span>
+                                <span class="transaction-date">Oct 21, 2025</span>
+                            </div>
+                            <div class="transaction-amount">-$32.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="budgets-section">
+                    <h2 class="section-title">Category Budgets</h2>
+
+                    <div class="budget-item">
+                        <div class="budget-header">
+                            <span class="budget-name">🍔 Food & Dining</span>
+                            <span class="budget-spent">$240 / $500</span>
+                        </div>
+                        <div class="budget-bar">
+                            <div class="budget-progress budget-48"></div>
+                        </div>
+                        <span class="budget-remaining">$260 remaining</span>
+                    </div>
+
+                    <div class="budget-item">
+                        <div class="budget-header">
+                            <span class="budget-name">🚗 Transportation</span>
+                            <span class="budget-spent">$180 / $300</span>
+                        </div>
+                        <div class="budget-bar">
+                            <div class="budget-progress budget-60"></div>
+                        </div>
+                        <span class="budget-remaining">$120 remaining</span>
+                    </div>
+
+                    <div class="budget-item over-budget">
+                        <div class="budget-header">
+                            <span class="budget-name">🎬 Entertainment</span>
+                            <span class="budget-spent">$210 / $200</span>
+                        </div>
+                        <div class="budget-bar">
+                            <div class="budget-progress budget-105"></div>
+                        </div>
+                        <span class="budget-remaining">$10 over budget!</span>
+                    </div>
+
+                    <div class="budget-item">
+                        <div class="budget-header">
+                            <span class="budget-name">🛒 Shopping</span>
+                            <span class="budget-spent">$320 / $600</span>
+                        </div>
+                        <div class="budget-bar">
+                            <div class="budget-progress budget-53"></div>
+                        </div>
+                        <span class="budget-remaining">$280 remaining</span>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="info">
+                <p><strong>App 10: Expense Tracker</strong></p>
+                <p>Static expense UI demo - Dynamic tracking with jounce-db coming soon!</p>
+            </footer>
+        </div>
+    );
+}
+
+// Entry point
+fn main() {
+    console.log("App 10: Expense Tracker started!");
+    console.log("Future: Persistent storage with jounce-db + signal");
+
+    let app_html = App();
+    console.log("Expense tracker component created successfully!");
+}
