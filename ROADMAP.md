@@ -368,27 +368,36 @@ batch(() => {
 
 ---
 
-### **Phase 15: Real-World Example Applications** (3-4 weeks)
+### **Phase 15: Real-World Example Applications** (3-4 weeks) - 🚧 IN PROGRESS
 
 **Goal**: Build production-quality apps to prove the language
 
+**Status**: Week 1 COMPLETE (Oct 25, 2025)
+
 **Application List**:
 
-#### 1. **Todo App (Full Stack)** (Week 1)
-- User authentication (jounce-auth)
-- Database persistence (jounce-db)
-- Reactive UI (signals)
-- Styled components (style blocks)
-- **Lines**: ~500
-- **Packages**: auth, db, ui, theme
+#### 1. **Todo App (Full Stack)** ✅ COMPLETE (Week 1)
+- ✅ Progressive enhancement demo (v1 → v2 → v3)
+- ✅ Reactive UI with signals
+- ✅ @persist decorator demonstration
+- ✅ Beautiful gradient styling
+- ✅ Complete documentation (README + COMPARISON)
+- **Delivered**: 3 versions (v1_basic, v2_localStorage, v3_backend_concept)
+- **Lines**: 180 (v1), 240 (v2), 450 (v3 conceptual)
+- **Files**: 14 files in examples/phase15-week1-todo/
+- **Status**: ✅ v1 & v2 compiling, v3 conceptual
+- **Achievement**: First production example app demonstrating @persist!
 
-#### 2. **Blog Platform** (Week 2)
-- Markdown editor
-- Post management
-- Comment system
-- Search functionality
+#### 2. **Blog Platform** 🚧 NEXT (Week 2)
+- Markdown editor with preview
+- Post management (create, edit, delete, publish)
+- Comment system with nesting
+- Full-text search functionality
+- Tag filtering and categorization
+- Draft/Published states with @persist("localStorage")
 - **Lines**: ~1000
-- **Packages**: auth, db, router, markdown, ui
+- **Packages**: markdown, router, search, auth, db, ui
+- **Plan**: Detailed in CLAUDE.md "Phase 15 Week 2 Plan"
 
 #### 3. **E-Commerce Store** (Week 3)
 - Product catalog
