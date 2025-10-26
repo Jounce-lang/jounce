@@ -47,6 +47,22 @@ lazy_static::lazy_static! {
     };
 }
 
+/// Check if a string is a CSS unit (px, %, em, rem, vh, vw, deg, etc.)
+fn is_css_unit(s: &str) -> bool {
+    matches!(s,
+        "px" | "%" | "em" | "rem" | "vh" | "vw" | "vmin" | "vmax" |
+        "deg" | "rad" | "grad" | "turn" |
+        "s" | "ms" |
+        "ch" | "ex" | "cm" | "mm" | "in" | "pt" | "pc" |
+        "fr" // CSS Grid fractional unit
+    )
+}
+
+/// Check if a token kind represents a number
+fn is_number_token(kind: &TokenKind) -> bool {
+    matches!(kind, TokenKind::Integer(_) | TokenKind::Float(_))
+}
+
 pub struct Parser<'a> {
     lexer: &'a mut Lexer,
     current: Token,
@@ -3096,7 +3112,12 @@ impl<'a> Parser<'a> {
                     || next.kind == TokenKind::Dot
                     || token.kind == TokenKind::Minus  // for property names like max-width
                     || next.kind == TokenKind::Minus
-                    || (token.lexeme == "#" || next.lexeme == "#") {  // for hex colors like #333
+                    || (token.lexeme == "#" || next.lexeme == "#")  // for hex colors like #333
+                    || is_css_unit(&next.lexeme)  // before units: 600 -> 600px (no space before px)
+                    || token.kind == TokenKind::LParen  // for functions: rgba(
+                    || next.kind == TokenKind::RParen  // for functions: )
+                    || next.kind == TokenKind::LParen  // before (: rgba(
+                {
                     // no space
                 }
                 // Default: add space
