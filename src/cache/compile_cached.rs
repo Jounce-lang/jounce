@@ -90,11 +90,28 @@ pub fn compile_source_cached(
     // Extract CSS output
     let component_css = code_generator.get_css_output().to_string();
 
-    // Combine CSS
-    let css_output = if utility_css.is_empty() {
+    // Extract raw CSS from global style blocks
+    let mut raw_css = String::new();
+    for statement in &program_ast.statements {
+        if let crate::ast::Statement::Style(style_block) = statement {
+            if let Some(ref css) = style_block.raw_css {
+                if !raw_css.is_empty() {
+                    raw_css.push_str("\n\n");
+                }
+                raw_css.push_str(css);
+            }
+        }
+    }
+
+    // Combine utility CSS, component CSS, and raw CSS
+    let css_output = if utility_css.is_empty() && raw_css.is_empty() {
         component_css
-    } else {
+    } else if utility_css.is_empty() {
+        format!("{}\n\n{}", component_css, raw_css)
+    } else if raw_css.is_empty() {
         format!("{}\n{}", utility_css, component_css)
+    } else {
+        format!("{}\n\n{}\n\n{}", utility_css, component_css, raw_css)
     };
 
     // Optimization

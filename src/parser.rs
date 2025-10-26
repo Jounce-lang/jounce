@@ -3019,9 +3019,86 @@ impl<'a> Parser<'a> {
         Ok(ThemeBlock { name, properties })
     }
 
-    /// Parse a style block: style Button { background: blue; &:hover { ... } }
+    /// Parse a style block:
+    /// - Global CSS: style { .btn { color: red; } }
+    /// - Component: style Button { background: blue; &:hover { ... } }
     fn parse_style_block(&mut self) -> Result<StyleBlock, CompileError> {
         self.expect_and_consume(&TokenKind::Style)?;
+
+        // Check if this is a global style block (style { ... }) or component style (style Button { ... })
+        if self.current_token().kind == TokenKind::LBrace {
+            // Global style block - capture raw CSS text
+            let start_line = self.current_token().line;
+            self.next_token(); // consume {
+
+            let mut raw_css = String::new();
+            let mut brace_depth = 1;
+
+            // Capture everything until matching }
+            while brace_depth > 0 && self.current_token().kind != TokenKind::Eof {
+                let token = self.current_token();
+
+                if token.kind == TokenKind::LBrace {
+                    brace_depth += 1;
+                    raw_css.push_str(&token.lexeme);
+                } else if token.kind == TokenKind::RBrace {
+                    brace_depth -= 1;
+                    if brace_depth > 0 {
+                        raw_css.push_str(&token.lexeme);
+                    }
+                } else {
+                    // Preserve the original token text
+                    raw_css.push_str(&token.lexeme);
+                }
+
+                // Add spacing/newlines based on context for readable CSS
+                let next = self.peek_token();
+
+                // Add newline after closing brace
+                if token.kind == TokenKind::RBrace {
+                    raw_css.push('\n');
+                }
+                // Add space after semicolon (unless at end of block)
+                else if token.kind == TokenKind::Semicolon && next.kind != TokenKind::RBrace {
+                    raw_css.push(' ');
+                }
+                // Add space after colon in properties
+                else if token.kind == TokenKind::Colon {
+                    raw_css.push(' ');
+                }
+                // Add space before opening brace
+                else if next.kind == TokenKind::LBrace {
+                    raw_css.push(' ');
+                }
+                // Don't add space before/after these
+                else if next.kind == TokenKind::Semicolon
+                    || next.kind == TokenKind::Colon
+                    || next.kind == TokenKind::Comma
+                    || next.kind == TokenKind::RBrace
+                    || token.kind == TokenKind::Dot
+                    || next.kind == TokenKind::Dot
+                    || token.kind == TokenKind::Minus  // for property names like max-width
+                    || next.kind == TokenKind::Minus
+                    || (token.lexeme == "#" || next.lexeme == "#") {  // for hex colors like #333
+                    // no space
+                }
+                // Default: add space
+                else {
+                    raw_css.push(' ');
+                }
+
+                self.next_token();
+            }
+
+            return Ok(StyleBlock {
+                name: None,
+                raw_css: Some(raw_css.trim().to_string()),
+                properties: Vec::new(),
+                nested: Vec::new(),
+            });
+        }
+
+        // Component-scoped style block
         let name = self.parse_identifier()?;
         self.expect_and_consume(&TokenKind::LBrace)?;
 
@@ -3090,7 +3167,8 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::RBrace)?;
 
         Ok(StyleBlock {
-            name,
+            name: Some(name),
+            raw_css: None,
             properties,
             nested,
         })

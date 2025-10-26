@@ -233,11 +233,34 @@ impl Compiler {
         // Extract CSS output (Phase 7.5)
         let component_css = code_generator.get_css_output().to_string();
 
-        // Combine utility CSS and component CSS
-        let css_output = if utility_css.is_empty() {
+        // Extract raw CSS from global style blocks
+        let mut raw_css = String::new();
+        for statement in &program_ast.statements {
+            if let ast::Statement::Style(style_block) = statement {
+                println!("   - Found style block (name: {:?}, raw_css: {} bytes)",
+                         style_block.name.as_ref().map(|n| n.value.as_str()),
+                         style_block.raw_css.as_ref().map(|s| s.len()).unwrap_or(0));
+                if let Some(ref css) = style_block.raw_css {
+                    if !raw_css.is_empty() {
+                        raw_css.push_str("\n\n");
+                    }
+                    raw_css.push_str(css);
+                }
+            }
+        }
+        if !raw_css.is_empty() {
+            println!("   ✓ Extracted {} bytes of inline CSS from style blocks", raw_css.len());
+        }
+
+        // Combine utility CSS, component CSS, and raw CSS
+        let css_output = if utility_css.is_empty() && raw_css.is_empty() {
             component_css
-        } else {
+        } else if utility_css.is_empty() {
+            format!("{}\n\n{}", component_css, raw_css)
+        } else if raw_css.is_empty() {
             format!("{}\n{}", utility_css, component_css)
+        } else {
+            format!("{}\n\n{}\n\n{}", utility_css, component_css, raw_css)
         };
 
         // --- Optimization ---
