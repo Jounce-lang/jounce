@@ -705,6 +705,18 @@ impl Formatter {
                 self.write(&s.replace('"', "\\\""));
                 self.write("\"");
             }
+            Expression::CharLiteral(ch) => {
+                self.write("'");
+                match ch {
+                    '\n' => self.write("\\n"),
+                    '\r' => self.write("\\r"),
+                    '\t' => self.write("\\t"),
+                    '\\' => self.write("\\\\"),
+                    '\'' => self.write("\\'"),
+                    _ => self.write(&ch.to_string()),
+                }
+                self.write("'");
+            }
             Expression::BoolLiteral(b) => self.write(if *b { "true" } else { "false" }),
             Expression::UnitLiteral => self.write("()"),
             Expression::ArrayLiteral(arr) => self.format_array_literal(arr),

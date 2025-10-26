@@ -1314,6 +1314,18 @@ impl JSEmitter {
                     .replace('\t', "\\t");  // Escape tabs
                 format!("\"{}\"", escaped)
             }
+            Expression::CharLiteral(ch) => {
+                // Convert character literal to JavaScript string
+                match ch {
+                    '\n' => "\"\\n\"".to_string(),
+                    '\r' => "\"\\r\"".to_string(),
+                    '\t' => "\"\\t\"".to_string(),
+                    '\\' => "\"\\\\\"".to_string(),
+                    '"' => "\"\\\"\"".to_string(),
+                    '\'' => "\"'\"".to_string(),
+                    _ => format!("\"{}\"", ch),
+                }
+            }
             Expression::BoolLiteral(value) => value.to_string(),
             Expression::UnitLiteral => "undefined".to_string(),  // () maps to undefined in JS
             Expression::Infix(infix) => {

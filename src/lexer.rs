@@ -440,12 +440,36 @@ impl Lexer {
             '\0' => Token::new(TokenKind::Eof, "".to_string(), self.line, start_col),
             '"' => return self.read_string(),
             '\'' => {
-                // Check if this is a lifetime (e.g., 'a, 'static)
+                // Check if this is a lifetime (e.g., 'a, 'static) or character literal (e.g., 'x', '.')
                 if self.peek().is_alphabetic() || self.peek() == '_' {
-                    return self.read_lifetime();
+                    // Could be lifetime or character literal - need to look ahead
+                    // Peek ahead to see if it's followed by another quote (character literal)
+                    let saved_pos = self.position;
+                    let saved_line = self.line;
+                    let saved_col = self.column;
+
+                    self.read_char(); // Move past the quote
+                    let next_ch = self.ch;
+                    self.read_char(); // Move to what's after the character
+
+                    if self.ch == '\'' {
+                        // It's a character literal like 'a'
+                        self.position = saved_pos;
+                        self.line = saved_line;
+                        self.column = saved_col;
+                        self.ch = '\'';
+                        return self.read_char_literal();
+                    } else {
+                        // It's a lifetime
+                        self.position = saved_pos;
+                        self.line = saved_line;
+                        self.column = saved_col;
+                        self.ch = '\'';
+                        return self.read_lifetime();
+                    }
                 } else {
-                    // For now, treat single quote without identifier as illegal
-                    Token::new(TokenKind::Illegal(self.ch), self.ch.to_string(), self.line, start_col)
+                    // Not alphabetic/underscore, must be character literal
+                    return self.read_char_literal();
                 }
             }
             _ => {
@@ -672,6 +696,38 @@ impl Lexer {
         let token = Token::new(TokenKind::String(result.clone()), result, self.line, start_col);
         self.read_char(); // Consume closing '"'
         token
+    }
+
+    fn read_char_literal(&mut self) -> Token {
+        let start_col = self.column;
+        self.read_char(); // Consume opening '
+
+        let ch = if self.ch == '\\' {
+            // Handle escape sequences
+            self.read_char();
+            match self.ch {
+                'n' => '\n',
+                't' => '\t',
+                'r' => '\r',
+                '0' => '\0',
+                '\\' => '\\',
+                '\'' => '\'',
+                _ => self.ch, // Unknown escape, just use the character
+            }
+        } else {
+            self.ch
+        };
+
+        self.read_char(); // Move to closing quote
+
+        if self.ch != '\'' {
+            // Error: unterminated character literal
+            return Token::new(TokenKind::Illegal(self.ch), format!("'{}", ch), self.line, start_col);
+        }
+
+        let literal = format!("'{}'", ch);
+        self.read_char(); // Consume closing '
+        Token::new(TokenKind::Char(ch), literal, self.line, start_col)
     }
 
     fn read_lifetime(&mut self) -> Token {

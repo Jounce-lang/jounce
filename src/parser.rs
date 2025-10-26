@@ -71,6 +71,20 @@ impl<'a> Parser<'a> {
     fn parse_statement(&mut self) -> Result<Statement, CompileError> {
         let stmt = match self.current_token().kind {
             TokenKind::Use => self.parse_use_statement().map(Statement::Use),
+            TokenKind::Pub => {
+                // Consume 'pub' and continue parsing the next item
+                self.next_token();
+                match self.current_token().kind {
+                    TokenKind::Struct => self.parse_struct_definition().map(Statement::Struct),
+                    TokenKind::Enum => self.parse_enum_definition().map(Statement::Enum),
+                    TokenKind::Fn | TokenKind::Server | TokenKind::Client | TokenKind::Async => self.parse_function_definition().map(Statement::Function),
+                    _ => Err(CompileError::ParserError {
+                        message: format!("Expected struct, enum, or fn after 'pub', found {:?}", self.current_token().kind),
+                        line: self.current_token().line,
+                        column: self.current_token().column,
+                    })
+                }
+            }
             TokenKind::Struct => self.parse_struct_definition().map(Statement::Struct),
             TokenKind::Enum => self.parse_enum_definition().map(Statement::Enum),
             TokenKind::Impl => self.parse_impl_block().map(Statement::ImplBlock),
@@ -108,27 +122,24 @@ impl<'a> Parser<'a> {
             },
             TokenKind::Style => self.parse_style_block().map(Statement::Style),  // Phase 13
             TokenKind::Theme => self.parse_theme_block().map(Statement::Theme),  // Phase 13
-            TokenKind::Identifier => {
+            _ => {
                 // Parse as expression first, then check if it's actually an assignment
-                // This handles both simple assignments (x = 5) and complex ones (obj.field = 5, arr[0] = 5)
+                // This handles: x = 5, obj.field = 5, arr[0] = 5, *ptr = 5, etc.
                 let expr = self.parse_expression(Precedence::Lowest)?;
 
                 // Check if this is followed by an assignment operator
                 if self.current_token().kind == TokenKind::Assign {
                     self.next_token(); // consume =
                     let value = self.parse_expression(Precedence::Lowest)?;
-                    let stmt = Statement::Assignment(AssignmentStatement {
+                    Ok(Statement::Assignment(AssignmentStatement {
                         target: expr,
                         value,
-                    });
-                    // Don't return early - let the semicolon be consumed below
-                    Ok(stmt)
+                    }))
                 } else {
                     // Otherwise it's just an expression statement
                     Ok(Statement::Expression(expr))
                 }
             }
-            _ => self.parse_expression_statement().map(Statement::Expression),
         }?;
         self.consume_if_matches(&TokenKind::Semicolon);
         Ok(stmt)
@@ -229,6 +240,9 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::LBrace)?;
         let mut fields = Vec::new();
         while self.current_token().kind != TokenKind::RBrace {
+            // Allow optional 'pub' keyword before field name
+            self.consume_if_matches(&TokenKind::Pub);
+
             let field_name = self.parse_identifier()?;
             self.expect_and_consume(&TokenKind::Colon)?;
             let field_type = self.parse_type_expression()?;
@@ -254,6 +268,9 @@ impl<'a> Parser<'a> {
                 // Struct-style variant: Name { field1: Type, field2: Type }
                 let mut variant_fields = Vec::new();
                 while self.current_token().kind != TokenKind::RBrace {
+                    // Allow optional 'pub' keyword before field name
+                    self.consume_if_matches(&TokenKind::Pub);
+
                     let field_name = self.parse_identifier()?;
                     self.expect_and_consume(&TokenKind::Colon)?;
                     let field_type = self.parse_type_expression()?;
@@ -331,6 +348,9 @@ impl<'a> Parser<'a> {
         let mut methods = Vec::new();
         while self.current_token().kind != TokenKind::RBrace {
             // Parse method: fn method_name(...) -> ReturnType { body }
+            // Allow optional 'pub' keyword before fn
+            self.consume_if_matches(&TokenKind::Pub);
+
             self.expect_and_consume(&TokenKind::Fn)?;
             let method_name = self.parse_identifier()?;
 
@@ -338,13 +358,39 @@ impl<'a> Parser<'a> {
             self.expect_and_consume(&TokenKind::LParen)?;
             let mut parameters = Vec::new();
             while self.current_token().kind != TokenKind::RParen {
+                // Check for reference: & or &mut
+                let is_reference = self.consume_if_matches(&TokenKind::Ampersand);
+                let is_mut = self.consume_if_matches(&TokenKind::Mut);
+
                 let param_name = self.parse_identifier()?;
-                self.expect_and_consume(&TokenKind::Colon)?;
-                let param_type = self.parse_type_expression()?;
-                parameters.push(FunctionParameter {
-                    name: param_name,
-                    type_annotation: param_type,
-                });
+
+                // Check if this is 'self', '&self', '&mut self', or 'mut self' (no type annotation)
+                if param_name.value == "self" && self.current_token().kind != TokenKind::Colon {
+                    // Special case: self parameter without type annotation
+                    let self_type = if is_reference && is_mut {
+                        // &mut self
+                        TypeExpression::MutableReference(Box::new(TypeExpression::Named(Identifier { value: "Self".to_string() })))
+                    } else if is_reference {
+                        // &self
+                        TypeExpression::Reference(Box::new(TypeExpression::Named(Identifier { value: "Self".to_string() })))
+                    } else {
+                        // self or mut self
+                        TypeExpression::Named(Identifier { value: "Self".to_string() })
+                    };
+
+                    parameters.push(FunctionParameter {
+                        name: param_name,
+                        type_annotation: self_type,
+                    });
+                } else {
+                    // Regular parameter with type annotation
+                    self.expect_and_consume(&TokenKind::Colon)?;
+                    let param_type = self.parse_type_expression()?;
+                    parameters.push(FunctionParameter {
+                        name: param_name,
+                        type_annotation: param_type,
+                    });
+                }
                 if !self.consume_if_matches(&TokenKind::Comma) {
                     break;
                 }
@@ -395,13 +441,39 @@ impl<'a> Parser<'a> {
             self.expect_and_consume(&TokenKind::LParen)?;
             let mut parameters = Vec::new();
             while self.current_token().kind != TokenKind::RParen {
+                // Check for reference: & or &mut
+                let is_reference = self.consume_if_matches(&TokenKind::Ampersand);
+                let is_mut = self.consume_if_matches(&TokenKind::Mut);
+
                 let param_name = self.parse_identifier()?;
-                self.expect_and_consume(&TokenKind::Colon)?;
-                let param_type = self.parse_type_expression()?;
-                parameters.push(FunctionParameter {
-                    name: param_name,
-                    type_annotation: param_type,
-                });
+
+                // Check if this is 'self', '&self', '&mut self', or 'mut self' (no type annotation)
+                if param_name.value == "self" && self.current_token().kind != TokenKind::Colon {
+                    // Special case: self parameter without type annotation
+                    let self_type = if is_reference && is_mut {
+                        // &mut self
+                        TypeExpression::MutableReference(Box::new(TypeExpression::Named(Identifier { value: "Self".to_string() })))
+                    } else if is_reference {
+                        // &self
+                        TypeExpression::Reference(Box::new(TypeExpression::Named(Identifier { value: "Self".to_string() })))
+                    } else {
+                        // self or mut self
+                        TypeExpression::Named(Identifier { value: "Self".to_string() })
+                    };
+
+                    parameters.push(FunctionParameter {
+                        name: param_name,
+                        type_annotation: self_type,
+                    });
+                } else {
+                    // Regular parameter with type annotation
+                    self.expect_and_consume(&TokenKind::Colon)?;
+                    let param_type = self.parse_type_expression()?;
+                    parameters.push(FunctionParameter {
+                        name: param_name,
+                        type_annotation: param_type,
+                    });
+                }
                 if !self.consume_if_matches(&TokenKind::Comma) {
                     break;
                 }
@@ -504,13 +576,39 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::LParen)?;
         let mut parameters = Vec::new();
         while self.current_token().kind != TokenKind::RParen {
+            // Check for reference: & or &mut
+            let is_reference = self.consume_if_matches(&TokenKind::Ampersand);
+            let is_mut = self.consume_if_matches(&TokenKind::Mut);
+
             let param_name = self.parse_identifier()?;
-            self.expect_and_consume(&TokenKind::Colon)?;
-            let param_type = self.parse_type_expression()?;
-            parameters.push(FunctionParameter {
-                name: param_name,
-                type_annotation: param_type,
-            });
+
+            // Check if this is 'self', '&self', '&mut self', or 'mut self' (no type annotation)
+            if param_name.value == "self" && self.current_token().kind != TokenKind::Colon {
+                // Special case: self parameter without type annotation
+                let self_type = if is_reference && is_mut {
+                    // &mut self
+                    TypeExpression::MutableReference(Box::new(TypeExpression::Named(Identifier { value: "Self".to_string() })))
+                } else if is_reference {
+                    // &self
+                    TypeExpression::Reference(Box::new(TypeExpression::Named(Identifier { value: "Self".to_string() })))
+                } else {
+                    // self or mut self
+                    TypeExpression::Named(Identifier { value: "Self".to_string() })
+                };
+
+                parameters.push(FunctionParameter {
+                    name: param_name,
+                    type_annotation: self_type,
+                });
+            } else {
+                // Regular parameter with type annotation
+                self.expect_and_consume(&TokenKind::Colon)?;
+                let param_type = self.parse_type_expression()?;
+                parameters.push(FunctionParameter {
+                    name: param_name,
+                    type_annotation: param_type,
+                });
+            }
             if !self.consume_if_matches(&TokenKind::Comma) { break; }
         }
         self.expect_and_consume(&TokenKind::RParen)?;
@@ -975,6 +1073,7 @@ impl<'a> Parser<'a> {
             TokenKind::Integer(val) => { self.next_token(); Expression::IntegerLiteral(*val) },
             TokenKind::Float(val) => { self.next_token(); Expression::FloatLiteral(val.clone()) },
             TokenKind::String(val) => { self.next_token(); Expression::StringLiteral(val.clone()) },
+            TokenKind::Char(val) => { self.next_token(); Expression::CharLiteral(*val) },
             TokenKind::Bool(val) => { self.next_token(); Expression::BoolLiteral(*val) },
             TokenKind::Minus | TokenKind::Bang => {
                 // Parse prefix expressions: -x or !x

@@ -302,6 +302,7 @@ pub enum Expression {
     IntegerLiteral(i64),
     FloatLiteral(String),
     StringLiteral(String),
+    CharLiteral(char),  // 'a', '.', '\n' etc.
     BoolLiteral(bool),
     UnitLiteral,  // () - the unit type value
     ArrayLiteral(ArrayLiteral),
