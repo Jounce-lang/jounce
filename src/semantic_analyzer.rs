@@ -660,6 +660,7 @@ impl SemanticAnalyzer {
             Expression::IntegerLiteral(_) => Ok(ResolvedType::Integer),
             Expression::FloatLiteral(_) => Ok(ResolvedType::Float),
             Expression::StringLiteral(_) => Ok(ResolvedType::String),
+            Expression::CharLiteral(_) => Ok(ResolvedType::String),  // Chars treated as strings
             Expression::BoolLiteral(_) => Ok(ResolvedType::Bool),
             Expression::UnitLiteral => Ok(ResolvedType::ComplexType),  // Unit type as generic complex type
             Expression::Identifier(ident) => {

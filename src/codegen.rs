@@ -1360,6 +1360,11 @@ impl CodeGenerator {
                 // For now, push a dummy value
                 f.instruction(&Instruction::I32Const(0));
             }
+            Expression::CharLiteral(_ch) => {
+                // Char literals treated like single-char strings
+                // Push a dummy pointer value
+                f.instruction(&Instruction::I32Const(0));
+            }
             Expression::Borrow(borrow_expr) => {
                 // Borrowing in WASM is a no-op since everything is already a value or pointer
                 // Just generate the inner expression
@@ -1530,6 +1535,7 @@ impl CodeGenerator {
             // Event handlers and expressions need special handling
             let value = match &attr.value {
                 Expression::StringLiteral(s) => s.clone(),
+                Expression::CharLiteral(ch) => ch.to_string(),
                 Expression::Lambda(_) => {
                     // Event handler - we'll handle this specially
                     continue;
@@ -2146,6 +2152,7 @@ impl CodeGenerator {
             | Expression::BoolLiteral(_)
             | Expression::UnitLiteral
             | Expression::StringLiteral(_)
+            | Expression::CharLiteral(_)
             | Expression::Identifier(_)
             | Expression::Range(_)
             | Expression::TryOperator(_)
@@ -2293,6 +2300,7 @@ impl CodeGenerator {
             | Expression::BoolLiteral(_)
             | Expression::UnitLiteral
             | Expression::StringLiteral(_)
+            | Expression::CharLiteral(_)
             | Expression::Range(_)
             | Expression::TryOperator(_)
             | Expression::Ternary(_)
