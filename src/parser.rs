@@ -1886,7 +1886,33 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_jsx_attribute(&mut self) -> Result<JsxAttribute, CompileError> {
-        let name = self.parse_identifier()?;
+        // In JSX, attribute names can be keywords (like "style", "for", "class")
+        // So we accept any identifier OR keyword as an attribute name
+        let name = match &self.current_token().kind {
+            TokenKind::Identifier => {
+                let id = Identifier { value: self.current_token().lexeme.clone() };
+                self.next_token();
+                id
+            }
+            // Allow keywords as attribute names in JSX
+            TokenKind::Style | TokenKind::For | TokenKind::If | TokenKind::Else
+            | TokenKind::While | TokenKind::Loop | TokenKind::Match | TokenKind::As
+            | TokenKind::In | TokenKind::Fn | TokenKind::Let | TokenKind::Const
+            | TokenKind::Return | TokenKind::Break | TokenKind::Continue
+            | TokenKind::Async | TokenKind::Await | TokenKind::Use | TokenKind::Pub
+            | TokenKind::Server | TokenKind::Client | TokenKind::Mut | TokenKind::Theme => {
+                let id = Identifier { value: self.current_token().lexeme.clone() };
+                self.next_token();
+                id
+            }
+            _ => {
+                return Err(CompileError::ParserError {
+                    message: format!("Expected attribute name, found {:?}", self.current_token().kind),
+                    line: self.current_token().line,
+                    column: self.current_token().column,
+                });
+            }
+        };
 
         // Check if this is a boolean attribute (no = sign)
         // Boolean attributes like `disabled`, `readonly`, `checked` don't have values
