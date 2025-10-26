@@ -337,8 +337,8 @@ mod tests {
     #[test]
     fn test_assertion_library_generation() {
         let lib = generate_assertion_library();
-        assert!(lib.contains("fn assert("));
-        assert!(lib.contains("fn assert_eq"));
-        assert!(lib.contains("fn assert_contains"));
+        assert!(lib.contains("function assert("));
+        assert!(lib.contains("function assert_eq"));
+        assert!(lib.contains("function assert_contains"));
     }
 }
