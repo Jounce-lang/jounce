@@ -289,7 +289,7 @@ fn main() {
             }
             let cache = Arc::new(CompilationCache::new(cache_dir));
 
-            let (wasm_bytes, css_output) = match compile_source_cached(&source_code, &path, BuildTarget::Client, &cache, false) {
+            let (wasm_bytes, mut css_output) = match compile_source_cached(&source_code, &path, BuildTarget::Client, &cache, false) {
                 Ok((bytes, css)) => {
                     println!("   ✓ Generated WASM module ({} bytes)", bytes.len());
                     if !css.is_empty() {
@@ -304,6 +304,29 @@ fn main() {
                     return;
                 }
             };
+
+            // Check for external styles.css file in the same directory as the source file
+            if let Some(source_dir) = path.parent() {
+                let styles_path = source_dir.join("styles.css");
+                if styles_path.exists() {
+                    match fs::read_to_string(&styles_path) {
+                        Ok(external_css) => {
+                            if !external_css.is_empty() {
+                                // Append external CSS to generated CSS
+                                if !css_output.is_empty() {
+                                    css_output.push_str("\n\n");
+                                }
+                                css_output.push_str(&external_css);
+                                println!("   ✓ Loaded external CSS from {} ({} bytes)", styles_path.display(), external_css.len());
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("⚠️  Warning: Could not read {}: {}", styles_path.display(), e);
+                        }
+                    }
+                }
+            }
+
             let wasm_time = wasm_start.elapsed();
 
             // Determine output directory
