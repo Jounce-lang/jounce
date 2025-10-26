@@ -315,14 +315,9 @@ impl CodeGenerator {
                     }
                     func_index_counter += 1;
                 }
-                Statement::Component(comp) => {
-                    // Export component as a function
-                    let type_index = types.len();
-                    types.function(vec![], vec![ValType::I32]);
-                    functions.function(type_index);
-                    self.func_symbols.funcs.insert(comp.name.value.clone(), func_index_counter);
-                    exports.export(&comp.name.value, ExportKind::Func, func_index_counter);
-                    func_index_counter += 1;
+                Statement::Component(_comp) => {
+                    // Components are emitted as JavaScript by JSEmitter, not compiled to WASM
+                    // Skip them during WASM type/export generation
                 }
                 _ => {}
             }
@@ -386,9 +381,9 @@ impl CodeGenerator {
                         }
                     }
                 }
-                Statement::Component(comp) => {
-                    // Generate component function
-                    code.function(&self.generate_component(comp)?);
+                Statement::Component(_comp) => {
+                    // Components are emitted as JavaScript by JSEmitter, not compiled to WASM
+                    // Skip them during WASM code generation
                 }
                 Statement::ImplBlock(_) => {
                     // Impl blocks don't generate code directly - methods are called through method call syntax
@@ -2015,10 +2010,8 @@ impl CodeGenerator {
                     self.collect_lambdas_from_statement(s);
                 }
             }
-            Statement::Component(comp) => {
-                for s in &comp.body.statements {
-                    self.collect_lambdas_from_statement(s);
-                }
+            Statement::Component(_comp) => {
+                // Components are JavaScript-only, skip lambda collection for WASM
             }
             _ => {}
         }

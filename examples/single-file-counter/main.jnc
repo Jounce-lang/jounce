@@ -1,0 +1,32 @@
+// counter_app.jnc - Complete interactive counter app in ONE file
+// Tests Phase 1-3 fixes: object literals, script blocks, arrow functions
+
+<script>
+  // Initialize reactive state
+  const count = signal(0);
+
+  // Auto-update DOM when count changes
+  effect(() => {
+    const el = document.getElementById('count');
+    if (el) el.textContent = count.value;
+  });
+
+  // Mount app to DOM
+  window.addEventListener('DOMContentLoaded', () => {
+    const root = document.getElementById('app');
+    if (root) mountComponent(Counter, root);
+  });
+</script>
+
+component Counter() {
+    return <div>
+        <h1>Counter: <span id="count">0</span></h1>
+        <button onClick={() => { count.value = count.value + 1; }}>+</button>
+        <button onClick={() => { count.value = count.value - 1; }}>-</button>
+        <button onClick={() => { count.value = 0; }}>Reset</button>
+    </div>;
+}
+
+fn main() {
+    // Entry point (called from index.html)
+}
