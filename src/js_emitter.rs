@@ -1665,10 +1665,10 @@ impl JSEmitter {
 
                 let body = self.generate_expression_js(&lambda_expr.body);
 
-                // If body is a block statement, use braces
+                // If body is a block statement, wrap in braces
                 // Otherwise, use concise arrow function syntax
                 if matches!(*lambda_expr.body, Expression::Block(_)) {
-                    format!("({}) => {}", params, body)
+                    format!("({}) => {{ {} }}", params, body)
                 } else {
                     format!("({}) => {}", params, body)
                 }
