@@ -17,13 +17,13 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {
 
 // Server function implementations
 // Shared utility functions
-module.exports.ColorPicker = function() {
-  return h('div', { class: "container" }, h('h1', "🎨 Reactive Color Picker"), h('div', { class: "color-preview", id: "preview" }, null), h('div', { class: "hex-display", id: "hex-display" }, "#8040C0"), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Red"), h('span', { class: "color-value", id: "red-value" }, "128")), h('input', { type: "range", class: "slider", id: "red-slider", min: "0", max: "255", value: "128" }, null)), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Green"), h('span', { class: "color-value", id: "green-value" }, "64")), h('input', { type: "range", class: "slider", id: "green-slider", min: "0", max: "255", value: "64" }, null)), h('div', { class: "slider-group" }, h('div', { class: "color-label" }, h('span', "Blue"), h('span', { class: "color-value", id: "blue-value" }, "192")), h('input', { type: "range", class: "slider", id: "blue-slider", min: "0", max: "255", value: "192" }, null)), h('div', { style: "text-align: center; margin-top: 30px; color: #666;" }, h('p', "Move the sliders to change the color in real-time!")));
+module.exports.Stopwatch = function() {
+  return h('div', { class: "stopwatch-card" }, h('h1', { class: "title" }, "⏱️ Stopwatch"), h('div', { class: "time-display", id: "time" }, "00:00.00"), h('div', { class: "status", id: "status" }, "Ready"), h('div', { class: "button-group" }, h('button', { class: "btn btn-start", id: "start-btn" }, "Start"), h('button', { class: "btn btn-stop", id: "stop-btn" }, "Stop"), h('button', { class: "btn btn-reset", id: "reset-btn" }, "Reset")));
 
 }
 
 module.exports.main = function() {
-  return console.log("🚀 Reactive Color Picker starting...");
+  return console.log("⏱️ Stopwatch app starting...");
 
 }
 
