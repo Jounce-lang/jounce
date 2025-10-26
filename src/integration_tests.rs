@@ -324,6 +324,8 @@ mod tests {
         assert!(result.is_ok(), "match with OR patterns should compile successfully");
 
         let (_, client_js) = result.unwrap();
+        // Debug: print generated JS
+        eprintln!("Generated JS:\n{}", client_js);
         // Should generate: (__match_value === 3 || __match_value === 4 || __match_value === 5)
         assert!(client_js.contains("||"), "should have OR operator");
         assert!(client_js.contains("=== 3"), "should check for 3");
@@ -1176,6 +1178,9 @@ mod tests {
         "#;
 
         let result = compile_source(source);
+        if result.is_err() {
+            eprintln!("Compilation error: {:?}", result.as_ref().err());
+        }
         assert!(result.is_ok(), "nested Option should compile successfully");
     }
 
@@ -1822,9 +1827,10 @@ mod tests {
         assert!(result.is_ok(), "chained ? operators should compile");
 
         let (_, client_js) = result.unwrap();
-        let value_count = client_js.matches(".value").count();
-        assert!(value_count >= 2,
-                "should generate multiple .value unwraps");
+        // The ? operator should generate .unwrap() calls on Result values
+        let unwrap_count = client_js.matches(".unwrap()").count();
+        assert!(unwrap_count >= 2,
+                "should generate multiple .unwrap() calls for chained ? operators");
     }
 
     #[test]

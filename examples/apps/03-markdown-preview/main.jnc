@@ -1,6 +1,7 @@
 // App 3: Markdown Previewer
-// Demonstrates markdown preview UI structure
-// NOTE: Package imports coming soon! (jounce-markdown, jounce-sanitizer)
+// Demonstrates markdown preview UI with package integration
+
+use jounce_markdown::{parse_markdown_safe};
 
 // Main app component
 fn App() -> JSX {
@@ -145,9 +146,14 @@ console.log(greeting);</code></pre>
 // Entry point
 fn main() {
     console.log("App 3: Markdown Previewer started!");
-    console.log("Features: Split-pane editor, markdown syntax reference");
-    console.log("Coming soon: Package integration for live markdown parsing!");
+    console.log("Packages: jounce-markdown, jounce-sanitizer");
 
     let app_html = App();
     console.log("Markdown previewer component created successfully!");
+
+    // Example: Parse markdown programmatically
+    let sample_md = "# Hello\\n\\nThis is **bold** text.";
+    let html_output = parse_markdown_safe(sample_md);
+    console.log("Sample markdown rendered:");
+    console.log(html_output);
 }
