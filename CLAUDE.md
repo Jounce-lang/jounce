@@ -634,9 +634,9 @@ cd dist && python3 -m http.server 8080
 
 ## 🟢 SESSION 6 PROGRESS (October 26, 2025)
 
-### **FIXING THE COMPILER - Phase 1 ✅ Complete, Phase 2 ✅ Complete**
+### **FIXING THE COMPILER - Phase 1 ✅, Phase 2 ✅, Phase 3 ✅ COMPLETE!**
 
-**Token Usage**: 51k/200k (26%) - Memory cleared and resumed
+**Token Usage**: 84k/200k (42%) - Good progress, continuing
 
 ### ✅ **Phase 1 COMPLETE: Object Literal Support**
 
@@ -717,36 +717,113 @@ initApp();
 
 ---
 
+### ✅ **Phase 3 COMPLETE: Event Handlers with Arrow Functions**
+
+**Goal:** Parse and emit inline event handlers in JSX:
+```jounce
+<button onClick={() => doSomething()}>Click</button>
+<input onChange={(e) => handleChange(e)} />
+```
+
+**Problem Solved:**
+Arrow functions with multiple parameters `(a, b) => ...` were being parsed as tuple literals, not lambdas, causing "No prefix parse function for FatArrow" errors.
+
+**Root Cause:**
+In `parse_lambda_or_grouped()`, when parsing `(a, b)`, the parser saw the comma and immediately treated it as a tuple literal, never checking for `=>` after the closing `)`.
+
+**Solution:**
+Modified `src/parser.rs:1542-1586` to check for `=>` after parsing tuple-like structures. If `=>` follows, convert tuple elements to lambda parameters.
+
+**Files Changed:**
+- `src/parser.rs` - Enhanced `parse_lambda_or_grouped()` function
+  * Lines 1556-1582: Added check for `=>` after tuple parsing
+  * Converts tuple elements to lambda parameters if `=>` found
+  * Validates all parameters are identifiers
+
+**What Works Now:**
+```jounce
+// Multi-param arrow functions
+let add = (a, b) => a + b;
+
+// No-param arrow functions
+let greet = () => "Hello";
+
+// Single-param arrow functions
+let double = (x) => x * 2;
+
+// In JSX attributes
+<button onClick={() => 42}>Click</button>
+<input onChange={(e) => e.target.value} />
+```
+
+**Generated JavaScript:**
+```javascript
+let add = (a, b) => (a + b);
+let greet = () => "Hello";
+h('button', { onClick: () => 42 }, "Click Me");
+h('input', { onChange: (e) => e }, "Type Here");
+```
+
+**Test Results:**
+- ✅ All 625 tests pass (no regressions)
+- ✅ `test_simple_arrow.jnc` - Lambdas in regular code
+- ✅ `test_jsx_arrow.jnc` - Event handlers in JSX
+- ✅ Arrow functions work in JSX attribute expressions `{...}`
+
+**Committed:** Yes (commit 9f45a5b)
+
+---
+
 ### **Next Steps (Continue Session 6):**
 
-**Phase 3: Event Handlers (1-2 hours):**
+**✅ Phases 1-3 Complete!**
+- ✅ Phase 1: Object literals (`{ key: value }`)
+- ✅ Phase 2: Script blocks (`<script>...</script>`)
+- ✅ Phase 3: Event handlers (`onClick={() => ...}`)
+
+**🎯 Phase 4: True Single-File App (NEXT)**
+
+**Goal:** Verify the single-file workflow actually works end-to-end
+
+**Current State:**
+- Object literals: ✅ Working
+- Script blocks: ✅ Working
+- Arrow functions in JSX: ✅ Working
+
+**Test Plan:**
+1. Create a complete interactive app in ONE .jnc file
+2. Use `<script>` blocks for initialization code
+3. Use event handlers for interactivity
+4. Verify: `cargo run -- compile app.jnc` → working app
+5. NO manual steps after compilation!
+
+**Example App to Build:**
 ```jounce
-<button onClick={() => count.value++}>Increment</button>
+// Simple counter app - everything in one file
+<script>
+  const count = signal(0);
+  effect(() => {
+    document.getElementById('count').textContent = count.value;
+  });
+</script>
+
+fn main() {
+    let app = <div>
+        <h1 id="count">{count.value}</h1>
+        <button onClick={() => count.value++}>+</button>
+        <button onClick={() => count.value--}>-</button>
+    </div>;
+}
 ```
-**Goal:** Parse and emit inline event handlers in JSX
 
-**Tasks:**
-1. Parse arrow function expressions in JSX attributes
-2. Handle event handler attributes (onClick, onChange, etc.)
-3. Generate proper event listener code in JavaScript
-4. Test with interactive component
+**Success Criteria:**
+- Compiles without errors
+- Opens in browser and works
+- No manual file copying or editing
+- TRUE single-file workflow achieved!
 
-**Phase 4: True Single-File App (30 minutes-1 hour):**
-**Goal:** Rebuild blog platform as true single file
-```bash
-# Should work like this:
-cargo run -- compile main.jnc  # ONE COMMAND
-cd dist && python3 -m http.server 8080  # WORKS!
-```
-
-**Tasks:**
-1. Rebuild blog platform using script blocks
-2. Verify no manual post-compilation steps needed
-3. Delete build scripts and helper files
-4. Update documentation
-
-**Phase 5: Reactive Auto-Wiring (Future - v0.9.0):**
-Auto-generate effect() code for reactive DOM updates
+**Future Phases:**
+- Phase 5: Reactive Auto-Wiring (v0.9.0) - Auto-generate effect() code
 
 ---
 
