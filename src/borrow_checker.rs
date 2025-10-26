@@ -336,6 +336,14 @@ impl BorrowChecker {
                 // For now, return Unknown type
                 Ok(ResolvedType::Unknown)
             }
+            Expression::ObjectLiteral(obj_lit) => {
+                // Check all field values (same as StructLiteral)
+                for (_field_name, field_value) in &obj_lit.fields {
+                    self.check_expression(field_value)?;
+                }
+                // Return Unknown type (JavaScript objects are dynamic)
+                Ok(ResolvedType::Unknown)
+            }
             Expression::FieldAccess(field_access) => {
                 // Check the object expression
                 self.check_expression(&field_access.object)?;

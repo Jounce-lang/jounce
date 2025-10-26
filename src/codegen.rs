@@ -1511,6 +1511,11 @@ impl CodeGenerator {
                 // Return placeholder for WASM backend
                 f.instruction(&Instruction::I32Const(0));
             }
+            Expression::ObjectLiteral(_) => {
+                // Object literals are JavaScript-only
+                // Return placeholder for WASM backend
+                f.instruction(&Instruction::I32Const(0));
+            }
         }
         Ok(())
     }
@@ -2063,6 +2068,11 @@ impl CodeGenerator {
                     self.collect_lambdas_from_expression(field_value);
                 }
             }
+            Expression::ObjectLiteral(obj_lit) => {
+                for (_, field_value) in &obj_lit.fields {
+                    self.collect_lambdas_from_expression(field_value);
+                }
+            }
             Expression::FieldAccess(field_access) => {
                 self.collect_lambdas_from_expression(&field_access.object);
             }
@@ -2227,6 +2237,11 @@ impl CodeGenerator {
             }
             Expression::StructLiteral(struct_lit) => {
                 for (_, field_value) in &struct_lit.fields {
+                    self.collect_variable_references(field_value, vars);
+                }
+            }
+            Expression::ObjectLiteral(obj_lit) => {
+                for (_, field_value) in &obj_lit.fields {
                     self.collect_variable_references(field_value, vars);
                 }
             }

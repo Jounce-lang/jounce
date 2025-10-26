@@ -1495,6 +1495,19 @@ impl JSEmitter {
                     .join(", ");
                 format!("new {}({})", struct_name, field_values)
             }
+            Expression::ObjectLiteral(obj_lit) => {
+                // Generate JavaScript object literal: { key: value, ... }
+                let fields = obj_lit.fields
+                    .iter()
+                    .map(|(name, value)| {
+                        let field_name = &name.value;
+                        let field_value = self.generate_expression_js(value);
+                        format!("{}: {}", field_name, field_value)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{{ {} }}", fields)
+            }
             Expression::FieldAccess(field) => {
                 let object = self.generate_expression_js(&field.object);
                 format!("{}.{}", object, field.field.value)
