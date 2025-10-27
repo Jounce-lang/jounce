@@ -1,0 +1,12 @@
+// Test: App WITHOUT WebSocket
+// Server.js should NOT have WebSocket initialization
+
+component App() {
+    let count = signal(0);
+
+    return <div>
+        <h1>No WebSocket Test</h1>
+        <p>Count: {count.get()}</p>
+        <button onclick={() => count.set(count.get() + 1)}>Increment</button>
+    </div>;
+}
