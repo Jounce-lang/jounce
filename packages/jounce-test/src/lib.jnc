@@ -1,0 +1,14 @@
+// jounce-test - Simple test package for verifying imports work
+// Minimal functions to avoid compiler bugs
+
+pub fn get_message() -> string {
+    return "Package import works!";
+}
+
+pub fn get_number() -> int {
+    return 42;
+}
+
+pub fn check_enabled() -> bool {
+    return true;
+}
