@@ -67,6 +67,212 @@
 
 ---
 
+## 🏗️ Build Artifact Architecture (What the Compiler Should Emit)
+
+### Current Status: **Phase 1 (95% Complete)**
+
+Jounce currently emits JavaScript build artifacts that are easy to deploy, debug, and understand. We'll progressively move toward WebAssembly while maintaining pragmatic deployment options.
+
+### Phase 1: JavaScript Everywhere (TODAY - Pragmatic & Compatible)
+
+**Status:** ✅ **95% COMPLETE** (Sessions 17-19)
+
+**What We Emit:**
+```
+dist/
+├── server.js              ✅ Node (ESM) bundle with @server logic + RPC handler
+├── client.js              ✅ ESM browser bundle with @client UI + RPC client
+├── index.html             ✅ Minimal HTML shell that loads client.js
+├── styles.css             ✅ Generated CSS from style blocks
+├── server-runtime.js      ✅ HTTP server, DB, WebSocket, RPC
+├── client-runtime.js      ✅ h(), reactivity, lifecycle, ErrorBoundary, Suspense
+├── reactivity.js          ✅ Signal, computed, effect, batch
+├── app.wasm               ⚠️  Placeholder (36 bytes, not real yet)
+├── manifest.json          ❌ TODO: Entrypoints, routes, assets, env
+└── rpc.schema.json        ❌ TODO: RPC contract (functions, types, auth)
+```
+
+**Why Phase 1:**
+- ✅ Easiest to deploy anywhere (Vercel, Fly, Cloudflare Pages+Functions, plain Node)
+- ✅ Zero friction for debugging (everyone understands JavaScript)
+- ✅ AI agents can read and understand artifacts
+- ✅ Ship immediately while compiler and stdlib mature
+- ✅ **Current Focus:** Get to 100% Phase 1 before moving to Phase 2
+
+**What's Missing for 100% Phase 1:**
+1. **manifest.json** - Machine-readable manifest with:
+   - Entrypoints (server.js, client.js)
+   - Routes and SSR pages
+   - Static assets list
+   - Environment variables needed
+   - Checksums for cache-busting
+
+2. **rpc.schema.json** - Compiler-generated RPC contract with:
+   - Available RPC procedures
+   - Input/output types for each function
+   - Error shapes and codes
+   - Auth/permission requirements
+   - Generated from @server function signatures
+
+**Timeline:** Complete in Session 20-21 (2-4 hours total)
+
+---
+
+### Phase 2: Client to WebAssembly; Server Stays JS (FUTURE)
+
+**Target:** v0.30.0+ (After 10+ example apps proven)
+
+**What We'll Emit:**
+```
+dist/
+├── server/
+│   └── server.js          📦 Node (ESM) bundle (unchanged from Phase 1)
+├── client/
+│   ├── app.wasm           🎯 Client runtime + compiled @client logic
+│   ├── loader.js          📦 Tiny JS loader (instantiates WASM, wires DOM)
+│   └── index.html         📦 Minimal shell that loads loader.js
+├── assets/
+│   ├── styles.css
+│   └── *.map              📦 Source maps
+├── manifest.json          📦 Build manifest
+└── rpc.schema.json        📦 RPC contract
+```
+
+**Why Phase 2:**
+- 🎯 Moves critical client code into secure, fast, portable runtime (WASM)
+- ✅ Keeps deployment simple (server still Node.js)
+- ✅ SSR/hydration story stays straightforward
+- ⚡ Better performance for complex client logic
+- 🔒 Stronger sandboxing and security
+
+**Requirements Before Phase 2:**
+- ✅ Phase 1 at 100% with manifest.json and rpc.schema.json
+- ✅ 10+ real-world example apps proving Phase 1 works
+- ✅ WASM code generator fully implemented
+- ✅ Client runtime can run in WASM
+- ✅ DOM bindings working through JS loader
+- ✅ Source maps for WASM debugging
+
+**Timeline:** 6-8 weeks after Phase 1 complete
+
+---
+
+### Phase 3: Full WASM on Both Sides (FUTURE)
+
+**Target:** v1.0.0+ (Language lock with WASM maturity)
+
+**What We'll Emit:**
+```
+dist/
+├── server/
+│   ├── server.wasm        🎯 WASI target (Wasmtime, WasmEdge, Workers)
+│   └── runner             📦 Optional native/JS launcher
+├── client/
+│   ├── app.wasm           🎯 Client WASM module
+│   ├── loader.js          📦 JS loader for DOM/events
+│   └── index.html         📦 HTML shell
+├── assets/
+│   ├── styles.css
+│   └── *.map
+├── manifest.json          📦 Build manifest
+└── rpc.schema.json        📦 RPC contract
+```
+
+**Why Phase 3:**
+- 🎯 Uniform execution model across client and server
+- 🔒 Stronger sandboxing everywhere
+- 🚀 Maximum performance ceilings under our control
+- 📦 Easier multi-target (edge, server, desktop, mobile)
+- 🔄 Maximum determinism and reproducibility
+
+**Do We Ever Emit a Single .wasm File Only?**
+
+**No** - Even in "single-binary" dream scenarios:
+- **Web:** Browsers need HTML shell + JS loader to instantiate WASM and wire DOM
+- **Server:** Need launcher (systemd, Node host, platform shim) + config + assets
+
+**Realistic "minimal" builds:**
+```
+# Server
+server.wasm + launcher + config
+
+# Client
+app.wasm + loader.js + index.html
+```
+
+**Requirements Before Phase 3:**
+- ✅ Phase 2 proven and stable
+- ✅ WASI support mature
+- ✅ Server runtime ported to WASM
+- ✅ Performance benchmarks favorable
+- ✅ Debugging experience acceptable
+- ✅ Edge deployment targets available
+
+**Timeline:** v1.0.0+ (12+ months from now)
+
+---
+
+### Compiler Pipeline (All Phases)
+
+**Input:** One or more `.jnc` modules containing:
+- `@server` functions (backend logic)
+- `@client` components/UI (frontend)
+- Shared types/validation
+- Optional `@route` or `@page` annotations for routing/SSR
+- Optional `@secure(...)` annotations for auth/permissions
+
+**Processing Steps:**
+1. **Parse & Analyze**
+   - Build symbol graph
+   - Classify nodes as server/client/shared
+
+2. **Typecheck**
+   - Ensure cross-boundary calls are legal
+   - Ban direct client access to server-only types unless via RPC
+
+3. **RPC Synthesis**
+   - Generate server dispatcher from @server functions
+   - Generate client stubs for type-safe RPC
+   - Emit `rpc.schema.json` with signatures, types, errors, auth
+
+4. **Emit Targets** (phase-dependent)
+   - Phase 1: `server.js` + `client.js` + `index.html`
+   - Phase 2: `server.js` + `app.wasm` + `loader.js` + `index.html`
+   - Phase 3: `server.wasm` + `app.wasm` + `loader.js` + `index.html`
+
+5. **Bundle & Manifest**
+   - Generate `manifest.json` with entrypoints, routes, assets, env
+   - Generate source maps for debugging
+   - Compute checksums for cache-busting
+
+6. **Security Hardening**
+   - Capability-based imports for WASM
+   - Enforce no direct global window/document from server code
+   - CSR/SSR boundaries explicit in manifest
+
+---
+
+### Runtime Behavior (What the Artifacts Do)
+
+**Client Bootstrap:**
+- Loads `app.wasm` (Phase 2/3) or `client.js` (Phase 1)
+- Hydrates existing HTML (if SSR/SSG) or renders SPA
+- Uses generated RPC stubs to call @server functions via fetch
+
+**Server Bootstrap:**
+- Registers single RPC endpoint (e.g., `POST /_jrpc`)
+- Deserializes requests according to `rpc.schema.json`
+- Executes @server functions inside server runtime
+- Returns typed results or structured errors
+
+**SSR (Optional, Phase 2+):**
+- If page annotated for SSR, server renders initial HTML
+- Uses same component tree as client
+- Client hydrates server-rendered HTML
+- In Phase 2/3, SSR can render in WASM using lightweight DOM renderer
+
+---
+
 ## 🚀 Execution Roadmap (Phases)
 
 ### **Phase 11: Module System & Multi-File Support** ✅ COMPLETE
