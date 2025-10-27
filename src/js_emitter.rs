@@ -1382,6 +1382,10 @@ impl JSEmitter {
                 let operand = self.generate_expression_js(&prefix.right);
                 format!("({}{})", prefix.operator.lexeme, operand)
             }
+            Expression::Postfix(postfix) => {
+                let operand = self.generate_expression_js(&postfix.left);
+                format!("({}{})", operand, postfix.operator.lexeme)
+            }
             Expression::Spread(spread) => {
                 // Generate JavaScript spread operator: ...expr
                 let expr = self.generate_expression_js(&spread.expression);
@@ -2007,7 +2011,7 @@ mod tests {
         "#;
 
         let mut lexer = Lexer::new(source.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, source);
         let program = parser.parse_program().expect("Parse failed");
 
         let emitter = JSEmitter::new(&program);
@@ -2041,7 +2045,7 @@ mod tests {
         "#;
 
         let mut lexer = Lexer::new(source.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, source);
         let program = parser.parse_program().expect("Parse failed");
 
         let emitter = JSEmitter::new(&program);
@@ -2065,7 +2069,7 @@ mod tests {
         "#;
 
         let mut lexer = Lexer::new(source.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, source);
         let program = parser.parse_program().expect("Parse failed");
 
         let emitter = JSEmitter::new(&program);
