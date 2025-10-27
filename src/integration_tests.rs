@@ -15,7 +15,7 @@ fn compile_source(source: &str) -> Result<(String, String), CompileError> {
     let mut lexer = Lexer::new(source.to_string());
 
     // Parser
-    let mut parser = Parser::new(&mut lexer);
+    let mut parser = Parser::new(&mut lexer, source);
     let program = parser.parse_program()?;
 
     // Semantic Analyzer
@@ -3890,7 +3890,7 @@ mod tests {
         let mut lexer = Lexer::new(source.to_string());
 
         // Parser
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, source);
         let program = parser.parse_program()?;
 
         // Semantic Analyzer
