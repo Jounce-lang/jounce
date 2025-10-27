@@ -16,8 +16,32 @@ export function h(tag, props, ...children) {
         // Set as current context
         currentLifecycleContext = componentContext;
 
-        // Render component
-        const result = tag(props, children);
+        // Render component (Session 19: Wrap in try-catch for error boundaries)
+        let result;
+        try {
+            result = tag(props, children);
+        } catch (error) {
+            // Restore parent context
+            currentLifecycleContext = parentContext;
+
+            // Forward error to nearest error boundary
+            if (currentErrorBoundary) {
+                console.error('[h()] Component error caught, forwarding to ErrorBoundary:', error);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'component-error';
+                errorDiv.textContent = `Error in component: ${error.message}`;
+
+                // Trigger error boundary handler
+                if (currentErrorBoundary.handleError) {
+                    currentErrorBoundary.handleError(error);
+                }
+
+                return errorDiv;
+            }
+
+            // No error boundary - rethrow
+            throw error;
+        }
 
         // Restore parent context
         currentLifecycleContext = parentContext;
@@ -98,6 +122,10 @@ export function h(tag, props, ...children) {
 // Stores lifecycle hooks for the currently rendering component
 let currentLifecycleContext = null;
 
+// Error Boundary Context (Session 19)
+// Tracks the current error boundary for error handling
+let currentErrorBoundary = null;
+
 // Component lifecycle hooks registry
 export function onMount(callback) {
     if (currentLifecycleContext) {
@@ -120,6 +148,124 @@ export function onUpdate(callback) {
         currentLifecycleContext.updateCallbacks.push(callback);
     } else {
         console.warn('onUpdate called outside of component render');
+    }
+}
+
+export function onError(callback) {
+    // Session 19: Error handling hook
+    if (currentLifecycleContext) {
+        if (!currentLifecycleContext.errorCallbacks) {
+            currentLifecycleContext.errorCallbacks = [];
+        }
+        currentLifecycleContext.errorCallbacks.push(callback);
+    } else {
+        console.warn('onError called outside of component render');
+    }
+}
+
+// ErrorBoundary component (Session 19)
+// Catches errors in child component tree and displays fallback UI
+export function ErrorBoundary(props, passedChildren) {
+    const { fallback, children: propsChildren } = props || {};
+
+    // Children can be passed either as second argument or in props
+    const children = passedChildren || propsChildren || [];
+
+    // Set up error boundary context
+    const parentBoundary = currentErrorBoundary;
+    const errorState = {
+        error: null,
+        hasError: false,
+        parent: parentBoundary
+    };
+
+    currentErrorBoundary = errorState;
+
+    try {
+        // Render children
+        const childElements = Array.isArray(children)
+            ? children.flat().filter(child => child != null)
+            : [children].filter(child => child != null);
+        const rendered = document.createElement('div');
+        rendered.className = 'error-boundary';
+
+        for (const child of childElements) {
+            if (child instanceof Node) {
+                rendered.appendChild(child);
+            } else if (typeof child === 'string' || typeof child === 'number') {
+                rendered.appendChild(document.createTextNode(String(child)));
+            }
+        }
+
+        // Restore parent boundary
+        currentErrorBoundary = parentBoundary;
+
+        // Store error handler on element
+        rendered.__errorBoundary = {
+            handleError: (error) => {
+                console.error('[ErrorBoundary] Caught error:', error);
+                errorState.error = error;
+                errorState.hasError = true;
+
+                // Call onError callbacks if any
+                if (currentLifecycleContext && currentLifecycleContext.errorCallbacks) {
+                    currentLifecycleContext.errorCallbacks.forEach(callback => {
+                        try {
+                            callback(error);
+                        } catch (err) {
+                            console.error('[ErrorBoundary] Error in onError callback:', err);
+                        }
+                    });
+                }
+
+                // Render fallback UI
+                if (fallback) {
+                    const fallbackUI = typeof fallback === 'function'
+                        ? fallback(error)
+                        : fallback;
+
+                    // Replace content with fallback
+                    rendered.innerHTML = '';
+                    if (fallbackUI instanceof Node) {
+                        rendered.appendChild(fallbackUI);
+                    } else if (typeof fallbackUI === 'string') {
+                        rendered.textContent = fallbackUI;
+                    }
+                }
+            }
+        };
+
+        return rendered;
+    } catch (error) {
+        // Restore parent boundary
+        currentErrorBoundary = parentBoundary;
+
+        console.error('[ErrorBoundary] Error during render:', error);
+        errorState.error = error;
+        errorState.hasError = true;
+
+        // Render fallback UI
+        if (fallback) {
+            const fallbackUI = typeof fallback === 'function'
+                ? fallback(error)
+                : fallback;
+
+            if (fallbackUI instanceof Node) {
+                return fallbackUI;
+            } else if (typeof fallbackUI === 'string') {
+                const div = document.createElement('div');
+                div.className = 'error-boundary-fallback';
+                div.textContent = fallbackUI;
+                return div;
+            }
+        }
+
+        // Default fallback
+        const div = document.createElement('div');
+        div.className = 'error-boundary-fallback';
+        div.style.cssText = 'padding: 20px; border: 2px solid #ff0000; background: #ffe0e0; color: #cc0000;';
+        div.innerHTML = `<h3>Something went wrong</h3><pre>${error.message}</pre>`;
+        return div;
     }
 }
 
@@ -496,6 +642,11 @@ if (typeof window !== 'undefined') {
     window.Jounce = {
         h,
         mountComponent,
+        onMount,
+        onUnmount,
+        onUpdate,
+        onError,
+        ErrorBoundary,
         RPCClient,
         JounceRouter,
         getRouter,
