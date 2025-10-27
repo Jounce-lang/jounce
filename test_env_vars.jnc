@@ -1,0 +1,33 @@
+// Test: Environment variables should be accessible in server functions
+
+server fn getConfig() -> string {
+    script {
+        // Access environment variables via process.env (loaded from .env file)
+        const dbUrl = process.env.DATABASE_URL || "default.db";
+        const apiKey = process.env.API_KEY || "no_key_set";
+        const port = process.env.PORT || "3000";
+
+        return JSON.stringify({
+            database: dbUrl,
+            apiKey: apiKey,
+            port: port,
+            nodeEnv: process.env.NODE_ENV || "development"
+        });
+    }
+}
+
+component App() {
+    let config = signal("Loading...");
+
+    // Fetch config on mount
+    effect(() => {
+        getConfig().then(result => config.set(result));
+    });
+
+    return <div>
+        <h1>Environment Variable Test</h1>
+        <p>Config from .env file:</p>
+        <pre>{config.get()}</pre>
+        <p>If you see values from .env, environment variables work!</p>
+    </div>;
+}

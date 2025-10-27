@@ -1,0 +1,44 @@
+// Test: Script blocks in server functions should generate valid JavaScript
+// Before fix: return const db = getDB(); (INVALID)
+// After fix: const db = getDB(); (VALID)
+
+server fn createUser(name: string, email: string) -> int {
+    script {
+        const db = { execute: () => ({ lastInsertRowid: 123 }) };
+        const result = db.execute();
+        return result.lastInsertRowid;
+    }
+}
+
+server fn getUsers() -> string {
+    script {
+        const users = [{ id: 1, name: "Alice" }];
+        return JSON.stringify(users);
+    }
+}
+
+// Test mixed: regular Jounce code + script block
+server fn deleteUser(id: int) -> bool {
+    let userId: int = id;
+    script {
+        const result = { changes: userId > 0 ? 1 : 0 };
+        return result.changes > 0;
+    }
+}
+
+// Test: Script block with multiple statements (the critical case)
+server fn complexOperation(x: int, y: int) -> int {
+    script {
+        const a = x * 2;
+        const b = y + 10;
+        const result = a + b;
+        return result;
+    }
+}
+
+component App() {
+    return <div>
+        <h1>Script Block Server Function Test</h1>
+        <p>Check dist/server.js for valid JavaScript</p>
+    </div>;
+}

@@ -976,12 +976,22 @@ impl JSEmitter {
             if is_function_body && is_last {
                 match stmt {
                     Statement::Expression(expr) => {
-                        // Last expression becomes a return
-                        output.push_str(&format!("return {};", self.generate_expression_js(expr)));
+                        // ScriptBlocks should NOT be wrapped with return - they contain
+                        // complete JavaScript statements (e.g., const db = getDB();)
+                        if matches!(expr, Expression::ScriptBlock(_)) {
+                            output.push_str(&self.generate_expression_js(expr));
+                        } else {
+                            // Last expression becomes a return
+                            output.push_str(&format!("return {};", self.generate_expression_js(expr)));
+                        }
                     }
                     Statement::If(if_stmt) => {
                         // Convert if/else branches to returns
                         output.push_str(&self.generate_if_with_returns(if_stmt));
+                    }
+                    Statement::ScriptBlock(_) => {
+                        // ScriptBlocks are complete JavaScript code blocks, emit as-is
+                        output.push_str(&self.generate_statement_js(stmt));
                     }
                     _ => {
                         // Other statements (return, let, etc.) stay as-is
@@ -1700,6 +1710,11 @@ impl JSEmitter {
                 } else {
                     format!("({}) => {}", params, body)
                 }
+            }
+            Expression::ScriptBlock(script_block) => {
+                // Output raw JavaScript code verbatim (Session 16)
+                // This allows inline JavaScript in server functions
+                script_block.code.clone()
             }
             _ => "/* Unsupported expression */".to_string(),
         }

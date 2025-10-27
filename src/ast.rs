@@ -37,6 +37,7 @@ pub enum Statement {
 pub struct UseStatement {
     pub path: Vec<Identifier>,
     pub imports: Vec<Identifier>,
+    pub is_glob: bool,  // true for `use foo::*;` (import all)
 }
 
 #[derive(Debug, Clone)]
@@ -315,6 +316,7 @@ pub enum Expression {
     BoolLiteral(bool),
     UnitLiteral,  // () - the unit type value
     ArrayLiteral(ArrayLiteral),
+    ArrayRepeat(ArrayRepeatExpression),  // [value; count]
     TupleLiteral(TupleLiteral),
     StructLiteral(StructLiteral),
     ObjectLiteral(ObjectLiteral),  // { key: value } JavaScript-style objects
@@ -345,6 +347,8 @@ pub enum Expression {
     Computed(ComputedExpression),  // computed<T>(() => expr)
     Effect(EffectExpression),  // effect(() => { })
     Batch(BatchExpression),  // batch(() => { })
+    // Inline JavaScript (Session 16)
+    ScriptBlock(ScriptBlockExpression),  // script { ... } - raw JavaScript
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -438,6 +442,12 @@ pub struct AwaitExpression {
 #[derive(Debug, Clone)]
 pub struct ArrayLiteral {
     pub elements: Vec<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ArrayRepeatExpression {
+    pub value: Box<Expression>,   // The value to repeat
+    pub count: Box<Expression>,   // The number of times to repeat (must evaluate to int)
 }
 
 #[derive(Debug, Clone)]
@@ -778,6 +788,8 @@ pub struct ImplBlock {
 #[derive(Debug, Clone)]
 pub struct ImplMethod {
     pub name: Identifier,
+    pub lifetime_params: Vec<Lifetime>,  // Lifetime parameters like <'a, 'b>
+    pub type_params: Vec<TypeParam>,     // Generic type parameters like <T>, <T: Display>
     pub parameters: Vec<FunctionParameter>,  // First parameter is usually &self or self
     pub return_type: Option<TypeExpression>,
     pub body: BlockStatement,
@@ -794,6 +806,8 @@ pub struct TraitDefinition {
 #[derive(Debug, Clone)]
 pub struct TraitMethod {
     pub name: Identifier,
+    pub lifetime_params: Vec<Lifetime>,  // Lifetime parameters like <'a, 'b>
+    pub type_params: Vec<TypeParam>,     // Generic type parameters like <T>, <T: Display>
     pub parameters: Vec<FunctionParameter>,
     pub return_type: Option<TypeExpression>,
 }
@@ -830,6 +844,15 @@ pub struct EffectExpression {
 #[derive(Debug, Clone)]
 pub struct BatchExpression {
     pub body: Box<Expression>,  // Must be a lambda/closure
+}
+
+// ============================================================================
+// Script Block (Session 16: Inline JavaScript)
+// ============================================================================
+
+#[derive(Debug, Clone)]
+pub struct ScriptBlockExpression {
+    pub code: String,  // Raw JavaScript code
 }
 
 // ============================================================================

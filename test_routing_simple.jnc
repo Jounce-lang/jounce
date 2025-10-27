@@ -1,0 +1,55 @@
+// Simple Routing Test - Client-Side Only
+// Tests basic navigation without complex router struct
+
+// Home Page Component
+component HomePage() {
+    <div>
+        <h1>Home Page</h1>
+        <p>Welcome to Jounce Routing!</p>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/about">About</a>
+            <a href="/contact">Contact</a>
+        </nav>
+    </div>
+}
+
+// About Page Component
+component AboutPage() {
+    <div>
+        <h1>About Page</h1>
+        <p>Learn about Jounce routing.</p>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/about">About</a>
+            <a href="/contact">Contact</a>
+        </nav>
+    </div>
+}
+
+// Contact Page Component
+component ContactPage() {
+    <div>
+        <h1>Contact Page</h1>
+        <p>Get in touch!</p>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/about">About</a>
+            <a href="/contact">Contact</a>
+        </nav>
+    </div>
+}
+
+// Main app with routing demo
+fn main() {
+    let currentPage = signal("/");
+
+    let app = <div>
+        <h1>Client-Side Routing Demo</h1>
+        <p>Current Route: {currentPage.value}</p>
+
+        <div id="app-content">
+            <HomePage />
+        </div>
+    </div>;
+}

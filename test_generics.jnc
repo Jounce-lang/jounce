@@ -1,0 +1,19 @@
+// Test file to check if generic type parameters work
+
+fn identity<T>(value: T) -> T {
+    return value;
+}
+
+fn get_first<T>(items: [T]) -> T {
+    return items[0];
+}
+
+fn pair<T, U>(first: T, second: U) -> (T, U) {
+    return (first, second);
+}
+
+fn main() {
+    let x = identity<int>(42);
+    let y = identity<string>("hello");
+    println!("Generic functions work!");
+}

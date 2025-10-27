@@ -295,12 +295,32 @@ impl Lexer {
                     self.read_char();
                     self.read_char();
                     return Token::with_position(TokenKind::PlusPlus, "++".to_string(), self.line, start_col, start_pos);
+                } else if self.peek() == '=' {
+                    self.read_char();
+                    self.read_char();
+                    return Token::with_position(TokenKind::PlusAssign, "+=".to_string(), self.line, start_col, start_pos);
                 } else {
                     Token::with_position(TokenKind::Plus, "+".to_string(), self.line, start_col, start_pos)
                 }
             }
-            '*' => Token::with_position(TokenKind::Star, "*".to_string(), self.line, start_col, start_pos),
-            '%' => Token::with_position(TokenKind::Percent, "%".to_string(), self.line, start_col, start_pos),
+            '*' => {
+                if self.peek() == '=' {
+                    self.read_char();
+                    self.read_char();
+                    return Token::with_position(TokenKind::StarAssign, "*=".to_string(), self.line, start_col, start_pos);
+                } else {
+                    Token::with_position(TokenKind::Star, "*".to_string(), self.line, start_col, start_pos)
+                }
+            }
+            '%' => {
+                if self.peek() == '=' {
+                    self.read_char();
+                    self.read_char();
+                    return Token::with_position(TokenKind::PercentAssign, "%=".to_string(), self.line, start_col, start_pos);
+                } else {
+                    Token::with_position(TokenKind::Percent, "%".to_string(), self.line, start_col, start_pos)
+                }
+            }
             '&' => {
                 if self.peek() == '&' {
                     self.read_char();
@@ -408,6 +428,10 @@ impl Lexer {
                     // Mark that we're exiting a tag
                     self.jsx_in_tag = false;
                     return Token::with_position(TokenKind::JsxSelfClose, "/>".to_string(), self.line, start_col, start_pos);
+                } else if self.peek() == '=' {
+                    self.read_char();
+                    self.read_char();
+                    return Token::with_position(TokenKind::SlashAssign, "/=".to_string(), self.line, start_col, start_pos);
                 } else {
                     Token::with_position(TokenKind::Slash, "/".to_string(), self.line, start_col, start_pos)
                 }
@@ -421,6 +445,10 @@ impl Lexer {
                     self.read_char();
                     self.read_char();
                     return Token::with_position(TokenKind::MinusMinus, "--".to_string(), self.line, start_col, start_pos);
+                } else if self.peek() == '=' {
+                    self.read_char();
+                    self.read_char();
+                    return Token::with_position(TokenKind::MinusAssign, "-=".to_string(), self.line, start_col, start_pos);
                 } else {
                     Token::with_position(TokenKind::Minus, "-".to_string(), self.line, start_col, start_pos)
                 }
