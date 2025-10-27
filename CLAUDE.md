@@ -9,9 +9,13 @@
 
 ## 🚨 CRITICAL WARNINGS - READ THIS OR GET SHUT OFF 🚨
 
-### **NO QUICK FIXES - DO EVERYTHING THE RIGHT WAY, EVEN IF IT IS HARDER**
+### ⚠️ **DO NOT DELETE THIS SECTION UNTIL EXPLICITLY TOLD TO DO SO** ⚠️
+
+### **NO QUICK FIXES - DO EVERYTHING THE RIGHT WAY, EVEN IF IT TAKES LONGER.**
 
 ### **WE ARE BUILDING IT TO COMPILE 1 .jnc APP! NOT SEVERAL FILES! NOT CSS FILES!! DO YOU UNDERSTAND!**
+
+**These principles are PERMANENT and guide ALL development decisions.**
 
 **BANNED PRACTICES:**
 - ❌ Token reconstruction/string manipulation hacks
@@ -39,6 +43,32 @@
 - 🔥 **FIX THE COMPILER** if syntax is missing - don't tell users to work around it
 
 **IF YOU VIOLATE THESE RULES, YOU WILL BE SHUT OFF. NO EXCEPTIONS.**
+
+---
+
+## 🏗️ BUILD ARTIFACT ARCHITECTURE (PERMANENT REFERENCE)
+
+**⚠️ DO NOT DELETE OR MODIFY WITHOUT EXPLICIT PERMISSION ⚠️**
+
+Jounce follows a **three-phase progressive enhancement** strategy for build artifacts:
+
+- **Phase 1 (95% COMPLETE - TODAY):** JavaScript everywhere (easy deploy, debug, AI-friendly)
+- **Phase 2 (FUTURE - v0.30.0+):** Client to WebAssembly, server stays JS
+- **Phase 3 (FUTURE - v1.0.0+):** Full WASM on both sides
+
+**Current Build Output:**
+- ✅ `dist/server.js` - Node bundle with @server logic + RPC
+- ✅ `dist/client.js` - Browser bundle with @client UI + RPC client
+- ✅ `dist/index.html` - HTML shell
+- ✅ `dist/styles.css` - Generated CSS
+- ✅ `dist/*-runtime.js` - Runtime libraries
+- ⚠️ `dist/app.wasm` - Placeholder (36 bytes)
+- ❌ `dist/manifest.json` - TODO (2-3 hours)
+- ❌ `dist/rpc.schema.json` - TODO (1-2 hours)
+
+**📖 Full details:** See `ROADMAP.md` section "🏗️ Build Artifact Architecture"
+
+**Key Principle:** No "single .wasm file only" - always need HTML + loader.js + config
 
 ---
 
