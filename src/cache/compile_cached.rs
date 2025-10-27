@@ -33,7 +33,7 @@ pub fn compile_source_cached(
     let program_ast = cache.get_or_compile(file_path, source, |src| {
         // This closure is only called on cache miss
         let mut lexer = Lexer::new(src.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, src);
         let initial_ast = parser.parse_program()?;
 
         // Check for macro expansion needs

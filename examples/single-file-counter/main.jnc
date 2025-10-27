@@ -10,9 +10,9 @@
   // Auto-update DOM when count changes
   effect(() => {
     const value = count.value; // Read value FIRST to establish dependency
-    console.log('[Jounce] Effect running, count =', value);
-    const el = document.getElementById('count');
-    console.log('[Jounce] Element found:', el);
+    console.log("[Jounce] Effect running, count =", value);
+    const el = document.getElementById("count");
+    console.log("[Jounce] Element found:", el);
     if (el) {
       el.textContent = value;
       console.log('[Jounce] Updated textContent to:', value);
@@ -20,18 +20,18 @@
   });
 
   // Mount app to DOM
-  window.addEventListener('DOMContentLoaded', () => {
-    console.log('[Jounce] DOMContentLoaded fired');
-    const root = document.getElementById('app');
-    console.log('[Jounce] Root element:', root);
+  window.addEventListener("DOMContentLoaded", () => {
+    console.log("[Jounce] DOMContentLoaded fired");
+    const root = document.getElementById("app");
+    console.log("[Jounce] Root element:", root);
     if (root) {
-      console.log('[Jounce] Mounting Counter...');
+      console.log("[Jounce] Mounting Counter...");
       mountComponent(Counter, root);
-      console.log('[Jounce] Counter mounted');
-      console.log('[Jounce] App HTML:', root.innerHTML);
-      console.log('[Jounce] Looking for count element...');
-      const countEl = document.getElementById('count');
-      console.log('[Jounce] Count element:', countEl);
+      console.log("[Jounce] Counter mounted");
+      console.log("[Jounce] App HTML:", root.innerHTML);
+      console.log("[Jounce] Looking for count element...");
+      const countEl = document.getElementById("count");
+      console.log("[Jounce] Count element:", countEl);
     }
   });
 </script>

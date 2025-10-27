@@ -1,0 +1,9 @@
+// Test improved error messages
+
+fn test_errors() {
+    // Missing opening brace
+    let x = 10;
+    }  // ← Should give helpful error about unexpected }
+}
+
+fn main() {}

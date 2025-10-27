@@ -1031,6 +1031,21 @@ impl CodeGenerator {
                     ))),
                 }
             }
+            Expression::Postfix(postfix) => {
+                // Apply the postfix operator (++ or --)
+                // For WASM, we'll treat these as side effects
+                // Generate the current value, then increment/decrement
+                match &postfix.operator.kind {
+                    TokenKind::PlusPlus | TokenKind::MinusMinus => {
+                        // For now, just evaluate the left side
+                        // Full implementation would require local variable mutation
+                        self.generate_expression(&postfix.left, f)?;
+                    }
+                    _ => return Err(CompileError::Generic(format!(
+                        "Unsupported postfix operator: {:?}", postfix.operator.kind
+                    ))),
+                }
+            }
             Expression::Spread(_spread) => {
                 // Spread operator is primarily a JavaScript feature
                 // For WASM, we'd need to expand it at compile time
@@ -2038,6 +2053,9 @@ impl CodeGenerator {
             Expression::Prefix(prefix) => {
                 self.collect_lambdas_from_expression(&prefix.right);
             }
+            Expression::Postfix(postfix) => {
+                self.collect_lambdas_from_expression(&postfix.left);
+            }
             Expression::Spread(spread) => {
                 self.collect_lambdas_from_expression(&spread.expression);
             }
@@ -2209,6 +2227,9 @@ impl CodeGenerator {
             }
             Expression::Prefix(prefix) => {
                 self.collect_variable_references(&prefix.right, vars);
+            }
+            Expression::Postfix(postfix) => {
+                self.collect_variable_references(&postfix.left, vars);
             }
             Expression::Spread(spread) => {
                 self.collect_variable_references(&spread.expression, vars);

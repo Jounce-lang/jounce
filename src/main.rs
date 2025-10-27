@@ -211,7 +211,7 @@ fn main() {
             let lex_time = lex_start.elapsed();
 
             let parse_start = Instant::now();
-            let mut parser = Parser::new(&mut lexer);
+            let mut parser = Parser::new(&mut lexer, &source_code);
             let mut program = match parser.parse_program() {
                 Ok(p) => {
                     println!("   ✓ Parsed {} statements", p.statements.len());
@@ -569,7 +569,7 @@ fn main() {
 
             // Parse the source
             let mut lexer = Lexer::new(source_code.clone());
-            let mut parser = Parser::new(&mut lexer);
+            let mut parser = Parser::new(&mut lexer, &source_code);
             let program = match parser.parse_program() {
                 Ok(p) => p,
                 Err(e) => {
@@ -907,7 +907,7 @@ fn compile_file(path: &PathBuf, output_dir: &PathBuf, verbose: bool) -> CompileS
 
     // Compile
     let mut lexer = Lexer::new(source.clone());
-    let mut parser = Parser::new(&mut lexer);
+    let mut parser = Parser::new(&mut lexer, &source);
     let program = match parser.parse_program() {
         Ok(p) => p,
         Err(e) => {
@@ -1152,7 +1152,7 @@ fn test_subtraction() {
 
     // Parse and compile combined Jounce code to JavaScript
     let mut lexer = Lexer::new(combined_source.clone());
-    let mut parser = Parser::new(&mut lexer);
+    let mut parser = Parser::new(&mut lexer, &combined_source);
     let program = match parser.parse_program() {
         Ok(p) => p,
         Err(e) => {
@@ -1383,7 +1383,7 @@ fn format_file(path: &PathBuf, mode: FormatMode) -> std::io::Result<FormatResult
 
     // Parse the file
     let mut lexer = Lexer::new(content.clone());
-    let mut parser = Parser::new(&mut lexer);
+    let mut parser = Parser::new(&mut lexer, &content);
     let ast = match parser.parse_program() {
         Ok(ast) => ast,
         Err(e) => {

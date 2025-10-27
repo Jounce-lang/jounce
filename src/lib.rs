@@ -109,7 +109,7 @@ impl Compiler {
 
         // --- Lexing, Parsing, Macro Expansion ---
         let mut lexer = Lexer::new(source.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, source);
         let initial_ast = parser.parse_program()?;
 
         // This is a simplified macro expansion for now.
@@ -182,7 +182,7 @@ impl Compiler {
 
         // --- Lexing, Parsing, Macro Expansion ---
         let mut lexer = Lexer::new(source.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, source);
         let initial_ast = parser.parse_program()?;
 
         // This is a simplified macro expansion for now.
