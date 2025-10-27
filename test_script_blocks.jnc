@@ -1,0 +1,68 @@
+// Test script blocks - inline JavaScript in server functions
+// This demonstrates the new `script { ... }` syntax
+
+// Server function with script block for database operations
+server fn initDatabase() {
+    script {
+        const db = getDB();
+        db.execute(`
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        console.log("Database initialized!");
+    }
+}
+
+// Server function to create a user
+server fn createUser(name: string, email: string) -> int {
+    script {
+        const db = getDB();
+        const result = db.execute(
+            'INSERT INTO users (name, email) VALUES (?, ?)',
+            [name, email]
+        );
+        return result.lastInsertRowid;
+    }
+}
+
+// Server function to get all users
+server fn getAllUsers() {
+    script {
+        const db = getDB();
+        const users = db.query('SELECT * FROM users');
+        return users;
+    }
+}
+
+// Server function to delete a user
+server fn deleteUser(id: int) -> bool {
+    script {
+        const db = getDB();
+        db.execute('DELETE FROM users WHERE id = ?', [id]);
+        return true;
+    }
+}
+
+// Server function with multiple script blocks
+server fn complexOperation(userId: int) {
+    // First script block - database query
+    let user = script {
+        const db = getDB();
+        return db.queryOne('SELECT * FROM users WHERE id = ?', [userId]);
+    };
+
+    // Second script block - logging
+    script {
+        console.log('Found user:', user);
+    };
+
+    return user;
+}
+
+fn main() {
+    println!("Script blocks test - check server.js output!");
+}

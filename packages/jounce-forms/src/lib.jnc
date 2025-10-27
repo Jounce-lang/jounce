@@ -1,0 +1,392 @@
+// jounce-forms - Form handling with validation, fields, and state management
+//
+// This package provides reactive form components with built-in validation,
+// field management, and seamless integration with jounce-validation.
+
+use jounce::validation::*;
+
+// ==================== FORM STATE ====================
+
+// Form state tracks field values, errors, and validation status
+pub struct FormState {
+    pub values: Object,           // Field name -> value
+    pub errors: Object,            // Field name -> error message
+    pub touched: Object,           // Field name -> bool (has been focused/blurred)
+    pub is_submitting: bool,
+    pub is_valid: bool,
+}
+
+impl FormState {
+    pub fn new() -> FormState {
+        return FormState {
+            values: {},
+            errors: {},
+            touched: {},
+            is_submitting: false,
+            is_valid: true,
+        };
+    }
+
+    pub fn set_value(mut self, field: string, value: string) -> FormState {
+        self.values[field] = value;
+        return self;
+    }
+
+    pub fn get_value(self, field: string) -> string {
+        return self.values[field] as string;
+    }
+
+    pub fn set_error(mut self, field: string, error: string) -> FormState {
+        self.errors[field] = error;
+        self.is_valid = false;
+        return self;
+    }
+
+    pub fn clear_error(mut self, field: string) -> FormState {
+        delete self.errors[field];
+        return self;
+    }
+
+    pub fn get_error(self, field: string) -> string {
+        return self.errors[field] as string;
+    }
+
+    pub fn has_error(self, field: string) -> bool {
+        return self.errors[field] != undefined;
+    }
+
+    pub fn set_touched(mut self, field: string) -> FormState {
+        self.touched[field] = true;
+        return self;
+    }
+
+    pub fn is_touched(self, field: string) -> bool {
+        return self.touched[field] == true;
+    }
+
+    pub fn reset(mut self) -> FormState {
+        self.values = {};
+        self.errors = {};
+        self.touched = {};
+        self.is_submitting = false;
+        self.is_valid = true;
+        return self;
+    }
+}
+
+// ==================== FORM BUILDER ====================
+
+// Form builder for creating forms with validation
+pub struct Form {
+    pub state: Signal<FormState>,
+    pub validators: Object,        // Field name -> ValidationRule
+    pub on_submit: fn(values: Object) -> (),
+}
+
+impl Form {
+    pub fn new(on_submit: fn(values: Object) -> ()) -> Form {
+        return Form {
+            state: signal(FormState::new()),
+            validators: {},
+            on_submit: on_submit,
+        };
+    }
+
+    // Add validation rule for a field
+    pub fn with_validator(mut self, field: string, rule: ValidationRule) -> Form {
+        self.validators[field] = rule;
+        return self;
+    }
+
+    // Handle field value change
+    pub fn handle_change(self, field: string, value: string) {
+        let mut state = self.state.get();
+        state = state.set_value(field, value);
+
+        // Validate if field has been touched
+        if state.is_touched(field) {
+            state = self.validate_field(state, field, value);
+        }
+
+        self.state.set(state);
+    }
+
+    // Handle field blur (mark as touched and validate)
+    pub fn handle_blur(self, field: string) {
+        let mut state = self.state.get();
+        state = state.set_touched(field);
+
+        let value = state.get_value(field);
+        state = self.validate_field(state, field, value);
+
+        self.state.set(state);
+    }
+
+    // Validate a single field
+    fn validate_field(self, mut state: FormState, field: string, value: string) -> FormState {
+        let rule = self.validators[field] as ValidationRule;
+
+        if rule != undefined {
+            let is_valid = rule.validate(value);
+            if is_valid {
+                state = state.clear_error(field);
+            } else {
+                state = state.set_error(field, rule.message);
+            }
+        }
+
+        return state;
+    }
+
+    // Validate all fields
+    pub fn validate_all(self) -> bool {
+        let mut state = self.state.get();
+        let mut all_valid = true;
+
+        // Validate each field that has a validator
+        for field in Object::keys(self.validators) {
+            let value = state.get_value(field);
+            state = self.validate_field(state, field, value);
+
+            if state.has_error(field) {
+                all_valid = false;
+            }
+        }
+
+        state.is_valid = all_valid;
+        self.state.set(state);
+
+        return all_valid;
+    }
+
+    // Handle form submission
+    pub fn handle_submit(self, event: Event) {
+        event.preventDefault();
+
+        let mut state = self.state.get();
+
+        // Validate all fields
+        if !self.validate_all() {
+            return;
+        }
+
+        // Mark as submitting
+        state.is_submitting = true;
+        self.state.set(state);
+
+        // Call submit handler
+        (self.on_submit)(state.values);
+
+        // Reset submitting state
+        state.is_submitting = false;
+        self.state.set(state);
+    }
+
+    // Reset form to initial state
+    pub fn reset(self) {
+        self.state.set(FormState::new());
+    }
+}
+
+// ==================== FIELD COMPONENTS ====================
+
+// Helper to get field props for input elements
+pub fn get_field_props(form: Form, field_name: string) -> Object {
+    let state = form.state.get();
+    let value = state.get_value(field_name);
+    let error = state.get_error(field_name);
+    let is_touched = state.is_touched(field_name);
+
+    return {
+        name: field_name,
+        value: value,
+        error: error,
+        show_error: is_touched && error != "",
+        on_change: (e) => { form.handle_change(field_name, e.target.value); },
+        on_blur: () => { form.handle_blur(field_name); },
+    };
+}
+
+// Helper to create input field JSX
+pub fn input_field(form: Form, field_name: string, label: string, input_type: string) -> JSX {
+    let props = get_field_props(form, field_name);
+
+    return (
+        <div class="form-field">
+            <label for={field_name}>{label}</label>
+            <input
+                type={input_type}
+                id={field_name}
+                name={props.name}
+                value={props.value}
+                onChange={props.on_change}
+                onBlur={props.on_blur}
+                class={props.show_error ? "error" : ""}
+            />
+            {props.show_error ? <span class="error-message">{props.error}</span> : null}
+        </div>
+    );
+}
+
+// Helper to create textarea field JSX
+pub fn textarea_field(form: Form, field_name: string, label: string, rows: int) -> JSX {
+    let props = get_field_props(form, field_name);
+
+    return (
+        <div class="form-field">
+            <label for={field_name}>{label}</label>
+            <textarea
+                id={field_name}
+                name={props.name}
+                value={props.value}
+                rows={rows}
+                onChange={props.on_change}
+                onBlur={props.on_blur}
+                class={props.show_error ? "error" : ""}
+            ></textarea>
+            {props.show_error ? <span class="error-message">{props.error}</span> : null}
+        </div>
+    );
+}
+
+// Helper to create select field JSX
+pub fn select_field(form: Form, field_name: string, label: string, options: Array<Object>) -> JSX {
+    let props = get_field_props(form, field_name);
+
+    return (
+        <div class="form-field">
+            <label for={field_name}>{label}</label>
+            <select
+                id={field_name}
+                name={props.name}
+                value={props.value}
+                onChange={props.on_change}
+                onBlur={props.on_blur}
+                class={props.show_error ? "error" : ""}
+            >
+                {options.map((opt) => (
+                    <option value={opt.value}>{opt.label}</option>
+                ))}
+            </select>
+            {props.show_error ? <span class="error-message">{props.error}</span> : null}
+        </div>
+    );
+}
+
+// Helper to create checkbox field JSX
+pub fn checkbox_field(form: Form, field_name: string, label: string) -> JSX {
+    let props = get_field_props(form, field_name);
+    let is_checked = props.value == "true" || props.value == true;
+
+    return (
+        <div class="form-field checkbox">
+            <label>
+                <input
+                    type="checkbox"
+                    id={field_name}
+                    name={props.name}
+                    checked={is_checked}
+                    onChange={(e) => { form.handle_change(field_name, e.target.checked.toString()); }}
+                />
+                {label}
+            </label>
+            {props.show_error ? <span class="error-message">{props.error}</span> : null}
+        </div>
+    );
+}
+
+// Helper to create submit button
+pub fn submit_button(form: Form, label: string) -> JSX {
+    let state = form.state.get();
+    let is_disabled = state.is_submitting || !state.is_valid;
+
+    return (
+        <button
+            type="submit"
+            disabled={is_disabled}
+            class="submit-button"
+        >
+            {state.is_submitting ? "Submitting..." : label}
+        </button>
+    );
+}
+
+// ==================== COMMON VALIDATORS ====================
+
+// Email validation
+pub fn email_validator() -> ValidationRule {
+    return ValidationRule::new(
+        "email",
+        (value: string) -> bool {
+            return value.includes("@") && value.includes(".");
+        },
+        "Please enter a valid email address"
+    );
+}
+
+// Required field validation
+pub fn required_validator(field_name: string) -> ValidationRule {
+    return ValidationRule::new(
+        "required",
+        (value: string) -> bool {
+            return value.length > 0;
+        },
+        format!("{} is required", field_name)
+    );
+}
+
+// Minimum length validation
+pub fn min_length_validator(min: int, field_name: string) -> ValidationRule {
+    return ValidationRule::new(
+        "min_length",
+        (value: string) -> bool {
+            return value.length >= min;
+        },
+        format!("{} must be at least {} characters", field_name, min)
+    );
+}
+
+// Maximum length validation
+pub fn max_length_validator(max: int, field_name: string) -> ValidationRule {
+    return ValidationRule::new(
+        "max_length",
+        (value: string) -> bool {
+            return value.length <= max;
+        },
+        format!("{} must be at most {} characters", field_name, max)
+    );
+}
+
+// Pattern matching validation
+pub fn pattern_validator(pattern: string, message: string) -> ValidationRule {
+    return ValidationRule::new(
+        "pattern",
+        (value: string) -> bool {
+            let regex = RegExp::new(pattern);
+            return regex.test(value);
+        },
+        message
+    );
+}
+
+// Numeric validation
+pub fn numeric_validator() -> ValidationRule {
+    return ValidationRule::new(
+        "numeric",
+        (value: string) -> bool {
+            return !isNaN(parseFloat(value));
+        },
+        "Please enter a valid number"
+    );
+}
+
+// URL validation
+pub fn url_validator() -> ValidationRule {
+    return ValidationRule::new(
+        "url",
+        (value: string) -> bool {
+            return value.startsWith("http://") || value.startsWith("https://");
+        },
+        "Please enter a valid URL (must start with http:// or https://)"
+    );
+}

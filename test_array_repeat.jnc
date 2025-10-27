@@ -1,0 +1,19 @@
+// Test array repeat syntax: [value; count]
+
+fn main() {
+    // Basic array repeat with integer literal
+    let zeros = [0; 5];
+
+    // Array repeat with string literal
+    let hellos = ["hello"; 3];
+
+    // Array repeat with different values
+    let ones = [1; 10];
+    let twos = [2; 8];
+
+    // Nested in another array
+    let nested = [[0; 3], [1; 3]];
+
+    // Used in assignment
+    let mut buffer = [0; 100];
+}

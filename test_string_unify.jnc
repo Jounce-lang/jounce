@@ -1,0 +1,36 @@
+// Test to verify string type unification is fixed
+
+fn takes_string(s: string) -> string {
+    return s;
+}
+
+fn returns_string() -> string {
+    return "hello";
+}
+
+fn takes_int(n: int) -> int {
+    return n + 1;
+}
+
+fn takes_float(f: float) -> float {
+    return f * 2.0;
+}
+
+fn main() {
+    // Test 1: String literal assignment
+    let s1: string = "test";
+
+    // Test 2: Function call with string argument
+    let s2: string = takes_string("world");
+
+    // Test 3: Function that returns string
+    let s3: string = returns_string();
+
+    // Test 4: Int type unification
+    let n1: int = 42;
+    let n2: int = takes_int(10);
+
+    // Test 5: Float type unification
+    let f1: float = 3.14;
+    let f2: float = takes_float(2.5);
+}

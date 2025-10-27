@@ -49,10 +49,10 @@ impl TypeChecker {
         match type_expr {
             TypeExpression::Named(ident) => {
                 match ident.value.as_str() {
-                    "i32" | "i64" | "i8" | "i16" | "isize" => Type::Int,
-                    "f32" | "f64" => Type::Float,
+                    "i32" | "i64" | "i8" | "i16" | "isize" | "int" => Type::Int,
+                    "f32" | "f64" | "float" => Type::Float,
                     "bool" => Type::Bool,
-                    "str" | "String" => Type::String,
+                    "str" | "String" | "string" => Type::String,
                     _ => {
                         // Check if this is a generic type parameter in scope
                         // If so, return Type::Any (type erasure)
@@ -486,6 +486,17 @@ impl TypeChecker {
                 }
             }
 
+            Expression::ArrayRepeat(array_repeat) => {
+                // [value; count] - infer type from value, check count is int
+                let value_type = self.infer_expression(&array_repeat.value)?;
+                let count_type = self.infer_expression(&array_repeat.count)?;
+
+                // Count should be an integer
+                self.unify(&count_type, &Type::Int)?;
+
+                Ok(Type::Array(Box::new(value_type)))
+            }
+
             Expression::TupleLiteral(tuple_lit) => {
                 // Infer type for each element
                 let mut element_types = Vec::new();
@@ -735,6 +746,10 @@ impl TypeChecker {
             Expression::Batch(batch_expr) => {
                 // Batch returns the result of the function
                 self.infer_expression(&batch_expr.body)
+            }
+            Expression::ScriptBlock(_) => {
+                // Script blocks contain raw JavaScript - skip type checking
+                Ok(Type::Any)
             }
         }
     }

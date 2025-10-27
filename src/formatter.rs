@@ -725,6 +725,7 @@ impl Formatter {
             Expression::BoolLiteral(b) => self.write(if *b { "true" } else { "false" }),
             Expression::UnitLiteral => self.write("()"),
             Expression::ArrayLiteral(arr) => self.format_array_literal(arr),
+            Expression::ArrayRepeat(array_repeat) => self.format_array_repeat(array_repeat),
             Expression::TupleLiteral(tuple) => self.format_tuple_literal(tuple),
             Expression::StructLiteral(struct_lit) => self.format_struct_literal(struct_lit),
             Expression::ObjectLiteral(obj_lit) => self.format_object_literal(obj_lit),
@@ -782,6 +783,12 @@ impl Formatter {
                 self.format_expression(&batch_expr.body);
                 self.write(")");
             }
+            Expression::ScriptBlock(script_block) => {
+                // Format script block as: script { ... }
+                self.write("script { ");
+                self.write(&script_block.code);
+                self.write(" }");
+            }
         }
     }
 
@@ -793,6 +800,14 @@ impl Formatter {
             }
             self.format_expression(elem);
         }
+        self.write("]");
+    }
+
+    fn format_array_repeat(&mut self, array_repeat: &ArrayRepeatExpression) {
+        self.write("[");
+        self.format_expression(&array_repeat.value);
+        self.write("; ");
+        self.format_expression(&array_repeat.count);
         self.write("]");
     }
 
@@ -1985,6 +2000,7 @@ mod tests {
                         value: "Computed".to_string(),
                     },
                 ],
+                is_glob: false,
             })],
         };
 

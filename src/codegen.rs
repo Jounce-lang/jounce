@@ -1217,6 +1217,58 @@ impl CodeGenerator {
                 // Push the array pointer as the result
                 f.instruction(&Instruction::I32Const(array_ptr as i32));
             }
+            Expression::ArrayRepeat(array_repeat) => {
+                // [value; count] - Similar to ArrayLiteral but repeats the same value
+                // For now, we'll evaluate count as a constant and generate repeated values
+                // TODO: For dynamic counts, we'd need a loop at runtime
+
+                // Try to evaluate count as a constant integer
+                let count = match &*array_repeat.count {
+                    Expression::IntegerLiteral(n) => *n as usize,
+                    _ => {
+                        // For non-constant counts, we'd need runtime loop support
+                        // For now, return error or generate a simple array
+                        return Err(CompileError::Generic(
+                            "Array repeat with non-constant count not yet supported in WASM codegen".to_string()
+                        ));
+                    }
+                };
+
+                let element_size = 4; // Assume all elements are i32 for now
+                let total_size = 4 + (count as u32 * element_size); // 4 bytes for length + elements
+
+                // Allocate memory and get pointer
+                let array_ptr = self.heap_pointer;
+                self.heap_pointer += total_size;
+
+                // Store the array length at offset 0
+                f.instruction(&Instruction::I32Const(array_ptr as i32));
+                f.instruction(&Instruction::I32Const(count as i32));
+                f.instruction(&Instruction::I32Store(wasm_encoder::MemArg {
+                    offset: 0,
+                    align: 2,  // 4-byte alignment for i32
+                    memory_index: 0,
+                }));
+
+                // Store the repeated value for each element
+                for index in 0..count {
+                    // Push the base pointer
+                    f.instruction(&Instruction::I32Const(array_ptr as i32));
+
+                    // Generate code for the value (same for each element)
+                    self.generate_expression(&array_repeat.value, f)?;
+
+                    // Store at offset: 4 (length field) + (index * element_size)
+                    f.instruction(&Instruction::I32Store(wasm_encoder::MemArg {
+                        offset: (4 + (index as u64 * element_size as u64)),
+                        align: 2,  // 4-byte alignment for i32
+                        memory_index: 0,
+                    }));
+                }
+
+                // Push the array pointer as the result
+                f.instruction(&Instruction::I32Const(array_ptr as i32));
+            }
             Expression::StructLiteral(struct_lit) => {
                 // Look up the struct layout
                 let layout = self.struct_table.get_layout(&struct_lit.name.value)
@@ -1523,6 +1575,11 @@ impl CodeGenerator {
             }
             Expression::ObjectLiteral(_) => {
                 // Object literals are JavaScript-only
+                // Return placeholder for WASM backend
+                f.instruction(&Instruction::I32Const(0));
+            }
+            Expression::ScriptBlock(_) => {
+                // Script blocks contain raw JavaScript - not supported in WASM backend
                 // Return placeholder for WASM backend
                 f.instruction(&Instruction::I32Const(0));
             }
@@ -2074,6 +2131,10 @@ impl CodeGenerator {
                     self.collect_lambdas_from_expression(elem);
                 }
             }
+            Expression::ArrayRepeat(array_repeat) => {
+                self.collect_lambdas_from_expression(&array_repeat.value);
+                self.collect_lambdas_from_expression(&array_repeat.count);
+            }
             Expression::StructLiteral(struct_lit) => {
                 for (_, field_value) in &struct_lit.fields {
                     self.collect_lambdas_from_expression(field_value);
@@ -2177,7 +2238,8 @@ impl CodeGenerator {
             | Expression::Identifier(_)
             | Expression::Range(_)
             | Expression::TryOperator(_)
-            | Expression::Await(_) => {}
+            | Expression::Await(_)
+            | Expression::ScriptBlock(_) => {}
         }
     }
 
@@ -2248,6 +2310,10 @@ impl CodeGenerator {
                 for elem in &array_lit.elements {
                     self.collect_variable_references(elem, vars);
                 }
+            }
+            Expression::ArrayRepeat(array_repeat) => {
+                self.collect_variable_references(&array_repeat.value, vars);
+                self.collect_variable_references(&array_repeat.count, vars);
             }
             Expression::StructLiteral(struct_lit) => {
                 for (_, field_value) in &struct_lit.fields {
@@ -2335,7 +2401,8 @@ impl CodeGenerator {
             | Expression::Ternary(_)
             | Expression::TypeCast(_)
             | Expression::Await(_)
-            | Expression::JsxElement(_) => {}
+            | Expression::JsxElement(_)
+            | Expression::ScriptBlock(_) => {}
         }
     }
 
