@@ -23,7 +23,7 @@ impl RPCGenerator {
 
         // Note: RPCClient is already imported at the top of the client bundle
         output.push_str("// Auto-generated RPC client stubs\n");
-        output.push_str("const client = new RPCClient(window.location.origin + '/_rpc');\n\n");
+        output.push_str("const client = new RPCClient(window.location.origin);\n\n");
 
         // Generate stub for each server function
         for func in &self.server_functions {
@@ -79,7 +79,7 @@ impl RPCGenerator {
             "server.rpc('{}', async (params) => {{\n\
             \x20   // Call WASM function or JavaScript implementation\n\
             \x20   const [{}] = params;\n\
-            \x20   return await {}({});\n\
+            \x20   return await module.exports.{}({});\n\
             }});",
             name, param_names, name, param_names
         )
