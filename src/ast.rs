@@ -319,6 +319,7 @@ pub enum Expression {
     StructLiteral(StructLiteral),
     ObjectLiteral(ObjectLiteral),  // { key: value } JavaScript-style objects
     Prefix(PrefixExpression),
+    Postfix(PostfixExpression),  // x++ or x-- (postfix increment/decrement)
     Spread(SpreadExpression),  // ...expr (spread operator in arrays)
     Infix(InfixExpression),
     FieldAccess(FieldAccessExpression),
@@ -369,6 +370,12 @@ pub struct TypeParam {
 pub struct PrefixExpression {
     pub operator: Token,
     pub right: Box<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PostfixExpression {
+    pub left: Box<Expression>,
+    pub operator: Token,
 }
 
 #[derive(Debug, Clone)]

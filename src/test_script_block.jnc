@@ -1,0 +1,17 @@
+// Test script block extraction without corruption
+
+<script>
+  // This should be preserved exactly as written
+  const message = 'Hello, World!';
+  const numbers = [1, 2, 3];
+
+  function greet(name) {
+    return `Hello, ${name}!`;
+  }
+
+  console.log(greet(message));
+</script>
+
+fn main() {
+    // Entry point
+}

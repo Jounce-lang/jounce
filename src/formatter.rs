@@ -729,6 +729,7 @@ impl Formatter {
             Expression::StructLiteral(struct_lit) => self.format_struct_literal(struct_lit),
             Expression::ObjectLiteral(obj_lit) => self.format_object_literal(obj_lit),
             Expression::Prefix(prefix) => self.format_prefix_expression(prefix),
+            Expression::Postfix(postfix) => self.format_postfix_expression(postfix),
             Expression::Spread(spread) => self.format_spread_expression(spread),
             Expression::Infix(infix) => self.format_infix_expression(infix),
             Expression::FieldAccess(field) => self.format_field_access(field),
@@ -848,6 +849,11 @@ impl Formatter {
     fn format_prefix_expression(&mut self, prefix: &PrefixExpression) {
         self.write(&token_to_string(&prefix.operator));
         self.format_expression(&prefix.right);
+    }
+
+    fn format_postfix_expression(&mut self, postfix: &PostfixExpression) {
+        self.format_expression(&postfix.left);
+        self.write(&token_to_string(&postfix.operator));
     }
 
     fn format_spread_expression(&mut self, spread: &SpreadExpression) {

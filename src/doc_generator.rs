@@ -64,7 +64,7 @@ impl DocGenerator {
     pub fn generate_from_source(&mut self, source: &str) -> Result<(), CompileError> {
         // Parse the source
         let mut lexer = Lexer::new(source.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, source);
         let program = parser.parse_program()?;
 
         // Extract documentation from AST

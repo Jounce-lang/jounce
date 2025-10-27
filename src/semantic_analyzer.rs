@@ -675,6 +675,10 @@ impl SemanticAnalyzer {
                 self.analyze_expression_with_expected(&prefix_expr.right, None)?;
                 Ok(ResolvedType::Integer)
             }
+            Expression::Postfix(postfix_expr) => {
+                self.analyze_expression_with_expected(&postfix_expr.left, None)?;
+                Ok(ResolvedType::Integer)
+            }
             Expression::Spread(spread_expr) => {
                 // Analyze the inner expression of spread operator
                 self.analyze_expression_with_expected(&spread_expr.expression, None)?;

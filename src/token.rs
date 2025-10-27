@@ -6,11 +6,16 @@ pub struct Token {
     pub lexeme: String,
     pub line: usize,
     pub column: usize,
+    pub position: usize,  // Byte position in source (start of token)
 }
 
 impl Token {
     pub fn new(kind: TokenKind, lexeme: String, line: usize, column: usize) -> Self {
-        Self { kind, lexeme, line, column }
+        Self { kind, lexeme, line, column, position: 0 }
+    }
+
+    pub fn with_position(kind: TokenKind, lexeme: String, line: usize, column: usize, position: usize) -> Self {
+        Self { kind, lexeme, line, column, position }
     }
 }
 
@@ -39,7 +44,9 @@ pub enum TokenKind {
     DotDotEq,    // ..= (inclusive range)
     DotDotDot,   // ... (spread operator)
     Plus,        // +
+    PlusPlus,    // ++ (increment)
     Minus,       // -
+    MinusMinus,  // -- (decrement)
     Star,        // *
     Percent,     // %
     Bang,        // !

@@ -292,7 +292,7 @@ impl LanguageServer {
 
         // Lexical analysis and parsing
         let mut lexer = Lexer::new(content.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, content);
         let ast = match parser.parse_program() {
             Ok(ast) => ast,
             Err(e) => {
@@ -1445,7 +1445,7 @@ impl LanguageServer {
 
         // Add component names from current file
         let mut lexer = Lexer::new(content.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, content);
         if let Ok(ast) = parser.parse_program() {
             use crate::ast::Statement;
             for statement in &ast.statements {
@@ -1825,7 +1825,7 @@ impl LanguageServer {
 
         // Parse the document to extract local variables and functions
         let mut lexer = Lexer::new(content.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, content);
         let ast = match parser.parse_program() {
             Ok(ast) => ast,
             Err(_) => return completions,
@@ -1886,7 +1886,7 @@ impl LanguageServer {
 
         // Parse the document
         let mut lexer = Lexer::new(content.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, content);
         let ast = match parser.parse_program() {
             Ok(ast) => ast,
             Err(_) => {
@@ -1959,7 +1959,7 @@ impl LanguageServer {
         // For simplicity, format the entire document and extract the range
         // A more sophisticated implementation would parse only the range
         let mut lexer = Lexer::new(content.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, content);
         let ast = match parser.parse_program() {
             Ok(ast) => ast,
             Err(_) => {
