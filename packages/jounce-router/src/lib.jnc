@@ -1,0 +1,84 @@
+// Jounce Router Package
+// Client-side routing with browser history API integration
+
+// Route definition - maps URL patterns to component renderers
+struct Route {
+    pub path: string,
+    pub handler: fn() -> string,  // Component render function
+}
+
+// Router manages all routes and current location
+struct Router {
+    pub routes: [Route; 10],  // Max 10 routes
+    pub route_count: int,
+    pub current_path: string,
+}
+
+impl Router {
+    // Create a new router instance
+    pub fn new() -> Router {
+        return Router {
+            routes: [Route { path: "", handler: default_component }; 10],
+            route_count: 0,
+            current_path: "/",
+        };
+    }
+
+    // Register a route
+    pub fn route(mut self, path: string, handler: fn() -> string) {
+        if (self.route_count < 10) {
+            self.routes[self.route_count] = Route {
+                path: path,
+                handler: handler,
+            };
+            self.route_count = self.route_count + 1;
+        }
+    }
+
+    // Start the router - sets up history listeners
+    pub fn start(self) {
+        // This will be handled by JavaScript runtime
+        // The router listens to popstate events and calls match_route()
+    }
+
+    // Match current URL to a route and render
+    pub fn match_route(self, path: string) -> string {
+        let mut i = 0;
+        while (i < self.route_count) {
+            if (self.routes[i].path == path) {
+                return self.routes[i].handler();
+            }
+            i = i + 1;
+        }
+        return not_found();
+    }
+}
+
+// Navigate to a new path (pushes to browser history)
+pub fn navigate(path: string) {
+    // This will be implemented in JavaScript runtime
+    // Uses window.history.pushState() and triggers route matching
+}
+
+// Get URL parameter by name
+pub fn get_param(name: string) -> string {
+    // This will be implemented in JavaScript runtime
+    // Extracts params from URL like /user/:id
+    return "";
+}
+
+// Get current route path
+pub fn get_current_path() -> string {
+    // Returns window.location.pathname
+    return "/";
+}
+
+// Default component for unmatched routes
+fn default_component() -> string {
+    return "<div>Default Route</div>";
+}
+
+// 404 Not Found component
+fn not_found() -> string {
+    return "<div><h1>404 - Not Found</h1></div>";
+}

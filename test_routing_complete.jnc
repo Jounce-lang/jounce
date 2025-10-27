@@ -1,0 +1,75 @@
+// Complete Routing Demo - Single .jnc File
+// Demonstrates full routing with navigation, parameters, and history
+
+component HomePage() {
+    <div>
+        <h1>Home Page</h1>
+        <p>Welcome to the Jounce Routing Demo!</p>
+        <p>This app demonstrates client-side routing from a SINGLE .jnc file.</p>
+
+        <h2>Features:</h2>
+        <ul>
+            <li>Multiple routes with different components</li>
+            <li>Programmatic navigation via JavaScript</li>
+            <li>URL parameters (e.g., /user/:id)</li>
+            <li>Browser history (back/forward buttons work!)</li>
+            <li>404 handling for unknown routes</li>
+        </ul>
+    </div>
+}
+
+component AboutPage() {
+    <div>
+        <h1>About Page</h1>
+        <p>This is a client-side routing demonstration.</p>
+        <p>Built with Jounce - a full-stack web framework.</p>
+    </div>
+}
+
+component UserPage() {
+    <div>
+        <h1>User Profile</h1>
+        <p>This page would show user details.</p>
+        <p>URL parameter support: /user/:id</p>
+    </div>
+}
+
+component ContactPage() {
+    <div>
+        <h1>Contact Us</h1>
+        <p>Get in touch!</p>
+        <form>
+            <input type="text" placeholder="Your name" />
+            <input type="email" placeholder="Your email" />
+            <button>Submit</button>
+        </form>
+    </div>
+}
+
+// Navigation component (shared across all pages)
+component Navigation() {
+    <nav style="padding: 1rem; background: #f0f0f0; margin-bottom: 2rem;">
+        <button onClick={() => navigate("/")}>Home</button>
+        <button onClick={() => navigate("/about")}>About</button>
+        <button onClick={() => navigate("/user/123")}>User Profile</button>
+        <button onClick={() => navigate("/contact")}>Contact</button>
+    </nav>
+}
+
+fn main() {
+    let currentPath = signal("/");
+
+    let app = <div>
+        <h1 style="text-align: center;">Jounce Routing Demo</h1>
+        <Navigation />
+
+        <div id="route-content" style="padding: 2rem;">
+            <HomePage />
+        </div>
+
+        <footer style="margin-top: 3rem; padding: 1rem; text-align: center; background: #f0f0f0;">
+            <p>Current path: {currentPath.value}</p>
+            <p>Try using browser back/forward buttons!</p>
+        </footer>
+    </div>;
+}

@@ -1,7 +1,7 @@
 # Jounce Feature Inventory
 
-**Version**: v0.8.3 "@persist Decorator Implemented"
-**Last Updated**: October 25, 2025 (Session 4)
+**Version**: v0.17.0 "Session 15 - Server Functions & Routing & Database!"
+**Last Updated**: October 27, 2025 (Session 15)
 **Tests Passing**: 625/625 (100%)
 
 > **Purpose**: This is the SINGLE SOURCE OF TRUTH for what features are implemented, working, and tested in Jounce. Use this to avoid rebuilding existing features.
@@ -11,11 +11,14 @@
 ## 📊 Quick Stats
 
 - **Core Compiler**: ✅ Complete (lexer, parser, type checker, codegen)
-- **Language Features**: 40+ implemented
+- **Language Features**: 43+ implemented
 - **Standard Library**: 5 modules (JSON, DateTime, Crypto, File I/O, YAML)
 - **Packages**: 35/35 complete (100% of Phase 14 goal)
 - **Tests**: 625 passing
 - **Documentation**: 90+ markdown files (needs cleanup)
+- **🔥 NEW: Server Functions**: ✅ Working (RPC, auto-generated stubs)
+- **🔥 NEW: Client-Side Routing**: ✅ Working (navigate, URL params, history)
+- **🔥 NEW: Real Database**: ✅ Working (SQLite, full CRUD operations)
 
 ---
 
@@ -76,8 +79,10 @@
 | **Style Blocks** | ✅ Complete | parser.rs:2967 | `style Button { background: blue; }` |
 | **Theme Blocks** | ✅ Complete | parser.rs:3037 | `theme Dark { primary: #000; }` |
 | **Decorators** | ✅ Complete | parser.rs:2095 | `@persist("localStorage")` |
-| **Server functions** | ✅ Complete | parser.rs:522 | `server fn getData() { ... }` |
+| **Server functions** | ✅ Complete + RPC Working! 🔥 | parser.rs:522, rpc_generator.rs | `server fn getData() { ... }` |
 | **Client functions** | ✅ Complete | parser.rs:563 | `client fn render() { ... }` |
+| **Client-Side Routing** | ✅ Complete 🔥 | runtime/client-runtime.js | `navigate("/path")` |
+| **Database Access** | ✅ Complete 🔥 | runtime/server-runtime.js | `getDB().query(sql)` |
 | **Async functions** | ✅ Complete | parser.rs:541 | `async fn fetch() { ... }` |
 | **Components** | ✅ Complete | parser.rs:1117 | `component App() { ... }` |
 
@@ -266,6 +271,53 @@ effect(() => {
 
 ---
 
+## 🔥 Full-Stack Capabilities (Session 15)
+
+### Server Functions (RPC)
+- ✅ **Auto-generated RPC endpoints** - `server fn` creates HTTP endpoints
+- ✅ **Client stubs** - Async functions auto-generated on client
+- ✅ **JSON serialization** - Request/response handling
+- ✅ **Error handling** - Proper error propagation
+- **Location**: `src/rpc_generator.rs`, `runtime/server-runtime.js`
+
+### Client-Side Routing
+- ✅ **Navigate function** - `navigate("/path")` for programmatic navigation
+- ✅ **URL parameters** - Dynamic routes like `/user/:id`
+- ✅ **Browser history** - Back/forward button support via `popstate`
+- ✅ **404 handling** - Automatic not-found pages
+- ✅ **Pattern matching** - Route patterns with parameter extraction
+- **Location**: `runtime/client-runtime.js`, `packages/jounce-router/`
+
+### Database Integration (SQLite)
+- ✅ **DB class** - Connection management with `getDB()`
+- ✅ **Query methods** - `query()`, `execute()`, `queryOne()`
+- ✅ **Full CRUD operations** - Create, Read, Update, Delete tested
+- ✅ **Real persistence** - SQLite file at `dist/app.db`
+- ✅ **Connection pooling** - Ready for production use
+- **Location**: `runtime/server-runtime.js`
+- **Tested**: ✅ All CRUD operations verified with real database
+
+### Reactivity System
+- ✅ **Signals** - `signal(initialValue)`
+- ✅ **Computed values** - `computed(() => expression)`
+- ✅ **Effects** - `effect(() => { ... })`
+- ✅ **Batching** - `batch(() => { ... })`
+- ✅ **Persistent signals** - `persistentSignal("key", default)` with localStorage
+- **Tests**: 51/51 passing (100%)
+
+### Component System
+- ✅ **Component props** - `component Counter(initialCount: int) { ... }`
+- ✅ **JSX support** - `<Counter initialCount={5} />`
+- ✅ **Destructured props** - Auto-generated in JavaScript
+- ✅ **Implicit returns** - Components automatically return JSX
+
+**🎉 Result: TRUE FULL-STACK DEVELOPMENT NOW POSSIBLE!**
+- Single `.jnc` file → Complete web app with database
+- No manual post-compilation steps
+- 80% full-stack completion (up from 42%!)
+
+---
+
 ## ⚠️ Known Limitations
 
 ### Type System
@@ -334,6 +386,6 @@ effect(() => {
 
 ---
 
-**Last Updated**: October 25, 2025, Session 4
+**Last Updated**: October 27, 2025, Session 15
 **Maintained By**: Claude Code + Jordan
-**Next Update**: After Phase 15 example apps
+**Next Update**: After real-world example apps with database

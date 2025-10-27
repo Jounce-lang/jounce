@@ -1,0 +1,63 @@
+// Full-stack Database App - Server Functions Test
+// Demonstrates server functions that would interact with a database
+
+// Server-side database functions
+server fn createUser(name: string, email: string) -> int {
+    // In a real app, this would insert into database and return user ID
+    // Simulating database insert
+    let userId = 42;
+    return userId;
+}
+
+server fn getUserCount() -> int {
+    // Simulate counting users in database
+    return 150;
+}
+
+server fn deleteUser(userId: int) -> bool {
+    // Simulate deleting user from database
+    return true;
+}
+
+server fn updateUserEmail(userId: int, newEmail: string) -> bool {
+    // Simulate updating user email in database
+    return true;
+}
+
+// Client-side component
+component DatabaseDemo() {
+    let userCount = signal(0);
+    let lastUserId = signal(0);
+    let status = signal("Ready");
+
+    <div>
+        <h1>Full-Stack Database Demo</h1>
+
+        <div>
+            <h2>Server Functions Available:</h2>
+            <ul>
+                <li>createUser(name, email) -&gt; int</li>
+                <li>getUserCount() -&gt; int</li>
+                <li>deleteUser(userId) -&gt; bool</li>
+                <li>updateUserEmail(userId, email) -&gt; bool</li>
+            </ul>
+        </div>
+
+        <div>
+            <p>Status: {status.value}</p>
+            <p>User Count: {userCount.value}</p>
+            <p>Last User ID: {lastUserId.value}</p>
+        </div>
+
+        <div>
+            <p>Test these functions via RPC:</p>
+            <p>POST /rpc/createUser with ["John", "john@example.com"]</p>
+            <p>POST /rpc/getUserCount with []</p>
+            <p>POST /rpc/deleteUser with [42]</p>
+        </div>
+    </div>
+}
+
+fn main() {
+    let app = <DatabaseDemo />;
+}
