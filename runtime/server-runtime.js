@@ -5,6 +5,7 @@ const http = require('http');
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
+const Database = require('better-sqlite3');
 
 class HttpServer {
     constructor(port = 3000) {
@@ -102,7 +103,148 @@ function loadWasm(wasmPath) {
     return new WebAssembly.Instance(wasmModule, {});
 }
 
+// ============================================================================
+// Database Utilities
+// ============================================================================
+
+class DB {
+    constructor(filename = 'app.db') {
+        // Create database file in dist directory
+        const dbPath = path.join(__dirname, filename);
+        this.db = new Database(dbPath);
+        this.db.pragma('journal_mode = WAL'); // Better concurrency
+    }
+
+    // Execute a SQL query (SELECT)
+    query(sql, params = []) {
+        try {
+            const stmt = this.db.prepare(sql);
+            return stmt.all(...params);
+        } catch (error) {
+            console.error('Query error:', error.message);
+            throw error;
+        }
+    }
+
+    // Execute a SQL command (INSERT, UPDATE, DELETE)
+    execute(sql, params = []) {
+        try {
+            const stmt = this.db.prepare(sql);
+            return stmt.run(...params);
+        } catch (error) {
+            console.error('Execute error:', error.message);
+            throw error;
+        }
+    }
+
+    // Get a single row
+    queryOne(sql, params = []) {
+        try {
+            const stmt = this.db.prepare(sql);
+            return stmt.get(...params);
+        } catch (error) {
+            console.error('QueryOne error:', error.message);
+            throw error;
+        }
+    }
+
+    // Close database connection
+    close() {
+        this.db.close();
+    }
+
+    // Begin transaction
+    transaction(fn) {
+        const txn = this.db.transaction(fn);
+        return txn();
+    }
+}
+
+// Global database instance (lazy initialization)
+let globalDB = null;
+
+// Get or create global database instance
+function getDB(filename = 'app.db') {
+    if (!globalDB) {
+        globalDB = new DB(filename);
+    }
+    return globalDB;
+}
+
+// Helper functions for common operations
+const dbHelpers = {
+    // Create a table
+    createTable(tableName, columns) {
+        const db = getDB();
+        const columnDefs = Object.entries(columns)
+            .map(([name, type]) => `${name} ${type}`)
+            .join(', ');
+        const sql = `CREATE TABLE IF NOT EXISTS ${tableName} (${columnDefs})`;
+        db.execute(sql);
+    },
+
+    // Insert a record
+    insert(tableName, data) {
+        const db = getDB();
+        const keys = Object.keys(data);
+        const values = Object.values(data);
+        const placeholders = keys.map(() => '?').join(', ');
+        const sql = `INSERT INTO ${tableName} (${keys.join(', ')}) VALUES (${placeholders})`;
+        const result = db.execute(sql, values);
+        return result.lastInsertRowid;
+    },
+
+    // Update records
+    update(tableName, data, where, whereParams = []) {
+        const db = getDB();
+        const sets = Object.keys(data).map(key => `${key} = ?`).join(', ');
+        const values = [...Object.values(data), ...whereParams];
+        const sql = `UPDATE ${tableName} SET ${sets} WHERE ${where}`;
+        const result = db.execute(sql, values);
+        return result.changes;
+    },
+
+    // Delete records
+    delete(tableName, where, whereParams = []) {
+        const db = getDB();
+        const sql = `DELETE FROM ${tableName} WHERE ${where}`;
+        const result = db.execute(sql, whereParams);
+        return result.changes;
+    },
+
+    // Select records
+    select(tableName, where = null, whereParams = []) {
+        const db = getDB();
+        let sql = `SELECT * FROM ${tableName}`;
+        if (where) {
+            sql += ` WHERE ${where}`;
+        }
+        return db.query(sql, whereParams);
+    },
+
+    // Select one record
+    selectOne(tableName, where, whereParams = []) {
+        const db = getDB();
+        const sql = `SELECT * FROM ${tableName} WHERE ${where}`;
+        return db.queryOne(sql, whereParams);
+    },
+
+    // Count records
+    count(tableName, where = null, whereParams = []) {
+        const db = getDB();
+        let sql = `SELECT COUNT(*) as count FROM ${tableName}`;
+        if (where) {
+            sql += ` WHERE ${where}`;
+        }
+        const result = db.queryOne(sql, whereParams);
+        return result.count;
+    }
+};
+
 module.exports = {
     HttpServer,
-    loadWasm
+    loadWasm,
+    DB,
+    getDB,
+    dbHelpers
 };

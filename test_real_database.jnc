@@ -1,0 +1,114 @@
+// Real Database Integration Test
+// Demonstrates full-stack app with SQLite persistence
+
+// Server function stubs - implementations added to server.js after compilation
+server fn initDatabase() -> bool {
+    return true;
+}
+
+server fn createUser(name: string, email: string) -> int {
+    return 0;
+}
+
+server fn getAllUsers() -> string {
+    return "[]";
+}
+
+server fn deleteUser(userId: int) -> bool {
+    return true;
+}
+
+server fn getUserCount() -> int {
+    return 0;
+}
+
+// Client-side UI
+component DatabaseApp() {
+    let users = signal([]);
+    let userName = signal("");
+    let userEmail = signal("");
+    let status = signal("Ready");
+    let userCount = signal(0);
+
+    let init = () => {
+        status.value = "Initializing database...";
+        initDatabase().then(|result| {
+            status.value = "Database ready!";
+            loadUsers();
+            updateCount();
+        });
+    };
+
+    let loadUsers = () => {
+        status.value = "Loading users...";
+        getAllUsers().then(|result| {
+            users.value = JSON.parse(result);
+            status.value = "Users loaded (" + users.value.length + " total)";
+        });
+    };
+
+    let updateCount = () => {
+        getUserCount().then(|count| {
+            userCount.value = count;
+        });
+    };
+
+    let handleCreate = () => {
+        status.value = "Creating user...";
+        createUser(userName.value, userEmail.value).then(|userId| {
+            status.value = "User #" + userId + " created!";
+            userName.value = "";
+            userEmail.value = "";
+            loadUsers();
+        });
+    };
+
+    let handleDelete = (userId: int) => {
+        status.value = "Deleting user #" + userId + "...";
+        deleteUser(userId).then(|success| {
+            status.value = "User #" + userId + " deleted!";
+            loadUsers();
+        });
+    };
+
+    <div style="padding: 2rem; max-width: 800px; margin: 0 auto;">
+        <h1>Real Database Demo</h1>
+        <p>SQLite + Server Functions!</p>
+
+        <div style="background: #f0f0f0; padding: 1rem; margin: 1rem 0;">
+            <p><strong>Status:</strong> {status.value}</p>
+            <p><strong>Total Users:</strong> {userCount.value}</p>
+        </div>
+
+        <div style="background: white; padding: 1rem; border: 1px solid #ddd; margin: 1rem 0;">
+            <h2>Create User</h2>
+            <input
+                type="text"
+                placeholder="Name"
+                value={userName.value}
+                style="padding: 0.5rem; margin: 0.5rem 0; width: 200px;"
+            />
+            <br />
+            <input
+                type="email"
+                placeholder="Email"
+                value={userEmail.value}
+                style="padding: 0.5rem; margin: 0.5rem 0; width: 200px;"
+            />
+            <br />
+            <button onClick={handleCreate}>Add User</button>
+            <button onClick={loadUsers}>Refresh</button>
+        </div>
+
+        <div style="background: white; padding: 1rem; border: 1px solid #ddd;">
+            <h2>Users</h2>
+            <div id="users-list">
+                <p>Loading...</p>
+            </div>
+        </div>
+    </div>
+}
+
+fn main() {
+    let app = <DatabaseApp />;
+}
