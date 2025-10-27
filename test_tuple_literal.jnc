@@ -1,0 +1,14 @@
+// Test tuple literal support
+fn get_coords() -> (int, int) {
+    return (10, 20);
+}
+
+fn get_rgb() -> (int, int, int) {
+    return (255, 128, 64);
+}
+
+fn main() {
+    let coords = get_coords();
+    let point = (5, 15);
+    let rgb = get_rgb();
+}

@@ -324,6 +324,12 @@ impl BorrowChecker {
                     Ok(ResolvedType::Array(Box::new(first_type)))
                 }
             }
+            Expression::ArrayRepeat(array_repeat) => {
+                // [value; count] - check both value and count expressions
+                let value_type = self.check_expression(&array_repeat.value)?;
+                self.check_expression(&array_repeat.count)?;  // count should be int
+                Ok(ResolvedType::Array(Box::new(value_type)))
+            }
             Expression::TupleLiteral(tuple_lit) => {
                 // Check all tuple elements
                 let mut element_types = Vec::new();
@@ -491,6 +497,10 @@ impl BorrowChecker {
             Expression::Batch(batch_expr) => {
                 self.check_expression(&batch_expr.body)?;
                 Ok(ResolvedType::Unknown)  // Returns function result
+            }
+            Expression::ScriptBlock(_) => {
+                // Script blocks contain raw JavaScript - no borrow checking needed
+                Ok(ResolvedType::Unknown)
             }
         }
     }

@@ -201,6 +201,177 @@ export function navigate(path) {
     getRouter().navigate(path);
 }
 
+// ==================== WebSocket Client ====================
+
+// WebSocket client with automatic reconnection
+class WebSocketClient {
+    constructor(url, options = {}) {
+        this.url = url;
+        this.ws = null;
+        this.state = 'disconnected';
+        this.reconnectEnabled = options.reconnectEnabled !== false;
+        this.maxReconnectAttempts = options.maxReconnectAttempts || 5;
+        this.reconnectDelay = options.reconnectDelay || 1000;
+        this.reconnectAttempts = 0;
+        this.messageQueue = [];
+        this.messageHandlers = [];
+        this.stateHandlers = [];
+        this.rooms = [];
+    }
+
+    // Connect to WebSocket server
+    connect() {
+        if (this.state === 'connected' || this.state === 'connecting') {
+            return;
+        }
+
+        this.state = 'connecting';
+        this.notifyStateChange();
+
+        try {
+            this.ws = new WebSocket(this.url);
+
+            this.ws.onopen = () => {
+                console.log('[WebSocket] Connected to', this.url);
+                this.state = 'connected';
+                this.reconnectAttempts = 0;
+                this.notifyStateChange();
+                this.flushMessageQueue();
+            };
+
+            this.ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    this.notifyMessageHandlers(message);
+                } catch (error) {
+                    console.error('[WebSocket] Error parsing message:', error);
+                }
+            };
+
+            this.ws.onerror = (error) => {
+                console.error('[WebSocket] Error:', error);
+            };
+
+            this.ws.onclose = () => {
+                console.log('[WebSocket] Connection closed');
+                this.state = 'disconnected';
+                this.notifyStateChange();
+
+                // Attempt reconnection if enabled
+                if (this.reconnectEnabled && this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    console.log(`[WebSocket] Reconnecting... (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                    setTimeout(() => this.connect(), this.reconnectDelay);
+                }
+            };
+        } catch (error) {
+            console.error('[WebSocket] Connection failed:', error);
+            this.state = 'disconnected';
+            this.notifyStateChange();
+        }
+    }
+
+    // Disconnect from WebSocket server
+    disconnect() {
+        if (this.ws) {
+            this.reconnectEnabled = false;
+            this.state = 'disconnecting';
+            this.notifyStateChange();
+            this.ws.close();
+            this.ws = null;
+        }
+    }
+
+    // Send message to server
+    send(type, data) {
+        const message = {
+            type,
+            data,
+            timestamp: Date.now(),
+            id: Math.random().toString(36).substring(7)
+        };
+
+        if (this.state === 'connected' && this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify(message));
+        } else {
+            // Queue message for sending when connection is ready
+            this.messageQueue.push(message);
+        }
+    }
+
+    // Send queued messages
+    flushMessageQueue() {
+        while (this.messageQueue.length > 0 && this.state === 'connected') {
+            const message = this.messageQueue.shift();
+            this.ws.send(JSON.stringify(message));
+        }
+    }
+
+    // Register message handler
+    onMessage(handler) {
+        this.messageHandlers.push(handler);
+    }
+
+    // Register state change handler
+    onStateChange(handler) {
+        this.stateHandlers.push(handler);
+    }
+
+    // Notify message handlers
+    notifyMessageHandlers(message) {
+        this.messageHandlers.forEach(handler => {
+            try {
+                handler(message);
+            } catch (error) {
+                console.error('[WebSocket] Error in message handler:', error);
+            }
+        });
+    }
+
+    // Notify state change handlers
+    notifyStateChange() {
+        this.stateHandlers.forEach(handler => {
+            try {
+                handler(this.state);
+            } catch (error) {
+                console.error('[WebSocket] Error in state change handler:', error);
+            }
+        });
+    }
+
+    // Join a room
+    joinRoom(room) {
+        if (!this.rooms.includes(room)) {
+            this.rooms.push(room);
+            this.send('join_room', { room });
+        }
+    }
+
+    // Leave a room
+    leaveRoom(room) {
+        const index = this.rooms.indexOf(room);
+        if (index > -1) {
+            this.rooms.splice(index, 1);
+            this.send('leave_room', { room });
+        }
+    }
+
+    // Broadcast to room
+    broadcast(room, type, data) {
+        this.send('broadcast', { room, type, data });
+    }
+
+    // Get current state
+    getState() {
+        return this.state;
+    }
+
+    // Check if connected
+    isConnected() {
+        return this.state === 'connected';
+    }
+}
+
 // Export for window.Jounce global
 if (typeof window !== 'undefined') {
     window.Jounce = {
@@ -210,5 +381,6 @@ if (typeof window !== 'undefined') {
         JounceRouter,
         getRouter,
         navigate,
+        WebSocketClient,
     };
 }

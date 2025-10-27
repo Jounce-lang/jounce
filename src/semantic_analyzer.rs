@@ -672,8 +672,13 @@ impl SemanticAnalyzer {
                 }
             }
             Expression::Prefix(prefix_expr) => {
-                self.analyze_expression_with_expected(&prefix_expr.right, None)?;
-                Ok(ResolvedType::Integer)
+                let operand_type = self.analyze_expression_with_expected(&prefix_expr.right, None)?;
+                // Check operator type
+                match prefix_expr.operator.lexeme.as_str() {
+                    "!" => Ok(ResolvedType::Bool),  // Logical NOT returns bool
+                    "-" | "+" => Ok(operand_type),  // Unary minus/plus returns same type as operand
+                    _ => Ok(ResolvedType::Integer), // Default case
+                }
             }
             Expression::Postfix(postfix_expr) => {
                 self.analyze_expression_with_expected(&postfix_expr.left, None)?;
@@ -726,6 +731,21 @@ impl SemanticAnalyzer {
                 Ok(ResolvedType::Array(Box::new(
                     expected_element_type.unwrap_or(ResolvedType::Unknown),
                 )))
+            }
+            Expression::ArrayRepeat(array_repeat) => {
+                // [value; count] - analyze both expressions
+                let value_type = self.analyze_expression_with_expected(&array_repeat.value, None)?;
+                let count_type = self.analyze_expression_with_expected(&array_repeat.count, None)?;
+
+                // Count should be an integer
+                if !matches!(count_type, ResolvedType::Integer) {
+                    return Err(CompileError::Generic(format!(
+                        "Array repeat count must be an integer, found '{}'",
+                        count_type
+                    )));
+                }
+
+                Ok(ResolvedType::Array(Box::new(value_type)))
             }
             Expression::TupleLiteral(tuple_lit) => {
                 // Infer type for each element
@@ -993,6 +1013,10 @@ impl SemanticAnalyzer {
                 let result_type = self.analyze_expression_with_expected(&batch_expr.body, None)?;
                 Ok(result_type)  // Returns function result
             }
+            Expression::ScriptBlock(_) => {
+                // Script blocks contain raw JavaScript - skip semantic analysis
+                Ok(ResolvedType::ComplexType)
+            }
         }
     }
 
@@ -1000,7 +1024,26 @@ impl SemanticAnalyzer {
         let left_type = self.analyze_expression(&expr.left)?;
         let right_type = self.analyze_expression(&expr.right)?;
 
-        // Handle Unknown and ComplexType gracefully - allow them through
+        // Check operator type first to determine return type
+        let op = expr.operator.lexeme.as_str();
+
+        // Comparison operators always return Bool
+        if matches!(op, "==" | "!=" | "<" | ">" | "<=" | ">=") {
+            return Ok(ResolvedType::Bool);
+        }
+
+        // Logical operators require Bool operands and return Bool
+        if matches!(op, "&&" | "||") {
+            if left_type != ResolvedType::Bool || right_type != ResolvedType::Bool {
+                return Err(CompileError::Generic(format!(
+                    "Logical operator '{}' requires bool operands, got '{}' and '{}'",
+                    op, left_type, right_type
+                )));
+            }
+            return Ok(ResolvedType::Bool);
+        }
+
+        // Handle operand types for arithmetic/string operations
         match (&left_type, &right_type) {
             // If either side is Unknown or ComplexType, return Integer (common case)
             (ResolvedType::Unknown, _) | (_, ResolvedType::Unknown) => Ok(ResolvedType::Integer),
@@ -1014,16 +1057,8 @@ impl SemanticAnalyzer {
                 Ok(ResolvedType::Float)
             }
             // String concatenation
-            (ResolvedType::String, ResolvedType::String) if expr.operator.lexeme == "+" => {
+            (ResolvedType::String, ResolvedType::String) if op == "+" => {
                 Ok(ResolvedType::String)
-            }
-            // Logical operators (&&, ||) with Bool operands
-            (ResolvedType::Bool, ResolvedType::Bool) if matches!(expr.operator.lexeme.as_str(), "&&" | "||") => {
-                Ok(ResolvedType::Bool)
-            }
-            // Comparison operators return Bool
-            _ if matches!(expr.operator.lexeme.as_str(), "==" | "!=" | "<" | ">" | "<=" | ">=") => {
-                Ok(ResolvedType::Bool)
             }
             // Invalid operation
             _ => Err(CompileError::Generic(format!(

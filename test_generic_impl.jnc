@@ -1,0 +1,27 @@
+// Test generic methods in impl blocks
+
+struct Container {
+    value: int,
+}
+
+impl Container {
+    // Generic method - should parse now!
+    pub fn get<T>(self) -> T {
+        return self.value as T;
+    }
+
+    // Method with generic parameter
+    pub fn set<T>(mut self, val: T) {
+        // Just a test, doesn't need to work perfectly
+        return;
+    }
+
+    // Multiple type parameters
+    pub fn pair<A, B>(first: A, second: B) -> A {
+        return first;
+    }
+}
+
+fn main() {
+    println!("Generic impl methods parsed successfully!");
+}

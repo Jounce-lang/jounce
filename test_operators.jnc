@@ -1,0 +1,37 @@
+// Test operator type checking
+
+fn main() {
+    // Integer operations
+    let a: int = 10;
+    let b: int = 20;
+    let sum: int = a + b;
+    let diff: int = a - b;
+    let product: int = a * b;
+    let quotient: int = a / b;
+    let remainder: int = a % b;
+
+    // Float operations
+    let x: float = 3.14;
+    let y: float = 2.0;
+    let fsum: float = x + y;
+    let fdiff: float = x - y;
+    let fprod: float = x * y;
+    let fquot: float = x / y;
+
+    // Mixed numeric operations (should work due to numeric compatibility)
+    let mixed1 = a + x;
+    let mixed2 = x * b;
+
+    // Comparison operators
+    let eq: bool = a == b;
+    let ne: bool = a != b;
+    let lt: bool = a < b;
+    let gt: bool = a > b;
+    let le: bool = a <= b;
+    let ge: bool = a >= b;
+
+    // Logical operators
+    let and_op: bool = eq && ne;
+    let or_op: bool = eq || ne;
+    let not_op: bool = !eq;
+}

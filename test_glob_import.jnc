@@ -1,0 +1,15 @@
+// Test: Glob imports should PARSE correctly with use foo::*;
+// We're just testing the parser accepts the syntax
+
+// This will fail to resolve since foo doesn't exist, but parsing should succeed
+// use foo::*;
+
+// Let's use a real package that exists
+use jounce_utils::*;
+
+component App() {
+    return <div>
+        <h1>Glob Import Parser Test</h1>
+        <p>If this parses successfully, glob imports work!</p>
+    </div>;
+}
