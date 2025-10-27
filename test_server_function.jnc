@@ -1,0 +1,44 @@
+// Test server function RPC communication
+
+server fn greet(name: string) -> string {
+    return "Hello from server, " + name + "!";
+}
+
+server fn add(a: int, b: int) -> int {
+    return a + b;
+}
+
+component GreetingApp() {
+    let message = signal("");
+    let sum = signal(0);
+
+    let fetchGreeting = () => {
+        greet("Alice").then(|result| {
+            message.value = result;
+        });
+    };
+
+    let calculateSum = () => {
+        add(10, 20).then(|result| {
+            sum.value = result;
+        });
+    };
+
+    <div>
+        <h1>Server Function Test</h1>
+
+        <div>
+            <button onClick={fetchGreeting}>Call greet() server function</button>
+            <p>Response: {message.value}</p>
+        </div>
+
+        <div>
+            <button onClick={calculateSum}>Call add() server function</button>
+            <p>Sum: {sum.value}</p>
+        </div>
+    </div>
+}
+
+fn main() {
+    let app = <GreetingApp />;
+}

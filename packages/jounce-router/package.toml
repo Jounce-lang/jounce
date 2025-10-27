@@ -1,0 +1,8 @@
+[package]
+name = "jounce-router"
+version = "0.1.0"
+description = "Client-side routing with browser history API"
+authors = ["Jounce Team"]
+license = "MIT"
+
+[dependencies]
