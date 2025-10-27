@@ -410,6 +410,65 @@ function signal(initialValue) {
 }
 
 /**
+ * Create a persistent signal that syncs with localStorage
+ *
+ * The signal will automatically:
+ * - Load initial value from localStorage (if exists)
+ * - Save to localStorage on every update
+ * - Handle JSON serialization/deserialization
+ *
+ * @param {string} key - localStorage key
+ * @param {*} defaultValue - Default value if nothing in localStorage
+ * @returns {Signal} A new signal instance with localStorage persistence
+ *
+ * @example
+ * const count = persistentSignal('counter', 0);
+ * count.value = 5;  // Saves to localStorage['counter']
+ * // On page reload: count.value === 5
+ */
+function persistentSignal(key, defaultValue) {
+    // Try to load from localStorage
+    let initialValue = defaultValue;
+    if (typeof localStorage !== 'undefined') {
+        try {
+            const stored = localStorage.getItem(key);
+            if (stored !== null) {
+                initialValue = JSON.parse(stored);
+            }
+        } catch (e) {
+            console.warn(`Failed to load persistent signal '${key}':`, e);
+        }
+    }
+
+    // Create regular signal with loaded/default value
+    const sig = new Signal(initialValue);
+
+    // Wrap the setter to save to localStorage
+    const originalSet = Object.getOwnPropertyDescriptor(Signal.prototype, 'value').set;
+    Object.defineProperty(sig, 'value', {
+        get() {
+            // Use original getter
+            return Object.getOwnPropertyDescriptor(Signal.prototype, 'value').get.call(this);
+        },
+        set(newValue) {
+            // Call original setter
+            originalSet.call(this, newValue);
+
+            // Save to localStorage after update
+            if (typeof localStorage !== 'undefined') {
+                try {
+                    localStorage.setItem(key, JSON.stringify(newValue));
+                } catch (e) {
+                    console.warn(`Failed to save persistent signal '${key}':`, e);
+                }
+            }
+        }
+    });
+
+    return sig;
+}
+
+/**
  * Create a computed value from a computation function
  *
  * @param {Function} computation - Zero-argument function that returns a value
@@ -465,6 +524,7 @@ function getDependencyCount(observer) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         signal,
+        persistentSignal,
         computed,
         effect,
         batch,
@@ -483,6 +543,7 @@ if (typeof module !== 'undefined' && module.exports) {
 // ES Module
 if (typeof exports !== 'undefined') {
     exports.signal = signal;
+    exports.persistentSignal = persistentSignal;
     exports.computed = computed;
     exports.effect = effect;
     exports.batch = batch;
@@ -493,6 +554,7 @@ if (typeof exports !== 'undefined') {
 if (typeof window !== 'undefined') {
     window.JounceReactivity = {
         signal,
+        persistentSignal,
         computed,
         effect,
         batch,
@@ -501,4 +563,4 @@ if (typeof window !== 'undefined') {
 }
 
 // ES6 exports for browser modules
-export { signal, computed, effect, batch, untrack };
+export { signal, persistentSignal, computed, effect, batch, untrack };
