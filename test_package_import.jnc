@@ -1,0 +1,7 @@
+// Test file to check if package imports work
+
+use jounce::test::{get_message, get_number, check_enabled};
+
+fn main() {
+    println!("Testing package imports!");
+}
