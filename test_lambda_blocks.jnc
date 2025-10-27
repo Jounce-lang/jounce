@@ -1,0 +1,22 @@
+// Test lambda block bodies in JSX attributes
+
+component Counter() {
+    return <div>
+        <h1>Test Lambda Block Bodies</h1>
+
+        <button onClick={() => {
+            let x = 1;
+            let y = 2;
+            console.log(x + y);
+        }}>Test Block Body</button>
+
+        <button onClick={(e) => {
+            console.log("Event:", e);
+            alert("Multi-statement block!");
+        }}>Test With Param</button>
+
+        <button onClick={() => console.log("Expression body still works")}>Test Expression Body</button>
+    </div>;
+}
+
+fn main() {}

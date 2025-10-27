@@ -1,0 +1,33 @@
+// Test compound assignment operators
+
+component TestCompoundAssignment() {
+    return <div>
+        <h1>Test Compound Assignment Operators</h1>
+
+        <button onClick={() => {
+            let x = 10;
+            x += 5;  // Should be 15
+            console.log("x after x += 5:", x);
+        }}>Test +=</button>
+
+        <button onClick={() => {
+            let y = 10;
+            y -= 3;  // Should be 7
+            console.log("y after y -= 3:", y);
+        }}>Test -=</button>
+
+        <button onClick={() => {
+            let a = 5;
+            a *= 2;  // Should be 10
+            console.log("a after a *= 2:", a);
+        }}>Test *=</button>
+
+        <button onClick={() => {
+            let b = 20;
+            b /= 4;  // Should be 5
+            console.log("b after b /= 4:", b);
+        }}>Test /=</button>
+    </div>;
+}
+
+fn main() {}

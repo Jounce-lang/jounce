@@ -96,6 +96,7 @@ impl Lexer {
         if self.css_mode {
             self.skip_whitespace();
             let start_col = self.column;
+            let start_pos = self.position;
 
             // Handle CSS-specific tokens
             return match self.ch {
@@ -103,7 +104,7 @@ impl Lexer {
                     self.css_depth += 1;
                     self.in_media_query = false; // Exit media query mode when { is found
                     self.read_char();
-                    Token::new(TokenKind::LBrace, "{".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::LBrace, "{".to_string(), self.line, start_col, start_pos)
                 }
                 '}' => {
                     if self.css_depth > 0 {
@@ -113,27 +114,27 @@ impl Lexer {
                         self.css_mode = false;
                     }
                     self.read_char();
-                    Token::new(TokenKind::RBrace, "}".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::RBrace, "}".to_string(), self.line, start_col, start_pos)
                 }
                 ';' => {
                     self.read_char();
-                    Token::new(TokenKind::Semicolon, ";".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::Semicolon, ";".to_string(), self.line, start_col, start_pos)
                 }
                 ':' => {
                     self.read_char();
-                    Token::new(TokenKind::Colon, ":".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::Colon, ":".to_string(), self.line, start_col, start_pos)
                 }
                 '(' => {
                     self.css_paren_depth += 1;
                     self.read_char();
-                    Token::new(TokenKind::LParen, "(".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::LParen, "(".to_string(), self.line, start_col, start_pos)
                 }
                 ')' => {
                     if self.css_paren_depth > 0 {
                         self.css_paren_depth -= 1;
                     }
                     self.read_char();
-                    Token::new(TokenKind::RParen, ")".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::RParen, ")".to_string(), self.line, start_col, start_pos)
                 }
                 '.' | '#' | '&' => {
                     // CSS selector (including & for nesting)
@@ -148,25 +149,25 @@ impl Lexer {
                     match ident_token.lexeme.as_str() {
                         "media" => {
                             self.in_media_query = true; // Enter media query mode
-                            return Token::new(TokenKind::CssMedia, "@media".to_string(), self.line, start_col);
+                            return Token::with_position(TokenKind::CssMedia, "@media".to_string(), self.line, start_col, start_pos);
                         }
                         "container" => {
                             self.in_media_query = true; // Use same flag (similar parsing logic)
-                            return Token::new(TokenKind::CssContainer, "@container".to_string(), self.line, start_col);
+                            return Token::with_position(TokenKind::CssContainer, "@container".to_string(), self.line, start_col, start_pos);
                         }
                         "keyframes" => {
-                            return Token::new(TokenKind::CssKeyframes, "@keyframes".to_string(), self.line, start_col);
+                            return Token::with_position(TokenKind::CssKeyframes, "@keyframes".to_string(), self.line, start_col, start_pos);
                         }
                         _ => {
                             // Not a recognized @-rule, reset
                             self.position = pos;
                             self.ch = '@';
                             self.read_char();
-                            Token::new(TokenKind::At, "@".to_string(), self.line, start_col)
+                            Token::with_position(TokenKind::At, "@".to_string(), self.line, start_col, start_pos)
                         }
                     }
                 }
-                '\0' => Token::new(TokenKind::Eof, "".to_string(), self.line, start_col),
+                '\0' => Token::with_position(TokenKind::Eof, "".to_string(), self.line, start_col, start_pos),
                 _ => {
                     if self.ch.is_alphabetic() || self.ch == '-' {
                         // When in media query mode or inside parentheses, read as CSS property (handles hyphens like min-width, and keywords like 'and')
@@ -220,12 +221,12 @@ impl Lexer {
                         }
 
                         // Convert to CSS value
-                        Token::new(TokenKind::CssValue(value.clone()), value, num_token.line, num_token.column)
+                        Token::with_position(TokenKind::CssValue(value.clone()), value, num_token.line, num_token.column, num_token.position)
                     } else {
                         // Unknown character
                         let ch = self.ch;
                         self.read_char();
-                        Token::new(TokenKind::Illegal(ch), ch.to_string(), self.line, start_col)
+                        Token::with_position(TokenKind::Illegal(ch), ch.to_string(), self.line, start_col, start_pos)
                     }
                 }
             };
@@ -233,40 +234,41 @@ impl Lexer {
 
         self.skip_whitespace();
         let start_col = self.column;
+        let start_pos = self.position;
         let token = match self.ch {
            ':' => {
                 if self.peek() == ':' {
                     self.read_char();
                     self.read_char();
-                    return Token::new(TokenKind::DoubleColon, "::".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::DoubleColon, "::".to_string(), self.line, start_col, start_pos);
                 } else {
-                    Token::new(TokenKind::Colon, ":".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::Colon, ":".to_string(), self.line, start_col, start_pos)
                 }
            }
             '=' => {
                 if self.peek() == '>' {
                     self.read_char();
                     self.read_char();
-                    return Token::new(TokenKind::FatArrow, "=>".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::FatArrow, "=>".to_string(), self.line, start_col, start_pos);
                 } else if self.peek() == '=' {
                     self.read_char();
                     self.read_char();
-                    return Token::new(TokenKind::Eq, "==".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::Eq, "==".to_string(), self.line, start_col, start_pos);
                 } else {
-                    Token::new(TokenKind::Assign, "=".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::Assign, "=".to_string(), self.line, start_col, start_pos)
                 }
             }
-            ';' => Token::new(TokenKind::Semicolon, ";".to_string(), self.line, start_col),
+            ';' => Token::with_position(TokenKind::Semicolon, ";".to_string(), self.line, start_col, start_pos),
             '|' => {
                 if self.peek() == '|' {
                     self.read_char();
                     self.read_char();
-                    return Token::new(TokenKind::PipePipe, "||".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::PipePipe, "||".to_string(), self.line, start_col, start_pos);
                 } else {
-                    Token::new(TokenKind::Pipe, "|".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::Pipe, "|".to_string(), self.line, start_col, start_pos)
                 }
             }
-            ',' => Token::new(TokenKind::Comma, ",".to_string(), self.line, start_col),
+            ',' => Token::with_position(TokenKind::Comma, ",".to_string(), self.line, start_col, start_pos),
             '.' => {
                 // Check for .., ..=, or ...
                 if self.peek() == '.' {
@@ -275,44 +277,52 @@ impl Lexer {
                     // Check for ... (spread operator)
                     if self.ch == '.' {
                         self.read_char();
-                        return Token::new(TokenKind::DotDotDot, "...".to_string(), self.line, start_col);
+                        return Token::with_position(TokenKind::DotDotDot, "...".to_string(), self.line, start_col, start_pos);
                     }
                     // Check for ..=
                     if self.ch == '=' {
                         self.read_char();
-                        return Token::new(TokenKind::DotDotEq, "..=".to_string(), self.line, start_col);
+                        return Token::with_position(TokenKind::DotDotEq, "..=".to_string(), self.line, start_col, start_pos);
                     }
                     // Just ..
-                    return Token::new(TokenKind::DotDot, "..".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::DotDot, "..".to_string(), self.line, start_col, start_pos);
                 } else {
-                    Token::new(TokenKind::Dot, ".".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::Dot, ".".to_string(), self.line, start_col, start_pos)
                 }
             }
-            '+' => Token::new(TokenKind::Plus, "+".to_string(), self.line, start_col),
-            '*' => Token::new(TokenKind::Star, "*".to_string(), self.line, start_col),
-            '%' => Token::new(TokenKind::Percent, "%".to_string(), self.line, start_col),
+            '+' => {
+                if self.peek() == '+' {
+                    self.read_char();
+                    self.read_char();
+                    return Token::with_position(TokenKind::PlusPlus, "++".to_string(), self.line, start_col, start_pos);
+                } else {
+                    Token::with_position(TokenKind::Plus, "+".to_string(), self.line, start_col, start_pos)
+                }
+            }
+            '*' => Token::with_position(TokenKind::Star, "*".to_string(), self.line, start_col, start_pos),
+            '%' => Token::with_position(TokenKind::Percent, "%".to_string(), self.line, start_col, start_pos),
             '&' => {
                 if self.peek() == '&' {
                     self.read_char();
                     self.read_char();
-                    return Token::new(TokenKind::AmpAmp, "&&".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::AmpAmp, "&&".to_string(), self.line, start_col, start_pos);
                 } else {
-                    Token::new(TokenKind::Ampersand, "&".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::Ampersand, "&".to_string(), self.line, start_col, start_pos)
                 }
             }
-            '?' => Token::new(TokenKind::Question, "?".to_string(), self.line, start_col),
-            '^' => Token::new(TokenKind::Caret, "^".to_string(), self.line, start_col),
+            '?' => Token::with_position(TokenKind::Question, "?".to_string(), self.line, start_col, start_pos),
+            '^' => Token::with_position(TokenKind::Caret, "^".to_string(), self.line, start_col, start_pos),
             '!' => {
                 if self.peek() == '=' {
                     self.read_char();
                     self.read_char();
-                    return Token::new(TokenKind::NotEq, "!=".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::NotEq, "!=".to_string(), self.line, start_col, start_pos);
                 } else {
-                    Token::new(TokenKind::Bang, "!".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::Bang, "!".to_string(), self.line, start_col, start_pos)
                 }
             }
-            '(' => Token::new(TokenKind::LParen, "(".to_string(), self.line, start_col),
-            ')' => Token::new(TokenKind::RParen, ")".to_string(), self.line, start_col),
+            '(' => Token::with_position(TokenKind::LParen, "(".to_string(), self.line, start_col, start_pos),
+            ')' => Token::with_position(TokenKind::RParen, ")".to_string(), self.line, start_col, start_pos),
             '{' => {
                 // Track brace depth for JSX expressions
                 if self.jsx_mode {
@@ -321,12 +331,12 @@ impl Lexer {
                     // Only use JsxOpenBrace for the first level (opening a JSX expression)
                     // Nested braces should be regular LBrace tokens (for blocks, match, etc.)
                     if self.brace_depth == baseline + 1 {
-                        Token::new(TokenKind::JsxOpenBrace, "{".to_string(), self.line, start_col)
+                        Token::with_position(TokenKind::JsxOpenBrace, "{".to_string(), self.line, start_col, start_pos)
                     } else {
-                        Token::new(TokenKind::LBrace, "{".to_string(), self.line, start_col)
+                        Token::with_position(TokenKind::LBrace, "{".to_string(), self.line, start_col, start_pos)
                     }
                 } else {
-                    Token::new(TokenKind::LBrace, "{".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::LBrace, "{".to_string(), self.line, start_col, start_pos)
                 }
             }
             '}' => {
@@ -339,44 +349,44 @@ impl Lexer {
                     let token = if is_jsx_close {
                         // Set flag to allow delimiters as JSX text after closing a JSX expression
                         self.just_closed_jsx_expr = true;
-                        Token::new(TokenKind::JsxCloseBrace, "}".to_string(), self.line, start_col)
+                        Token::with_position(TokenKind::JsxCloseBrace, "}".to_string(), self.line, start_col, start_pos)
                     } else {
-                        Token::new(TokenKind::RBrace, "}".to_string(), self.line, start_col)
+                        Token::with_position(TokenKind::RBrace, "}".to_string(), self.line, start_col, start_pos)
                     };
                     self.brace_depth -= 1;
                     token
                 } else {
-                    Token::new(TokenKind::RBrace, "}".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::RBrace, "}".to_string(), self.line, start_col, start_pos)
                 }
             }
-            '[' => Token::new(TokenKind::LBracket, "[".to_string(), self.line, start_col),
-            ']' => Token::new(TokenKind::RBracket, "]".to_string(), self.line, start_col),
+            '[' => Token::with_position(TokenKind::LBracket, "[".to_string(), self.line, start_col, start_pos),
+            ']' => Token::with_position(TokenKind::RBracket, "]".to_string(), self.line, start_col, start_pos),
             '<' => {
                 if self.peek() == '=' {
                     self.read_char();
                     self.read_char();
-                    return Token::new(TokenKind::LtEq, "<=".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::LtEq, "<=".to_string(), self.line, start_col, start_pos);
                 } else if self.peek() == '<' {
                     self.read_char();
                     self.read_char();
-                    return Token::new(TokenKind::LeftShift, "<<".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::LeftShift, "<<".to_string(), self.line, start_col, start_pos);
                 } else {
                     // Check if this might be JSX: < followed by an alphabetic character or uppercase
                     // This handles <div>, <Component>, etc.
                     // Always set jsx_in_tag when we see <, as the parser will enable JSX mode if needed
                     self.jsx_in_tag = true;
-                    Token::new(TokenKind::LAngle, "<".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::LAngle, "<".to_string(), self.line, start_col, start_pos)
                 }
             }
             '>' => {
                 if self.peek() == '=' {
                     self.read_char();
                     self.read_char();
-                    return Token::new(TokenKind::GtEq, ">=".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::GtEq, ">=".to_string(), self.line, start_col, start_pos);
                 } else if self.peek() == '>' {
                     self.read_char();
                     self.read_char();
-                    return Token::new(TokenKind::RightShift, ">>".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::RightShift, ">>".to_string(), self.line, start_col, start_pos);
                 } else {
                     // Only mark that we're exiting a tag if we're at the baseline brace depth
                     // This prevents `>` comparison operators inside attribute expressions from incorrectly
@@ -385,7 +395,7 @@ impl Lexer {
                     if self.brace_depth == baseline {
                         self.jsx_in_tag = false;
                     }
-                    Token::new(TokenKind::RAngle, ">".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::RAngle, ">".to_string(), self.line, start_col, start_pos)
                 }
             }
             '/' => {
@@ -397,18 +407,22 @@ impl Lexer {
                     // via exit_jsx_mode() based on whether this element entered JSX mode
                     // Mark that we're exiting a tag
                     self.jsx_in_tag = false;
-                    return Token::new(TokenKind::JsxSelfClose, "/>".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::JsxSelfClose, "/>".to_string(), self.line, start_col, start_pos);
                 } else {
-                    Token::new(TokenKind::Slash, "/".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::Slash, "/".to_string(), self.line, start_col, start_pos)
                 }
             }
             '-' => {
                 if self.peek() == '>' {
                     self.read_char();
                     self.read_char();
-                    return Token::new(TokenKind::Arrow, "->".to_string(), self.line, start_col);
+                    return Token::with_position(TokenKind::Arrow, "->".to_string(), self.line, start_col, start_pos);
+                } else if self.peek() == '-' {
+                    self.read_char();
+                    self.read_char();
+                    return Token::with_position(TokenKind::MinusMinus, "--".to_string(), self.line, start_col, start_pos);
                 } else {
-                    Token::new(TokenKind::Minus, "-".to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::Minus, "-".to_string(), self.line, start_col, start_pos)
                 }
             }
             '@' => {
@@ -420,13 +434,13 @@ impl Lexer {
 
                     match ident_token.lexeme.as_str() {
                         "media" => {
-                            return Token::new(TokenKind::CssMedia, "@media".to_string(), self.line, start_col);
+                            return Token::with_position(TokenKind::CssMedia, "@media".to_string(), self.line, start_col, start_pos);
                         }
                         "container" => {
-                            return Token::new(TokenKind::CssContainer, "@container".to_string(), self.line, start_col);
+                            return Token::with_position(TokenKind::CssContainer, "@container".to_string(), self.line, start_col, start_pos);
                         }
                         "keyframes" => {
-                            return Token::new(TokenKind::CssKeyframes, "@keyframes".to_string(), self.line, start_col);
+                            return Token::with_position(TokenKind::CssKeyframes, "@keyframes".to_string(), self.line, start_col, start_pos);
                         }
                         _ => {
                             // Not a recognized @-rule, reset
@@ -435,9 +449,9 @@ impl Lexer {
                         }
                     }
                 }
-                Token::new(TokenKind::At, "@".to_string(), self.line, start_col)
+                Token::with_position(TokenKind::At, "@".to_string(), self.line, start_col, start_pos)
             }
-            '\0' => Token::new(TokenKind::Eof, "".to_string(), self.line, start_col),
+            '\0' => Token::with_position(TokenKind::Eof, "".to_string(), self.line, start_col, start_pos),
             '"' => return self.read_string(),
             '\'' => {
                 // Check if this is a lifetime (e.g., 'a, 'static) or character literal (e.g., 'x', '.')
@@ -478,7 +492,7 @@ impl Lexer {
                 } else if self.ch.is_ascii_digit() {
                     return self.read_number();
                 } else {
-                    Token::new(TokenKind::Illegal(self.ch), self.ch.to_string(), self.line, start_col)
+                    Token::with_position(TokenKind::Illegal(self.ch), self.ch.to_string(), self.line, start_col, start_pos)
                 }
             }
         };
@@ -547,7 +561,7 @@ impl Lexer {
         // Check for css! macro
         if literal == "css" && self.ch == '!' {
             self.read_char(); // consume !
-            return Token::new(TokenKind::CssMacro, "css!".to_string(), self.line, start_col);
+            return Token::with_position(TokenKind::CssMacro, "css!".to_string(), self.line, start_col, start_pos);
         }
 
         // Check for boolean literals
@@ -557,7 +571,7 @@ impl Lexer {
             _ => KEYWORDS.get(literal.as_str()).cloned().unwrap_or(TokenKind::Identifier),
         };
 
-        Token::new(kind, literal, self.line, start_col)
+        Token::with_position(kind, literal, self.line, start_col, start_pos)
     }
 
     fn read_number(&mut self) -> Token {
@@ -640,29 +654,30 @@ impl Lexer {
         let literal: String = self.input[start_pos..self.position].iter().collect();
 
         if is_float {
-            Token::new(TokenKind::Float(literal.clone()), literal, self.line, start_col)
+            Token::with_position(TokenKind::Float(literal.clone()), literal, self.line, start_col, start_pos)
         } else if is_hex {
             // Parse hexadecimal (strip "0x" prefix)
             let hex_str = &literal[2..]; // Remove "0x" prefix
             let value = i64::from_str_radix(hex_str, 16).unwrap_or(0);
-            Token::new(TokenKind::Integer(value), literal, self.line, start_col)
+            Token::with_position(TokenKind::Integer(value), literal, self.line, start_col, start_pos)
         } else if is_octal {
             // Parse octal (strip "0o" prefix)
             let octal_str = &literal[2..]; // Remove "0o" prefix
             let value = i64::from_str_radix(octal_str, 8).unwrap_or(0);
-            Token::new(TokenKind::Integer(value), literal, self.line, start_col)
+            Token::with_position(TokenKind::Integer(value), literal, self.line, start_col, start_pos)
         } else if is_binary {
             // Parse binary (strip "0b" prefix)
             let binary_str = &literal[2..]; // Remove "0b" prefix
             let value = i64::from_str_radix(binary_str, 2).unwrap_or(0);
-            Token::new(TokenKind::Integer(value), literal, self.line, start_col)
+            Token::with_position(TokenKind::Integer(value), literal, self.line, start_col, start_pos)
         } else {
             let value = literal.parse().unwrap_or(0);
-            Token::new(TokenKind::Integer(value), literal, self.line, start_col)
+            Token::with_position(TokenKind::Integer(value), literal, self.line, start_col, start_pos)
         }
     }
     
     fn read_string(&mut self) -> Token {
+        let start_pos = self.position;
         let start_col = self.column;
         self.read_char(); // Consume opening '"'
 
@@ -693,12 +708,13 @@ impl Lexer {
             }
         }
 
-        let token = Token::new(TokenKind::String(result.clone()), result, self.line, start_col);
+        let token = Token::with_position(TokenKind::String(result.clone()), result, self.line, start_col, start_pos);
         self.read_char(); // Consume closing '"'
         token
     }
 
     fn read_char_literal(&mut self) -> Token {
+        let start_pos = self.position;
         let start_col = self.column;
         self.read_char(); // Consume opening '
 
@@ -722,12 +738,12 @@ impl Lexer {
 
         if self.ch != '\'' {
             // Error: unterminated character literal
-            return Token::new(TokenKind::Illegal(self.ch), format!("'{}", ch), self.line, start_col);
+            return Token::with_position(TokenKind::Illegal(self.ch), format!("'{}", ch), self.line, start_col, start_pos);
         }
 
         let literal = format!("'{}'", ch);
         self.read_char(); // Consume closing '
-        Token::new(TokenKind::Char(ch), literal, self.line, start_col)
+        Token::with_position(TokenKind::Char(ch), literal, self.line, start_col, start_pos)
     }
 
     fn read_lifetime(&mut self) -> Token {
@@ -745,10 +761,11 @@ impl Lexer {
         // Extract the lifetime name without the leading quote
         let lifetime_name = literal[1..].to_string();
 
-        Token::new(TokenKind::Lifetime(lifetime_name.clone()), literal, self.line, start_col)
+        Token::with_position(TokenKind::Lifetime(lifetime_name.clone()), literal, self.line, start_col, start_pos)
     }
 
     fn read_jsx_text(&mut self) -> Token {
+        let start_pos = self.position;
         let start_col = self.column;
         let mut result = String::new();
 
@@ -761,7 +778,7 @@ impl Lexer {
         // Trim the result to remove extra whitespace (but preserve intentional spacing)
         let trimmed = result.trim().to_string();
 
-        Token::new(TokenKind::JsxText(trimmed.clone()), trimmed, self.line, start_col)
+        Token::with_position(TokenKind::JsxText(trimmed.clone()), trimmed, self.line, start_col, start_pos)
     }
 
     // Public methods for parser to manage JSX mode
@@ -847,7 +864,7 @@ impl Lexer {
         }
 
         let selector: String = self.input[start_pos..end_pos].iter().collect();
-        Token::new(TokenKind::CssSelector(selector.clone()), selector, self.line, start_col)
+        Token::with_position(TokenKind::CssSelector(selector.clone()), selector, self.line, start_col, start_pos)
     }
 
     // Read a CSS property name (background, padding, etc.)
@@ -861,7 +878,7 @@ impl Lexer {
         }
 
         let property: String = self.input[start_pos..self.position].iter().collect();
-        Token::new(TokenKind::CssProperty(property.clone()), property, self.line, start_col)
+        Token::with_position(TokenKind::CssProperty(property.clone()), property, self.line, start_col, start_pos)
     }
 
     // Read a CSS value (blue, 12px, "Arial", etc.)
@@ -881,7 +898,7 @@ impl Lexer {
 
         let value: String = self.input[start_pos..self.position].iter().collect();
         let trimmed = value.trim().to_string();
-        Token::new(TokenKind::CssValue(trimmed.clone()), trimmed, self.line, start_col)
+        Token::with_position(TokenKind::CssValue(trimmed.clone()), trimmed, self.line, start_col, start_pos)
     }
 }
 

@@ -1,0 +1,22 @@
+<script>
+  const count = signal(0);
+  
+  effect(() => {
+    const el = document.getElementById('count');
+    if (el) el.textContent = count.value;
+  });
+  
+  window.addEventListener('DOMContentLoaded', () => {
+    const root = document.getElementById('app');
+    if (root) mountComponent(Counter, root);
+  });
+</script>
+
+component Counter() {
+    return <div>
+        <h1>Counter: <span id="count">0</span></h1>
+        <button onClick={(e) => count.value + 1}>+</button>
+    </div>;
+}
+
+fn main() {}
