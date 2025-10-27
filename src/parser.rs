@@ -67,13 +67,38 @@ pub struct Parser<'a> {
     lexer: &'a mut Lexer,
     current: Token,
     peek: Token,
+    source: &'a str,  // Original source text for raw extraction
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(lexer: &'a mut Lexer) -> Self {
+    pub fn new(lexer: &'a mut Lexer, source: &'a str) -> Self {
         let current = lexer.next_token();
         let peek = lexer.next_token();
-        Self { lexer, current, peek }
+        Self { lexer, current, peek, source }
+    }
+
+    /// Generate user-friendly error message for unsupported syntax
+    fn friendly_unsupported_error(&self, token_kind: &TokenKind) -> String {
+        match token_kind {
+            TokenKind::Assign => "Unexpected '=' here. Did you mean to use '==' for comparison? Or perhaps compound assignment like '+=' (not yet supported)?".to_string(),
+            TokenKind::Slash => "Division operator '/' must be used in an expression context (e.g., a / b)".to_string(),
+            TokenKind::Star => "Multiplication operator '*' must be used in an expression context (e.g., a * b), or as a dereference (*ptr)".to_string(),
+            TokenKind::Percent => "Modulo operator '%' must be used in an expression context (e.g., a % b)".to_string(),
+            TokenKind::Semicolon => "Unexpected semicolon. Statements in Jounce typically don't require semicolons at the start.".to_string(),
+            TokenKind::Comma => "Unexpected comma here. Commas are used to separate items in lists, not to start expressions.".to_string(),
+            TokenKind::RBrace => "Unexpected closing brace '}'. Did you have an extra brace, or forget an opening brace '{'?".to_string(),
+            TokenKind::RParen => "Unexpected closing parenthesis ')'. Did you have an extra parenthesis, or forget an opening '('?".to_string(),
+            TokenKind::RBracket => "Unexpected closing bracket ']'. Did you have an extra bracket, or forget an opening '['?".to_string(),
+            TokenKind::Colon => "Unexpected colon ':'. Colons are used for type annotations (e.g., x: i32) or in object literals.".to_string(),
+            TokenKind::Arrow => "Unexpected '->'. Arrow is used for function return types (e.g., fn foo() -> i32) or in match arms.".to_string(),
+            TokenKind::Eq => "Comparison operator '==' must be used in an expression context (e.g., if x == y)".to_string(),
+            TokenKind::NotEq => "Comparison operator '!=' must be used in an expression context (e.g., if x != y)".to_string(),
+            TokenKind::LtEq | TokenKind::GtEq | TokenKind::LAngle | TokenKind::RAngle => {
+                "Comparison operators (<, >, <=, >=) must be used in expression context (e.g., if x < y)".to_string()
+            },
+            TokenKind::Eof => "Unexpected end of file. Did you forget to close a brace, parenthesis, or bracket?".to_string(),
+            _ => format!("Unexpected token {:?}. This token cannot start an expression.", token_kind),
+        }
     }
 
     pub fn parse_program(&mut self) -> Result<Program, CompileError> {
@@ -795,6 +820,7 @@ impl<'a> Parser<'a> {
                     lexeme: ">".to_string(),
                     line: self.current.line,
                     column: self.current.column,
+                    position: self.current.position + 1, // Second > in >>
                 };
             } else {
                 self.expect_and_consume(&TokenKind::RAngle)?;
@@ -1130,8 +1156,8 @@ impl<'a> Parser<'a> {
             TokenKind::String(val) => { self.next_token(); Expression::StringLiteral(val.clone()) },
             TokenKind::Char(val) => { self.next_token(); Expression::CharLiteral(*val) },
             TokenKind::Bool(val) => { self.next_token(); Expression::BoolLiteral(*val) },
-            TokenKind::Minus | TokenKind::Bang => {
-                // Parse prefix expressions: -x or !x
+            TokenKind::Minus | TokenKind::Bang | TokenKind::PlusPlus | TokenKind::MinusMinus => {
+                // Parse prefix expressions: -x or !x or ++x or --x
                 let operator = token.clone();
                 self.next_token();
                 let right = self.parse_expression(Precedence::Product)?; // High precedence for prefix ops
@@ -1284,7 +1310,7 @@ impl<'a> Parser<'a> {
                 }
             },
             TokenKind::CssMacro => self.parse_css_macro()?,
-            _ => return Err(self.error(&format!("No prefix parse function for {:?}", token.kind))),
+            _ => return Err(self.error(&self.friendly_unsupported_error(&token.kind))),
         };
 
         // Step 2: Apply postfix operations (function call, field access, namespace resolution, array indexing, try operator)
@@ -1421,6 +1447,15 @@ impl<'a> Parser<'a> {
                         return Err(self.error("Macro invocation must follow an identifier"));
                     }
                 }
+                TokenKind::PlusPlus | TokenKind::MinusMinus => {
+                    // Parse postfix expressions: x++ or x--
+                    let operator = self.current_token().clone();
+                    self.next_token();
+                    expr = Expression::Postfix(PostfixExpression {
+                        left: Box::new(expr),
+                        operator,
+                    });
+                }
                 _ => break,
             }
         }
@@ -1479,7 +1514,7 @@ impl<'a> Parser<'a> {
             // Empty parameter list for lambda: () =>
             self.expect_and_consume(&TokenKind::RParen)?;
             if self.consume_if_matches(&TokenKind::FatArrow) {
-                let body = self.parse_expression(Precedence::Lowest)?;
+                let body = self.parse_lambda_body()?;
                 return Ok(Expression::Lambda(LambdaExpression {
                     parameters: vec![],
                     return_type: None,
@@ -1524,7 +1559,7 @@ impl<'a> Parser<'a> {
                 };
 
                 self.expect_and_consume(&TokenKind::FatArrow)?;
-                let body = self.parse_expression(Precedence::Lowest)?;
+                let body = self.parse_lambda_body()?;
 
                 return Ok(Expression::Lambda(LambdaExpression {
                     parameters,
@@ -1572,7 +1607,7 @@ impl<'a> Parser<'a> {
                     }
                 }
 
-                let body = self.parse_expression(Precedence::Lowest)?;
+                let body = self.parse_lambda_body()?;
                 return Ok(Expression::Lambda(LambdaExpression {
                     parameters,
                     return_type: None,
@@ -1591,7 +1626,7 @@ impl<'a> Parser<'a> {
         // Check if this is actually a lambda with single param: (x) => body
         if self.consume_if_matches(&TokenKind::FatArrow) {
             if let Expression::Identifier(param_name) = first_expr {
-                let body = self.parse_expression(Precedence::Lowest)?;
+                let body = self.parse_lambda_body()?;
                 return Ok(Expression::Lambda(LambdaExpression {
                     parameters: vec![LambdaParameter { name: param_name, type_annotation: None }],
                     return_type: None,
@@ -1636,13 +1671,30 @@ impl<'a> Parser<'a> {
         // Check for => or just use the next expression
         self.consume_if_matches(&TokenKind::FatArrow);
 
-        let body = self.parse_expression(Precedence::Lowest)?;
+        let body = self.parse_lambda_body()?;
         Ok(Expression::Lambda(LambdaExpression {
             parameters,
             return_type,
             body: Box::new(body),
             captures: vec![],  // Will be analyzed later
         }))
+    }
+
+    /// Parse lambda body - either a block statement { ... } or an expression
+    fn parse_lambda_body(&mut self) -> Result<Expression, CompileError> {
+        // Check if this is a block body: () => { statements }
+        if self.current_token().kind == TokenKind::LBrace {
+            self.expect_and_consume(&TokenKind::LBrace)?;
+            let mut statements = Vec::new();
+            while self.current_token().kind != TokenKind::RBrace {
+                statements.push(self.parse_statement()?);
+            }
+            self.expect_and_consume(&TokenKind::RBrace)?;
+            Ok(Expression::Block(BlockStatement { statements }))
+        } else {
+            // Otherwise it's an expression body: () => expr
+            self.parse_expression(Precedence::Lowest)
+        }
     }
 
     fn parse_array_literal(&mut self) -> Result<Expression, CompileError> {
@@ -3221,12 +3273,16 @@ impl<'a> Parser<'a> {
         }
         self.next_token();
 
-        // Consume >
+        // Consume > and record its position (end of opening tag)
+        let open_tag_token = self.current_token().clone();
         self.expect_and_consume(&TokenKind::RAngle)?;
 
-        // Collect all tokens until we see </script>
-        let mut code = String::new();
+        // The script content starts right after the > token
+        // Position after '>' is the token's position + its lexeme length
+        let content_start = open_tag_token.position + open_tag_token.lexeme.len();
 
+        // Find the closing tag </script>
+        // Scan until we find < followed by /
         while !(self.current_token().kind == TokenKind::LAngle
                 && self.peek_token().kind == TokenKind::Slash) {
             if self.current_token().kind == TokenKind::Eof {
@@ -3236,29 +3292,18 @@ impl<'a> Parser<'a> {
                     column: self.current_token().column,
                 });
             }
-
-            // Add the lexeme with appropriate spacing
-            // Preserve exact spacing for strings and avoid extra spaces around punctuation
-            let current_kind = &self.current_token().kind;
-            let current_lexeme = &self.current_token().lexeme;
-
-            // Don't add space before these tokens
-            let no_space_before = matches!(current_kind,
-                TokenKind::Comma | TokenKind::Semicolon | TokenKind::RParen |
-                TokenKind::RBracket | TokenKind::RBrace | TokenKind::Dot);
-
-            // Don't add space if previous token was one of these
-            let prev_was_no_space_after = code.ends_with('(') || code.ends_with('[') ||
-                code.ends_with('{') || code.ends_with('.');
-
-            // Add space if needed
-            if !code.is_empty() && !code.ends_with('\n') && !no_space_before && !prev_was_no_space_after {
-                code.push(' ');
-            }
-
-            code.push_str(current_lexeme);
             self.next_token();
         }
+
+        // Record position of < in </script> (end of content)
+        let content_end = self.current_token().position;
+
+        // Extract raw JavaScript from source using byte positions
+        let raw_code = if content_end > content_start {
+            &self.source[content_start..content_end]
+        } else {
+            "" // Empty script block
+        };
 
         // Consume </script>
         self.expect_and_consume(&TokenKind::LAngle)?;
@@ -3275,7 +3320,7 @@ impl<'a> Parser<'a> {
 
         self.expect_and_consume(&TokenKind::RAngle)?;
 
-        Ok(ScriptBlock { code: code.trim().to_string() })
+        Ok(ScriptBlock { code: raw_code.to_string() })
     }
 
     /// Parse a style block:
@@ -3547,7 +3592,7 @@ mod tests {
 
     fn parse_expr(source: &str) -> Result<Expression, CompileError> {
         let mut lexer = Lexer::new(source.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, source);
         parser.parse_expression(Precedence::Lowest)
     }
 
@@ -3769,7 +3814,7 @@ mod tests {
             }
         }"#;
         let mut lexer = Lexer::new(source.to_string());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, source);
         let expr = parser.parse_expression(Precedence::Lowest);
         if let Err(e) = &expr {
             eprintln!("Parser error: {:?}", e);
@@ -3804,8 +3849,8 @@ mod tests {
                 }};
             "#, selector);
 
-            let mut lexer = Lexer::new(source);
-            let mut parser = Parser::new(&mut lexer);
+            let mut lexer = Lexer::new(source.clone());
+            let mut parser = Parser::new(&mut lexer, &source);
             let program = parser.parse_program();
             if let Err(e) = &program {
                 eprintln!("Failed to parse {} selector '{}': {:?}", selector_type, selector, e);
