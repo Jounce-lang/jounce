@@ -3398,7 +3398,7 @@ mod tests {
 
         let (_, client_js) = result.unwrap();
         assert!(client_js.contains("computed("), "Should generate computed call");
-        assert!(client_js.contains("import { signal, computed"), "Should import computed from runtime");
+        assert!(client_js.contains("import { signal, persistentSignal, computed"), "Should import computed from runtime");
     }
 
     #[test]
@@ -3440,7 +3440,7 @@ mod tests {
 
         let (_, client_js) = result.unwrap();
         assert!(client_js.contains("effect("), "Should generate effect call");
-        assert!(client_js.contains("import { signal, computed, effect"), "Should import effect from runtime");
+        assert!(client_js.contains("import { signal, persistentSignal, computed, effect"), "Should import effect from runtime");
     }
 
     #[test]
@@ -3483,7 +3483,7 @@ mod tests {
 
         let (_, client_js) = result.unwrap();
         assert!(client_js.contains("batch("), "Should generate batch call");
-        assert!(client_js.contains("import { signal, computed, effect, batch"), "Should import batch from runtime");
+        assert!(client_js.contains("import { signal, persistentSignal, computed, effect, batch"), "Should import batch from runtime");
     }
 
     #[test]
@@ -3874,7 +3874,7 @@ mod tests {
         assert!(client_js.contains("computed("), "Should create computed");
         assert!(client_js.contains("effect("), "Should create effect");
         assert!(client_js.contains("batch("), "Should create batch");
-        assert!(client_js.contains("import { signal, computed, effect, batch }"), "Should import all primitives");
+        assert!(client_js.contains("import { signal, persistentSignal, computed, effect, batch }"), "Should import all primitives");
     }
 
     // ============================================================================
