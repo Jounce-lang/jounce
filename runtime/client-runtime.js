@@ -637,6 +637,93 @@ class WebSocketClient {
     }
 }
 
+// Suspense component (Session 19)
+// Shows fallback UI while async operations are pending
+export function Suspense(props, passedChildren) {
+    const { fallback, children: propsChildren } = props || {};
+    const children = passedChildren || propsChildren || [];
+
+    const container = document.createElement('div');
+    container.className = 'suspense-boundary';
+
+    // State management for suspense
+    let isLoading = true;
+    let loadingTimeout = null;
+
+    // Render fallback initially
+    const renderFallback = () => {
+        container.innerHTML = '';
+        if (fallback instanceof Node) {
+            container.appendChild(fallback);
+        } else if (typeof fallback === 'string') {
+            container.textContent = fallback;
+        } else if (typeof fallback === 'function') {
+            const fallbackUI = fallback();
+            if (fallbackUI instanceof Node) {
+                container.appendChild(fallbackUI);
+            }
+        } else {
+            // Default loading fallback
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'suspense-fallback';
+            loadingDiv.style.cssText = 'padding: 20px; text-align: center; color: #666;';
+            loadingDiv.innerHTML = '<p>Loading...</p>';
+            container.appendChild(loadingDiv);
+        }
+    };
+
+    // Render children
+    const renderChildren = () => {
+        container.innerHTML = '';
+        const childElements = Array.isArray(children)
+            ? children.flat().filter(child => child != null)
+            : [children].filter(child => child != null);
+
+        for (const child of childElements) {
+            if (child instanceof Node) {
+                container.appendChild(child);
+            } else if (typeof child === 'string' || typeof child === 'number') {
+                container.appendChild(document.createTextNode(String(child)));
+            }
+        }
+        isLoading = false;
+    };
+
+    // Initially show fallback, then switch to children after microtask
+    // This allows async operations in onMount to complete first
+    renderFallback();
+
+    // Use a short timeout to allow onMount hooks to run and signal loading
+    loadingTimeout = setTimeout(() => {
+        renderChildren();
+    }, 0);
+
+    // Store render functions for external control
+    container.__suspense = {
+        showFallback: () => {
+            if (!isLoading) {
+                isLoading = true;
+                renderFallback();
+            }
+        },
+        showChildren: () => {
+            if (isLoading) {
+                renderChildren();
+            }
+        },
+        isLoading: () => isLoading
+    };
+
+    // Cleanup on unmount
+    container.__jounce_unmount = () => {
+        if (loadingTimeout) {
+            clearTimeout(loadingTimeout);
+        }
+    };
+
+    return container;
+}
+
 // Export for window.Jounce global
 if (typeof window !== 'undefined') {
     window.Jounce = {
@@ -647,6 +734,7 @@ if (typeof window !== 'undefined') {
         onUpdate,
         onError,
         ErrorBoundary,
+        Suspense,
         RPCClient,
         JounceRouter,
         getRouter,
