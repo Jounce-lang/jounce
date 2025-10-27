@@ -1,7 +1,7 @@
 # Jounce Feature Inventory
 
-**Version**: v0.17.0 "Session 15 - Server Functions & Routing & Database!"
-**Last Updated**: October 27, 2025 (Session 15)
+**Version**: v0.18.0 "Session 16 - Script Blocks + Forms + WebSocket!"
+**Last Updated**: October 27, 2025 (Session 16)
 **Tests Passing**: 625/625 (100%)
 
 > **Purpose**: This is the SINGLE SOURCE OF TRUTH for what features are implemented, working, and tested in Jounce. Use this to avoid rebuilding existing features.
@@ -11,14 +11,17 @@
 ## 📊 Quick Stats
 
 - **Core Compiler**: ✅ Complete (lexer, parser, type checker, codegen)
-- **Language Features**: 43+ implemented
+- **Language Features**: 44+ implemented (added script blocks!)
 - **Standard Library**: 5 modules (JSON, DateTime, Crypto, File I/O, YAML)
-- **Packages**: 35/35 complete (100% of Phase 14 goal)
+- **Packages**: 36/36 complete (added jounce-forms!)
 - **Tests**: 625 passing
 - **Documentation**: 90+ markdown files (needs cleanup)
-- **🔥 NEW: Server Functions**: ✅ Working (RPC, auto-generated stubs)
-- **🔥 NEW: Client-Side Routing**: ✅ Working (navigate, URL params, history)
-- **🔥 NEW: Real Database**: ✅ Working (SQLite, full CRUD operations)
+- **🔥 SESSION 16: Script Blocks**: ✅ Working (inline JavaScript in server functions)
+- **🔥 SESSION 16: Form Handling**: ✅ Working (jounce-forms package with validation)
+- **🔥 SESSION 16: WebSocket Support**: ✅ Working (client & server real-time communication)
+- **🔥 SESSION 15: Server Functions**: ✅ Working (RPC, auto-generated stubs)
+- **🔥 SESSION 15: Client-Side Routing**: ✅ Working (navigate, URL params, history)
+- **🔥 SESSION 15: Real Database**: ✅ Working (SQLite, full CRUD operations)
 
 ---
 
@@ -79,6 +82,9 @@
 | **Style Blocks** | ✅ Complete | parser.rs:2967 | `style Button { background: blue; }` |
 | **Theme Blocks** | ✅ Complete | parser.rs:3037 | `theme Dark { primary: #000; }` |
 | **Decorators** | ✅ Complete | parser.rs:2095 | `@persist("localStorage")` |
+| **Script blocks** | ✅ Complete 🔥 | parser.rs:1253-1300 | `script { const x = 5; }` |
+| **Form handling** | ✅ Complete 🔥 | packages/jounce-forms | `Form::new(...).with_validator(...)` |
+| **WebSocket support** | ✅ Complete 🔥 | runtime/client-runtime.js, server-runtime.js | `WebSocketClient`, `WebSocketServer` |
 | **Server functions** | ✅ Complete + RPC Working! 🔥 | parser.rs:522, rpc_generator.rs | `server fn getData() { ... }` |
 | **Client functions** | ✅ Complete | parser.rs:563 | `client fn render() { ... }` |
 | **Client-Side Routing** | ✅ Complete 🔥 | runtime/client-runtime.js | `navigate("/path")` |

@@ -1,0 +1,18 @@
+// Simpler test - just parse generics, don't call
+
+fn identity<T>(value: T) -> T {
+    return value;
+}
+
+fn pair<A, B>(first: A, second: B) -> (A, B) {
+    return (first, second);
+}
+
+fn with_bounds<T: Display>(value: T) -> T {
+    return value;
+}
+
+fn main() {
+    // Just a simple main, no calls to generic functions
+    println!("Parser accepts generic syntax!");
+}

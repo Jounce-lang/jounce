@@ -1,0 +1,9 @@
+[package]
+name = "jounce-forms"
+version = "0.1.0"
+description = "Form handling with validation, fields, and state management"
+authors = ["Jounce Team"]
+license = "MIT"
+
+[dependencies]
+jounce-validation = "0.1.0"

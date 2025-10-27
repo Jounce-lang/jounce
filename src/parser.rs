@@ -201,6 +201,36 @@ impl<'a> Parser<'a> {
                         target: expr,
                         value,
                     }))
+                } else if matches!(
+                    self.current_token().kind,
+                    TokenKind::PlusAssign | TokenKind::MinusAssign | TokenKind::StarAssign |
+                    TokenKind::SlashAssign | TokenKind::PercentAssign
+                ) {
+                    // Compound assignment: x += 5 becomes x = x + 5
+                    let op_kind = self.current_token().kind.clone();
+                    self.next_token(); // consume compound operator
+                    let rhs = self.parse_expression(Precedence::Lowest)?;
+
+                    // Convert compound assignment to regular assignment with binary operation
+                    let (binary_op, op_symbol) = match op_kind {
+                        TokenKind::PlusAssign => (TokenKind::Plus, "+"),
+                        TokenKind::MinusAssign => (TokenKind::Minus, "-"),
+                        TokenKind::StarAssign => (TokenKind::Star, "*"),
+                        TokenKind::SlashAssign => (TokenKind::Slash, "/"),
+                        TokenKind::PercentAssign => (TokenKind::Percent, "%"),
+                        _ => unreachable!(),
+                    };
+
+                    let value = Expression::Infix(InfixExpression {
+                        left: Box::new(expr.clone()),
+                        operator: Token::new(binary_op, op_symbol.to_string(), self.current_token().line, self.current_token().column),
+                        right: Box::new(rhs),
+                    });
+
+                    Ok(Statement::Assignment(AssignmentStatement {
+                        target: expr,
+                        value,
+                    }))
                 } else {
                     // Otherwise it's just an expression statement
                     Ok(Statement::Expression(expr))
@@ -252,6 +282,17 @@ impl<'a> Parser<'a> {
         path.push(self.parse_identifier()?);
         while self.consume_if_matches(&TokenKind::DoubleColon) {
             if self.current_token().kind == TokenKind::LBrace { break; }
+
+            // Check for glob import: use foo::*;
+            if self.current_token().kind == TokenKind::Star {
+                self.next_token();  // Consume the *
+                return Ok(UseStatement {
+                    path,
+                    imports: Vec::new(),
+                    is_glob: true
+                });
+            }
+
             path.push(self.parse_identifier()?);
         }
 
@@ -265,7 +306,7 @@ impl<'a> Parser<'a> {
             self.expect_and_consume(&TokenKind::RBrace)?;
         }
 
-        Ok(UseStatement { path, imports })
+        Ok(UseStatement { path, imports, is_glob: false })
     }
     
     fn parse_type_params(&mut self) -> Result<Vec<TypeParam>, CompileError> {
@@ -420,6 +461,9 @@ impl<'a> Parser<'a> {
             self.expect_and_consume(&TokenKind::Fn)?;
             let method_name = self.parse_identifier()?;
 
+            // Parse optional type parameters for the method
+            let method_type_params = self.parse_type_params()?;
+
             // Parse parameter list
             self.expect_and_consume(&TokenKind::LParen)?;
             let mut parameters = Vec::new();
@@ -480,6 +524,8 @@ impl<'a> Parser<'a> {
 
             methods.push(ImplMethod {
                 name: method_name,
+                lifetime_params: Vec::new(),  // TODO: Parse lifetime params
+                type_params: method_type_params,
                 parameters,
                 return_type,
                 body: BlockStatement { statements },
@@ -502,6 +548,9 @@ impl<'a> Parser<'a> {
             // Parse method signature: fn method_name(...) -> ReturnType;
             self.expect_and_consume(&TokenKind::Fn)?;
             let method_name = self.parse_identifier()?;
+
+            // Parse optional type parameters for the method
+            let method_type_params = self.parse_type_params()?;
 
             // Parse parameter list
             self.expect_and_consume(&TokenKind::LParen)?;
@@ -558,6 +607,8 @@ impl<'a> Parser<'a> {
 
             methods.push(TraitMethod {
                 name: method_name,
+                lifetime_params: Vec::new(),  // TODO: Parse lifetime params
+                type_params: method_type_params,
                 parameters,
                 return_type,
             });
@@ -1037,8 +1088,11 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_for_in_statement(&mut self) -> Result<ForInStatement, CompileError> {
-        // Parse: for item in collection { body }
+        // Parse: for item in collection { body } or for mut item in collection { body }
         self.expect_and_consume(&TokenKind::For)?;
+
+        // Optional 'mut' keyword (not used in JS, but allowed for Rust-like syntax)
+        self.consume_if_matches(&TokenKind::Mut);
 
         // Parse loop variable
         let variable = self.parse_identifier()?;
@@ -1205,6 +1259,54 @@ impl<'a> Parser<'a> {
                 let expression = self.parse_expression(Precedence::Product)?; // High precedence for prefix ops
                 Expression::Await(AwaitExpression {
                     expression: Box::new(expression),
+                })
+            },
+            TokenKind::Script => {
+                // Parse script block: script { raw JavaScript }
+                self.next_token(); // consume 'script'
+
+                // Expect opening brace
+                self.expect_and_consume(&TokenKind::LBrace)?;
+
+                // Record start position (after the {)
+                let content_start = self.current_token().position;
+
+                // Count braces to find matching closing brace
+                let mut brace_count = 1;
+                while brace_count > 0 && self.current_token().kind != TokenKind::Eof {
+                    match self.current_token().kind {
+                        TokenKind::LBrace => brace_count += 1,
+                        TokenKind::RBrace => brace_count -= 1,
+                        _ => {}
+                    }
+                    if brace_count > 0 {
+                        self.next_token();
+                    }
+                }
+
+                if self.current_token().kind == TokenKind::Eof {
+                    return Err(CompileError::ParserError {
+                        message: "Unexpected EOF in script block, expected }".to_string(),
+                        line: self.current_token().line,
+                        column: self.current_token().column,
+                    });
+                }
+
+                // Record end position (before the })
+                let content_end = self.current_token().position;
+
+                // Extract raw JavaScript from source
+                let raw_code = if content_end > content_start {
+                    self.source[content_start..content_end].to_string()
+                } else {
+                    String::new() // Empty script block
+                };
+
+                // Consume closing brace
+                self.expect_and_consume(&TokenKind::RBrace)?;
+
+                Expression::ScriptBlock(ScriptBlockExpression {
+                    code: raw_code,
                 })
             },
             TokenKind::Return => {
@@ -1707,12 +1809,29 @@ impl<'a> Parser<'a> {
             return Ok(Expression::ArrayLiteral(ArrayLiteral { elements }));
         }
 
-        // Parse comma-separated elements
-        while self.current_token().kind != TokenKind::RBracket {
-            elements.push(self.parse_expression(Precedence::Lowest)?);
-            if !self.consume_if_matches(&TokenKind::Comma) {
-                break;
+        // Parse first expression
+        let first_expr = self.parse_expression(Precedence::Lowest)?;
+
+        // Check for array repeat syntax: [value; count]
+        if self.current_token().kind == TokenKind::Semicolon {
+            self.expect_and_consume(&TokenKind::Semicolon)?;
+            let count_expr = self.parse_expression(Precedence::Lowest)?;
+            self.expect_and_consume(&TokenKind::RBracket)?;
+            return Ok(Expression::ArrayRepeat(ArrayRepeatExpression {
+                value: Box::new(first_expr),
+                count: Box::new(count_expr),
+            }));
+        }
+
+        // Otherwise, it's a regular array literal with comma-separated elements
+        elements.push(first_expr);
+
+        // Parse remaining comma-separated elements
+        while self.consume_if_matches(&TokenKind::Comma) {
+            if self.current_token().kind == TokenKind::RBracket {
+                break;  // Trailing comma
             }
+            elements.push(self.parse_expression(Precedence::Lowest)?);
         }
 
         self.expect_and_consume(&TokenKind::RBracket)?;
@@ -3856,6 +3975,50 @@ mod tests {
                 eprintln!("Failed to parse {} selector '{}': {:?}", selector_type, selector, e);
             }
             assert!(program.is_ok(), "Should parse {} selector", selector_type);
+        }
+    }
+
+    // Glob Import Tests (Session 17)
+
+    #[test]
+    fn test_glob_import_parsing() {
+        // Test that glob imports parse correctly: use foo::*;
+        let source = "use jounce::forms::*;";
+        let mut lexer = Lexer::new(source.to_string());
+        let mut parser = Parser::new(&mut lexer, source);
+        let program = parser.parse_program();
+
+        assert!(program.is_ok(), "Glob import should parse successfully");
+
+        let program = program.unwrap();
+        assert_eq!(program.statements.len(), 1);
+
+        match &program.statements[0] {
+            Statement::Use(use_stmt) => {
+                assert_eq!(use_stmt.path.len(), 2, "Should have 2 path segments: jounce, forms");
+                assert_eq!(use_stmt.path[0].value, "jounce");
+                assert_eq!(use_stmt.path[1].value, "forms");
+                assert_eq!(use_stmt.imports.len(), 0, "Glob imports should have no specific imports");
+                assert!(use_stmt.is_glob, "is_glob should be true for glob imports");
+            }
+            _ => panic!("Expected UseStatement"),
+        }
+    }
+
+    #[test]
+    fn test_selective_import_vs_glob() {
+        // Test that selective imports still work and is_glob is false
+        let source = "use jounce::forms::{Form, Input};";
+        let mut lexer = Lexer::new(source.to_string());
+        let mut parser = Parser::new(&mut lexer, source);
+        let program = parser.parse_program().unwrap();
+
+        match &program.statements[0] {
+            Statement::Use(use_stmt) => {
+                assert_eq!(use_stmt.imports.len(), 2, "Should have 2 imports");
+                assert!(!use_stmt.is_glob, "is_glob should be false for selective imports");
+            }
+            _ => panic!("Expected UseStatement"),
         }
     }
 }

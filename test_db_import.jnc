@@ -1,0 +1,17 @@
+// Test importing jounce-db package
+use jounce::db::{DbConfig, create_pool};
+
+fn main() {
+    let config = DbConfig {
+        driver: "sqlite",
+        host: "",
+        port: 0,
+        database: "test.db",
+        username: "",
+        password: "",
+        pool_size: 5,
+        timeout: 30,
+    };
+
+    println!("Database config created!");
+}

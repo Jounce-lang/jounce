@@ -352,11 +352,11 @@ impl ModuleLoader {
             imported_files.push(module.file_path.clone());
 
             // Determine which symbols to import
-            let symbols_to_import: Vec<(String, ExportedSymbol)> = if use_stmt.imports.is_empty() {
-                // Wildcard import - import all exports
+            let symbols_to_import: Vec<(String, ExportedSymbol)> = if use_stmt.is_glob || use_stmt.imports.is_empty() {
+                // Glob import (use foo::*) - import all exports
                 module.exports.clone().into_iter().collect()
             } else {
-                // Selective import - only import specified symbols
+                // Selective import (use foo::{A, B}) - only import specified symbols
                 use_stmt.imports.iter()
                     .filter_map(|ident| {
                         let name = ident.value.clone();
