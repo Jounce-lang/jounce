@@ -1,0 +1,83 @@
+// Test: Suspense shows loading state while async content loads
+
+component AsyncCounter() {
+    let count = signal(0);
+    let loaded = signal(false);
+
+    // Simulate async data loading
+    onMount(() => {
+        console::log("AsyncCounter mounting, loading data...");
+        // Data "loads" after mount
+        loaded.set(true);
+    });
+
+    if !loaded.get() {
+        return <div>Loading counter data...</div>;
+    }
+
+    return <div>
+        <h2>Async Counter</h2>
+        <p>Count: {count.get()}</p>
+        <button onclick={() => count.set(count.get() + 1)}>
+            Increment ({count.get()})
+        </button>
+        <p>✅ Data loaded successfully!</p>
+    </div>;
+}
+
+component SlowComponent() {
+    let ready = signal(false);
+
+    onMount(() => {
+        console::log("SlowComponent mounting...");
+        ready.set(true);
+    });
+
+    if !ready.get() {
+        return <div>Preparing slow component...</div>;
+    }
+
+    return <div>
+        <h2>Slow Component</h2>
+        <p>✅ This component took time to load!</p>
+    </div>;
+}
+
+component InstantComponent() {
+    return <div>
+        <h2>Instant Component</h2>
+        <p>✅ This loaded immediately (no Suspense)</p>
+    </div>;
+}
+
+component App() {
+    return <div>
+        <h1>Suspense Test</h1>
+        <p>Watch the loading states appear and disappear!</p>
+
+        <hr />
+
+        <div>
+            <h3>With Suspense - Custom Fallback:</h3>
+            <Suspense fallback="⏳ Loading async counter...">
+                <AsyncCounter />
+            </Suspense>
+        </div>
+
+        <hr />
+
+        <div>
+            <h3>With Suspense - Default Fallback:</h3>
+            <Suspense>
+                <SlowComponent />
+            </Suspense>
+        </div>
+
+        <hr />
+
+        <div>
+            <h3>Without Suspense:</h3>
+            <InstantComponent />
+        </div>
+    </div>;
+}
