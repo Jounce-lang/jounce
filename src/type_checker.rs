@@ -383,6 +383,11 @@ impl TypeChecker {
                 self.check_prefix_expression(prefix)
             }
 
+            Expression::Postfix(postfix) => {
+                // Postfix operators (++ and --) return the same type as their operand
+                self.infer_expression(&postfix.left)
+            }
+
             Expression::Spread(spread) => {
                 // Type check the inner expression - must be an array
                 self.infer_expression(&spread.expression)

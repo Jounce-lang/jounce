@@ -83,7 +83,7 @@ impl TestDiscovery {
             .map_err(|e| CompileError::Generic(format!("Failed to read file: {}", e)))?;
 
         let mut lexer = Lexer::new(content.clone());
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer, &content);
         let program = parser.parse_program()?;
 
         let mut tests = Vec::new();
