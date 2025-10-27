@@ -1,0 +1,46 @@
+// Test persistent signals with localStorage
+
+component PersistentCounter() {
+    // This counter persists across page reloads!
+    let count = persistentSignal("app_counter", 0);
+
+    <div>
+        <h1>Persistent Counter</h1>
+        <p>Count: {count.value}</p>
+        <button onClick={() => count.value++}>Increment</button>
+        <button onClick={() => count.value--}>Decrement</button>
+        <button onClick={() => { count.value = 0; }}>Reset</button>
+        <p>Reload the page - your count will persist!</p>
+    </div>
+}
+
+component TodoList() {
+    // Persistent todo list
+    let todos = persistentSignal("app_todos", []);
+    let input = signal("");
+
+    let addTodo = () => {
+        if (input.value.trim() != "") {
+            let newTodos = todos.value;
+            newTodos.push(input.value);
+            todos.value = newTodos;
+            input.value = "";
+        }
+    };
+
+    <div>
+        <h2>Persistent Todo List</h2>
+        <input
+            type="text"
+            value={input.value}
+            onInput={(e) => { input.value = e.target.value; }}
+            placeholder="Add todo..."
+        />
+        <button onClick={addTodo}>Add</button>
+    </div>
+}
+
+fn main() {
+    let counter = <PersistentCounter />;
+    let todoList = <TodoList />;
+}

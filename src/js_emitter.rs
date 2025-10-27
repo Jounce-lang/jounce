@@ -267,7 +267,7 @@ impl JSEmitter {
 
         // Import runtime
         output.push_str("import { h, RPCClient, mountComponent } from './client-runtime.js';\n");
-        output.push_str("import { signal, computed, effect, batch } from './reactivity.js';\n\n");
+        output.push_str("import { signal, persistentSignal, computed, effect, batch } from './reactivity.js';\n\n");
 
         // Node.js crypto module for hashing and random functions
         output.push_str("// Node.js crypto module (for tests and server-side code)\n");
@@ -795,7 +795,7 @@ impl JSEmitter {
 
         // Import runtime
         output.push_str("import { h, RPCClient, mountComponent } from './client-runtime.js';\n");
-        output.push_str("import { signal, computed, effect, batch } from './reactivity.js';\n\n");
+        output.push_str("import { signal, persistentSignal, computed, effect, batch } from './reactivity.js';\n\n");
         current_line += 2;
 
         // Generate RPC client stubs
@@ -939,13 +939,22 @@ impl JSEmitter {
     /// Generates a JavaScript component implementation from AST
     fn generate_component_impl(&self, comp: &ComponentDefinition) -> String {
         let name = Self::escape_js_reserved_word(&comp.name.value);
-        let params = comp.parameters
-            .iter()
-            .map(|p| Self::escape_js_reserved_word(&p.name.value))
-            .collect::<Vec<_>>()
-            .join(", ");
 
-        let body = self.generate_block_js(&comp.body);
+        // Generate destructured props parameter
+        // component Counter(initialCount: int) → function Counter({ initialCount })
+        let params = if comp.parameters.is_empty() {
+            "{}".to_string()  // No props: function Counter({})
+        } else {
+            let param_names = comp.parameters
+                .iter()
+                .map(|p| Self::escape_js_reserved_word(&p.name.value))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("{{ {} }}", param_names)  // Destructured: { prop1, prop2 }
+        };
+
+        // Components should have implicit returns for last expression (like functions)
+        let body = self.generate_block_js_impl(&comp.body, true);
 
         format!(
             "export function {}({}) {{\n{}\n}}",
@@ -1501,6 +1510,21 @@ impl JSEmitter {
                     .join(", ");
                 format!("[{}]", elements)
             }
+            Expression::ArrayRepeat(array_repeat) => {
+                // [value; count] compiles to Array(count).fill(value)
+                let value_js = self.generate_expression_js(&array_repeat.value);
+                let count_js = self.generate_expression_js(&array_repeat.count);
+                format!("Array({}).fill({})", count_js, value_js)
+            }
+            Expression::TupleLiteral(tuple) => {
+                // In JavaScript, tuples are represented as arrays
+                let elements = tuple.elements
+                    .iter()
+                    .map(|elem| self.generate_expression_js(elem))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("[{}]", elements)
+            }
             Expression::StructLiteral(struct_lit) => {
                 // Generate constructor call: new StructName(field1, field2, ...)
                 // Extract field values in the order they appear
@@ -1882,10 +1906,16 @@ impl JSEmitter {
     fn generate_jsx_js(&self, jsx: &crate::ast::JsxElement) -> String {
         let tag = &jsx.opening_tag.name.value;
 
-        // Generate attributes
-        // Always output ", null" or ", { attrs }" to fill the props parameter
+        // Check if this is a component (starts with uppercase) or HTML element (lowercase)
+        let is_component = tag.chars().next().map(|c| c.is_uppercase()).unwrap_or(false);
+
+        // Generate attributes/props
         let attrs = if jsx.opening_tag.attributes.is_empty() {
-            ", null".to_string()
+            if is_component {
+                "{}".to_string()  // Components get empty props object
+            } else {
+                ", null".to_string()  // HTML elements get null
+            }
         } else {
             let attrs_str = jsx.opening_tag.attributes
                 .iter()
@@ -1895,7 +1925,11 @@ impl JSEmitter {
                 })
                 .collect::<Vec<_>>()
                 .join(", ");
-            format!(", {{ {} }}", attrs_str)
+            if is_component {
+                format!("{{ {} }}", attrs_str)  // Components: { prop1: val1, prop2: val2 }
+            } else {
+                format!(", {{ {} }}", attrs_str)  // HTML: , { attr1: val1 }
+            }
         };
 
         // Generate children
@@ -1909,10 +1943,32 @@ impl JSEmitter {
             .collect::<Vec<_>>()
             .join(", ");
 
-        if children.is_empty() {
-            format!("h('{}'{})", tag, attrs)
+        if is_component {
+            // Component: Counter({ initialCount: 5 })
+            // If there are children, we need to add them to the props object as 'children' key
+            if children.is_empty() {
+                format!("{}({})", tag, attrs)
+            } else {
+                // Strip braces from attrs if present, add children property
+                let attrs_inner = if attrs.starts_with('{') && attrs.ends_with('}') {
+                    &attrs[1..attrs.len()-1]
+                } else {
+                    &attrs
+                };
+
+                if attrs_inner.is_empty() {
+                    format!("{}({{ children: [{}] }})", tag, children)
+                } else {
+                    format!("{}({{ {}, children: [{}] }})", tag, attrs_inner, children)
+                }
+            }
         } else {
-            format!("h('{}'{}, {})", tag, attrs, children)
+            // HTML element: h('div', { class: 'foo' }, ...children)
+            if children.is_empty() {
+                format!("h('{}'{})", tag, attrs)
+            } else {
+                format!("h('{}'{}, {})", tag, attrs, children)
+            }
         }
     }
 
