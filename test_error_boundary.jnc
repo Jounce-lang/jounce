@@ -1,0 +1,56 @@
+// Test: ErrorBoundary catches component errors and displays fallback UI
+
+component BuggyCounter() {
+    let count = signal(0);
+
+    return <div>
+        <h2>Buggy Counter</h2>
+        <p>Count: {count.get()}</p>
+        <button onclick={() => {
+            if count.get() >= 2 {
+                // Trigger error after 2 clicks
+                let x = undefined;
+                x.nonExistent();  // Will throw error
+            }
+            count.set(count.get() + 1);
+        }}>
+            Click me ({count.get()})
+        </button>
+        <p>Click 3 times to trigger error!</p>
+    </div>;
+}
+
+component SafeCounter() {
+    let count = signal(0);
+
+    return <div>
+        <h2>Safe Counter</h2>
+        <p>Count: {count.get()}</p>
+        <button onclick={() => count.set(count.get() + 1)}>
+            Increment ({count.get()})
+        </button>
+    </div>;
+}
+
+component App() {
+    return <div>
+        <h1>ErrorBoundary Test</h1>
+        <p>Click the buggy counter 3 times to see ErrorBoundary in action!</p>
+
+        <hr />
+
+        <div>
+            <h3>Protected by ErrorBoundary:</h3>
+            <ErrorBoundary fallback="⚠️ Component Error! But app still works!">
+                <BuggyCounter />
+            </ErrorBoundary>
+        </div>
+
+        <hr />
+
+        <div>
+            <h3>Outside ErrorBoundary (still works):</h3>
+            <SafeCounter />
+        </div>
+    </div>;
+}
