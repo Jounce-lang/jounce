@@ -114,7 +114,28 @@ impl ModuleLoader {
         // Package import (existing logic)
         // Convert module name from snake_case to kebab-case for directory lookup
         // raven_router -> raven-router
-        let package_name = module_path[0].replace('_', "-");
+
+        // Special handling for "jounce" namespace prefix
+        // jounce::db -> jounce-db package
+        let (package_name, remaining_path) = if module_path[0] == "jounce" && module_path.len() >= 2 {
+            // Combine "jounce" + second element into package name
+            let pkg = format!("jounce-{}", module_path[1].replace('_', "-"));
+            let remaining = if module_path.len() > 2 {
+                &module_path[2..]
+            } else {
+                &[]
+            };
+            (pkg, remaining)
+        } else {
+            // Normal package path
+            let pkg = module_path[0].replace('_', "-");
+            let remaining = if module_path.len() > 1 {
+                &module_path[1..]
+            } else {
+                &[]
+            };
+            (pkg, remaining)
+        };
 
         // Try multiple package root locations
         let package_roots = vec![
@@ -127,16 +148,17 @@ impl ModuleLoader {
         for root in package_roots {
             let mut path = root.join(&package_name);
 
-            // If there are submodules (e.g., raven_store::store::computed)
-            if module_path.len() > 1 {
+            // If there are submodules (e.g., raven_store::store::computed or jounce::db::query)
+            if remaining_path.is_empty() {
+                // Just the package name - look for lib.jnc
+                path = path.join("src").join("lib.jnc");
+            } else {
+                // Has submodules - navigate into package
                 path = path.join("src");
-                for segment in &module_path[1..] {
+                for segment in remaining_path {
                     path = path.join(segment);
                 }
                 path = path.with_extension("jnc");
-            } else {
-                // Just the package name - look for lib.jnc
-                path = path.join("src").join("lib.jnc");
             }
 
             if path.exists() {
@@ -187,8 +209,8 @@ impl ModuleLoader {
             )))?;
 
         // Parse the module
-        let mut lexer = Lexer::new(source);
-        let mut parser = Parser::new(&mut lexer);
+        let mut lexer = Lexer::new(source.clone());
+        let mut parser = Parser::new(&mut lexer, &source);
         let mut ast = parser.parse_program()?;
 
         // Process imports in this module (recursive)
