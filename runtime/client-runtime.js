@@ -4,7 +4,60 @@
 // Simple JSX createElement function (h function)
 export function h(tag, props, ...children) {
     if (typeof tag === 'function') {
-        return tag(props, children);
+        // Component function - set up lifecycle context for nested components (Session 18)
+        const parentContext = currentLifecycleContext;
+        const componentContext = {
+            mountCallbacks: [],
+            unmountCallbacks: [],
+            updateCallbacks: [],
+            parent: parentContext
+        };
+
+        // Set as current context
+        currentLifecycleContext = componentContext;
+
+        // Render component
+        const result = tag(props, children);
+
+        // Restore parent context
+        currentLifecycleContext = parentContext;
+
+        // If we have a parent context, merge our callbacks into it
+        // This ensures nested component lifecycles are properly managed
+        if (parentContext) {
+            parentContext.mountCallbacks.push(...componentContext.mountCallbacks);
+            parentContext.unmountCallbacks.push(...componentContext.unmountCallbacks);
+            parentContext.updateCallbacks.push(...componentContext.updateCallbacks);
+        } else if (result instanceof Node) {
+            // No parent context - this is a standalone component render
+            // Execute onMount after a microtask to ensure DOM is ready
+            if (componentContext.mountCallbacks.length > 0) {
+                queueMicrotask(() => {
+                    componentContext.mountCallbacks.forEach(callback => {
+                        try {
+                            callback();
+                        } catch (error) {
+                            console.error('Error in onMount callback:', error);
+                        }
+                    });
+                });
+            }
+
+            // Store unmount callbacks
+            if (componentContext.unmountCallbacks.length > 0) {
+                result.__jounce_unmount = () => {
+                    componentContext.unmountCallbacks.forEach(callback => {
+                        try {
+                            callback();
+                        } catch (error) {
+                            console.error('Error in onUnmount callback:', error);
+                        }
+                    });
+                };
+            }
+        }
+
+        return result;
     }
 
     const element = document.createElement(tag);
@@ -41,7 +94,36 @@ export function h(tag, props, ...children) {
     return element;
 }
 
-// Mount a component to the DOM
+// Component Lifecycle Context (Session 18)
+// Stores lifecycle hooks for the currently rendering component
+let currentLifecycleContext = null;
+
+// Component lifecycle hooks registry
+export function onMount(callback) {
+    if (currentLifecycleContext) {
+        currentLifecycleContext.mountCallbacks.push(callback);
+    } else {
+        console.warn('onMount called outside of component render');
+    }
+}
+
+export function onUnmount(callback) {
+    if (currentLifecycleContext) {
+        currentLifecycleContext.unmountCallbacks.push(callback);
+    } else {
+        console.warn('onUnmount called outside of component render');
+    }
+}
+
+export function onUpdate(callback) {
+    if (currentLifecycleContext) {
+        currentLifecycleContext.updateCallbacks.push(callback);
+    } else {
+        console.warn('onUpdate called outside of component render');
+    }
+}
+
+// Mount a component to the DOM (with lifecycle support - Session 18)
 export function mountComponent(component, selector = '#app') {
     const container = document.querySelector(selector);
     if (!container) {
@@ -52,14 +134,51 @@ export function mountComponent(component, selector = '#app') {
     // Clear existing content
     container.innerHTML = '';
 
+    // Create lifecycle context
+    const lifecycleContext = {
+        mountCallbacks: [],
+        unmountCallbacks: [],
+        updateCallbacks: []
+    };
+
+    // Set as current context
+    currentLifecycleContext = lifecycleContext;
+
     // Render component
     const rendered = typeof component === 'function' ? component() : component;
 
+    // Clear context
+    currentLifecycleContext = null;
+
     if (rendered instanceof Node) {
         container.appendChild(rendered);
+
+        // Execute onMount callbacks after DOM insertion
+        lifecycleContext.mountCallbacks.forEach(callback => {
+            try {
+                callback();
+            } catch (error) {
+                console.error('Error in onMount callback:', error);
+            }
+        });
+
+        // Store unmount callbacks on the element for cleanup
+        if (lifecycleContext.unmountCallbacks.length > 0) {
+            rendered.__jounce_unmount = () => {
+                lifecycleContext.unmountCallbacks.forEach(callback => {
+                    try {
+                        callback();
+                    } catch (error) {
+                        console.error('Error in onUnmount callback:', error);
+                    }
+                });
+            };
+        }
     } else {
         console.error('Component did not return a valid DOM node');
     }
+
+    return lifecycleContext;
 }
 
 // RPC Client for calling server functions

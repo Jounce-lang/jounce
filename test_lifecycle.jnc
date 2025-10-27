@@ -1,0 +1,36 @@
+// Test: Component lifecycle hooks (onMount, onUnmount, onUpdate)
+
+component LifecycleTest(message: string) {
+    let count = signal(0);
+    let mounted = signal(false);
+
+    // onMount: Called after component is added to DOM
+    onMount(() => {
+        console::log("Component mounted!");
+        mounted.set(true);
+    });
+
+    // onUnmount: Called before component is removed from DOM
+    onUnmount(() => {
+        console::log("Component unmounting - cleanup!");
+    });
+
+    // onUpdate: Called when component updates (for future use)
+    onUpdate(() => {
+        console::log("Component updated!");
+    });
+
+    return <div>
+        <h1>Lifecycle Hook Test</h1>
+        <p>Message: {message}</p>
+        <p>Count: {count.get()}</p>
+        <p>Mounted: {if mounted.get() { "Yes" } else { "No" }}</p>
+        <button onclick={() => count.set(count.get() + 1)}>Increment</button>
+    </div>;
+}
+
+component App() {
+    return <div>
+        <LifecycleTest message="Hello from lifecycle!" />
+    </div>;
+}
