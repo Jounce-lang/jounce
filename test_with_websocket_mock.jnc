@@ -1,0 +1,14 @@
+// Test: Simulated WebSocket import to test auto-setup detection
+// This should trigger WebSocket auto-initialization
+
+// Simulate WebSocket import (module loader will fail, but detection should work)
+use jounce_websocket::test;
+
+component App() {
+    let status = signal("Testing WebSocket auto-setup");
+
+    return <div>
+        <h1>WebSocket Auto-Setup Test</h1>
+        <p>{status.get()}</p>
+    </div>;
+}

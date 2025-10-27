@@ -1,0 +1,16 @@
+// Test: WebSocket Auto-Setup
+// Should automatically initialize WebSocket server when jounce-websocket is imported
+
+// This import should trigger WebSocket auto-setup
+use jounce_websocket::WebSocketClient;
+
+component App() {
+    let status = signal("WebSocket auto-setup test");
+
+    return <div>
+        <h1>WebSocket Auto-Setup Test</h1>
+        <p>Status: {status.get()}</p>
+        <p><strong>Check server.js for WebSocket auto-initialization!</strong></p>
+        <p>If you see WebSocketServer in dist/server.js, auto-setup works!</p>
+    </div>;
+}

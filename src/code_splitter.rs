@@ -19,6 +19,7 @@ pub struct CodeSplitter {
     pub enums: Vec<crate::ast::EnumDefinition>,
     pub impl_blocks: Vec<crate::ast::ImplBlock>,
     pub script_blocks: Vec<crate::ast::ScriptBlock>,  // Raw JavaScript blocks
+    pub uses_websocket: bool,  // Session 18: Tracks if jounce-websocket is imported
 }
 
 impl Default for CodeSplitter {
@@ -39,6 +40,7 @@ impl CodeSplitter {
             enums: Vec::new(),
             impl_blocks: Vec::new(),
             script_blocks: Vec::new(),
+            uses_websocket: false,  // Session 18: Initialize to false
         }
     }
 
@@ -46,6 +48,19 @@ impl CodeSplitter {
     pub fn split(&mut self, program: &Program) {
         for statement in &program.statements {
             match statement {
+                Statement::Use(use_stmt) => {
+                    // Session 18: Detect if WebSocket package is imported
+                    // Check for: use jounce_websocket::*; or use jounce_websocket::{...}
+                    if !use_stmt.path.is_empty() {
+                        let path_str = use_stmt.path.iter()
+                            .map(|id| id.value.as_str())
+                            .collect::<Vec<&str>>()
+                            .join("::");
+                        if path_str.contains("jounce_websocket") {
+                            self.uses_websocket = true;
+                        }
+                    }
+                }
                 Statement::Function(func) => {
                     self.split_function(func);
                 }
@@ -213,5 +228,42 @@ mod tests {
         assert_eq!(stats.shared_functions, 2);
         assert_eq!(stats.total_server_code, 4); // 2 server + 2 shared
         assert_eq!(stats.total_client_code, 3); // 1 client + 2 shared
+    }
+
+    #[test]
+    fn test_websocket_detection() {
+        // Session 18: Test WebSocket auto-detection
+        let source_with_ws = r#"
+            use jounce_websocket::WebSocketClient;
+
+            fn test() {}
+        "#;
+
+        let mut lexer = Lexer::new(source_with_ws.to_string());
+        let mut parser = Parser::new(&mut lexer, source_with_ws);
+        let program = parser.parse_program().expect("Parse failed");
+
+        let mut splitter = CodeSplitter::new();
+        splitter.split(&program);
+
+        // Should detect WebSocket import
+        assert_eq!(splitter.uses_websocket, true, "Should detect jounce_websocket import");
+
+        // Test without WebSocket
+        let source_no_ws = r#"
+            use std::collections::HashMap;
+
+            fn test() {}
+        "#;
+
+        let mut lexer2 = Lexer::new(source_no_ws.to_string());
+        let mut parser2 = Parser::new(&mut lexer2, source_no_ws);
+        let program2 = parser2.parse_program().expect("Parse failed");
+
+        let mut splitter2 = CodeSplitter::new();
+        splitter2.split(&program2);
+
+        // Should NOT detect WebSocket
+        assert_eq!(splitter2.uses_websocket, false, "Should NOT detect WebSocket for non-websocket imports");
     }
 }
