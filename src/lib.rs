@@ -23,6 +23,7 @@ pub mod type_checker; // Type checking and inference
 pub mod ssr; // Server-side rendering
 pub mod hydration; // Client-side hydration
 pub mod reactive; // Reactive state management
+pub mod reactive_analyzer; // Compile-time reactivity analysis (Session 20)
 pub mod router; // Client-side routing
 pub mod forms; // Forms and validation
 pub mod animation; // Animation system

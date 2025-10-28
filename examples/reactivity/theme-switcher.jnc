@@ -1,0 +1,148 @@
+// Reactive Theme Switcher Example
+// Demonstrates: persistent signals, dynamic styling, user preferences
+
+component ThemeSwitcher() {
+    // Persistent theme preference (saves to localStorage automatically!)
+    let currentTheme = persistentSignal("theme", "light");
+
+    // Computed: theme colors
+    let bgColor = computed(() => {
+        return currentTheme.value == "light" ? "#ffffff" : "#1e293b";
+    });
+
+    let textColor = computed(() => {
+        return currentTheme.value == "light" ? "#1e293b" : "#f1f5f9";
+    });
+
+    let accentColor = computed(() => {
+        return currentTheme.value == "light" ? "#2563eb" : "#3b82f6";
+    });
+
+    let cardBg = computed(() => {
+        return currentTheme.value == "light" ? "#f8fafc" : "#334155";
+    });
+
+    let borderColor = computed(() => {
+        return currentTheme.value == "light" ? "#e2e8f0" : "#475569";
+    });
+
+    // Toggle theme
+    let toggleTheme = () => {
+        currentTheme.value = currentTheme.value == "light" ? "dark" : "light";
+    };
+
+    // Set specific theme
+    let setLight = () => {
+        currentTheme.value = "light";
+    };
+
+    let setDark = () => {
+        currentTheme.value = "dark";
+    };
+
+    let setAuto = () => {
+        currentTheme.value = "auto";
+    };
+
+    return <div>
+        <div style="min-height: 100vh; padding: 40px; transition: all 0.3s;">
+            <div style="max-width: 800px; margin: 0 auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+                    <div>
+                        <h1 style="font-size: 36px; margin-bottom: 10px;">
+                            Theme Switcher
+                        </h1>
+                        <p style="font-size: 16px; opacity: 0.8;">
+                            Current theme: {currentTheme.value}
+                        </p>
+                    </div>
+
+                    <button
+                        onclick={toggleTheme}
+                        style="padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                        {currentTheme.value == "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+                    </button>
+                </div>
+
+                <div style="border-radius: 12px; padding: 30px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h2 style="font-size: 24px; margin-bottom: 15px;">
+                        Theme Options
+                    </h2>
+                    <p style="opacity: 0.8; margin-bottom: 20px;">
+                        Choose your preferred theme. Your choice is automatically saved!
+                    </p>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                        <button
+                            onclick={setLight}
+                            style="padding: 20px; border: none; border-radius: 8px; cursor: pointer; background: #ffffff; color: #1e293b;">
+                            <div style="font-size: 32px; margin-bottom: 8px;">☀️</div>
+                            <div style="font-weight: 600;">Light</div>
+                            {currentTheme.value == "light" ? <div style="color: #2563eb; font-size: 14px; margin-top: 5px;">✓ Active</div> : <div></div>}
+                        </button>
+
+                        <button
+                            onclick={setDark}
+                            style="padding: 20px; border: none; border-radius: 8px; cursor: pointer; background: #1e293b; color: #f1f5f9;">
+                            <div style="font-size: 32px; margin-bottom: 8px;">🌙</div>
+                            <div style="font-weight: 600;">Dark</div>
+                            {currentTheme.value == "dark" ? <div style="color: #3b82f6; font-size: 14px; margin-top: 5px;">✓ Active</div> : <div></div>}
+                        </button>
+
+                        <button
+                            onclick={setAuto}
+                            style="padding: 20px; border: none; border-radius: 8px; cursor: pointer; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <div style="font-size: 32px; margin-bottom: 8px;">🎨</div>
+                            <div style="font-weight: 600;">Auto</div>
+                            {currentTheme.value == "auto" ? <div style="font-size: 14px; margin-top: 5px;">✓ Active</div> : <div></div>}
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div style="border-radius: 12px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="font-size: 20px; margin-bottom: 10px;">
+                            Features
+                        </h3>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="padding: 10px 0; opacity: 0.9;">✨ Persistent theme storage</li>
+                            <li style="padding: 10px 0; opacity: 0.9;">⚡ Instant theme switching</li>
+                            <li style="padding: 10px 0; opacity: 0.9;">🎯 Fine-grained reactivity</li>
+                            <li style="padding: 10px 0; opacity: 0.9;">💾 Auto-save to localStorage</li>
+                        </ul>
+                    </div>
+
+                    <div style="border-radius: 12px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="font-size: 20px; margin-bottom: 10px;">
+                            Theme Info
+                        </h3>
+                        <div style="font-family: monospace; font-size: 14px; opacity: 0.8;">
+                            <div style="margin-bottom: 8px;">
+                                <span style="opacity: 0.7;">bgColor:</span> {bgColor.value}
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <span style="opacity: 0.7;">textColor:</span> {textColor.value}
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <span style="opacity: 0.7;">accentColor:</span> {accentColor.value}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; padding: 20px; border-radius: 12px;">
+                    <p style="opacity: 0.7; font-size: 14px;">
+                        ✨ Theme persists across page reloads automatically!
+                    </p>
+                    <p style="opacity: 0.5; font-size: 12px; margin-top: 5px;">
+                        Powered by persistentSignal() + fine-grained reactivity
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>;
+}
+
+fn main() {
+    console.log("Reactive Theme Switcher starting...");
+}

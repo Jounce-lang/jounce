@@ -37,14 +37,14 @@ impl RPCGenerator {
     /// Generates a single client stub function
     fn generate_client_stub(&self, func: &FunctionDefinition) -> String {
         let name = &func.name.value;
-        let params = self.format_parameters(&func.parameters);
-        let param_names = self.extract_parameter_names(&func.parameters);
+        // Use parameter names only (no type annotations) for JavaScript output
+        let params = self.extract_parameter_names(&func.parameters);
 
         format!(
             "export async function {}({}) {{\n\
             \x20   return await client.call('{}', [{}]);\n\
             }}",
-            name, params, name, param_names
+            name, params, name, params
         )
     }
 
@@ -240,10 +240,10 @@ mod tests {
         // Generate RPC code
         let rpc_gen = RPCGenerator::new(splitter.server_functions.clone());
 
-        // Test client stubs
+        // Test client stubs (JavaScript output - no type annotations)
         let client_stubs = rpc_gen.generate_client_stubs();
-        assert!(client_stubs.contains("async function get_user(id: number)"));
-        assert!(client_stubs.contains("async function save_data(name: string, age: number)"));
+        assert!(client_stubs.contains("async function get_user(id)"));
+        assert!(client_stubs.contains("async function save_data(name, age)"));
         assert!(client_stubs.contains("client.call('get_user'"));
         assert!(client_stubs.contains("client.call('save_data'"));
 
