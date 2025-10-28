@@ -10,10 +10,11 @@
 // - server.js: Server-side code with HTTP server and RPC handlers
 // - client.js: Client-side code with RPC stubs and UI components
 
-use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression, ForInStatement, ForStatement, ImplBlock};
+use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression, ForInStatement, ForStatement, ImplBlock, JsxChild};
 use crate::code_splitter::CodeSplitter;
 use crate::rpc_generator::RPCGenerator;
 use crate::source_map::SourceMapBuilder;
+use crate::reactive_analyzer::ReactiveAnalyzer;
 
 #[derive(Debug, Clone)]
 pub struct JSEmitter {
@@ -974,14 +975,14 @@ impl JSEmitter {
         // Generate destructured props parameter
         // component Counter(initialCount: int) → function Counter({ initialCount })
         let params = if comp.parameters.is_empty() {
-            "{}".to_string()  // No props: function Counter({})
+            "{} = {}".to_string()  // No props: function Counter({} = {})  - defaults to empty object
         } else {
             let param_names = comp.parameters
                 .iter()
                 .map(|p| Self::escape_js_reserved_word(&p.name.value))
                 .collect::<Vec<_>>()
                 .join(", ");
-            format!("{{ {} }}", param_names)  // Destructured: { prop1, prop2 }
+            format!("{{ {} }} = {{}}", param_names)  // Destructured with default: { prop1, prop2 } = {}
         };
 
         // Components should have implicit returns for last expression (like functions)
@@ -1449,13 +1450,8 @@ impl JSEmitter {
                     .collect::<Vec<_>>()
                     .join(", ");
 
-                // Check if this is a server function call from client-side
-                if let Expression::Identifier(ident) = &*call.function {
-                    if self.is_server_function(&ident.value) {
-                        return format!("await {}({})", func, args);
-                    }
-                }
-
+                // RPC stubs are async functions that return Promises.
+                // Users can use .then() or await as needed - don't force it!
                 format!("{}({})", func, args)
             }
             Expression::MacroCall(macro_call) => {
@@ -1948,6 +1944,63 @@ impl JSEmitter {
         }
     }
 
+    /// Wraps a reactive expression in an auto-effect for fine-grained reactivity
+    ///
+    /// Takes an expression like `count.value * 2` and generates:
+    /// ```js
+    /// (() => {
+    ///   const __reactive = signal("");
+    ///   effect(() => {
+    ///     __reactive.value = count.value * 2;
+    ///   });
+    ///   return __reactive;
+    /// })()
+    /// ```
+    ///
+    /// This ensures that when `count.value` changes, the DOM updates automatically.
+    fn wrap_reactive_expression(&self, expr_js: String) -> String {
+        format!(
+            "(() => {{ const __reactive = signal(\"\"); effect(() => {{ __reactive.value = {}; }}); return __reactive; }})()",
+            expr_js
+        )
+    }
+
+    /// Generates JavaScript code for a JSX child, wrapping in effect if reactive
+    fn generate_jsx_child_js(&self, child: &JsxChild) -> String {
+        match child {
+            JsxChild::Element(elem) => self.generate_jsx_js(elem),
+            JsxChild::Text(text) => format!("\"{}\"", text),
+            JsxChild::Expression(expr) => {
+                // Check if this expression is reactive (reads .value)
+                let is_reactive = ReactiveAnalyzer::is_reactive(expr);
+                let expr_js = self.generate_expression_js(expr);
+
+                if is_reactive {
+                    // Wrap in auto-effect for automatic updates
+                    self.wrap_reactive_expression(expr_js)
+                } else {
+                    // Static expression - no wrapping needed
+                    expr_js
+                }
+            }
+        }
+    }
+
+    /// Generates JavaScript code for a JSX attribute value, wrapping in effect if reactive
+    fn generate_jsx_attribute_value_js(&self, expr: &Expression) -> String {
+        // Check if this expression is reactive (reads .value)
+        let is_reactive = ReactiveAnalyzer::is_reactive(expr);
+        let expr_js = self.generate_expression_js(expr);
+
+        if is_reactive {
+            // Wrap in auto-effect for automatic updates
+            self.wrap_reactive_expression(expr_js)
+        } else {
+            // Static expression - no wrapping needed
+            expr_js
+        }
+    }
+
     /// Generates JavaScript code for JSX
     fn generate_jsx_js(&self, jsx: &crate::ast::JsxElement) -> String {
         let tag = &jsx.opening_tag.name.value;
@@ -1955,7 +2008,7 @@ impl JSEmitter {
         // Check if this is a component (starts with uppercase) or HTML element (lowercase)
         let is_component = tag.chars().next().map(|c| c.is_uppercase()).unwrap_or(false);
 
-        // Generate attributes/props
+        // Generate attributes/props (with automatic reactivity wrapping)
         let attrs = if jsx.opening_tag.attributes.is_empty() {
             if is_component {
                 "{}".to_string()  // Components get empty props object
@@ -1966,7 +2019,7 @@ impl JSEmitter {
             let attrs_str = jsx.opening_tag.attributes
                 .iter()
                 .map(|attr| {
-                    let val = self.generate_expression_js(&attr.value);
+                    let val = self.generate_jsx_attribute_value_js(&attr.value);
                     format!("{}: {}", attr.name.value, val)
                 })
                 .collect::<Vec<_>>()
@@ -1978,14 +2031,10 @@ impl JSEmitter {
             }
         };
 
-        // Generate children
+        // Generate children (with automatic reactivity wrapping)
         let children = jsx.children
             .iter()
-            .map(|child| match child {
-                crate::ast::JsxChild::Element(elem) => self.generate_jsx_js(elem),
-                crate::ast::JsxChild::Text(text) => format!("\"{}\"", text),
-                crate::ast::JsxChild::Expression(expr) => self.generate_expression_js(expr),
-            })
+            .map(|child| self.generate_jsx_child_js(child))
             .collect::<Vec<_>>()
             .join(", ");
 

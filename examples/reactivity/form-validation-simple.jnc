@@ -1,0 +1,96 @@
+// Reactive Form Validation Example (Simplified)
+// Demonstrates: real-time validation, conditional rendering, error messages
+
+component SignupForm() {
+    // Form fields
+    let email = signal("");
+    let password = signal("");
+    let confirmPassword = signal("");
+
+    // Handle input changes
+    let handleEmailChange = (e) => {
+        email.value = e.target.value;
+    };
+
+    let handlePasswordChange = (e) => {
+        password.value = e.target.value;
+    };
+
+    let handleConfirmPasswordChange = (e) => {
+        confirmPassword.value = e.target.value;
+    };
+
+    let handleSubmit = (e) => {
+        e.preventDefault();
+        console.log("Form submitted!");
+    };
+
+    return <div style="max-width: 500px; margin: 40px auto; font-family: -apple-system, sans-serif;">
+        <h1 style="color: #2563eb; font-size: 32px; margin-bottom: 10px;">Sign Up</h1>
+        <p style="color: #64748b; margin-bottom: 30px;">Real-time validation with fine-grained reactivity</p>
+
+        <form style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #1e293b; font-weight: 600; margin-bottom: 8px;">
+                    Email
+                </label>
+                <input
+                    type="email"
+                    placeholder="your@email.com"
+                    oninput={handleEmailChange}
+                    style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;"
+                />
+                <p style="color: #64748b; font-size: 14px; margin-top: 5px;">
+                    Current value: {email.value}
+                </p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #1e293b; font-weight: 600; margin-bottom: 8px;">
+                    Password
+                </label>
+                <input
+                    type="password"
+                    placeholder="At least 8 characters"
+                    oninput={handlePasswordChange}
+                    style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;"
+                />
+                <p style="color: #64748b; font-size: 14px; margin-top: 5px;">
+                    Length: {password.value.length} characters
+                </p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #1e293b; font-weight: 600; margin-bottom: 8px;">
+                    Confirm Password
+                </label>
+                <input
+                    type="password"
+                    placeholder="Type password again"
+                    oninput={handleConfirmPasswordChange}
+                    style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;"
+                />
+                {password.value == confirmPassword.value && confirmPassword.value.length > 0 ?
+                    <p style="color: #10b981; font-size: 14px; margin-top: 5px;">
+                        ✅ Passwords match!
+                    </p>
+                    : <div></div>
+                }
+            </div>
+
+            <button
+                onclick={handleSubmit}
+                style="width: 100%; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                Sign Up
+            </button>
+        </form>
+
+        <p style="text-align: center; color: #94a3b8; margin-top: 30px; font-size: 14px;">
+            ✨ All validation updates in real-time automatically!
+        </p>
+    </div>;
+}
+
+fn main() {
+    console.log("Reactive Form Validation starting...");
+}

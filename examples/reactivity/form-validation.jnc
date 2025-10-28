@@ -1,0 +1,168 @@
+// Reactive Form Validation Example
+// Demonstrates: real-time validation, conditional rendering, error messages
+
+component SignupForm() {
+    // Form fields
+    let email = signal("");
+    let password = signal("");
+    let confirmPassword = signal("");
+    let agreedToTerms = signal(false);
+
+    // Validation computed values
+    let emailValid = computed(() => {
+        let e = email.value;
+        return e.length > 0 && e.contains("@") && e.contains(".");
+    });
+
+    let passwordValid = computed(() => {
+        return password.value.length >= 8;
+    });
+
+    let passwordsMatch = computed(() => {
+        return password.value == confirmPassword.value && confirmPassword.value.length > 0;
+    });
+
+    let formValid = computed(() => {
+        return emailValid.value && passwordValid.value && passwordsMatch.value && agreedToTerms.value;
+    });
+
+    // Handle input changes
+    let handleEmailChange = (e) => {
+        email.value = e.target.value;
+    };
+
+    let handlePasswordChange = (e) => {
+        password.value = e.target.value;
+    };
+
+    let handleConfirmPasswordChange = (e) => {
+        confirmPassword.value = e.target.value;
+    };
+
+    let handleTermsChange = (e) => {
+        agreedToTerms.value = e.target.checked;
+    };
+
+    let handleSubmit = (e) => {
+        e.preventDefault();
+        if (formValid.value) {
+            console.log("Form submitted!");
+        }
+    };
+
+    return <div style="max-width: 500px; margin: 40px auto; font-family: -apple-system, sans-serif;">
+        <h1 style="color: #2563eb; font-size: 32px; margin-bottom: 10px;">Sign Up</h1>
+        <p style="color: #64748b; margin-bottom: 30px;">Real-time validation with fine-grained reactivity</p>
+
+        <form style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #1e293b; font-weight: 600; margin-bottom: 8px;">
+                    Email
+                </label>
+                <input
+                    type="email"
+                    placeholder="your@email.com"
+                    oninput={handleEmailChange}
+                    style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;"
+                />
+                {email.value.length > 0 && !emailValid.value ?
+                    <p style="color: #ef4444; font-size: 14px; margin-top: 5px;">
+                        ❌ Please enter a valid email
+                    </p>
+                    : <div></div>
+                }
+                {emailValid.value ?
+                    <p style="color: #10b981; font-size: 14px; margin-top: 5px;">
+                        ✅ Email looks good!
+                    </p>
+                    : <div></div>
+                }
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #1e293b; font-weight: 600; margin-bottom: 8px;">
+                    Password
+                </label>
+                <input
+                    type="password"
+                    placeholder="At least 8 characters"
+                    oninput={handlePasswordChange}
+                    style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;"
+                />
+                {password.value.length > 0 && !passwordValid.value ?
+                    <p style="color: #ef4444; font-size: 14px; margin-top: 5px;">
+                        ❌ Password must be at least 8 characters
+                    </p>
+                    : <div></div>
+                }
+                {passwordValid.value ?
+                    <p style="color: #10b981; font-size: 14px; margin-top: 5px;">
+                        ✅ Strong password!
+                    </p>
+                    : <div></div>
+                }
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #1e293b; font-weight: 600; margin-bottom: 8px;">
+                    Confirm Password
+                </label>
+                <input
+                    type="password"
+                    placeholder="Type password again"
+                    oninput={handleConfirmPasswordChange}
+                    style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;"
+                />
+                {confirmPassword.value.length > 0 && !passwordsMatch.value ?
+                    <p style="color: #ef4444; font-size: 14px; margin-top: 5px;">
+                        ❌ Passwords don't match
+                    </p>
+                    : <div></div>
+                }
+                {passwordsMatch.value ?
+                    <p style="color: #10b981; font-size: 14px; margin-top: 5px;">
+                        ✅ Passwords match!
+                    </p>
+                    : <div></div>
+                }
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input
+                        type="checkbox"
+                        onchange={handleTermsChange}
+                        style="width: 20px; height: 20px; margin-right: 10px;"
+                    />
+                    <span style="color: #1e293b; font-size: 14px;">
+                        I agree to the terms and conditions
+                    </span>
+                </label>
+            </div>
+
+            <button
+                onclick={handleSubmit}
+                style="width: 100%; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; opacity: 1;">
+                {formValid.value ? "Sign Up ✨" : "Complete the form"}
+            </button>
+
+            <div style="margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 8px;">
+                <p style="font-size: 14px; color: #64748b; margin-bottom: 8px;">Form Status:</p>
+                <p style="font-size: 14px; color: #1e293b;">
+                    ✉️ Email: {emailValid.value ? "✅" : "❌"} |
+                    🔒 Password: {passwordValid.value ? "✅" : "❌"} |
+                    🔁 Match: {passwordsMatch.value ? "✅" : "❌"} |
+                    📋 Terms: {agreedToTerms.value ? "✅" : "❌"}
+                </p>
+            </div>
+        </form>
+
+        <p style="text-align: center; color: #94a3b8; margin-top: 30px; font-size: 14px;">
+            ✨ All validation updates in real-time automatically!
+        </p>
+    </div>;
+}
+
+fn main() {
+    console.log("Reactive Form Validation starting...");
+}
