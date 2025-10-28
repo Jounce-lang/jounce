@@ -1,6 +1,9 @@
 // Jounce Client Runtime
 // Provides JSX rendering and client-side utilities
 
+// Import reactivity system for reactive components
+import { effect } from './reactivity.js';
+
 // Simple JSX createElement function (h function)
 export function h(tag, props, ...children) {
     if (typeof tag === 'function') {
@@ -89,17 +92,40 @@ export function h(tag, props, ...children) {
     // Set properties
     if (props) {
         for (const [key, value] of Object.entries(props)) {
+            // Check if value is a reactive signal
+            const isSignal = value && typeof value === 'object' && '_value' in value && '_subscribers' in value;
+
             if (key === 'className') {
-                element.className = value;
+                if (isSignal) {
+                    element.className = value.value;
+                    effect(() => { element.className = value.value; });
+                } else {
+                    element.className = value;
+                }
             } else if (key === 'class') {
-                element.className = value;
+                if (isSignal) {
+                    element.className = value.value;
+                    effect(() => { element.className = value.value; });
+                } else {
+                    element.className = value;
+                }
             } else if (key.startsWith('on')) {
                 const eventName = key.substring(2).toLowerCase();
                 element.addEventListener(eventName, value);
             } else if (key === 'style' && typeof value === 'object') {
-                Object.assign(element.style, value);
+                if (isSignal) {
+                    Object.assign(element.style, value.value);
+                    effect(() => { Object.assign(element.style, value.value); });
+                } else {
+                    Object.assign(element.style, value);
+                }
             } else {
-                element.setAttribute(key, value);
+                if (isSignal) {
+                    element.setAttribute(key, value.value);
+                    effect(() => { element.setAttribute(key, value.value); });
+                } else {
+                    element.setAttribute(key, value);
+                }
             }
         }
     }
@@ -112,6 +138,15 @@ export function h(tag, props, ...children) {
             element.appendChild(document.createTextNode(String(child)));
         } else if (child instanceof Node) {
             element.appendChild(child);
+        } else if (child && typeof child === 'object' && '_value' in child && '_subscribers' in child) {
+            // This is a reactive signal! Create a text node and set up auto-update
+            const textNode = document.createTextNode(String(child.value));
+            element.appendChild(textNode);
+
+            // Set up effect to update text node when signal changes
+            effect(() => {
+                textNode.textContent = String(child.value);
+            });
         }
     }
 
@@ -269,7 +304,9 @@ export function ErrorBoundary(props, passedChildren) {
     }
 }
 
-// Mount a component to the DOM (with lifecycle support - Session 18)
+// Mount a component to the DOM (with lifecycle support - Session 18+20)
+// Session 20: NON-reactive mount (reactive rendering requires compiler changes)
+// Components render once. Use signals in event handlers for updates.
 export function mountComponent(component, selector = '#app') {
     const container = document.querySelector(selector);
     if (!container) {
@@ -290,7 +327,7 @@ export function mountComponent(component, selector = '#app') {
     // Set as current context
     currentLifecycleContext = lifecycleContext;
 
-    // Render component
+    // Render component (called ONCE - signals created once)
     const rendered = typeof component === 'function' ? component() : component;
 
     // Clear context

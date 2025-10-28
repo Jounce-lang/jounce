@@ -1,0 +1,141 @@
+// Reactive Search & Filter Example
+// Demonstrates: filtering arrays, search functionality, multiple filters
+
+component ProductSearch() {
+    // All products
+    let allProducts = signal([
+        { id: 1, name: "Laptop Pro", category: "Electronics", price: 1299, inStock: true },
+        { id: 2, name: "Wireless Mouse", category: "Electronics", price: 29, inStock: true },
+        { id: 3, name: "Office Chair", category: "Furniture", price: 299, inStock: false },
+        { id: 4, name: "Desk Lamp", category: "Furniture", price: 49, inStock: true },
+        { id: 5, name: "Mechanical Keyboard", category: "Electronics", price: 129, inStock: true },
+        { id: 6, name: "Standing Desk", category: "Furniture", price: 599, inStock: true },
+        { id: 7, name: "USB-C Cable", category: "Electronics", price: 15, inStock: false },
+        { id: 8, name: "Bookshelf", category: "Furniture", price: 179, inStock: true }
+    ]);
+
+    // Filter state
+    let searchQuery = signal("");
+    let selectedCategory = signal("All");
+    let showInStockOnly = signal(false);
+    let maxPrice = signal(1500);
+
+    // Computed: filtered products (updates automatically!)
+    let filteredProducts = computed(() => {
+        let query = searchQuery.value.to_lowercase();
+        let category = selectedCategory.value;
+        let inStockFilter = showInStockOnly.value;
+        let priceLimit = maxPrice.value;
+
+        return allProducts.value.filter((product) => {
+            // Search filter
+            let matchesSearch = product.name.to_lowercase().contains(query);
+
+            // Category filter
+            let matchesCategory = category == "All" || product.category == category;
+
+            // Stock filter
+            let matchesStock = !inStockFilter || product.inStock;
+
+            // Price filter
+            let matchesPrice = product.price <= priceLimit;
+
+            return matchesSearch && matchesCategory && matchesStock && matchesPrice;
+        });
+    });
+
+    // Computed: result count
+    let resultCount = computed(() => {
+        return filteredProducts.value.length;
+    });
+
+    return <div style="max-width: 900px; margin: 40px auto; font-family: -apple-system, sans-serif;">
+        <h1 style="color: #2563eb; font-size: 36px; margin-bottom: 10px;">Product Search</h1>
+        <p style="color: #64748b; margin-bottom: 30px;">
+            Real-time filtering with fine-grained reactivity - {resultCount.value} results
+        </p>
+
+        <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #1e293b; font-weight: 600; margin-bottom: 8px;">
+                    Search Products
+                </label>
+                <input
+                    type="text"
+                    placeholder="Type to search..."
+                    oninput={(e) => { searchQuery.value = e.target.value; }}
+                    style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;"
+                />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; color: #1e293b; font-weight: 600; margin-bottom: 8px;">
+                        Category
+                    </label>
+                    <select
+                        onchange={(e) => { selectedCategory.value = e.target.value; }}
+                        style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;">
+                        <option value="All">All Categories</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Furniture">Furniture</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display: block; color: #1e293b; font-weight: 600; margin-bottom: 8px;">
+                        Max Price: ${maxPrice.value}
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="1500"
+                        step="50"
+                        value="1500"
+                        oninput={(e) => { maxPrice.value = e.target.value.parse_int(); }}
+                        style="width: 100%;"
+                    />
+                </div>
+            </div>
+
+            <div>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input
+                        type="checkbox"
+                        onchange={(e) => { showInStockOnly.value = e.target.checked; }}
+                        style="width: 20px; height: 20px; margin-right: 10px;"
+                    />
+                    <span style="color: #1e293b; font-size: 16px;">
+                        Show in-stock items only
+                    </span>
+                </label>
+            </div>
+        </div>
+
+        <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="font-size: 20px; color: #1e293b; margin-bottom: 15px;">
+                Results ({resultCount.value} {resultCount.value == 1 ? "product" : "products"})
+            </h2>
+
+            {resultCount.value == 0 ?
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <p style="font-size: 18px; margin-bottom: 10px;">No products found</p>
+                    <p style="font-size: 14px;">Try adjusting your filters</p>
+                </div>
+                : <div style="display: grid; gap: 15px;">
+                    <p style="color: #64748b; font-size: 14px;">
+                        Showing {resultCount.value} of {allProducts.value.length} products
+                    </p>
+                </div>
+            }
+        </div>
+
+        <p style="text-align: center; color: #94a3b8; margin-top: 30px; font-size: 14px;">
+            ✨ Results update instantly as you type and adjust filters!
+        </p>
+    </div>;
+}
+
+fn main() {
+    console.log("Reactive Search & Filter starting...");
+}

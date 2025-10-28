@@ -1,0 +1,16 @@
+// Test Fine-Grained Reactivity
+// This should automatically update the DOM when count changes
+
+component Counter() {
+    let count = signal(0);
+
+    return <div>
+        <h1>Counter: {count.value}</h1>
+        <p>Double: {count.value * 2}</p>
+        <button onclick={() => { count.value = count.value + 1; }}>Increment</button>
+    </div>;
+}
+
+fn main() {
+    console.log("Fine-grained reactivity test!");
+}
