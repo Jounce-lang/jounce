@@ -1,0 +1,85 @@
+// Reactive Shopping Cart Example
+// Demonstrates: computed values, array reactivity, automatic totals
+
+component ShoppingCart() {
+    // State: array of cart items
+    let items = signal([
+        { id: 1, name: "Laptop", price: 999, quantity: 1 },
+        { id: 2, name: "Mouse", price: 29, quantity: 2 },
+        { id: 3, name: "Keyboard", price: 79, quantity: 1 }
+    ]);
+
+    // Computed: total price (automatically recalculates!)
+    let total = computed(() => {
+        return items.value.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    });
+
+    // Computed: total items
+    let totalItems = computed(() => {
+        return items.value.reduce((sum, item) => sum + item.quantity, 0);
+    });
+
+    // Add quantity to an item
+    let increaseQty = (id: int) => {
+        items.value = items.value.map((item) => {
+            if (item.id == id) {
+                return { id: item.id, name: item.name, price: item.price, quantity: item.quantity + 1 };
+            }
+            return item;
+        });
+    };
+
+    // Remove quantity from an item
+    let decreaseQty = (id: int) => {
+        items.value = items.value.map((item) => {
+            if (item.id == id && item.quantity > 0) {
+                return { id: item.id, name: item.name, price: item.price, quantity: item.quantity - 1 };
+            }
+            return item;
+        });
+    };
+
+    // Remove item from cart
+    let removeItem = (id: int) => {
+        items.value = items.value.filter((item) => item.id != id);
+    };
+
+    return <div style="max-width: 800px; margin: 40px auto; font-family: -apple-system, sans-serif;">
+        <h1 style="color: #2563eb; font-size: 36px; margin-bottom: 10px;">Shopping Cart</h1>
+        <p style="color: #64748b; margin-bottom: 30px;">Fine-grained reactivity - totals update automatically!</p>
+
+        <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="margin-bottom: 20px;">
+                <h2 style="font-size: 18px; color: #1e293b; margin-bottom: 15px;">
+                    Cart Items ({totalItems.value})
+                </h2>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <p style="color: #64748b; font-size: 14px;">
+                    Item count: {totalItems.value} | Total: ${total.value}
+                </p>
+            </div>
+
+            <div style="border-top: 2px solid #e2e8f0; padding-top: 20px; margin-top: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-size: 24px; color: #1e293b;">Total</h3>
+                    <p style="font-size: 32px; font-weight: bold; color: #2563eb;">
+                        ${total.value}
+                    </p>
+                </div>
+                <p style="color: #64748b; font-size: 14px; margin-top: 10px;">
+                    {totalItems.value} {totalItems.value == 1 ? "item" : "items"} in cart
+                </p>
+            </div>
+        </div>
+
+        <p style="text-align: center; color: #94a3b8; margin-top: 30px; font-size: 14px;">
+            ✨ All values update automatically with fine-grained reactivity!
+        </p>
+    </div>;
+}
+
+fn main() {
+    console.log("Reactive Shopping Cart starting...");
+}

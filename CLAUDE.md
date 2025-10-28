@@ -1,9 +1,9 @@
 # CLAUDE.md - Jounce Development Guide
 
-**Version**: v0.21.0 "Session 19 Complete"
-**Current Status**: 98% CLIENT, 94% FULL-STACK - Production-ready error handling!
-**Last Updated**: October 27, 2025
-**Tests**: ✅ 638/638 passing (100%)
+**Version**: v0.21.1 "Session 20 Paused"
+**Current Status**: 98% CLIENT, 94% FULL-STACK - Learning production patterns!
+**Last Updated**: October 27, 2025 (Session 20 - Part 1)
+**Tests**: ✅ 628/628 passing (100%)
 
 ---
 
@@ -196,6 +196,38 @@ Jounce follows a **three-phase progressive enhancement** strategy for build arti
    - **Result**: Async operations show loading states automatically!
 
 **Outcome:** ✅ Production-ready error and loading handling, 638/638 tests passing
+
+---
+
+### **Session 20: Build Real-World Todo App** ⏸️ PAUSED (70% complete, 2 hours spent)
+**Priority: Demonstrate full capabilities, learn correct patterns**
+
+**Status**: PAUSED - See `SESSION_20_PROGRESS.md` for full details
+
+**What We Achieved:**
+1. ✅ **Todo App Compiles** - Single main.jnc file (67 lines)
+2. ✅ **Server Functions** - 5 database operations working (init_db, get_todos, add_todo, toggle_todo, delete_todo)
+3. ✅ **Reactive State** - Signals working inside components
+4. ✅ **Database** - SQLite with sample data
+5. ✅ **Zero Regressions** - 628/628 tests passing
+
+**What's Left:**
+- Complete UI (todo list, add input, toggle/delete buttons)
+- Add inline styles (NO separate CSS)
+- Test end-to-end in browser
+
+**Critical Lessons Learned:**
+- ✅ Use `server fn` (NOT `@server fn`)
+- ✅ Use `script { }` ONLY in server functions (NOT top-level)
+- ✅ Signals work inside components
+- ✅ Use `.then()` chains (NOT async/await)
+- ✅ Inline styles only (NO separate CSS files)
+- ❌ Top-level `<script>` NOT supported
+- ❌ Named functions in components NOT supported (use inline arrows)
+
+**Outcome:** 70% complete, correct patterns documented, ready for completion in next session
+
+**Next Session**: Finish remaining 30% (~45 min estimated)
 
 ---
 

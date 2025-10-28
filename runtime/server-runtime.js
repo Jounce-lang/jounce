@@ -474,6 +474,17 @@ class WebSocketServer {
     }
 }
 
+// ============================================================================
+// Global Database Initialization
+// ============================================================================
+
+// Initialize global.db for server functions to use
+// Server functions expect global.db to be available
+if (!global.db) {
+    const dbInstance = getDB(); // Create DB instance
+    global.db = dbInstance.db;  // Assign raw better-sqlite3 Database object to global
+}
+
 module.exports = {
     HttpServer,
     loadWasm,

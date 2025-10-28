@@ -1,0 +1,195 @@
+// Jounce Todo App - Simple & Working
+// ONE .jnc FILE → WORKING APP
+
+// ============================================================================
+// SERVER - Database
+// ============================================================================
+
+server fn init_db() {
+    script {
+        const db = global.db;
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS todos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                text TEXT NOT NULL,
+                completed INTEGER DEFAULT 0
+            )
+        `);
+
+        // Add sample data if empty
+        const count = db.prepare('SELECT COUNT(*) as count FROM todos').get();
+        if (count.count === 0) {
+            const insert = db.prepare('INSERT INTO todos (text, completed) VALUES (?, ?)');
+            insert.run('Learn Jounce', 1);
+            insert.run('Build todo app', 0);
+            insert.run('Deploy to production', 0);
+        }
+
+        return true;  // Return success
+    }
+}
+
+server fn get_todos() {
+    script {
+        const db = global.db;
+        const rows = db.prepare('SELECT * FROM todos ORDER BY id DESC').all();
+        return rows.map(row => ({
+            id: row.id,
+            text: row.text,
+            completed: row.completed === 1
+        }));
+    }
+}
+
+server fn add_todo(text: string) {
+    script {
+        const db = global.db;
+        const stmt = db.prepare('INSERT INTO todos (text, completed) VALUES (?, 0)');
+        const result = stmt.run(text);
+        return result.lastInsertRowid;
+    }
+}
+
+server fn toggle_todo(id: int) {
+    script {
+        const db = global.db;
+        const todo = db.prepare('SELECT * FROM todos WHERE id = ?').get(id);
+        const newCompleted = todo.completed === 1 ? 0 : 1;
+        db.prepare('UPDATE todos SET completed = ? WHERE id = ?').run(newCompleted, id);
+        return true;
+    }
+}
+
+server fn delete_todo(id: int) {
+    script {
+        const db = global.db;
+        db.prepare('DELETE FROM todos WHERE id = ?').run(id);
+        return true;
+    }
+}
+
+// ============================================================================
+// CLIENT - Component with reactive state
+// ============================================================================
+
+component TodoApp() {
+    let todos = signal([]);
+    let message = signal("Loading todos...");
+
+    // Load todos on mount
+    onMount(() => {
+        init_db().then(() => {
+            return get_todos();
+        }).then((data) => {
+            todos.value = data;
+            message.value = "";
+            // Manually trigger a re-render by updating the UI
+            updateTodoUI();
+        });
+    });
+
+    // Helper to update UI when todos change
+    let updateTodoUI = () => {
+        let todoList = document.getElementById("todoList");
+        let totalEl = document.getElementById("totalCount");
+        let emptyEl = document.getElementById("emptyMessage");
+
+        if (todoList) {
+            // Clear and rebuild todo list
+            todoList.innerHTML = "";
+            todos.value.forEach((todo) => {
+                let todoDiv = document.createElement("div");
+                todoDiv.style = "display: flex; align-items: center; gap: 12px; padding: 16px; margin-bottom: 8px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #2563eb;";
+
+                // Checkbox
+                let checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.checked = todo.completed;
+                checkbox.style = "width: 20px; height: 20px; cursor: pointer;";
+                checkbox.onchange = () => {
+                    toggle_todo(todo.id).then(() => get_todos()).then((data) => {
+                        todos.value = data;
+                        updateTodoUI();
+                    });
+                };
+
+                // Text
+                let textSpan = document.createElement("span");
+                textSpan.textContent = todo.text;
+                textSpan.style = todo.completed ? "flex: 1; font-size: 16px; color: #94a3b8; text-decoration: line-through;" : "flex: 1; font-size: 16px; color: #1e293b;";
+
+                // Delete button
+                let deleteBtn = document.createElement("button");
+                deleteBtn.textContent = "Delete";
+                deleteBtn.style = "padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer;";
+                deleteBtn.onclick = () => {
+                    delete_todo(todo.id).then(() => get_todos()).then((data) => {
+                        todos.value = data;
+                        updateTodoUI();
+                    });
+                };
+
+                todoDiv.appendChild(checkbox);
+                todoDiv.appendChild(textSpan);
+                todoDiv.appendChild(deleteBtn);
+                todoList.appendChild(todoDiv);
+            });
+        }
+
+        // Update total count
+        if (totalEl) {
+            totalEl.textContent = "Total: " + todos.value.length.toString() + " " + (todos.value.length == 1 ? "todo" : "todos");
+        }
+
+        // Update empty message
+        if (emptyEl) {
+            emptyEl.style.display = todos.value.length == 0 ? "block" : "none";
+        }
+    };
+
+    return <div style="max-width: 600px; margin: 40px auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h1 style="color: #2563eb; font-size: 32px; margin: 0 0 10px 0; text-align: center;">Jounce Todo</h1>
+        <p style="text-align: center; color: #64748b; margin: 0 0 30px 0; font-size: 14px;">Built with Jounce - One .jnc file!</p>
+
+        {message.value == "" ? <div></div> : <p style="text-align: center; color: #3b82f6; margin-bottom: 20px;">{message.value}</p>}
+
+        <div style="display: flex; gap: 8px; margin-bottom: 30px;">
+            <input
+                id="todoInput"
+                type="text"
+                placeholder="What needs to be done?"
+                style="flex: 1; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px; outline: none;"
+            />
+            <button
+                onclick={() => {
+                    let input = document.getElementById("todoInput");
+                    let text = input.value;
+                    if (text == "") {
+                        return;
+                    }
+                    add_todo(text).then(() => {
+                        return get_todos();
+                    }).then((data) => {
+                        todos.value = data;
+                        input.value = "";
+                        updateTodoUI();
+                    });
+                }}
+                style="padding: 12px 24px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                Add
+            </button>
+        </div>
+
+        <div id="todoList" style="margin-top: 20px;"></div>
+
+        <p id="emptyMessage" style="text-align: center; color: #94a3b8; margin-top: 40px; font-size: 16px; display: none;">No todos yet. Add one above!</p>
+
+        <p id="totalCount" style="text-align: center; color: #94a3b8; margin-top: 30px; font-size: 14px;">
+            Total: 0 todos
+        </p>
+    </div>;
+}
+
+fn main() {
+    console.log("Jounce Todo starting...");
+}
