@@ -1,9 +1,9 @@
 # CLAUDE.md - Jounce Development Guide
 
-**Version**: v0.21.1 "Session 20 Paused"
-**Current Status**: 98% CLIENT, 94% FULL-STACK - Learning production patterns!
-**Last Updated**: October 27, 2025 (Session 20 - Part 1)
-**Tests**: ✅ 628/628 passing (100%)
+**Version**: v0.25.0 "String Interpolation Fixed"
+**Current Status**: ✅ Phase 13 Complete + 3 Issues Fixed! 2 Known Issues Remain
+**Last Updated**: October 29, 2025 (Session 22 - String Interpolation)
+**Tests**: ✅ 635/635 passing (100%)
 
 ---
 
@@ -46,382 +46,210 @@
 
 ---
 
-## 🏗️ BUILD ARTIFACT ARCHITECTURE (PERMANENT REFERENCE)
+## 🐛 KNOWN ISSUES (2 Remaining, 3 Fixed)
 
-**⚠️ DO NOT DELETE OR MODIFY WITHOUT EXPLICIT PERMISSION ⚠️**
+### 🔴 **CRITICAL PRIORITY** (2 issues - 8-12 hours each)
 
-Jounce follows a **three-phase progressive enhancement** strategy for build artifacts:
+#### **Issue #12-1: Component Parameters Not Supported**
+**Status**: 🔴 NOT STARTED
+**Impact**: Cannot create reusable components with props
+**Example**:
+```jounce
+component Card(title: String, subtitle: String) -> JSX {  // ❌ Parse error
+    <div>
+        <h2>{title}</h2>
+        <p>{subtitle}</p>
+    </div>
+}
+```
+**Error**: `ParserError { message: "Expected LBrace, found Arrow", line: 4, column: 50 }`
 
-- **Phase 1 (95% COMPLETE - TODAY):** JavaScript everywhere (easy deploy, debug, AI-friendly)
-- **Phase 2 (FUTURE - v0.30.0+):** Client to WebAssembly, server stays JS
-- **Phase 3 (FUTURE - v1.0.0+):** Full WASM on both sides
+**Root Cause**: Component parser doesn't support:
+- Parameters with types
+- Return type annotation (`-> JSX`)
 
-**Current Build Output:**
-- ✅ `dist/server.js` - Node bundle with @server logic + RPC
-- ✅ `dist/client.js` - Browser bundle with @client UI + RPC client
-- ✅ `dist/index.html` - HTML shell
-- ✅ `dist/styles.css` - Generated CSS
-- ✅ `dist/*-runtime.js` - Runtime libraries
-- ⚠️ `dist/app.wasm` - Placeholder (36 bytes)
-- ❌ `dist/manifest.json` - TODO (2-3 hours)
-- ❌ `dist/rpc.schema.json` - TODO (1-2 hours)
+**Fix Needed**:
+1. Extend `parse_component()` to handle parameter list
+2. Support return type annotations
+3. Pass props to component functions as destructured object
 
-**📖 Full details:** See `ROADMAP.md` section "🏗️ Build Artifact Architecture"
+**Files**: `src/parser.rs` (component parsing)
+**Effort**: 8-12 hours
+**Priority**: **HIGH** - Essential for component-based architecture
 
-**Key Principle:** No "single .wasm file only" - always need HTML + loader.js + config
+---
+
+#### **Issue #23-1: JSX Inside Lambda Expressions Broken**
+**Status**: 🔴 NOT STARTED
+**Impact**: Cannot use map/filter with JSX rendering
+**Example**:
+```jounce
+{items.value.map((item) => <p>Item: {item}</p>)}  // ❌ Parse error
+{items.value.map((item) => {
+    return <p>Item: {item}</p>;
+})}  // ❌ Also fails!
+```
+**Error**: `ParserError { message: "Expected LAngle, found Colon", line: 7, column: 28 }`
+
+**Root Cause**: Parser doesn't recognize JSX expressions inside:
+- Lambda expression bodies
+- Return statements within lambdas
+- Nested `{...}` expressions in JSX context
+
+**Fix Needed**:
+1. Track JSX context depth when parsing lambdas
+2. Allow JSX parsing in lambda bodies when parent context is JSX
+3. Handle nested expression braces correctly
+
+**Files**: `src/parser.rs` (JSX expression parsing, lambda parsing)
+**Effort**: 8-12 hours
+**Priority**: **HIGH** - Severely limits list rendering patterns
+
+---
+
+### ✅ **FIXED** (3 issues)
+
+#### **Issue #20-1: String Interpolation in Attributes** ✅ FIXED in v0.25.0
+**Was**: `class="btn {active.value ? 'active' : ''}` generated as literal string
+**Now**: Converts to reactive template literal with automatic updates
+**Example**:
+```jounce
+<button class="btn {active.value ? 'active' : 'inactive'}">
+```
+**Generated**:
+```javascript
+class: (() => {
+  const __reactive = signal("");
+  effect(() => {
+    __reactive.value = `btn ${(active.value ? "active" : "inactive")}`;
+  });
+  return __reactive;
+})()
+```
+**Fix**:
+- Added `parse_string_interpolation()` in `src/parser.rs:2488-2548`
+- Detects `{...}` patterns in string attributes
+- Converts to `TemplateLiteral` AST node
+- Reactive analyzer already handles template literals
+- Supports multiple interpolations in single attribute
+
+**Time**: ~2 hours (estimated 4-6, completed faster!)
+
+---
+
+#### **Issue #13-1: Functions Inside Components** ✅ FIXED in v0.24.0
+**Was**: Functions commented out as "Unsupported statement"
+**Now**: Functions generate correctly
+**Fix**: Added `Statement::Function` handling in `js_emitter.rs`
+
+#### **Issue #13-2: JSX Text Content Split by Spaces** ✅ FIXED in v0.24.0
+**Was**: `h('p', null, "Hello", "world")`
+**Now**: `h('p', null, "Hello world")`
+**Fix**: Combined consecutive text nodes in `js_emitter.rs`
+
+---
+
+## 🎯 CURRENT MISSION: FIX REMAINING 2 ISSUES
+
+**Recommended Order**:
+1. 🔴 **Issue #12-1** (Component Props) - 8-12 hours ⭐ **Essential for architecture**
+2. 🔴 **Issue #23-1** (JSX in Lambdas) - 8-12 hours
+
+**Total Estimated Time**: 16-24 hours
 
 ---
 
 ## 📊 CURRENT STATUS
 
-**What We Have:**
-- ✅ **Compiler**: Lexer, Parser, Type Checker, Codegen - ALL WORKING
-- ✅ **Reactivity**: Signals, computed, effects, batch, persistentSignal - 51/51 tests passing
-- ✅ **JSX**: Full JSX→JavaScript with h() function
-- ✅ **Server Functions**: RPC with auto-generated stubs working
-- ✅ **Database**: Real SQLite with full CRUD operations
-- ✅ **Routing**: Client-side navigation with URL params
-- ✅ **Script Blocks**: Inline JavaScript in server functions ✅ FIXED (Session 17)
-- ✅ **Form Handling**: jounce-forms package with validation
-- ✅ **WebSocket**: Client & server real-time communication + AUTO-SETUP (Session 18)
-- ✅ **Component Props**: Pass data to components with destructuring
-- ✅ **Component Lifecycle**: onMount, onUnmount, onUpdate, onError hooks (Session 18+19)
-- ✅ **Error Boundaries**: ErrorBoundary component for error handling (NEW Session 19!)
-- ✅ **Suspense/Loading**: Suspense component for async loading states (NEW Session 19!)
-- ✅ **Persistent Signals**: Auto-save/restore from localStorage
-- ✅ **Generic Types**: `<T>` works everywhere
-- ✅ **Glob Imports**: `use foo::*;` wildcard imports (Session 17)
-- ✅ **Environment Variables**: .env file support with dotenv (Session 17)
-- ✅ **36 Packages**: Full ecosystem ready to use
+**Completed This Session (Session 22)**:
+- ✅ Issue #20-1: String interpolation in JSX attributes (2 hours)
 
-**Completion:**
-- **Single-file CLIENT apps:** 98% complete
-- **Single-file FULL-STACK apps:** 94% complete
+**Previous Session (Session 21)**:
+- ✅ Phase 13: Style System (100% complete)
+- ✅ Issue #13-1: Functions in components
+- ✅ Issue #13-2: JSX text combining
 
-**Tests:** ✅ 638/638 passing (100%)
+**Test Status**: ✅ **635/635 passing (100%)**
 
----
+**What Works**:
+- ✅ Conditional rendering (if/else, ternary)
+- ✅ Reactive signals and computed values
+- ✅ Event handlers (onClick, onInput, preventDefault)
+- ✅ Array methods (map, filter) - without JSX in lambda
+- ✅ Math operations (Math.floor, arithmetic)
+- ✅ Object property access
+- ✅ SVG elements
+- ✅ Null rendering
+- ✅ Functions in components
+- ✅ String interpolation in attributes (NEW!)
+- ✅ Style system with themes
 
-## 🐛 KNOWN ISSUES
-
-### 🔴 CRITICAL (Blocks Production):
-**NONE!** 🎉 All critical bugs fixed in Session 17!
-
-### 🟡 IMPORTANT (Limits Functionality):
-**NONE!** 🎉 All important issues resolved!
-
-**Fixed in Session 19:**
-- ✅ **Error Boundaries** - ErrorBoundary component with onError hook
-- ✅ **Suspense/Loading States** - Suspense component for async loading
-
-**Fixed in Session 18:**
-- ✅ **WebSocket Auto-Setup** - Now fully automatic! No manual integration needed
-- ✅ **Component Lifecycle Hooks** - onMount/onUnmount/onUpdate all working
-
-**Full Analysis:** See `DEEP_DIVE_ANALYSIS.md` (400+ lines, comprehensive)
+**What Needs Work**:
+- ❌ Component parameters/props (#12-1)
+- ❌ JSX in lambda bodies (#23-1)
+- ❌ String interpolation in attributes (#20-1)
 
 ---
 
-## 🗺️ ROADMAP
+## 🔧 NEXT STEPS
 
-### **Session 17: Polish & Bug Fixes** ✅ COMPLETE (3 hours actual)
-**Priority: Fix the ONE critical bug, add quality-of-life improvements**
+### **Now**: Start with Issue #20-1 (String Interpolation)
+**Why**:
+- Medium difficulty
+- 4-6 hours effort
+- Common use case
+- Good learning for attribute handling
+- Can complete in one session
 
-1. ✅ **Fix Script Block Server Functions** - COMPLETE
-   - Detect ScriptBlock expressions and Statement::ScriptBlock
-   - Don't wrap with `return`, output directly as function body
-   - All tests passing (627/627)
-   - **Result**: Script blocks generate valid JavaScript
+### **Later**: Tackle Critical Issues
+**Issue #12-1** (Component Props):
+- Essential for component architecture
+- 8-12 hours
+- Large undertaking
 
-2. ✅ **Add Glob Import Support** - COMPLETE
-   - Added `is_glob: bool` to UseStatement AST
-   - Parser detects `*` after `::`
-   - Module loader expands glob imports to all exports
-   - Added 2 new tests
-   - **Result**: `use jounce::forms::*;` works perfectly
-
-3. ✅ **Add Environment Variable Support** - COMPLETE
-   - Installed dotenv package
-   - Added `require('dotenv').config()` to server-runtime.js
-   - Server functions can access `process.env`
-   - Created `.env.example` for documentation
-   - **Result**: .env files work, apps can be configured
-
-**Outcome:** ✅ Zero critical bugs, 627/627 tests passing, improved DX
+**Issue #23-1** (JSX in Lambdas):
+- Critical for list rendering
+- 8-12 hours
+- Complex parser changes
 
 ---
 
-### **Session 18: Component Lifecycle & WebSocket** ✅ COMPLETE (3 hours actual vs 7-9 estimated!)
-**Priority: Complete half-finished features**
+## 📁 ARCHIVES & DOCUMENTATION
 
-1. ✅ **Component Lifecycle Hooks** - COMPLETE
-   - Added onMount(), onUnmount(), onUpdate() to runtime/client-runtime.js
-   - Lifecycle context system for nested components
-   - Callbacks merge into parent context automatically
-   - Microtask queue for proper timing
-   - Updated h() and mountComponent() functions
-   - **Result**: Components have full lifecycle support with proper nesting!
+**Session History**:
+- `CLAUDE_ARCHIVE_SESSION_20.md` - Previous session
+- `CLAUDE_ARCHIVE_SESSION_21_EXTENDED.md` - Full session 21 details
 
-2. ✅ **WebSocket Auto-Setup** - COMPLETE
-   - Added `uses_websocket: bool` to CodeSplitter
-   - Detects `use jounce_websocket::*` imports automatically
-   - Auto-injects `WebSocketServer` import when needed
-   - Auto-generates WebSocket initialization in server.js
-   - Added unit test (test_websocket_detection)
-   - All 628 tests passing
-   - **Result**: WebSocket fully integrated, ZERO manual setup! 🎉
+**Issue Documentation**:
+- `NEW_ISSUES_FOUND.md` - Detailed issue descriptions
+- `QUICK_WINS_COMPLETE.md` - Issues #13-1 and #13-2 fixes
 
-**Outcome:** ✅ Components feature-complete, WebSocket seamless, 628/628 tests passing
+**Phase Documentation**:
+- `PHASE_13_COMPLETE.md` - Style system completion
+- `SESSION_21_FINAL_SUMMARY.md` - Complete session summary
 
 ---
 
-### **Session 19: Error Handling & Loading States** ✅ COMPLETE (3 hours actual vs 7-9 estimated!)
-**Priority: Production-ready error handling**
+## 🧪 TESTING
 
-1. ✅ **Error Boundaries** - COMPLETE
-   - Added ErrorBoundary component to runtime/client-runtime.js
-   - Implemented try-catch in h() function for component rendering
-   - Added onError lifecycle hook for custom error callbacks
-   - Error context tracking with `currentErrorBoundary`
-   - Fallback UI rendering (string, function, or Node)
-   - Proper error forwarding to nearest boundary
-   - **Result**: Component trees handle errors gracefully!
-
-2. ✅ **Suspense/Loading States** - COMPLETE
-   - Added Suspense component to runtime/client-runtime.js
-   - Timeout-based async loading with `setTimeout(0)`
-   - Fallback UI support (string, function, Node, or default)
-   - External control API (`showFallback`, `showChildren`, `isLoading`)
-   - Proper cleanup on unmount
-   - **Result**: Async operations show loading states automatically!
-
-**Outcome:** ✅ Production-ready error and loading handling, 638/638 tests passing
-
----
-
-### **Session 20: Build Real-World Todo App** ⏸️ PAUSED (70% complete, 2 hours spent)
-**Priority: Demonstrate full capabilities, learn correct patterns**
-
-**Status**: PAUSED - See `SESSION_20_PROGRESS.md` for full details
-
-**What We Achieved:**
-1. ✅ **Todo App Compiles** - Single main.jnc file (67 lines)
-2. ✅ **Server Functions** - 5 database operations working (init_db, get_todos, add_todo, toggle_todo, delete_todo)
-3. ✅ **Reactive State** - Signals working inside components
-4. ✅ **Database** - SQLite with sample data
-5. ✅ **Zero Regressions** - 628/628 tests passing
-
-**What's Left:**
-- Complete UI (todo list, add input, toggle/delete buttons)
-- Add inline styles (NO separate CSS)
-- Test end-to-end in browser
-
-**Critical Lessons Learned:**
-- ✅ Use `server fn` (NOT `@server fn`)
-- ✅ Use `script { }` ONLY in server functions (NOT top-level)
-- ✅ Signals work inside components
-- ✅ Use `.then()` chains (NOT async/await)
-- ✅ Inline styles only (NO separate CSS files)
-- ❌ Top-level `<script>` NOT supported
-- ❌ Named functions in components NOT supported (use inline arrows)
-
-**Outcome:** 70% complete, correct patterns documented, ready for completion in next session
-
-**Next Session**: Finish remaining 30% (~45 min estimated)
-
----
-
-### **Session 20: Build Real-World Example Apps** (8-12 hours)
-**Priority: Demonstrate full capabilities, find edge cases**
-
-1. **Todo App with Database** (3-4 hours)
-   - Full CRUD with SQLite
-   - Server functions for persistence
-   - Reactive UI with signals
-   - Form validation
-   - **Result**: Complete todo app, 100% Jounce
-
-2. **User Management App** (3-4 hours)
-   - Registration/login with forms
-   - User list with edit/delete
-   - Search and filtering
-   - Session management
-   - **Result**: Complete auth app
-
-3. **Real-Time Chat App** (2-4 hours)
-   - WebSocket for real-time messaging
-   - Rooms and presence
-   - Message history with database
-   - **Result**: Complete chat app
-
-**Outcome:** Proven in real-world scenarios, edge cases found and fixed
-
----
-
-### **Sessions 21-25: Performance & Polish** (20-30 hours)
-**Priority: Production optimizations**
-
-1. **Source Maps** (4-5 hours) - Accurate debugging
-2. **Hot Module Replacement** (5-6 hours) - No full reload
-3. **Code Splitting** (6-8 hours) - Lazy load routes
-4. **Bundle Optimization** (4-5 hours) - Tree shaking, minification
-5. **Performance Profiling** (2-3 hours) - Identify bottlenecks
-
-**Outcome:** Fast builds, fast runtime, great DX
-
----
-
-### **Sessions 26+: Advanced Features** (50+ hours)
-**Priority: Next-generation capabilities**
-
-1. **SSR (Server-Side Rendering)** - For SEO and performance
-2. **Progressive Web App Support** - Offline apps
-3. **Native Mobile** - React Native style compilation
-4. **Desktop Apps** - Electron-style packaging
-5. **True WASM Components** - Currently placeholder
-
-**Outcome:** Jounce can target any platform
-
----
-
-## 📈 PROGRESS TRACKING
-
-**Sessions Completed:** 19
-**Features Delivered:** 50+ language features, 36 packages
-**Tests Passing:** 638/638 (100%)
-**Zero Regressions:** 9 consecutive sessions (11-19)
-**Zero Critical Bugs:** Production-ready!
-**Zero Important Issues:** All major features implemented!
-
-**Recent Achievements:**
-- ✅ Session 19: ErrorBoundary + Suspense (2 major features, 2-3x speed!)
-- ✅ Session 18: Component Lifecycle + WebSocket Auto-Setup (2 major features, 2-3x speed!)
-- ✅ Session 17: Script blocks FIXED, Glob imports, Environment variables (3 fixes!)
-- ✅ Session 16: Script blocks, Forms, WebSocket (3 major features)
-- ✅ Session 15: Server functions, Routing, Database (3 major features)
-- ✅ Session 14: Component props, Persistent signals
-
-**Velocity:** 2-5x faster than estimates (infrastructure is excellent!)
-
----
-
-## 🔑 KEY FILES
-
-**Essential Documentation:**
-- `CLAUDE.md` (this file) - Current status & roadmap
-- `FEATURES.md` (391 lines) - Feature inventory (SINGLE SOURCE OF TRUTH)
-- `DEEP_DIVE_ANALYSIS.md` (400+ lines) - Comprehensive issue analysis
-- `SESSION_19_COMPLETE.md` - Latest session summary (NEW!)
-- `SESSION_18_COMPLETE.md` - Session 18 summary (lifecycle + WebSocket)
-- `SESSION_16_COMPLETE.md` - Session 16 summary
-- `CLAUDE_ARCHIVE_SESSION_16.md` - Full history through Session 16
-- `ROADMAP.md` (794 lines) - Long-term vision
-
-**Core Compiler:**
-- `src/main.rs` - CLI entry point
-- `src/lexer.rs` - Tokenization
-- `src/parser.rs` - Parsing (3,850+ lines)
-- `src/ast.rs` - AST definitions
-- `src/js_emitter.rs` - JavaScript code generation
-- `src/type_checker.rs` - Type checking
-- `src/code_splitter.rs` - Client/server splitting
-- `src/rpc_generator.rs` - RPC stub generation
-
-**Runtime:**
-- `runtime/client-runtime.js` - h(), mountComponent(), WebSocketClient, routing
-- `runtime/server-runtime.js` - HTTP server, DB, WebSocketServer, RPC
-- `runtime/reactivity.js` - Signals, computed, effect, batch
-
-**Packages:**
-- `packages/` - 36 packages including jounce-forms (NEW!)
-
----
-
-## 🚀 QUICK START COMMANDS
-
+**Run All Tests**:
 ```bash
-# Build compiler
-cargo build --release
-
-# Run all tests
 cargo test --lib
+```
 
-# Compile a Jounce app
-cargo run -- compile app.jnc
+**Compile Test App**:
+```bash
+cargo run --release -- compile examples/apps/01-click-counter/main.jnc
+```
 
-# Serve compiled app
+**Test in Browser**:
+```bash
 cd dist && node server.js
-
-# Live reload development
-./watch.sh app.jnc
-
-# Check test status
-cargo test --lib 2>&1 | tail -3
+# Open http://localhost:3000
 ```
 
 ---
 
-## 💡 DEVELOPMENT PRINCIPLES
-
-1. **Always check FEATURES.md before building** - Avoid duplicating existing features
-2. **Follow the "DO IT RIGHT" principle** - No shortcuts, no quick fixes
-3. **One .jnc file, one working app** - No manual post-compilation steps
-4. **Test thoroughly** - All 625 tests must pass
-5. **Update documentation** - Keep FEATURES.md and CLAUDE.md current
-6. **Think architecturally** - Fix root causes, not symptoms
-
----
-
-## 📚 FOR DETAILED HISTORY
-
-**Full session archives:**
-- `CLAUDE_ARCHIVE.md` - Sessions 5-10
-- `CLAUDE_ARCHIVE_SESSION_16.md` - Sessions 11-16 (1,502 lines)
-- `SESSION_19_COMPLETE.md` - Session 19 detailed summary (ErrorBoundary + Suspense)
-- `SESSION_18_COMPLETE.md` - Session 18 detailed summary (Lifecycle + WebSocket)
-- `SESSION_16_COMPLETE.md` - Session 16 detailed summary
-- `SESSION_15_SUMMARY.md` - Session 15 detailed summary
-
-**Analysis:**
-- `DEEP_DIVE_ANALYSIS.md` - Comprehensive issue analysis with:
-  - 1 critical issue
-  - 6 important issues
-  - 5 improvements
-  - Priority matrix
-  - Recommended fix order
-  - Testing gaps
-  - Architectural issues
-
-**Example Apps:**
-- `EXAMPLE_APPS.md` (500+ lines) - User tutorials
-- `BUILDING_APPS.md` (693 lines) - Development patterns
-
----
-
-## ✅ NEXT SESSION CHECKLIST
-
-**Before starting Session 20:**
-1. Review roadmap above for Session 20 priorities
-2. Run `cargo test --lib` to verify 638/638 passing
-3. Choose first example app (Todo or User Management)
-4. Use TodoWrite tool to track progress
-5. Remember: **DO IT RIGHT, EVEN IF IT TAKES LONGER**
-
-**Session 20 Goals:**
-- Build real-world example apps
-- Prove Jounce in production scenarios
-- Find and fix edge cases
-- Demonstrate full-stack capabilities
-
-**Success Criteria:**
-- ✅ Zero critical bugs maintained
-- ✅ 638+ tests passing
-- ✅ At least 1 complete example app
-- ✅ All features working together
-- ✅ Documentation updated
-
----
-
-**Last Updated**: October 27, 2025 (Session 19 Complete)
-**Next Session**: Session 20 - Build Real-World Example Apps
-**Status**: Production-ready! 98% CLIENT, 94% FULL-STACK! 🎉
+**Last Updated**: October 28, 2025
+**Status**: Ready to fix remaining 3 issues
+**Next**: Start with Issue #20-1 (String Interpolation in Attributes)
