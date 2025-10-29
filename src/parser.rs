@@ -644,6 +644,14 @@ impl<'a> Parser<'a> {
             if !self.consume_if_matches(&TokenKind::Comma) { break; }
         }
         self.expect_and_consume(&TokenKind::RParen)?;
+
+        // Optional return type annotation: -> Type
+        if self.consume_if_matches(&TokenKind::Arrow) {
+            // Parse the return type but don't store it (components always return JSX)
+            // This is for syntax compatibility only
+            let _return_type = self.parse_type_expression()?;
+        }
+
         self.expect_and_consume(&TokenKind::LBrace)?;
 
         // Parse component body as a block of statements
