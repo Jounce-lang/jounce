@@ -7,6 +7,7 @@ use std::collections::HashMap;
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 enum Precedence {
     Lowest,
+    Ternary,     // ? :  (conditional/ternary operator)
     LogicalOr,   // ||
     LogicalAnd,  // &&
     BitwiseOr,   // |
@@ -23,6 +24,7 @@ enum Precedence {
 lazy_static::lazy_static! {
     static ref PRECEDENCES: HashMap<TokenKind, Precedence> = {
         let mut m = HashMap::new();
+        m.insert(TokenKind::Question, Precedence::Ternary);       // ? : (ternary)
         m.insert(TokenKind::PipePipe, Precedence::LogicalOr);     // ||
         m.insert(TokenKind::AmpAmp, Precedence::LogicalAnd);      // &&
         m.insert(TokenKind::Pipe, Precedence::BitwiseOr);         // |
@@ -922,31 +924,12 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_let_pattern(&mut self) -> Result<Pattern, CompileError> {
-        if self.current_token().kind == TokenKind::LParen {
-            // Tuple pattern: (a, b, c)
-            self.expect_and_consume(&TokenKind::LParen)?;
-            let mut patterns = vec![];
-
-            // Parse first pattern
-            if self.current_token().kind != TokenKind::RParen {
-                patterns.push(self.parse_let_pattern()?);
-
-                // Parse remaining patterns
-                while self.consume_if_matches(&TokenKind::Comma) {
-                    if self.current_token().kind == TokenKind::RParen {
-                        break;  // Trailing comma
-                    }
-                    patterns.push(self.parse_let_pattern()?);
-                }
-            }
-
-            self.expect_and_consume(&TokenKind::RParen)?;
-            Ok(Pattern::Tuple(patterns))
-        } else {
-            // Simple identifier pattern
-            let ident = self.parse_identifier()?;
-            Ok(Pattern::Identifier(ident))
-        }
+        // Delegate to the general parse_pattern() which handles all pattern types:
+        // - Identifiers: x
+        // - Tuples: (a, b, c)
+        // - Arrays: [a, b, ...rest]
+        // - Objects: { name, age }
+        self.parse_pattern()
     }
 
     fn parse_return_statement(&mut self) -> Result<ReturnStatement, CompileError> {
@@ -1208,6 +1191,10 @@ impl<'a> Parser<'a> {
             TokenKind::Integer(val) => { self.next_token(); Expression::IntegerLiteral(*val) },
             TokenKind::Float(val) => { self.next_token(); Expression::FloatLiteral(val.clone()) },
             TokenKind::String(val) => { self.next_token(); Expression::StringLiteral(val.clone()) },
+            TokenKind::TemplateLiteral(val) => {
+                self.next_token();
+                self.parse_template_literal(val.clone())?
+            },
             TokenKind::Char(val) => { self.next_token(); Expression::CharLiteral(*val) },
             TokenKind::Bool(val) => { self.next_token(); Expression::BoolLiteral(*val) },
             TokenKind::Minus | TokenKind::Bang | TokenKind::PlusPlus | TokenKind::MinusMinus => {
@@ -1260,6 +1247,38 @@ impl<'a> Parser<'a> {
                 Expression::Await(AwaitExpression {
                     expression: Box::new(expression),
                 })
+            },
+            TokenKind::Async => {
+                // Parse async lambda: async () => {} or async (x) => {}
+                self.next_token(); // consume 'async'
+
+                // Must be followed by ( or | for lambda
+                match self.current_token().kind {
+                    TokenKind::LParen => {
+                        // async () => {} or async (x) => {}
+                        self.parse_async_lambda_with_parens()?
+                    }
+                    TokenKind::Pipe => {
+                        // async |x| => {} or async || => {}
+                        self.parse_async_lambda_with_pipes()?
+                    }
+                    TokenKind::PipePipe => {
+                        // async || => {}
+                        self.next_token(); // consume ||
+                        self.consume_if_matches(&TokenKind::FatArrow);
+                        let body = self.parse_expression(Precedence::Lowest)?;
+                        Expression::Lambda(LambdaExpression {
+                            parameters: vec![],
+                            return_type: None,
+                            body: Box::new(body),
+                            captures: vec![],
+                            is_async: true,
+                        })
+                    }
+                    _ => {
+                        return Err(self.error("Expected '(' or '|' after 'async' for async lambda"));
+                    }
+                }
             },
             TokenKind::Script => {
                 // Parse script block: script { raw JavaScript }
@@ -1344,6 +1363,7 @@ impl<'a> Parser<'a> {
                     return_type: None,
                     body: Box::new(body),
                     captures: vec![], // Will be analyzed later
+                    is_async: false,
                 })
             }
             TokenKind::LBracket => self.parse_array_literal()?,
@@ -1509,35 +1529,20 @@ impl<'a> Parser<'a> {
                     });
                 }
                 TokenKind::Question => {
-                    self.next_token(); // consume the ?
-
-                    // Distinguish between try operator (x?) and ternary (x ? y : z)
+                    // Try operator (x?) - ternary is now handled in parse_infix
                     // Try operator: ? is followed by semicolon, comma, closing brace/paren, or end of statement
-                    // Ternary: ? is followed by an expression
-                    match self.current_token().kind {
+                    if matches!(
+                        self.peek_token().kind,
                         TokenKind::Semicolon | TokenKind::Comma | TokenKind::RBrace |
-                        TokenKind::RParen | TokenKind::RBracket | TokenKind::Eof => {
-                            // Try operator
-                            expr = Expression::TryOperator(TryOperatorExpression {
-                                expression: Box::new(expr),
-                            });
-                        }
-                        _ => {
-                            // Ternary operator - parse true branch
-                            let true_expr = Box::new(self.parse_expression(Precedence::Lowest)?);
-
-                            // Expect colon
-                            self.expect_and_consume(&TokenKind::Colon)?;
-
-                            // Parse false branch
-                            let false_expr = Box::new(self.parse_expression(Precedence::Lowest)?);
-
-                            expr = Expression::Ternary(TernaryExpression {
-                                condition: Box::new(expr),
-                                true_expr,
-                                false_expr,
-                            });
-                        }
+                        TokenKind::RParen | TokenKind::RBracket | TokenKind::Eof
+                    ) {
+                        self.next_token(); // consume the ?
+                        expr = Expression::TryOperator(TryOperatorExpression {
+                            expression: Box::new(expr),
+                        });
+                    } else {
+                        // This is a ternary operator, handled by parse_infix
+                        break;
                     }
                 }
                 TokenKind::Bang => {
@@ -1622,6 +1627,7 @@ impl<'a> Parser<'a> {
                     return_type: None,
                     body: Box::new(body),
                     captures: vec![],  // Will be analyzed later
+                    is_async: false,
                 }));
             }
             // Just empty parens, not lambda - this is the unit type ()
@@ -1668,6 +1674,7 @@ impl<'a> Parser<'a> {
                     return_type,
                     body: Box::new(body),
                     captures: vec![],
+                    is_async: false,
                 }));
             }
         }
@@ -1715,6 +1722,7 @@ impl<'a> Parser<'a> {
                     return_type: None,
                     body: Box::new(body),
                     captures: vec![],  // Will be analyzed later
+                    is_async: false,
                 }));
             }
 
@@ -1734,6 +1742,7 @@ impl<'a> Parser<'a> {
                     return_type: None,
                     body: Box::new(body),
                     captures: vec![],  // Will be analyzed later
+                    is_async: false,
                 }));
             }
         }
@@ -1779,6 +1788,7 @@ impl<'a> Parser<'a> {
             return_type,
             body: Box::new(body),
             captures: vec![],  // Will be analyzed later
+            is_async: false,
         }))
     }
 
@@ -1797,6 +1807,74 @@ impl<'a> Parser<'a> {
             // Otherwise it's an expression body: () => expr
             self.parse_expression(Precedence::Lowest)
         }
+    }
+
+    fn parse_async_lambda_with_parens(&mut self) -> Result<Expression, CompileError> {
+        // Parse async lambda with parentheses: async () => {} or async (x, y) => {}
+        self.expect_and_consume(&TokenKind::LParen)?;
+
+        let mut parameters = Vec::new();
+
+        // Parse parameters
+        while self.current_token().kind != TokenKind::RParen {
+            let name = self.parse_identifier()?;
+            let type_annotation = if self.consume_if_matches(&TokenKind::Colon) {
+                Some(self.parse_type_expression()?)
+            } else {
+                None
+            };
+            parameters.push(LambdaParameter { name, type_annotation });
+
+            if !self.consume_if_matches(&TokenKind::Comma) { break; }
+        }
+        self.expect_and_consume(&TokenKind::RParen)?;
+
+        // Optional => before body
+        self.expect_and_consume(&TokenKind::FatArrow)?;
+
+        let body = self.parse_lambda_body()?;
+
+        Ok(Expression::Lambda(LambdaExpression {
+            parameters,
+            return_type: None,
+            body: Box::new(body),
+            captures: vec![],
+            is_async: true,
+        }))
+    }
+
+    fn parse_async_lambda_with_pipes(&mut self) -> Result<Expression, CompileError> {
+        // Parse async lambda with pipes: async |x, y| => {} or async || => {}
+        self.expect_and_consume(&TokenKind::Pipe)?;
+
+        let mut parameters = Vec::new();
+
+        // Parse parameters
+        while self.current_token().kind != TokenKind::Pipe {
+            let name = self.parse_identifier()?;
+            let type_annotation = if self.consume_if_matches(&TokenKind::Colon) {
+                Some(self.parse_type_expression()?)
+            } else {
+                None
+            };
+            parameters.push(LambdaParameter { name, type_annotation });
+
+            if !self.consume_if_matches(&TokenKind::Comma) { break; }
+        }
+        self.expect_and_consume(&TokenKind::Pipe)?;
+
+        // Optional => before body
+        self.consume_if_matches(&TokenKind::FatArrow);
+
+        let body = self.parse_lambda_body()?;
+
+        Ok(Expression::Lambda(LambdaExpression {
+            parameters,
+            return_type: None,
+            body: Box::new(body),
+            captures: vec![],
+            is_async: true,
+        }))
     }
 
     fn parse_array_literal(&mut self) -> Result<Expression, CompileError> {
@@ -1838,6 +1916,74 @@ impl<'a> Parser<'a> {
         Ok(Expression::ArrayLiteral(ArrayLiteral { elements }))
     }
 
+    fn parse_template_literal(&mut self, content: String) -> Result<Expression, CompileError> {
+        // Parse template literal content: `Hello ${name}!`
+        // Split into parts: ["Hello ", name, "!"]
+
+        let mut parts = Vec::new();
+        let mut current_string = String::new();
+        let mut chars = content.chars().peekable();
+
+        while let Some(ch) = chars.next() {
+            if ch == '$' && chars.peek() == Some(&'{') {
+                // Found ${...} expression
+                // Push the current string part if not empty
+                if !current_string.is_empty() {
+                    parts.push(TemplatePart::String(current_string.clone()));
+                    current_string.clear();
+                }
+
+                // Consume the '{'
+                chars.next();
+
+                // Collect the expression content until we find the closing '}'
+                let mut expr_content = String::new();
+                let mut brace_depth = 1;
+                while brace_depth > 0 {
+                    match chars.next() {
+                        Some('{') => {
+                            brace_depth += 1;
+                            expr_content.push('{');
+                        }
+                        Some('}') => {
+                            brace_depth -= 1;
+                            if brace_depth > 0 {
+                                expr_content.push('}');
+                            }
+                        }
+                        Some(c) => expr_content.push(c),
+                        None => return Err(CompileError::ParserError {
+                            message: "Unterminated template expression: missing closing '}'".to_string(),
+                            line: self.current_token().line,
+                            column: self.current_token().column,
+                        }),
+                    }
+                }
+
+                // Parse the expression content
+                let mut temp_lexer = Lexer::new(expr_content.clone());
+                let mut temp_parser = Parser::new(&mut temp_lexer, &expr_content);
+                let expr = temp_parser.parse_expression(Precedence::Lowest)?;
+                parts.push(TemplatePart::Expression(expr));
+            } else {
+                // Regular string content
+                current_string.push(ch);
+            }
+        }
+
+        // Push any remaining string content
+        if !current_string.is_empty() {
+            parts.push(TemplatePart::String(current_string));
+        }
+
+        // If no parts, create a single empty string part
+        if parts.is_empty() {
+            parts.push(TemplatePart::String(String::new()));
+        }
+
+        Ok(Expression::TemplateLiteral(TemplateLiteralExpression { parts }))
+    }
+
     fn parse_struct_literal(&mut self, name: Identifier) -> Result<Expression, CompileError> {
         self.expect_and_consume(&TokenKind::LBrace)?;
         let mut fields = Vec::new();
@@ -1874,30 +2020,38 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_object_literal(&mut self) -> Result<Expression, CompileError> {
-        // Parse JavaScript-style object literal: { key: value, ... }
+        // Parse JavaScript-style object literal: { key: value, ...spread, ... }
         self.expect_and_consume(&TokenKind::LBrace)?;
-        let mut fields = Vec::new();
+        let mut properties = Vec::new();
 
         // Handle empty object literal {}
         if self.current_token().kind == TokenKind::RBrace {
             self.expect_and_consume(&TokenKind::RBrace)?;
-            return Ok(Expression::ObjectLiteral(ObjectLiteral { fields }));
+            return Ok(Expression::ObjectLiteral(ObjectLiteral { properties }));
         }
 
-        // Parse comma-separated field: value pairs
+        // Parse comma-separated properties (fields or spreads)
         while self.current_token().kind != TokenKind::RBrace {
-            let field_name = self.parse_identifier()?;
-
-            // Check for field shorthand: if followed by comma or }, use field_name as both key and value
-            if self.current_token().kind == TokenKind::Comma || self.current_token().kind == TokenKind::RBrace {
-                // Field shorthand: `username,` is equivalent to `username: username,`
-                let field_value = Expression::Identifier(field_name.clone());
-                fields.push((field_name, field_value));
+            // Check for spread syntax: ...expr
+            if self.current_token().kind == TokenKind::DotDotDot {
+                self.next_token();  // Consume ...
+                let spread_expr = self.parse_expression(Precedence::Lowest)?;
+                properties.push(ObjectProperty::Spread(spread_expr));
             } else {
-                // Regular field: value syntax
-                self.expect_and_consume(&TokenKind::Colon)?;
-                let field_value = self.parse_expression(Precedence::Lowest)?;
-                fields.push((field_name, field_value));
+                // Parse field name
+                let field_name = self.parse_identifier()?;
+
+                // Check for field shorthand: if followed by comma or }, use field_name as both key and value
+                if self.current_token().kind == TokenKind::Comma || self.current_token().kind == TokenKind::RBrace {
+                    // Field shorthand: `username,` is equivalent to `username: username,`
+                    let field_value = Expression::Identifier(field_name.clone());
+                    properties.push(ObjectProperty::Field(field_name, field_value));
+                } else {
+                    // Regular field: value syntax
+                    self.expect_and_consume(&TokenKind::Colon)?;
+                    let field_value = self.parse_expression(Precedence::Lowest)?;
+                    properties.push(ObjectProperty::Field(field_name, field_value));
+                }
             }
 
             if !self.consume_if_matches(&TokenKind::Comma) {
@@ -1906,7 +2060,7 @@ impl<'a> Parser<'a> {
         }
 
         self.expect_and_consume(&TokenKind::RBrace)?;
-        Ok(Expression::ObjectLiteral(ObjectLiteral { fields }))
+        Ok(Expression::ObjectLiteral(ObjectLiteral { properties }))
     }
 
     // Parse an expression without treating { as struct literal
@@ -2081,6 +2235,64 @@ impl<'a> Parser<'a> {
                     Ok(Pattern::Identifier(first_ident))
                 }
             }
+            // Array destructuring pattern: [a, b, ...rest]
+            TokenKind::LBracket => {
+                self.next_token(); // consume [
+                let mut elements = Vec::new();
+                let mut rest = None;
+
+                while self.current_token().kind != TokenKind::RBracket {
+                    // Check for rest pattern ...rest
+                    if self.current_token().kind == TokenKind::DotDotDot {
+                        self.next_token(); // consume ...
+                        rest = Some(Box::new(self.parse_pattern()?));
+                        break; // rest must be last
+                    }
+
+                    elements.push(self.parse_pattern()?);
+
+                    if !self.consume_if_matches(&TokenKind::Comma) {
+                        break;
+                    }
+                }
+
+                self.expect_and_consume(&TokenKind::RBracket)?;
+                Ok(Pattern::Array(ArrayPattern { elements, rest }))
+            }
+            // Object destructuring pattern: { name, age }
+            TokenKind::LBrace => {
+                self.next_token(); // consume {
+                let mut fields = Vec::new();
+                let mut rest = None;
+
+                while self.current_token().kind != TokenKind::RBrace {
+                    // Check for rest pattern ...rest
+                    if self.current_token().kind == TokenKind::DotDotDot {
+                        self.next_token(); // consume ...
+                        rest = Some(self.parse_identifier()?);
+                        break; // rest must be last
+                    }
+
+                    let key = self.parse_identifier()?;
+
+                    // Check for pattern renaming: { name: newName }
+                    let pattern = if self.consume_if_matches(&TokenKind::Colon) {
+                        self.parse_pattern()?
+                    } else {
+                        // Shorthand: { name } means { name: name }
+                        Pattern::Identifier(key.clone())
+                    };
+
+                    fields.push(ObjectPatternField { key, pattern });
+
+                    if !self.consume_if_matches(&TokenKind::Comma) {
+                        break;
+                    }
+                }
+
+                self.expect_and_consume(&TokenKind::RBrace)?;
+                Ok(Pattern::Object(ObjectPattern { fields, rest }))
+            }
             // Literal patterns
             TokenKind::Integer(_) | TokenKind::Float(_) | TokenKind::String(_) |
             TokenKind::Bool(_) | TokenKind::True | TokenKind::False => {
@@ -2096,6 +2308,26 @@ impl<'a> Parser<'a> {
 
     fn parse_infix(&mut self, left: Expression, allow_struct_literals: bool) -> Result<Expression, CompileError> {
         let operator = self.current_token().clone();
+
+        // Handle ternary operator specially (? :)
+        if operator.kind == TokenKind::Question {
+            self.next_token(); // consume the ?
+
+            // Parse true branch with Lowest precedence (ternary is right-associative)
+            let true_expr = Box::new(self.parse_expression_internal(Precedence::Lowest, allow_struct_literals)?);
+
+            // Expect colon
+            self.expect_and_consume(&TokenKind::Colon)?;
+
+            // Parse false branch with Lowest precedence
+            let false_expr = Box::new(self.parse_expression_internal(Precedence::Lowest, allow_struct_literals)?);
+
+            return Ok(Expression::Ternary(TernaryExpression {
+                condition: Box::new(left),
+                true_expr,
+                false_expr,
+            }));
+        }
 
         // Handle range operators specially
         if operator.kind == TokenKind::DotDot || operator.kind == TokenKind::DotDotEq {
@@ -2240,8 +2472,94 @@ impl<'a> Parser<'a> {
             // Parse just the prefix (string literal, identifier, etc.) without infix operators
             // This prevents treating > or / as operators
             let value = self.parse_prefix()?;
+
+            // Check if this is a string literal with interpolation: "text {expr} more"
+            // Convert it to a TemplateLiteral for reactive updates
+            let value = if let Expression::StringLiteral(ref s) = value {
+                self.parse_string_interpolation(s)?
+            } else {
+                value
+            };
+
             Ok(JsxAttribute { name, value })
         }
+    }
+
+    /// Parse string interpolation in JSX attributes: "text {expr} more"
+    /// Converts to TemplateLiteral for reactive updates
+    fn parse_string_interpolation(&mut self, s: &str) -> Result<Expression, CompileError> {
+        // Check if string contains interpolation markers { }
+        if !s.contains('{') {
+            // No interpolation - return as-is
+            return Ok(Expression::StringLiteral(s.to_string()));
+        }
+
+        // Parse the string into template parts
+        let mut parts = Vec::new();
+        let mut chars = s.chars().peekable();
+        let mut current_string = String::new();
+        let mut brace_depth = 0;
+        let mut in_interpolation = false;
+        let mut interpolation_code = String::new();
+
+        while let Some(ch) = chars.next() {
+            if ch == '{' && !in_interpolation {
+                // Start of interpolation
+                if !current_string.is_empty() {
+                    parts.push(TemplatePart::String(current_string.clone()));
+                    current_string.clear();
+                }
+                in_interpolation = true;
+                brace_depth = 1;
+                interpolation_code.clear();
+            } else if in_interpolation {
+                if ch == '{' {
+                    brace_depth += 1;
+                    interpolation_code.push(ch);
+                } else if ch == '}' {
+                    brace_depth -= 1;
+                    if brace_depth == 0 {
+                        // End of interpolation - parse the expression
+                        let expr = self.parse_interpolation_expression(&interpolation_code)?;
+                        parts.push(TemplatePart::Expression(expr));
+                        in_interpolation = false;
+                    } else {
+                        interpolation_code.push(ch);
+                    }
+                } else {
+                    interpolation_code.push(ch);
+                }
+            } else {
+                current_string.push(ch);
+            }
+        }
+
+        // Don't forget remaining string
+        if !current_string.is_empty() {
+            parts.push(TemplatePart::String(current_string));
+        }
+
+        // If no parts were parsed, return original string
+        if parts.is_empty() {
+            return Ok(Expression::StringLiteral(s.to_string()));
+        }
+
+        Ok(Expression::TemplateLiteral(TemplateLiteralExpression { parts }))
+    }
+
+    /// Parse an expression from a string (used for string interpolation)
+    fn parse_interpolation_expression(&mut self, code: &str) -> Result<Expression, CompileError> {
+        // Convert single quotes to double quotes for string literals
+        // JavaScript uses single quotes, but our lexer expects double quotes for strings
+        // This is safe because we're inside an interpolation context
+        let normalized_code = code.replace('\'', "\"");
+
+        // Create a temporary lexer for the interpolation code
+        let mut temp_lexer = Lexer::new(normalized_code.clone());
+        let mut temp_parser = Parser::new(&mut temp_lexer, &normalized_code);
+
+        // Parse the expression
+        temp_parser.parse_expression(Precedence::Lowest)
     }
 
     fn parse_jsx_children(&mut self) -> Result<Vec<JsxChild>, CompileError> {
@@ -2270,6 +2588,18 @@ impl<'a> Parser<'a> {
                 TokenKind::String(text) => {
                     // String literals in JSX are treated as text
                     children.push(JsxChild::Text(text.clone()));
+                    self.next_token();
+                    continue;
+                }
+                TokenKind::Integer(num) => {
+                    // Integer literals in JSX are treated as text (e.g., <p>Age: 25</p>)
+                    children.push(JsxChild::Text(num.to_string()));
+                    self.next_token();
+                    continue;
+                }
+                TokenKind::Float(num) => {
+                    // Float literals in JSX are treated as text (e.g., <p>Price: 19.99</p>)
+                    children.push(JsxChild::Text(num.clone()));
                     self.next_token();
                     continue;
                 }
@@ -2305,6 +2635,17 @@ impl<'a> Parser<'a> {
             let is_lbrace = self.current_token().kind == TokenKind::LBrace;
             if is_jsx_open_brace || is_lbrace {
                 self.next_token(); // Consume the brace
+
+                // Check for JSX comment: {/* ... */}
+                // After consuming {, if we hit a closing brace immediately, it's an empty comment
+                // The lexer already skips /* */ as whitespace
+                if self.current_token().kind == TokenKind::JsxCloseBrace || self.current_token().kind == TokenKind::RBrace {
+                    // This is {/* comment */} - the comment was already skipped by lexer
+                    self.next_token(); // consume }
+                    // Don't add anything to children - comment is ignored
+                    continue;
+                }
+
                 let expr = self.parse_expression(Precedence::Lowest)?;
                 if !self.consume_if_matches(&TokenKind::JsxCloseBrace) {
                     self.expect_and_consume(&TokenKind::RBrace)?;
@@ -2464,6 +2805,7 @@ impl<'a> Parser<'a> {
         // Current token should be {, peek token tells us what's inside
         match self.peek_token().kind {
             TokenKind::RBrace => true,  // Empty object literal: {}
+            TokenKind::DotDotDot => true,  // Spread in object literal: { ...obj }
             TokenKind::Identifier => {
                 let mut temp_lexer = self.lexer.clone();
                 let after_ident = temp_lexer.next_token();
@@ -3548,7 +3890,6 @@ impl<'a> Parser<'a> {
             if self.current_token().kind == TokenKind::Ampersand {
                 self.next_token(); // consume &
 
-                // Parse selector type
                 let selector = if self.current_token().kind == TokenKind::Colon {
                     // Pseudo-class: &:hover
                     self.next_token(); // consume :
@@ -3614,28 +3955,20 @@ impl<'a> Parser<'a> {
 
     /// Parse a single style property: background: blue; or color: theme.DarkMode.text;
     fn parse_style_property(&mut self) -> Result<StyleProperty, CompileError> {
-        // Parse property name
-        let prop_name = if let TokenKind::Identifier = self.current_token().kind {
-            let name = self.current_token().lexeme.clone();
-            self.next_token();
+        // Parse property name (may be hyphenated like background-color)
+        let name = self.current_token().lexeme.clone();
+        self.next_token();
 
-            // Handle hyphenated properties (e.g., background-color)
-            let mut full_name = name;
-            while self.current_token().kind == TokenKind::Minus {
-                full_name.push('-');
-                self.next_token(); // consume -
-                if let TokenKind::Identifier = self.current_token().kind {
-                    full_name.push_str(&self.current_token().lexeme);
-                    self.next_token();
-                }
+        let mut full_name = name;
+        while self.current_token().kind == TokenKind::Minus {
+            full_name.push('-');
+            self.next_token(); // consume -
+            if let TokenKind::Identifier = self.current_token().kind {
+                full_name.push_str(&self.current_token().lexeme);
+                self.next_token();
             }
-            full_name
-        } else {
-            return Err(CompileError::Generic(format!(
-                "Expected property name in style block, got {:?}",
-                self.current_token().kind
-            )));
-        };
+        }
+        let prop_name = full_name;
 
         // Expect colon
         self.expect_and_consume(&TokenKind::Colon)?;
@@ -3674,25 +4007,76 @@ impl<'a> Parser<'a> {
                 property: prop,
             }
         } else {
-            // Regular literal value - read until semicolon - smart concatenation
-            let mut val = String::new();
-            let mut prev_lexeme = String::new();
+            // Regular CSS value - collect all tokens until semicolon
+            // Also detect and convert theme references (theme.Name.property -> var(--Name-property))
+            let mut tokens = Vec::new();
+
             while self.current_token().kind != TokenKind::Semicolon && self.current_token().kind != TokenKind::Eof {
-                let lexeme = &self.current_token().lexeme;
-                // Add space between consecutive values (numbers with units), but not after # or -
-                if !val.is_empty() {
-                    let should_add_space = prev_lexeme.ends_with("px") || prev_lexeme.ends_with("em")
-                        || prev_lexeme.ends_with("rem") || prev_lexeme.ends_with("%");
-                    let prev_is_special = prev_lexeme == "#" || prev_lexeme == "-";
-                    if should_add_space && !prev_is_special {
-                        val.push(' ');
+                // Check if this is a theme reference: theme.Name.property
+                if self.current_token().lexeme == "theme" {
+                    // Peek ahead to see if it's followed by .Name.property
+                    self.next_token(); // consume 'theme'
+
+                    if self.current_token().kind == TokenKind::Dot {
+                        self.next_token(); // consume '.'
+
+                        if let TokenKind::Identifier = self.current_token().kind {
+                            let theme_name = self.current_token().lexeme.clone();
+                            self.next_token(); // consume theme name
+
+                            if self.current_token().kind == TokenKind::Dot {
+                                self.next_token(); // consume '.'
+
+                                if let TokenKind::Identifier = self.current_token().kind {
+                                    let prop_name = self.current_token().lexeme.clone();
+                                    self.next_token(); // consume property name
+
+                                    // Successfully parsed theme reference - convert to var()
+                                    tokens.push(format!("var(--{}-{})", theme_name, prop_name));
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+
+                    // Not a valid theme reference - rewind and add 'theme' as regular token
+                    // (This shouldn't happen with valid Jounce code, but handle it gracefully)
+                    // We can't easily rewind, so just add what we consumed
+                    tokens.push("theme".to_string());
+                    // The tokens we consumed will be processed normally in next iterations
+                } else {
+                    tokens.push(self.current_token().lexeme.clone());
+                    self.next_token();
+                }
+            }
+
+            // Join tokens with smart spacing for CSS values
+            let mut result = String::new();
+            for (i, token) in tokens.iter().enumerate() {
+                if i > 0 {
+                    let prev = &tokens[i - 1];
+                    let curr = token.as_str();
+
+                    // Check if we should add space
+                    let curr_is_var = curr.starts_with("var(");
+                    let should_add_space = if curr_is_var {
+                        // Always add space before var() calls
+                        true
+                    } else {
+                        // Add space unless:
+                        // - Previous was '(', ',', or '-'
+                        // - Current is '(', ')', or ','
+                        prev != "(" && prev != "," && prev != "-" && curr != "(" && curr != ")" && curr != ","
+                    };
+
+                    if should_add_space {
+                        result.push(' ');
                     }
                 }
-                val.push_str(lexeme);
-                prev_lexeme = lexeme.clone();
-                self.next_token();
+                result.push_str(token);
             }
-            StyleValue::Literal(val.trim().to_string())
+
+            StyleValue::Literal(result)
         };
 
         // Expect semicolon
