@@ -2378,12 +2378,9 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_jsx_opening_tag_with_mode_check(&mut self, was_jsx_mode: bool) -> Result<JsxOpeningTag, CompileError> {
-        self.expect_and_consume(&TokenKind::LAngle)?;
-
-        // CRITICAL FIX: Enter JSX mode BEFORE parsing tag name
-        // This ensures peek is fetched in JSX mode when we parse the identifier
-        // Without this, {expr} children are tokenized as JsxText instead of separate tokens
-        // ALSO: Always push baseline for nested JSX (e.g. JSX inside ternary/expressions)
+        // CRITICAL FIX: Enter JSX mode BEFORE consuming the < token
+        // This ensures the lookahead token is fetched in JSX mode
+        // Without this, content like "Item:" gets tokenized with Colon instead of as JSX text
         if !was_jsx_mode {
             self.lexer.enter_jsx_mode();
         } else {
@@ -2391,6 +2388,8 @@ impl<'a> Parser<'a> {
             // This pushes a new baseline for JSX inside expressions: {cond ? (<div>...</div>) : ...}
             self.lexer.enter_nested_jsx();
         }
+
+        self.expect_and_consume(&TokenKind::LAngle)?;
 
         let name = self.parse_identifier()?;
 
