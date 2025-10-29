@@ -1,8 +1,8 @@
 # CLAUDE.md - Jounce Development Guide
 
-**Version**: v0.25.0 "String Interpolation Fixed"
-**Current Status**: ✅ Phase 13 Complete + 3 Issues Fixed! 2 Known Issues Remain
-**Last Updated**: October 29, 2025 (Session 22 - String Interpolation)
+**Version**: v0.26.0 "Component Return Types Fixed"
+**Current Status**: ✅ Phase 13 Complete + 4 Issues Fixed! 1 Known Issue Remains
+**Last Updated**: October 29, 2025 (Session 23 - Component Return Types)
 **Tests**: ✅ 635/635 passing (100%)
 
 ---
@@ -46,38 +46,9 @@
 
 ---
 
-## 🐛 KNOWN ISSUES (2 Remaining, 3 Fixed)
+## 🐛 KNOWN ISSUES (1 Remaining, 4 Fixed)
 
-### 🔴 **CRITICAL PRIORITY** (2 issues - 8-12 hours each)
-
-#### **Issue #12-1: Component Parameters Not Supported**
-**Status**: 🔴 NOT STARTED
-**Impact**: Cannot create reusable components with props
-**Example**:
-```jounce
-component Card(title: String, subtitle: String) -> JSX {  // ❌ Parse error
-    <div>
-        <h2>{title}</h2>
-        <p>{subtitle}</p>
-    </div>
-}
-```
-**Error**: `ParserError { message: "Expected LBrace, found Arrow", line: 4, column: 50 }`
-
-**Root Cause**: Component parser doesn't support:
-- Parameters with types
-- Return type annotation (`-> JSX`)
-
-**Fix Needed**:
-1. Extend `parse_component()` to handle parameter list
-2. Support return type annotations
-3. Pass props to component functions as destructured object
-
-**Files**: `src/parser.rs` (component parsing)
-**Effort**: 8-12 hours
-**Priority**: **HIGH** - Essential for component-based architecture
-
----
+### 🔴 **CRITICAL PRIORITY** (1 issue - 8-12 hours)
 
 #### **Issue #23-1: JSX Inside Lambda Expressions Broken**
 **Status**: 🔴 NOT STARTED
@@ -107,7 +78,36 @@ component Card(title: String, subtitle: String) -> JSX {  // ❌ Parse error
 
 ---
 
-### ✅ **FIXED** (3 issues)
+### ✅ **FIXED** (4 issues)
+
+#### **Issue #12-1: Component Return Type Annotations** ✅ FIXED in v0.26.0
+**Was**: `component Card() -> JSX { ... }` caused parse error
+**Now**: Optional return types supported
+**Example**:
+```jounce
+component Card(title: String, subtitle: String) -> JSX {
+    <div>
+        <h2>{title}</h2>
+        <p>{subtitle}</p>
+    </div>
+}
+```
+**Generated**:
+```javascript
+export function Card({ title, subtitle } = {}) {
+  return h('div', null, h('h2', null, title), h('p', null, subtitle));
+}
+```
+**Fix**:
+- Added optional return type parsing in `src/parser.rs:648-653`
+- Return type is parsed but not stored (components always return JSX)
+- Syntax compatibility for cleaner component definitions
+
+**Note**: Component parameters already worked! Issue was only the `-> JSX` syntax.
+
+**Time**: ~10 minutes (estimated 8-12 hours, was simpler than expected!)
+
+---
 
 #### **Issue #20-1: String Interpolation in Attributes** ✅ FIXED in v0.25.0
 **Was**: `class="btn {active.value ? 'active' : ''}` generated as literal string
@@ -149,22 +149,23 @@ class: (() => {
 
 ---
 
-## 🎯 CURRENT MISSION: FIX REMAINING 2 ISSUES
+## 🎯 CURRENT MISSION: FIX REMAINING 1 ISSUE
 
-**Recommended Order**:
-1. 🔴 **Issue #12-1** (Component Props) - 8-12 hours ⭐ **Essential for architecture**
-2. 🔴 **Issue #23-1** (JSX in Lambdas) - 8-12 hours
+**Remaining**:
+1. 🔴 **Issue #23-1** (JSX in Lambdas) - 8-12 hours ⭐ **Last critical issue!**
 
-**Total Estimated Time**: 16-24 hours
+**Total Estimated Time**: 8-12 hours
 
 ---
 
 ## 📊 CURRENT STATUS
 
-**Completed This Session (Session 22)**:
-- ✅ Issue #20-1: String interpolation in JSX attributes (2 hours)
+**Completed This Session (Session 23)**:
+- ✅ Issue #12-1: Component return type annotations (10 minutes)
 
-**Previous Session (Session 21)**:
+**Previous Sessions**:
+- ✅ Session 22: Issue #20-1 (String interpolation - 2 hours)
+- ✅ Session 21:
 - ✅ Phase 13: Style System (100% complete)
 - ✅ Issue #13-1: Functions in components
 - ✅ Issue #13-2: JSX text combining
@@ -181,13 +182,13 @@ class: (() => {
 - ✅ SVG elements
 - ✅ Null rendering
 - ✅ Functions in components
-- ✅ String interpolation in attributes (NEW!)
+- ✅ String interpolation in attributes
+- ✅ Component parameters with types
+- ✅ Component return type annotations (NEW!)
 - ✅ Style system with themes
 
 **What Needs Work**:
-- ❌ Component parameters/props (#12-1)
-- ❌ JSX in lambda bodies (#23-1)
-- ❌ String interpolation in attributes (#20-1)
+- ❌ JSX in lambda expressions (#23-1) - Last critical issue!
 
 ---
 
