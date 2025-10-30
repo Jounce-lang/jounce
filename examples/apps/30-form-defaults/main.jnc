@@ -1,0 +1,47 @@
+// App 30: Form with Default Values
+// Using ??= to initialize form fields with defaults
+
+component App() {
+    // Form field signals
+    let username = signal(0);
+    let email = signal(0);
+    let age = signal(0);
+
+    // Apply defaults using ??= operator
+    let applyDefaults = || {
+        username.value ??= 123;  // Will set to 123 if nullish
+        email.value ??= 456;
+        age.value ??= 18;
+    };
+
+    // Reset to zero
+    let resetForm = || {
+        username.value = 0;
+        email.value = 0;
+        age.value = 0;
+    };
+
+    return <div class="container">
+        <h1>Form Defaults with ??=</h1>
+        <p>Click Apply to set defaults using nullish coalescing assignment</p>
+
+        <div class="form">
+            <h2>Form Values</h2>
+            <p>Username: {username.value}</p>
+            <p>Email: {email.value}</p>
+            <p>Age: {age.value}</p>
+        </div>
+
+        <div class="controls">
+            <button onclick={applyDefaults}>Apply Defaults</button>
+            <button onclick={resetForm}>Reset Form</button>
+        </div>
+
+        <div class="info">
+            <h3>How it works</h3>
+            <p>The ??= operator only assigns if the value is null or undefined</p>
+            <p>This prevents overwriting existing user input</p>
+            <p>Perfect for setting up default form values</p>
+        </div>
+    </div>;
+}

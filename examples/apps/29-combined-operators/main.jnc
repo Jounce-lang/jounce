@@ -1,0 +1,57 @@
+// App 29: Combined Operators Demo
+// Uses all 3 new operators: ??, ?., and ||=/&&=/??=
+
+component App() {
+    // Signals for demo
+    let count = signal(0);
+    let name = signal(5);
+    let enabled = signal(10);
+
+    // Create a simple user object
+    let user = { username: "Alice", score: 100 };
+
+    // Combine all operators
+    let handleClick = || {
+        // Use ||= to set default
+        count.value ||= 1;
+
+        // Use &&= to update if truthy
+        enabled.value &&= 20;
+
+        // Use ??= with numeric value
+        name.value ??= 99;
+    };
+
+    // Use optional chaining to safely access properties
+    let username = user?.username ?? "Anonymous";
+    let score = user?.score ?? 0;
+
+    return <div class="container">
+        <h1>All Modern Operators Combined</h1>
+        <p>Demonstrating ??, ?., and logical assignment</p>
+
+        <div class="demo">
+            <h2>User Info with Optional Chaining</h2>
+            <p>Username: {username}</p>
+            <p>Score: {score}</p>
+        </div>
+
+        <div class="demo">
+            <h2>Signal Values</h2>
+            <p>Count: {count.value}</p>
+            <p>Name: {name.value}</p>
+            <p>Enabled: {enabled.value}</p>
+        </div>
+
+        <div class="controls">
+            <button onclick={handleClick}>Update Values</button>
+        </div>
+
+        <div class="info">
+            <h3>Operators Used</h3>
+            <p>Optional Chaining: user?.username</p>
+            <p>Nullish Coalescing: value ?? default</p>
+            <p>Logical Assignment: count.value ||= 1</p>
+        </div>
+    </div>;
+}
