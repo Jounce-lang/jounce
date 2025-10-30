@@ -1,0 +1,42 @@
+// App 26: User Profile with Optional Chaining
+// Demonstrates safe property access on nested objects using ?.
+
+component App() {
+    // Create user objects with simple object literal syntax
+    let user1 = { name: "Alice", bio: "Engineer", email: "alice@example.com" };
+    let user2 = { name: "Bob", bio: "Designer" };
+    let user3 = { name: "Charlie" };
+
+    return <div class="container">
+        <h1>Optional Chaining (?.) Demo</h1>
+        <p>Safely access object properties without errors</p>
+
+        <div class="user-card">
+            <h2>User 1: All Properties</h2>
+            <p>Name: {user1?.name}</p>
+            <p>Bio: {user1?.bio}</p>
+            <p>Email: {user1?.email}</p>
+        </div>
+
+        <div class="user-card">
+            <h2>User 2: Missing Email</h2>
+            <p>Name: {user2?.name}</p>
+            <p>Bio: {user2?.bio}</p>
+            <p>Email: {user2?.email || "No email"}</p>
+        </div>
+
+        <div class="user-card">
+            <h2>User 3: Minimal Data</h2>
+            <p>Name: {user3?.name}</p>
+            <p>Bio: {user3?.bio || "No bio"}</p>
+            <p>Email: {user3?.email || "No email"}</p>
+        </div>
+
+        <div class="info">
+            <h3>How Optional Chaining Works</h3>
+            <p>The ?. operator safely accesses properties</p>
+            <p>Returns undefined if property missing (no error)</p>
+            <p>Combine with || for default values</p>
+        </div>
+    </div>;
+}

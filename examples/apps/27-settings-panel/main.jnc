@@ -1,0 +1,54 @@
+// App 27: Settings Panel with Nullish Coalescing
+// Demonstrates using ?? for configuration defaults
+
+component App() {
+    // Demonstrate nullish coalescing with literals
+    let theme1 = 5 ?? 10;
+    let theme2 = 0 ?? 20;
+
+    // Demonstrate difference between || and ??
+    let zeroValue = 0;
+    let falseValue = false;
+
+    let withOr = zeroValue || 10;      // 10 (0 is falsy)
+    let withNullish = zeroValue ?? 10; // 0 (0 is NOT nullish)
+
+    let withOrBool = falseValue || true;      // true (false is falsy)
+    let withNullishBool = falseValue ?? true; // false (false is NOT nullish)
+
+    return <div class="container">
+        <h1>Nullish Coalescing (??) Demo</h1>
+        <p>Providing defaults only for null/undefined</p>
+
+        <div class="settings-panel">
+            <h2>Nullish Coalescing Results</h2>
+            <p>5 ?? 10 = {theme1}</p>
+            <p>0 ?? 20 = {theme2}</p>
+        </div>
+
+        <div class="comparison">
+            <h2>Difference: || vs ??</h2>
+
+            <div class="example">
+                <h3>With zero (0)</h3>
+                <p>Using ||: 0 || 10 = {withOr}</p>
+                <p>Using ??: 0 ?? 10 = {withNullish}</p>
+                <p>Notice: ?? keeps 0, || replaces it</p>
+            </div>
+
+            <div class="example">
+                <h3>With false</h3>
+                <p>Using ||: false || true = {withOrBool}</p>
+                <p>Using ??: false ?? true = {withNullishBool}</p>
+                <p>Notice: ?? keeps false, || replaces it</p>
+            </div>
+        </div>
+
+        <div class="info">
+            <h3>When to use ??</h3>
+            <p>Use ?? when 0 and false are valid values</p>
+            <p>Use || when you want to replace all falsy values</p>
+            <p>Nullish = null or undefined ONLY</p>
+        </div>
+    </div>;
+}
