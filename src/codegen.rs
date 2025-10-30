@@ -705,7 +705,7 @@ impl CodeGenerator {
                         // Set the local variable
                         f.instruction(&Instruction::LocalSet(local_index));
                     }
-                    Expression::FieldAccess(_) | Expression::IndexAccess(_) => {
+                    Expression::FieldAccess(_) | Expression::OptionalChaining(_) | Expression::IndexAccess(_) => {
                         // For field access and index access assignments, we need to:
                         // 1. Evaluate the target expression to get the memory location
                         // 2. Evaluate the value expression
@@ -964,6 +964,11 @@ impl CodeGenerator {
                 // Unit type () - push 0 as a placeholder (unused in practice)
                 f.instruction(&Instruction::I32Const(0));
             }
+            Expression::TemplateLiteral(_) => {
+                // Template literals are JavaScript-only features, not compiled to WASM
+                // Push 0 as a placeholder (these should be handled in JS generation)
+                f.instruction(&Instruction::I32Const(0));
+            }
             Expression::Identifier(ident) => {
                 // Check if we're in a lambda and this identifier is a captured variable
                 if let Some(lambda_index) = self.current_lambda_context {
@@ -1070,6 +1075,7 @@ impl CodeGenerator {
                     TokenKind::GtEq => { f.instruction(&Instruction::I32GeS); }
                     TokenKind::AmpAmp => { f.instruction(&Instruction::I32And); }  // Logical AND (works for booleans as 0/1)
                     TokenKind::PipePipe => { f.instruction(&Instruction::I32Or); }  // Logical OR (works for booleans as 0/1)
+                    TokenKind::QuestionQuestion => { f.instruction(&Instruction::I32Or); }  // Nullish coalescing (simplified to OR for WASM)
                     _ => return Err(CompileError::Generic(format!(
                         "Unsupported operator: {:?}", infix.operator.kind
                     ))),
@@ -1332,6 +1338,21 @@ impl CodeGenerator {
                 } else {
                     // Can't infer struct type, just use the object value
                     // (already on stack from generate_expression above)
+                }
+            }
+            Expression::OptionalChaining(opt) => {
+                // For WASM codegen, treat optional chaining the same as regular field access
+                // The JavaScript runtime will handle the null/undefined checking
+                self.generate_expression(&opt.object, f)?;
+
+                if let Ok(struct_name) = self.infer_struct_type(&opt.object) {
+                    if let Some(offset) = self.struct_table.get_field_offset(&struct_name, &opt.field.value) {
+                        f.instruction(&Instruction::I32Load(wasm_encoder::MemArg {
+                            offset: offset as u64,
+                            align: 2,
+                            memory_index: 0,
+                        }));
+                    }
                 }
             }
             Expression::Match(match_expr) => {
@@ -1968,8 +1989,8 @@ impl CodeGenerator {
                 // Just generate the body expression
                 self.generate_expression(&arm.body, f)?;
             }
-            Pattern::Tuple(_) => {
-                // TODO: Implement tuple pattern matching in WASM
+            Pattern::Tuple(_) | Pattern::Array(_) | Pattern::Object(_) => {
+                // TODO: Implement complex pattern matching in WASM
                 // For now, treat as wildcard
                 self.generate_expression(&arm.body, f)?;
             }
@@ -2141,12 +2162,22 @@ impl CodeGenerator {
                 }
             }
             Expression::ObjectLiteral(obj_lit) => {
-                for (_, field_value) in &obj_lit.fields {
-                    self.collect_lambdas_from_expression(field_value);
+                for prop in &obj_lit.properties {
+                    match prop {
+                        ObjectProperty::Field(_, field_value) => {
+                            self.collect_lambdas_from_expression(field_value);
+                        }
+                        ObjectProperty::Spread(expr) => {
+                            self.collect_lambdas_from_expression(expr);
+                        }
+                    }
                 }
             }
             Expression::FieldAccess(field_access) => {
                 self.collect_lambdas_from_expression(&field_access.object);
+            }
+            Expression::OptionalChaining(opt) => {
+                self.collect_lambdas_from_expression(&opt.object);
             }
             Expression::Match(match_expr) => {
                 self.collect_lambdas_from_expression(&match_expr.scrutinee);
@@ -2234,6 +2265,7 @@ impl CodeGenerator {
             | Expression::BoolLiteral(_)
             | Expression::UnitLiteral
             | Expression::StringLiteral(_)
+            | Expression::TemplateLiteral(_)
             | Expression::CharLiteral(_)
             | Expression::Identifier(_)
             | Expression::Range(_)
@@ -2321,12 +2353,22 @@ impl CodeGenerator {
                 }
             }
             Expression::ObjectLiteral(obj_lit) => {
-                for (_, field_value) in &obj_lit.fields {
-                    self.collect_variable_references(field_value, vars);
+                for prop in &obj_lit.properties {
+                    match prop {
+                        ObjectProperty::Field(_, field_value) => {
+                            self.collect_variable_references(field_value, vars);
+                        }
+                        ObjectProperty::Spread(expr) => {
+                            self.collect_variable_references(expr, vars);
+                        }
+                    }
                 }
             }
             Expression::FieldAccess(field_access) => {
                 self.collect_variable_references(&field_access.object, vars);
+            }
+            Expression::OptionalChaining(opt) => {
+                self.collect_variable_references(&opt.object, vars);
             }
             Expression::Match(match_expr) => {
                 self.collect_variable_references(&match_expr.scrutinee, vars);
@@ -2395,6 +2437,7 @@ impl CodeGenerator {
             | Expression::BoolLiteral(_)
             | Expression::UnitLiteral
             | Expression::StringLiteral(_)
+            | Expression::TemplateLiteral(_)
             | Expression::CharLiteral(_)
             | Expression::Range(_)
             | Expression::TryOperator(_)

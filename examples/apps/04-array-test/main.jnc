@@ -1,0 +1,26 @@
+// App 04: Array Test
+// Tests: Array operations with signals
+// Features: Signals, Arrays, Iteration
+
+component ArrayTest() {
+    let items = signal(["Apple", "Banana", "Cherry"]);
+
+    let addItem = () => {
+        items.value = [...items.value, "New Item"];
+    };
+
+    return <div style="padding: 20px;">
+        <h1>Array Test</h1>
+        <p>Count: {items.value.length}</p>
+        <button onclick={addItem}>Add Item</button>
+        <ul>
+            {items.value.map((item) => {
+                return <li>{item}</li>;
+            })}
+        </ul>
+    </div>;
+}
+
+fn main() {
+    console.log("App 04: Array Test");
+}

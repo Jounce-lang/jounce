@@ -352,6 +352,7 @@ impl TypeChecker {
             Expression::IntegerLiteral(_) => Ok(Type::Int),
             Expression::FloatLiteral(_) => Ok(Type::Float),
             Expression::StringLiteral(_) => Ok(Type::String),
+            Expression::TemplateLiteral(_) => Ok(Type::String),
             Expression::CharLiteral(_) => Ok(Type::String),  // Chars treated as strings
             Expression::BoolLiteral(_) => Ok(Type::Bool),
             Expression::UnitLiteral => Ok(Type::Void),  // Unit type () maps to Void
@@ -521,6 +522,74 @@ impl TypeChecker {
                 // Infer object type
                 let object_type = self.infer_expression(&field_access.object)?;
                 let field_name = &field_access.field.value;
+
+                // For String methods, return function type with proper signature
+                if object_type == Type::String {
+                    return Ok(match field_name.as_str() {
+                        // Methods that return bool (with string argument)
+                        "contains" | "starts_with" | "ends_with" => {
+                            Type::Function {
+                                params: vec![Type::String],
+                                return_type: Box::new(Type::Bool),
+                            }
+                        },
+                        // Methods that return bool (no arguments)
+                        "is_empty" | "is_alphabetic" | "is_numeric" | "is_alphanumeric" => {
+                            Type::Function {
+                                params: vec![],
+                                return_type: Box::new(Type::Bool),
+                            }
+                        },
+                        // Methods that return String
+                        "to_uppercase" | "to_lowercase" | "trim" | "trim_start" | "trim_end" |
+                        "substring" | "replace" | "repeat" | "reverse" |
+                        "pad_start" | "pad_end" => {
+                            Type::Function {
+                                params: vec![],
+                                return_type: Box::new(Type::String),
+                            }
+                        },
+                        // Methods that return i32
+                        "len" | "count" => {
+                            Type::Function {
+                                params: vec![],
+                                return_type: Box::new(Type::Int),
+                            }
+                        },
+                        // Methods that return arrays
+                        "split" | "lines" => {
+                            Type::Function {
+                                params: vec![Type::String],
+                                return_type: Box::new(Type::Array(Box::new(Type::String))),
+                            }
+                        },
+                        // Default: return Any
+                        _ => Type::Any,
+                    });
+                }
+
+                // Check if this is a method call on a user-defined type with impl blocks
+                if let Type::Named(type_name) = &object_type {
+                    if let Some(type_methods) = self.methods.get(type_name) {
+                        if let Some(method_sig) = type_methods.get(field_name) {
+                            // Return the method as a function type
+                            return Ok(Type::Function {
+                                params: method_sig.param_types.clone(),
+                                return_type: Box::new(method_sig.return_type.clone()),
+                            });
+                        }
+                    }
+                }
+
+                // For other types, return Any for now
+                Ok(Type::Any)
+            }
+
+            Expression::OptionalChaining(opt_chain) => {
+                // Optional chaining has the same structure as field access
+                // Infer object type
+                let object_type = self.infer_expression(&opt_chain.object)?;
+                let field_name = &opt_chain.field.value;
 
                 // For String methods, return function type with proper signature
                 if object_type == Type::String {
@@ -850,20 +919,17 @@ impl TypeChecker {
             }
 
             "&&" | "||" => {
-                // Logical operations
-                if left_type != Type::Bool {
-                    return Err(CompileError::Generic(format!(
-                        "Expected bool, got {}",
-                        left_type
-                    )));
-                }
-                if right_type != Type::Bool {
-                    return Err(CompileError::Generic(format!(
-                        "Expected bool, got {}",
-                        right_type
-                    )));
-                }
-                Ok(Type::Bool)
+                // Logical operations with JavaScript semantics
+                // In JavaScript, these operators work with any type and return operand values
+                // For ||, returns right type (the fallback value)
+                // For &&, returns right type (the conditional value)
+                Ok(right_type)
+            }
+
+            "??" => {
+                // Nullish coalescing operator - returns right if left is null/undefined
+                // Returns the right operand type (the fallback value)
+                Ok(right_type)
             }
 
             _ => Ok(Type::Any),

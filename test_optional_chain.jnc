@@ -1,0 +1,13 @@
+// Test optional chaining operator
+
+fn main() {
+    // Create a simple object (using struct-like syntax)
+    let obj = {
+        value: 42
+    };
+
+    // Test optional chaining
+    let result = obj?.value;
+
+    return result;
+}

@@ -1,0 +1,26 @@
+// App 11: Destructuring Test
+
+component DestructureTest() {
+    let user = {
+        name: "John",
+        age: 30,
+        city: "NYC"
+    };
+
+    let { name, age } = user;
+
+    let numbers = [1, 2, 3, 4, 5];
+    let [first, second, ...rest] = numbers;
+
+    return <div style="padding: 20px;">
+        <h1>Destructuring</h1>
+        <p>Name: {name}</p>
+        <p>Age: {age}</p>
+        <p>First: {first}</p>
+        <p>Second: {second}</p>
+    </div>;
+}
+
+fn main() {
+    console.log("Destructuring Test");
+}

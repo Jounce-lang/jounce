@@ -1,0 +1,8 @@
+// App 19: Null rendering
+component App() {
+    let show = createSignal(false);
+
+    <div>
+        {show.value ? <p>Visible</p> : null}
+    </div>
+}

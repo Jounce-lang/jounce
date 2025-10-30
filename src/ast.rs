@@ -312,6 +312,7 @@ pub enum Expression {
     IntegerLiteral(i64),
     FloatLiteral(String),
     StringLiteral(String),
+    TemplateLiteral(TemplateLiteralExpression),  // `Hello ${name}!`
     CharLiteral(char),  // 'a', '.', '\n' etc.
     BoolLiteral(bool),
     UnitLiteral,  // () - the unit type value
@@ -325,6 +326,7 @@ pub enum Expression {
     Spread(SpreadExpression),  // ...expr (spread operator in arrays)
     Infix(InfixExpression),
     FieldAccess(FieldAccessExpression),
+    OptionalChaining(OptionalChainingExpression),  // object?.field (optional chaining)
     IndexAccess(IndexExpression),
     Match(MatchExpression),
     IfExpression(IfExpression),  // if cond { then } else { else } as an expression
@@ -385,6 +387,17 @@ pub struct PostfixExpression {
 #[derive(Debug, Clone)]
 pub struct SpreadExpression {
     pub expression: Box<Expression>,  // The expression being spread (e.g., arr in ...arr)
+}
+
+#[derive(Debug, Clone)]
+pub struct TemplateLiteralExpression {
+    pub parts: Vec<TemplatePart>,  // Alternating string and expression parts
+}
+
+#[derive(Debug, Clone)]
+pub enum TemplatePart {
+    String(String),         // String chunk
+    Expression(Expression), // ${expression}
 }
 
 #[derive(Debug, Clone)]
@@ -462,12 +475,24 @@ pub struct StructLiteral {
 }
 
 #[derive(Debug, Clone)]
+pub enum ObjectProperty {
+    Field(Identifier, Expression),  // key: value
+    Spread(Expression),             // ...expr
+}
+
+#[derive(Debug, Clone)]
 pub struct ObjectLiteral {
-    pub fields: Vec<(Identifier, Expression)>,  // { key: value, ... }
+    pub properties: Vec<ObjectProperty>,  // { key: value, ...spread, ... }
 }
 
 #[derive(Debug, Clone)]
 pub struct FieldAccessExpression {
+    pub object: Box<Expression>,
+    pub field: Identifier,
+}
+
+#[derive(Debug, Clone)]
+pub struct OptionalChainingExpression {
     pub object: Box<Expression>,
     pub field: Identifier,
 }
@@ -501,12 +526,32 @@ pub struct IfExpression {
 pub enum Pattern {
     Identifier(Identifier),           // x (binds to variable)
     Tuple(Vec<Pattern>),              // (a, b, c) (destructure tuple)
+    Array(ArrayPattern),              // [a, b, ...rest] (destructure array)
+    Object(ObjectPattern),            // { name, age } (destructure object)
     Literal(Expression),              // 42, "hello", true
     Wildcard,                         // _ (matches anything)
     EnumVariant {
         name: Identifier,             // Color::Red or Option::Some
         fields: Option<Vec<Pattern>>, // For destructuring fields
     },
+}
+
+#[derive(Debug, Clone)]
+pub struct ArrayPattern {
+    pub elements: Vec<Pattern>,       // Patterns for each element
+    pub rest: Option<Box<Pattern>>,   // Rest pattern ...rest
+}
+
+#[derive(Debug, Clone)]
+pub struct ObjectPattern {
+    pub fields: Vec<ObjectPatternField>,  // Field patterns
+    pub rest: Option<Identifier>,         // Rest pattern ...rest
+}
+
+#[derive(Debug, Clone)]
+pub struct ObjectPatternField {
+    pub key: Identifier,              // Property name
+    pub pattern: Pattern,             // Pattern to match against (could be renamed: key: pattern)
 }
 
 impl Pattern {
@@ -516,6 +561,24 @@ impl Pattern {
             Pattern::Identifier(id) => vec![id.clone()],
             Pattern::Tuple(patterns) => {
                 patterns.iter().flat_map(|p| p.bound_identifiers()).collect()
+            }
+            Pattern::Array(array_pattern) => {
+                let mut ids: Vec<Identifier> = array_pattern.elements.iter()
+                    .flat_map(|p| p.bound_identifiers())
+                    .collect();
+                if let Some(rest) = &array_pattern.rest {
+                    ids.extend(rest.bound_identifiers());
+                }
+                ids
+            }
+            Pattern::Object(object_pattern) => {
+                let mut ids: Vec<Identifier> = object_pattern.fields.iter()
+                    .flat_map(|f| f.pattern.bound_identifiers())
+                    .collect();
+                if let Some(rest) = &object_pattern.rest {
+                    ids.push(rest.clone());
+                }
+                ids
             }
             Pattern::Wildcard => vec![],
             Pattern::Literal(_) => vec![],
@@ -766,6 +829,7 @@ pub struct LambdaExpression {
     pub return_type: Option<TypeExpression>,
     pub body: Box<Expression>,
     pub captures: Vec<CapturedVariable>,  // Variables captured from environment
+    pub is_async: bool,  // async () => {} or async (x) => {}
 }
 
 #[derive(Debug, Clone)]
