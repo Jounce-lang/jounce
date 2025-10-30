@@ -1,0 +1,44 @@
+// App 28: Theme Switcher with Logical Assignment
+// Demonstrates ||=, &&=, and ??= operators
+
+component App() {
+    // Create signals for theme settings
+    let fontSize = signal(0);
+    let contrast = signal(10);
+    let enabled = signal(5);
+
+    // Handler to demonstrate logical assignment
+    let applyDefaults = || {
+        // ||= assigns if value is falsy (0 is falsy)
+        fontSize.value ||= 16;
+
+        // &&= assigns if value is truthy (10 is truthy)
+        contrast.value &&= 5;
+
+        // ??= assigns if value is null/undefined
+        enabled.value ??= 1;
+    };
+
+    return <div class="container">
+        <h1>Logical Assignment Operators</h1>
+        <p>Demonstrating ||=, &&=, and ??=</p>
+
+        <div class="settings">
+            <h2>Current Settings</h2>
+            <p>Font Size: {fontSize.value}</p>
+            <p>Contrast: {contrast.value}</p>
+            <p>Enabled: {enabled.value}</p>
+        </div>
+
+        <div class="controls">
+            <button onclick={applyDefaults}>Apply Defaults</button>
+        </div>
+
+        <div class="info">
+            <h3>How Logical Assignment Works</h3>
+            <p>x ||= 10 means: if x is falsy, set x = 10</p>
+            <p>x &&= 10 means: if x is truthy, set x = 10</p>
+            <p>x ??= 10 means: if x is nullish, set x = 10</p>
+        </div>
+    </div>;
+}
