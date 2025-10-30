@@ -1,0 +1,28 @@
+// App 12: Nested Components
+// Tests: Component composition, reusable components
+
+component Card() {
+    <div class="card">
+        <h2 class="card-title">Card Title</h2>
+        <p class="card-subtitle">Card subtitle</p>
+    </div>
+}
+
+component Badge() {
+    <span class="badge">Badge Text</span>
+}
+
+component App() {
+    <div class="app">
+        <h1>Nested Components Test</h1>
+
+        <Card />
+        <Card />
+
+        <div class="badges">
+            <Badge />
+            <Badge />
+            <Badge />
+        </div>
+    </div>
+}

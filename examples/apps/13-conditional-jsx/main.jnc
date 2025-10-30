@@ -1,0 +1,46 @@
+// App 13: Conditional JSX
+// Tests: If expressions in JSX, ternary operators, conditional rendering
+
+component App() {
+    let show = createSignal(true);
+    let count = createSignal(0);
+
+    fn toggle() {
+        show.set(!show.value);
+    }
+
+    fn increment() {
+        count.set(count.value + 1);
+    }
+
+    <div class="app">
+        <h1>Conditional JSX Test</h1>
+
+        <button onClick={toggle}>Toggle</button>
+        <button onClick={increment}>Increment</button>
+
+        <p>Count: {count.value}</p>
+
+        <div>
+            {if show.value {
+                <p>Showing content!</p>
+            } else {
+                <p>Content hidden!</p>
+            }}
+        </div>
+
+        <div>
+            {count.value > 5 ? <span>Greater than 5</span> : <span>Less than or equal to 5</span>}
+        </div>
+
+        <div>
+            {if count.value == 0 {
+                <p>Count is zero</p>
+            } else if count.value < 5 {
+                <p>Count is between 1 and 4</p>
+            } else {
+                <p>Count is 5 or more</p>
+            }}
+        </div>
+    </div>
+}

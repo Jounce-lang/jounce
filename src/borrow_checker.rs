@@ -123,7 +123,7 @@ impl BorrowChecker {
                             )));
                         }
                     }
-                    Expression::FieldAccess(_) | Expression::IndexAccess(_) => {
+                    Expression::FieldAccess(_) | Expression::OptionalChaining(_) | Expression::IndexAccess(_) => {
                         // Check the target expression
                         self.check_expression(&assign_stmt.target)?;
                     }
@@ -279,6 +279,7 @@ impl BorrowChecker {
             Expression::BoolLiteral(_) => Ok(ResolvedType::Bool),
             Expression::UnitLiteral => Ok(ResolvedType::Unknown),  // Unit type
             Expression::StringLiteral(_) => Ok(ResolvedType::String),
+            Expression::TemplateLiteral(_) => Ok(ResolvedType::String),
             Expression::CharLiteral(_) => Ok(ResolvedType::String),  // Char literals treated as strings
             Expression::Identifier(ident) => {
                 // Check if this is a namespaced identifier (e.g., Math::PI, console::log)
@@ -348,9 +349,16 @@ impl BorrowChecker {
                 Ok(ResolvedType::Unknown)
             }
             Expression::ObjectLiteral(obj_lit) => {
-                // Check all field values (same as StructLiteral)
-                for (_field_name, field_value) in &obj_lit.fields {
-                    self.check_expression(field_value)?;
+                // Check all properties (fields and spreads)
+                for prop in &obj_lit.properties {
+                    match prop {
+                        ObjectProperty::Field(_, field_value) => {
+                            self.check_expression(field_value)?;
+                        }
+                        ObjectProperty::Spread(expr) => {
+                            self.check_expression(expr)?;
+                        }
+                    }
                 }
                 // Return Unknown type (JavaScript objects are dynamic)
                 Ok(ResolvedType::Unknown)
@@ -358,6 +366,12 @@ impl BorrowChecker {
             Expression::FieldAccess(field_access) => {
                 // Check the object expression
                 self.check_expression(&field_access.object)?;
+                // For now, return Unknown type
+                Ok(ResolvedType::Unknown)
+            }
+            Expression::OptionalChaining(opt) => {
+                // Check the object expression
+                self.check_expression(&opt.object)?;
                 // For now, return Unknown type
                 Ok(ResolvedType::Unknown)
             }

@@ -1,0 +1,8 @@
+// App 24: Nested ternary operators
+component App() {
+    let count = createSignal(5);
+
+    <div>
+        {count.value == 0 ? <p>Zero</p> : count.value > 0 ? <p>Positive</p> : <p>Negative</p>}
+    </div>
+}

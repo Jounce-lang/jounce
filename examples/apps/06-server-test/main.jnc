@@ -1,0 +1,49 @@
+// App 06: Server Function Test
+// Tests: Server functions with database
+
+server fn get_time() {
+    script {
+        return new Date().toISOString();
+    }
+}
+
+server fn add_numbers(a: int, b: int) {
+    script {
+        return a + b;
+    }
+}
+
+component ServerTest() {
+    let result = signal("");
+    let sum = signal(0);
+
+    let fetchTime = () => {
+        get_time().then((time) => {
+            result.value = time;
+        });
+    };
+
+    let calculate = () => {
+        add_numbers(10, 20).then((s) => {
+            sum.value = s;
+        });
+    };
+
+    return <div style="padding: 20px;">
+        <h1>Server Function Test</h1>
+
+        <div>
+            <button onclick={fetchTime}>Get Server Time</button>
+            <p>Time: {result.value}</p>
+        </div>
+
+        <div>
+            <button onclick={calculate}>Calculate 10 + 20</button>
+            <p>Sum: {sum.value}</p>
+        </div>
+    </div>;
+}
+
+fn main() {
+    console.log("Server Function Test");
+}

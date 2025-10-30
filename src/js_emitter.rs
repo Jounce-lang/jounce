@@ -10,7 +10,7 @@
 // - server.js: Server-side code with HTTP server and RPC handlers
 // - client.js: Client-side code with RPC stubs and UI components
 
-use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression, ForInStatement, ForStatement, ImplBlock, JsxChild};
+use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression, ForInStatement, ForStatement, ImplBlock, JsxChild, ObjectProperty, TemplatePart, ArrayPattern, ObjectPattern};
 use crate::code_splitter::CodeSplitter;
 use crate::rpc_generator::RPCGenerator;
 use crate::source_map::SourceMapBuilder;
@@ -1136,6 +1136,42 @@ impl JSEmitter {
                         }).collect();
                         format!("[{}]", names.join(", "))
                     }
+                    Pattern::Array(array_pattern) => {
+                        // Generate array destructuring: let [first, second, ...rest] = array;
+                        let mut parts: Vec<String> = array_pattern.elements.iter().map(|p| {
+                            self.generate_pattern_js(p)
+                        }).collect();
+
+                        // Add rest element if present
+                        if let Some(rest) = &array_pattern.rest {
+                            parts.push(format!("...{}", self.generate_pattern_js(rest)));
+                        }
+
+                        format!("[{}]", parts.join(", "))
+                    }
+                    Pattern::Object(object_pattern) => {
+                        // Generate object destructuring: let { name, age } = obj;
+                        let mut parts: Vec<String> = object_pattern.fields.iter().map(|field| {
+                            let key = &field.key.value;
+                            match &field.pattern {
+                                Pattern::Identifier(id) if &id.value == key => {
+                                    // Shorthand: { name } instead of { name: name }
+                                    key.clone()
+                                }
+                                _ => {
+                                    // Renamed: { name: newName }
+                                    format!("{}: {}", key, self.generate_pattern_js(&field.pattern))
+                                }
+                            }
+                        }).collect();
+
+                        // Add rest element if present
+                        if let Some(rest) = &object_pattern.rest {
+                            parts.push(format!("...{}", rest.value));
+                        }
+
+                        format!("{{ {} }}", parts.join(", "))
+                    }
                     _ => "_".to_string(),  // Other patterns become wildcards
                 };
 
@@ -1238,6 +1274,24 @@ impl JSEmitter {
             Statement::ScriptBlock(script) => {
                 // Emit raw JavaScript code directly
                 script.code.clone()
+            }
+            Statement::Function(func_def) => {
+                // Generate function declaration inside component
+                let name = Self::escape_js_reserved_word(&func_def.name.value);
+                let params = func_def.parameters
+                    .iter()
+                    .map(|p| Self::escape_js_reserved_word(&p.name.value))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                let async_keyword = if func_def.is_async { "async " } else { "" };
+                let body = self.generate_block_js_impl(&func_def.body, true);
+
+                // Simple function declaration (not export)
+                format!(
+                    "{}function {}({}) {{\n{}\n  }}",
+                    async_keyword, name, params, body
+                )
             }
             _ => "// Unsupported statement".to_string(),
         }
@@ -1389,6 +1443,43 @@ impl JSEmitter {
         code
     }
 
+    /// Generates JavaScript code for a pattern (used in destructuring)
+    fn generate_pattern_js(&self, pattern: &Pattern) -> String {
+        match pattern {
+            Pattern::Identifier(id) => id.value.clone(),
+            Pattern::Wildcard => "_".to_string(),
+            Pattern::Array(array_pattern) => {
+                let mut parts: Vec<String> = array_pattern.elements.iter()
+                    .map(|p| self.generate_pattern_js(p))
+                    .collect();
+                if let Some(rest) = &array_pattern.rest {
+                    parts.push(format!("...{}", self.generate_pattern_js(rest)));
+                }
+                format!("[{}]", parts.join(", "))
+            }
+            Pattern::Object(object_pattern) => {
+                let mut parts: Vec<String> = object_pattern.fields.iter().map(|field| {
+                    let key = &field.key.value;
+                    match &field.pattern {
+                        Pattern::Identifier(id) if &id.value == key => key.clone(),
+                        _ => format!("{}: {}", key, self.generate_pattern_js(&field.pattern))
+                    }
+                }).collect();
+                if let Some(rest) = &object_pattern.rest {
+                    parts.push(format!("...{}", rest.value));
+                }
+                format!("{{ {} }}", parts.join(", "))
+            }
+            Pattern::Tuple(patterns) => {
+                let parts: Vec<String> = patterns.iter()
+                    .map(|p| self.generate_pattern_js(p))
+                    .collect();
+                format!("[{}]", parts.join(", "))
+            }
+            _ => "_".to_string(),
+        }
+    }
+
     /// Generates JavaScript code for an expression
     fn generate_expression_js(&self, expr: &Expression) -> String {
         match expr {
@@ -1408,6 +1499,29 @@ impl JSEmitter {
                     .replace('\r', "\\r")   // Escape carriage returns
                     .replace('\t', "\\t");  // Escape tabs
                 format!("\"{}\"", escaped)
+            }
+            Expression::TemplateLiteral(template) => {
+                // Generate JavaScript template literal: `Hello ${name}!`
+                let mut result = String::from("`");
+                for part in &template.parts {
+                    match part {
+                        TemplatePart::String(s) => {
+                            // Escape backticks and backslashes in string parts
+                            let escaped = s
+                                .replace('\\', "\\\\")
+                                .replace('`', "\\`")
+                                .replace('$', "\\$");
+                            result.push_str(&escaped);
+                        }
+                        TemplatePart::Expression(expr) => {
+                            result.push_str("${");
+                            result.push_str(&self.generate_expression_js(expr));
+                            result.push('}');
+                        }
+                    }
+                }
+                result.push('`');
+                result
             }
             Expression::CharLiteral(ch) => {
                 // Convert character literal to JavaScript string
@@ -1574,21 +1688,33 @@ impl JSEmitter {
                 format!("new {}({})", struct_name, field_values)
             }
             Expression::ObjectLiteral(obj_lit) => {
-                // Generate JavaScript object literal: { key: value, ... }
-                let fields = obj_lit.fields
+                // Generate JavaScript object literal: { key: value, ...spread, ... }
+                let properties = obj_lit.properties
                     .iter()
-                    .map(|(name, value)| {
-                        let field_name = &name.value;
-                        let field_value = self.generate_expression_js(value);
-                        format!("{}: {}", field_name, field_value)
+                    .map(|prop| {
+                        match prop {
+                            ObjectProperty::Field(name, value) => {
+                                let field_name = &name.value;
+                                let field_value = self.generate_expression_js(value);
+                                format!("{}: {}", field_name, field_value)
+                            }
+                            ObjectProperty::Spread(expr) => {
+                                let spread_value = self.generate_expression_js(expr);
+                                format!("...{}", spread_value)
+                            }
+                        }
                     })
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("{{ {} }}", fields)
+                format!("{{ {} }}", properties)
             }
             Expression::FieldAccess(field) => {
                 let object = self.generate_expression_js(&field.object);
                 format!("{}.{}", object, field.field.value)
+            }
+            Expression::OptionalChaining(opt) => {
+                let object = self.generate_expression_js(&opt.object);
+                format!("{}?.{}", object, opt.field.value)
             }
             Expression::JsxElement(jsx) => {
                 self.generate_jsx_js(jsx)
@@ -1722,6 +1848,8 @@ impl JSEmitter {
             }
             Expression::Lambda(lambda_expr) => {
                 // Generate JavaScript arrow function: (param1, param2) => body
+                // or async arrow function: async (param1, param2) => body
+                let async_keyword = if lambda_expr.is_async { "async " } else { "" };
                 let params = lambda_expr.parameters
                     .iter()
                     .map(|p| p.name.value.clone())
@@ -1733,9 +1861,9 @@ impl JSEmitter {
                 // If body is a block statement, wrap in braces
                 // Otherwise, use concise arrow function syntax
                 if matches!(*lambda_expr.body, Expression::Block(_)) {
-                    format!("({}) => {{ {} }}", params, body)
+                    format!("{}({}) => {{ {} }}", async_keyword, params, body)
                 } else {
-                    format!("({}) => {}", params, body)
+                    format!("{}({}) => {}", async_keyword, params, body)
                 }
             }
             Expression::ScriptBlock(script_block) => {
@@ -1798,8 +1926,8 @@ impl JSEmitter {
                 // Wildcards and identifiers always match
                 "true".to_string()
             }
-            Pattern::Tuple(_) => {
-                // TODO: Implement tuple pattern matching
+            Pattern::Tuple(_) | Pattern::Array(_) | Pattern::Object(_) => {
+                // TODO: Implement complex pattern matching
                 // For now, treat as wildcard
                 "true".to_string()
             }
@@ -2032,11 +2160,34 @@ impl JSEmitter {
         };
 
         // Generate children (with automatic reactivity wrapping)
-        let children = jsx.children
-            .iter()
-            .map(|child| self.generate_jsx_child_js(child))
-            .collect::<Vec<_>>()
-            .join(", ");
+        // Combine consecutive text nodes into single strings
+        let mut combined_children = Vec::new();
+        let mut pending_text = String::new();
+
+        for child in &jsx.children {
+            match child {
+                JsxChild::Text(text) => {
+                    if !pending_text.is_empty() {
+                        pending_text.push(' ');
+                    }
+                    pending_text.push_str(text);
+                }
+                _ => {
+                    if !pending_text.is_empty() {
+                        combined_children.push(format!("\"{}\"", pending_text));
+                        pending_text.clear();
+                    }
+                    combined_children.push(self.generate_jsx_child_js(child));
+                }
+            }
+        }
+
+        // Don't forget remaining text
+        if !pending_text.is_empty() {
+            combined_children.push(format!("\"{}\"", pending_text));
+        }
+
+        let children = combined_children.join(", ");
 
         if is_component {
             // Component: Counter({ initialCount: 5 })

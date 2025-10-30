@@ -30,21 +30,27 @@ pub enum TokenKind {
     Integer(i64),
     Float(String), // Store as string to preserve precision during parsing
     String(String),
+    TemplateLiteral(String), // `Hello ${name}!` - stores the raw content including ${}
     Char(char),    // Character literal like 'a', '.', '\n'
     Bool(bool),
 
     // Symbols & Punctuation
     At,          // @
+    Hash,        // #
     Assign,      // =
     PlusAssign,  // +=
     MinusAssign, // -=
     StarAssign,  // *=
     SlashAssign, // /=
     PercentAssign, // %=
+    PipePipeAssign,  // ||= (logical OR assignment)
+    AmpAmpAssign,    // &&= (logical AND assignment)
+    QuestionQuestionAssign, // ??= (nullish coalescing assignment)
     Semicolon,   // ;
     Colon,       // :
     Comma,       // ,
     Dot,         // .
+    QuestionDot, // ?. (optional chaining)
     DotDot,      // .. (range)
     DotDotEq,    // ..= (inclusive range)
     DotDotDot,   // ... (spread operator)
@@ -56,6 +62,7 @@ pub enum TokenKind {
     Percent,     // %
     Bang,        // !
     Question,    // ?
+    QuestionQuestion, // ?? (nullish coalescing)
     Ampersand,   // &
     AmpAmp,      // && (logical AND)
     Pipe,        // |

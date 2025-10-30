@@ -1,0 +1,19 @@
+// App 10: Template Literal Test
+
+component TemplateTest() {
+    let name = signal("World");
+    let count = signal(42);
+
+    let greeting = `Hello, ${name.value}!`;
+    let message = `You have ${count.value} items`;
+
+    return <div style="padding: 20px;">
+        <h1>Template Literals</h1>
+        <p>{greeting}</p>
+        <p>{message}</p>
+    </div>;
+}
+
+fn main() {
+    console.log("Template Literal Test");
+}

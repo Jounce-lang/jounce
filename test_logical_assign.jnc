@@ -1,0 +1,13 @@
+// Test logical assignment operators
+
+fn main() {
+    let x = 0;
+    let y = 10;
+    let z = 5;
+
+    x ||= 15;  // x is falsy (0), so x = 15
+    y &&= 20;  // y is truthy (10), so y = 20
+    z ??= 30;  // z is not null, so z stays 5
+
+    return x + y + z;  // 15 + 20 + 5 = 40
+}
