@@ -293,7 +293,7 @@ impl SemanticAnalyzer {
                             )));
                         }
                     }
-                    Expression::FieldAccess(_) | Expression::IndexAccess(_) => {
+                    Expression::FieldAccess(_) | Expression::OptionalChaining(_) | Expression::IndexAccess(_) => {
                         // For field access and index access, analyze the target expression
                         self.analyze_expression(&assign_stmt.target)?;
                     }
@@ -661,6 +661,7 @@ impl SemanticAnalyzer {
             Expression::IntegerLiteral(_) => Ok(ResolvedType::Integer),
             Expression::FloatLiteral(_) => Ok(ResolvedType::Float),
             Expression::StringLiteral(_) => Ok(ResolvedType::String),
+            Expression::TemplateLiteral(_) => Ok(ResolvedType::String),
             Expression::CharLiteral(_) => Ok(ResolvedType::String),  // Chars treated as strings
             Expression::BoolLiteral(_) => Ok(ResolvedType::Bool),
             Expression::UnitLiteral => Ok(ResolvedType::ComplexType),  // Unit type as generic complex type
@@ -789,9 +790,16 @@ impl SemanticAnalyzer {
                 Ok(ResolvedType::Struct(struct_lit.name.value.clone()))
             }
             Expression::ObjectLiteral(obj_lit) => {
-                // Object literals are JavaScript objects - just analyze field values
-                for (_field_name, field_value) in &obj_lit.fields {
-                    self.analyze_expression_with_expected(field_value, None)?;
+                // Object literals are JavaScript objects - just analyze properties
+                for prop in &obj_lit.properties {
+                    match prop {
+                        ObjectProperty::Field(_, field_value) => {
+                            self.analyze_expression_with_expected(field_value, None)?;
+                        }
+                        ObjectProperty::Spread(expr) => {
+                            self.analyze_expression_with_expected(expr, None)?;
+                        }
+                    }
                 }
                 // Return Unknown type (JavaScript objects are dynamic)
                 Ok(ResolvedType::Unknown)
@@ -845,6 +853,29 @@ impl SemanticAnalyzer {
                         "Cannot index into non-array type '{}'",
                         array_type
                     ))),
+                }
+            }
+            Expression::OptionalChaining(opt) => {
+                // Analyze like field access, but return type is always optional
+                let object_type = self.analyze_expression_with_expected(&opt.object, None)?;
+
+                match object_type {
+                    ResolvedType::Struct(struct_name) => {
+                        if let Some(field_type) =
+                            self.structs.get_field_type(&struct_name, &opt.field.value)
+                        {
+                            Ok(field_type)
+                        } else {
+                            Err(CompileError::Generic(format!(
+                                "Struct '{}' has no field named '{}'",
+                                struct_name,
+                                opt.field.value
+                            )))
+                        }
+                    }
+                    _ => {
+                        Ok(ResolvedType::Unknown)
+                    }
                 }
             }
             Expression::Match(match_expr) => {
@@ -1032,15 +1063,21 @@ impl SemanticAnalyzer {
             return Ok(ResolvedType::Bool);
         }
 
-        // Logical operators require Bool operands and return Bool
+        // Logical operators in JavaScript can work with any type and return the operand value
+        // For strict boolean logic, we'd require Bool operands, but for JavaScript semantics
+        // we allow any type. The return type is the right operand type for ||, left for &&
         if matches!(op, "&&" | "||") {
-            if left_type != ResolvedType::Bool || right_type != ResolvedType::Bool {
-                return Err(CompileError::Generic(format!(
-                    "Logical operator '{}' requires bool operands, got '{}' and '{}'",
-                    op, left_type, right_type
-                )));
-            }
-            return Ok(ResolvedType::Bool);
+            // Accept any type for JavaScript semantics
+            // For ||, return the right type (the fallback value)
+            // For &&, return the right type (the conditional value)
+            return Ok(right_type);
+        }
+
+        // Nullish coalescing operator (??) - returns right if left is null/undefined
+        if op == "??" {
+            // Accept any type for JavaScript semantics
+            // Returns the right operand type (the fallback value)
+            return Ok(right_type);
         }
 
         // Handle operand types for arithmetic/string operations
@@ -1155,8 +1192,8 @@ impl SemanticAnalyzer {
                     Pattern::Wildcard => {
                         has_wildcard = true;
                     }
-                    Pattern::Tuple(_) => {
-                        // TODO: Check tuple pattern exhaustiveness
+                    Pattern::Tuple(_) | Pattern::Array(_) | Pattern::Object(_) => {
+                        // TODO: Check complex pattern exhaustiveness
                         has_wildcard = true;  // Treat as wildcard for now
                     }
                     Pattern::EnumVariant { name, .. } => {

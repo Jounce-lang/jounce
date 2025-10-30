@@ -1798,7 +1798,7 @@ mod tests {
         "#;
 
         let result = compile_source(source);
-        assert!(result.is_ok(), "? operator should compile successfully");
+        assert!(result.is_ok(), "? operator should compile successfully: {:?}", result.err());
 
         let (_, client_js) = result.unwrap();
         assert!(client_js.contains(".value"),

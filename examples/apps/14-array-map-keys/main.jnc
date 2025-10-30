@@ -1,0 +1,18 @@
+// App 14: Array Map with Keys
+// Tests: Map with index parameter, key attribute
+
+component App() {
+    let items = createSignal(["Apple", "Banana", "Cherry"]);
+
+    <div class="app">
+        <h1>Array Map Test</h1>
+
+        <ul>
+            {items.value.map((item, index) => {
+                <li key={index}>
+                    {index + 1}. {item}
+                </li>
+            })}
+        </ul>
+    </div>
+}

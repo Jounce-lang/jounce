@@ -1,0 +1,21 @@
+// App 05: Edge Cases Test
+// Tests: Various edge cases
+
+component EdgeCases() {
+    let count = signal(5);
+    let name = signal("World");
+
+    return <div style="padding: 20px;">
+        <h1>Edge Cases</h1>
+
+        <p>Hello {name.value}!</p>
+        <p>Double: {count.value * 2}</p>
+        <p>Is positive: {count.value > 0}</p>
+        <p>Complex: {(count.value + 10) * 2}</p>
+        <p>Value is {count.value} units</p>
+    </div>;
+}
+
+fn main() {
+    console.log("Edge Cases");
+}

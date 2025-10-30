@@ -1,0 +1,6 @@
+// Test nullish coalescing operator
+
+fn main() {
+    let x = 5 ?? 10;
+    return x;
+}

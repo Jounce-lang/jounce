@@ -1,0 +1,10 @@
+// App 20: Dynamic class names
+component App() {
+    let active = createSignal(true);
+
+    <div>
+        <button class="btn {active.value ? 'active' : 'inactive'}">
+            Button
+        </button>
+    </div>
+}

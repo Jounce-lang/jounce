@@ -1,0 +1,25 @@
+// App 15: Event Handler Arguments
+// Tests: Event object, preventDefault, multiple arguments
+
+component App() {
+    let clicks = createSignal(0);
+
+    <div class="app">
+        <h1>Event Handler Test</h1>
+
+        <form>
+            <button onClick={(e) => {
+                clicks.set(clicks.value + 1);
+            }}>
+                Clicked {clicks.value} times
+            </button>
+
+            <button type="submit" onClick={(e) => {
+                e.preventDefault();
+                console.log("Form not submitted!");
+            }}>
+                Submit (prevented)
+            </button>
+        </form>
+    </div>
+}

@@ -1,0 +1,47 @@
+// Comprehensive test of all 3 new JavaScript operators
+// 1. Nullish Coalescing (??)
+// 2. Optional Chaining (?.)
+// 3. Logical Assignment (||=, &&=, ??=)
+
+fn test_nullish_coalescing() {
+    // Test nullish coalescing operator
+    // In JavaScript: returns right operand if left is null/undefined
+    let a = 5 ?? 10;         // a = 5
+    let b = 0 ?? 20;         // b = 0 (0 is falsy but NOT null)
+
+    return a + b;  // 5 + 0 = 5
+}
+
+fn test_optional_chaining() {
+    // Test optional chaining - safely access nested properties
+    let user = {
+        name: "Alice",
+        age: 30
+    };
+
+    let name = user?.name;   // "Alice"
+    let age = user?.age;     // 30
+
+    return age;
+}
+
+fn test_logical_assignment() {
+    // Test all three logical assignment operators
+    let x = 0;
+    let y = 10;
+    let z = 5;
+
+    x ||= 100;   // x was falsy (0), now x = 100
+    y &&= 200;   // y was truthy (10), now y = 200
+    z ??= 300;   // z is not null, z stays 5
+
+    return x + y + z;  // 100 + 200 + 5 = 305
+}
+
+fn main() {
+    let r1 = test_nullish_coalescing();    // 5
+    let r2 = test_optional_chaining();      // 30
+    let r3 = test_logical_assignment();     // 305
+
+    return r1 + r2 + r3;  // 5 + 30 + 305 = 340
+}

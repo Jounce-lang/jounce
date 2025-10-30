@@ -1,0 +1,24 @@
+// App 07: Self-Closing Tags Test
+
+component SelfClosingTest() {
+    let url = signal("https://example.com");
+    let imageUrl = signal("https://via.placeholder.com/150");
+
+    return <div style="padding: 20px;">
+        <h1>Self-Closing Tags</h1>
+
+        <input type="text" placeholder="Enter URL" />
+
+        <br/>
+
+        <img src={imageUrl.value} alt="Test Image" />
+
+        <hr/>
+
+        <a href={url.value}>Click here</a>
+    </div>;
+}
+
+fn main() {
+    console.log("Self-Closing Tags Test");
+}

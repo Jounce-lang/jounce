@@ -8,6 +8,7 @@ use std::collections::HashMap;
 enum Precedence {
     Lowest,
     Ternary,     // ? :  (conditional/ternary operator)
+    NullishCoalescing, // ?? (nullish coalescing operator)
     LogicalOr,   // ||
     LogicalAnd,  // &&
     BitwiseOr,   // |
@@ -25,6 +26,7 @@ lazy_static::lazy_static! {
     static ref PRECEDENCES: HashMap<TokenKind, Precedence> = {
         let mut m = HashMap::new();
         m.insert(TokenKind::Question, Precedence::Ternary);       // ? : (ternary)
+        m.insert(TokenKind::QuestionQuestion, Precedence::NullishCoalescing); // ??
         m.insert(TokenKind::PipePipe, Precedence::LogicalOr);     // ||
         m.insert(TokenKind::AmpAmp, Precedence::LogicalAnd);      // &&
         m.insert(TokenKind::Pipe, Precedence::BitwiseOr);         // |
@@ -206,7 +208,8 @@ impl<'a> Parser<'a> {
                 } else if matches!(
                     self.current_token().kind,
                     TokenKind::PlusAssign | TokenKind::MinusAssign | TokenKind::StarAssign |
-                    TokenKind::SlashAssign | TokenKind::PercentAssign
+                    TokenKind::SlashAssign | TokenKind::PercentAssign |
+                    TokenKind::PipePipeAssign | TokenKind::AmpAmpAssign | TokenKind::QuestionQuestionAssign
                 ) {
                     // Compound assignment: x += 5 becomes x = x + 5
                     let op_kind = self.current_token().kind.clone();
@@ -220,6 +223,9 @@ impl<'a> Parser<'a> {
                         TokenKind::StarAssign => (TokenKind::Star, "*"),
                         TokenKind::SlashAssign => (TokenKind::Slash, "/"),
                         TokenKind::PercentAssign => (TokenKind::Percent, "%"),
+                        TokenKind::PipePipeAssign => (TokenKind::PipePipe, "||"),
+                        TokenKind::AmpAmpAssign => (TokenKind::AmpAmp, "&&"),
+                        TokenKind::QuestionQuestionAssign => (TokenKind::QuestionQuestion, "??"),
                         _ => unreachable!(),
                     };
 
@@ -1457,6 +1463,14 @@ impl<'a> Parser<'a> {
                         field,
                     });
                 }
+                TokenKind::QuestionDot => {
+                    self.next_token(); // consume the ?.
+                    let field = self.parse_identifier()?;
+                    expr = Expression::OptionalChaining(OptionalChainingExpression {
+                        object: Box::new(expr),
+                        field,
+                    });
+                }
                 TokenKind::DoubleColon => {
                     self.next_token(); // consume the ::
 
@@ -2091,6 +2105,14 @@ impl<'a> Parser<'a> {
                             self.next_token();
                             let field = self.parse_identifier()?;
                             expr = Expression::FieldAccess(FieldAccessExpression {
+                                object: Box::new(expr),
+                                field,
+                            });
+                        }
+                        TokenKind::QuestionDot => {
+                            self.next_token();
+                            let field = self.parse_identifier()?;
+                            expr = Expression::OptionalChaining(OptionalChainingExpression {
                                 object: Box::new(expr),
                                 field,
                             });

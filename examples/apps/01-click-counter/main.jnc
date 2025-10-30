@@ -1,0 +1,66 @@
+// App 01: Click Counter
+// Tests: Basic signal reactivity
+// Features: Signals only
+// Expected: ~50 lines
+
+component ClickCounter() {
+    let count = signal(0);
+
+    let increment = () => {
+        count.value = count.value + 1;
+    };
+
+    let decrement = () => {
+        count.value = count.value - 1;
+    };
+
+    let reset = () => {
+        count.value = 0;
+    };
+
+    return <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; border: 2px solid #333; border-radius: 8px; text-align: center;">
+        <h1 style="color: #333; margin-bottom: 20px;">Click Counter</h1>
+
+        <div style="font-size: 48px; font-weight: bold; color: #2563eb; margin: 30px 0;">
+            {count.value}
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+            <button
+                onclick={decrement}
+                style="padding: 12px 24px; font-size: 16px; background-color: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                - Decrement
+            </button>
+
+            <button
+                onclick={increment}
+                style="padding: 12px 24px; font-size: 16px; background-color: #22c55e; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                + Increment
+            </button>
+        </div>
+
+        <button
+            onclick={reset}
+            style="padding: 12px 24px; font-size: 16px; background-color: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Reset
+        </button>
+
+        <div style="margin-top: 30px; padding: 15px; background-color: #f3f4f6; border-radius: 4px;">
+            <p style="margin: 5px 0; color: #6b7280;">
+                Current value: <strong style="color: #333;">{count.value}</strong>
+            </p>
+            <p style="margin: 5px 0; color: #6b7280;">
+                Status: {count.value > 0 ?
+                    <span style="color: #22c55e;">Positive</span> :
+                    count.value < 0 ?
+                        <span style="color: #ef4444;">Negative</span> :
+                        <span style="color: #6b7280;">Zero</span>
+                }
+            </p>
+        </div>
+    </div>;
+}
+
+fn main() {
+    console.log("App 01: Click Counter - Starting...");
+}

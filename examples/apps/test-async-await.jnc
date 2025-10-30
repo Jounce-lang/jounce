@@ -1,0 +1,25 @@
+// Test: Async/await
+// Verifies Issue #7
+
+async fn fetchData() -> String {
+    return "Data loaded";
+}
+
+component AsyncTest() {
+    let data = signal("Loading...");
+
+    let loadData = async () => {
+        let result = await fetchData();
+        data.value = result;
+    };
+
+    return <div>
+        <h1>Async/Await Test</h1>
+        <p>Status: {data.value}</p>
+        <button onclick={loadData}>Load Data</button>
+    </div>;
+}
+
+fn main() {
+    console.log("Test: Async/await");
+}

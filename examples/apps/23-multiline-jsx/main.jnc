@@ -1,0 +1,11 @@
+// App 23: Multi-line JSX
+component App() {
+    let items = createSignal([1, 2, 3]);
+
+    <div>
+        {items.value.map((item) => {
+            return <p>Item: {item}</p>;
+        })}
+    </div>
+}
+
