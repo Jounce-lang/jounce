@@ -263,6 +263,11 @@ impl Lexer {
                 if self.peek() == '|' {
                     self.read_char();
                     self.read_char();
+                    // Check for ||=
+                    if self.ch == '=' {
+                        self.read_char();
+                        return Token::with_position(TokenKind::PipePipeAssign, "||=".to_string(), self.line, start_col, start_pos);
+                    }
                     return Token::with_position(TokenKind::PipePipe, "||".to_string(), self.line, start_col, start_pos);
                 } else {
                     Token::with_position(TokenKind::Pipe, "|".to_string(), self.line, start_col, start_pos)
@@ -325,12 +330,35 @@ impl Lexer {
                 if self.peek() == '&' {
                     self.read_char();
                     self.read_char();
+                    // Check for &&=
+                    if self.ch == '=' {
+                        self.read_char();
+                        return Token::with_position(TokenKind::AmpAmpAssign, "&&=".to_string(), self.line, start_col, start_pos);
+                    }
                     return Token::with_position(TokenKind::AmpAmp, "&&".to_string(), self.line, start_col, start_pos);
                 } else {
                     Token::with_position(TokenKind::Ampersand, "&".to_string(), self.line, start_col, start_pos)
                 }
             }
-            '?' => Token::with_position(TokenKind::Question, "?".to_string(), self.line, start_col, start_pos),
+            '?' => {
+                if self.peek() == '?' {
+                    self.read_char();
+                    self.read_char();
+                    // Check for ??=
+                    if self.ch == '=' {
+                        self.read_char();
+                        return Token::with_position(TokenKind::QuestionQuestionAssign, "??=".to_string(), self.line, start_col, start_pos);
+                    }
+                    return Token::with_position(TokenKind::QuestionQuestion, "??".to_string(), self.line, start_col, start_pos);
+                } else if self.peek() == '.' {
+                    self.read_char();  // consume the ?
+                    // Don't read_char() again - the final read_char() at line 564 will consume the .
+                    Token::with_position(TokenKind::QuestionDot, "?.".to_string(), self.line, start_col, start_pos)
+                } else {
+                    // Don't read_char() - the final read_char() at line 564 will consume the ?
+                    Token::with_position(TokenKind::Question, "?".to_string(), self.line, start_col, start_pos)
+                }
+            }
             '^' => Token::with_position(TokenKind::Caret, "^".to_string(), self.line, start_col, start_pos),
             '!' => {
                 if self.peek() == '=' {
@@ -479,8 +507,17 @@ impl Lexer {
                 }
                 Token::with_position(TokenKind::At, "@".to_string(), self.line, start_col, start_pos)
             }
+            '#' => {
+                // Check if this is a hex color (e.g., #fff, #3b82f6)
+                if self.peek().is_ascii_hexdigit() {
+                    return self.read_hex_color();
+                } else {
+                    Token::with_position(TokenKind::Hash, "#".to_string(), self.line, start_col, start_pos)
+                }
+            }
             '\0' => Token::with_position(TokenKind::Eof, "".to_string(), self.line, start_col, start_pos),
             '"' => return self.read_string(),
+            '`' => return self.read_template_literal(),
             '\'' => {
                 // Check if this is a lifetime (e.g., 'a, 'static) or character literal (e.g., 'x', '.')
                 if self.peek().is_alphabetic() || self.peek() == '_' {
@@ -584,6 +621,16 @@ impl Lexer {
         while self.ch.is_alphanumeric() || self.ch == '_' {
             self.read_char();
         }
+
+        // Check for hyphenated identifiers (e.g., "not-allowed", "background-color")
+        // This is common in CSS property values and names
+        while self.ch == '-' && self.peek().is_alphabetic() {
+            self.read_char(); // consume '-'
+            while self.ch.is_alphanumeric() || self.ch == '_' {
+                self.read_char();
+            }
+        }
+
         let literal: String = self.input[start_pos..self.position].iter().collect();
 
         // Check for css! macro
@@ -600,6 +647,22 @@ impl Lexer {
         };
 
         Token::with_position(kind, literal, self.line, start_col, start_pos)
+    }
+
+    fn read_hex_color(&mut self) -> Token {
+        let start_pos = self.position;
+        let start_col = self.column;
+
+        // Consume the #
+        self.read_char();
+
+        // Read hex digits (3, 4, 6, or 8 digits for #rgb, #rgba, #rrggbb, #rrggbbaa)
+        while self.ch.is_ascii_hexdigit() {
+            self.read_char();
+        }
+
+        let literal: String = self.input[start_pos..self.position].iter().collect();
+        Token::with_position(TokenKind::Identifier, literal, self.line, start_col, start_pos)
     }
 
     fn read_number(&mut self) -> Token {
@@ -679,6 +742,17 @@ impl Lexer {
             }
         }
 
+        // Check for CSS units (px, em, rem, %, vh, vw, etc.) attached to the number
+        // This is common in CSS: "10px", "2.5em", "100%"
+        if self.ch.is_alphabetic() || self.ch == '%' {
+            while self.ch.is_alphanumeric() || self.ch == '%' {
+                self.read_char();
+            }
+            // Return as identifier since it's a CSS value like "10px"
+            let literal: String = self.input[start_pos..self.position].iter().collect();
+            return Token::with_position(TokenKind::Identifier, literal, self.line, start_col, start_pos);
+        }
+
         let literal: String = self.input[start_pos..self.position].iter().collect();
 
         if is_float {
@@ -738,6 +812,42 @@ impl Lexer {
 
         let token = Token::with_position(TokenKind::String(result.clone()), result, self.line, start_col, start_pos);
         self.read_char(); // Consume closing '"'
+        token
+    }
+
+    fn read_template_literal(&mut self) -> Token {
+        let start_pos = self.position;
+        let start_col = self.column;
+        self.read_char(); // Consume opening '`'
+
+        let mut result = String::new();
+
+        while self.ch != '`' && self.ch != '\0' {
+            if self.ch == '\\' {
+                // Handle escape sequences
+                self.read_char(); // consume backslash
+                match self.ch {
+                    'n' => result.push('\n'),   // newline
+                    't' => result.push('\t'),   // tab
+                    'r' => result.push('\r'),   // carriage return
+                    '\\' => result.push('\\'),  // backslash
+                    '`' => result.push('`'),    // backtick
+                    '$' => result.push('$'),    // dollar sign
+                    _ => {
+                        // Unknown escape sequence - include backslash and char
+                        result.push('\\');
+                        result.push(self.ch);
+                    }
+                }
+                self.read_char();
+            } else {
+                result.push(self.ch);
+                self.read_char();
+            }
+        }
+
+        let token = Token::with_position(TokenKind::TemplateLiteral(result.clone()), result, self.line, start_col, start_pos);
+        self.read_char(); // Consume closing '`'
         token
     }
 

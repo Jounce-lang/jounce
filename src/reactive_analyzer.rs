@@ -10,7 +10,7 @@
 //   "Hello"             → Not reactive (static string)
 //   foo()               → Might be reactive (depends on function body)
 
-use crate::ast::{Expression, JsxChild, JsxElement, JsxAttribute};
+use crate::ast::{Expression, JsxChild, JsxElement, JsxAttribute, ObjectProperty, TemplatePart};
 
 /// Analyzes expressions to detect reactive value access
 pub struct ReactiveAnalyzer;
@@ -32,6 +32,16 @@ impl ReactiveAnalyzer {
                 Self::is_reactive(&field.object)
             }
 
+            // Optional chaining .value access: signal?.value
+            Expression::OptionalChaining(opt) => {
+                // Check if this is a `.value` access
+                if opt.field.value == "value" {
+                    return true;
+                }
+                // Recursively check the object
+                Self::is_reactive(&opt.object)
+            }
+
             // Binary operations: a.value + b.value
             Expression::Infix(infix) => {
                 Self::is_reactive(&infix.left) || Self::is_reactive(&infix.right)
@@ -47,8 +57,14 @@ impl ReactiveAnalyzer {
                 Self::is_reactive(&postfix.left)
             }
 
-            // Function calls: might contain reactive args
+            // Function calls: might contain reactive args OR be called on reactive values
+            // Examples:
+            // - bmi.value.toFixed(1) -> function is FieldAccess(.value).toFixed, which is reactive
+            // - items.value.map(x => ...) -> function is FieldAccess(.value).map, which is reactive
             Expression::FunctionCall(call) => {
+                // Check if the function itself is reactive (method called on .value)
+                Self::is_reactive(&call.function) ||
+                // Also check if any arguments are reactive
                 call.arguments.iter().any(|arg| Self::is_reactive(arg))
             }
 
@@ -57,9 +73,14 @@ impl ReactiveAnalyzer {
                 array.elements.iter().any(|elem| Self::is_reactive(elem))
             }
 
-            // Object literals: { count: count.value }
+            // Object literals: { count: count.value, ...spread }
             Expression::ObjectLiteral(obj) => {
-                obj.fields.iter().any(|(_, value)| Self::is_reactive(value))
+                obj.properties.iter().any(|prop| {
+                    match prop {
+                        ObjectProperty::Field(_, value) => Self::is_reactive(value),
+                        ObjectProperty::Spread(expr) => Self::is_reactive(expr),
+                    }
+                })
             }
 
             // Ternary: cond.value ? a : b
@@ -92,6 +113,16 @@ impl ReactiveAnalyzer {
             // If expressions: if cond.value { ... }
             Expression::IfExpression(if_expr) => {
                 Self::is_reactive(&if_expr.condition)
+            }
+
+            // Template literals: check if any expressions are reactive
+            Expression::TemplateLiteral(template) => {
+                template.parts.iter().any(|part| {
+                    match part {
+                        TemplatePart::String(_) => false,
+                        TemplatePart::Expression(expr) => Self::is_reactive(expr),
+                    }
+                })
             }
 
             // Literals and identifiers without .value are not reactive

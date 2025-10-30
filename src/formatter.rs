@@ -710,6 +710,20 @@ impl Formatter {
                 self.write(&s.replace('"', "\\\""));
                 self.write("\"");
             }
+            Expression::TemplateLiteral(template) => {
+                self.write("`");
+                for part in &template.parts {
+                    match part {
+                        TemplatePart::String(s) => self.write(s),
+                        TemplatePart::Expression(expr) => {
+                            self.write("${");
+                            self.format_expression(expr);
+                            self.write("}");
+                        }
+                    }
+                }
+                self.write("`");
+            }
             Expression::CharLiteral(ch) => {
                 self.write("'");
                 match ch {
@@ -734,6 +748,11 @@ impl Formatter {
             Expression::Spread(spread) => self.format_spread_expression(spread),
             Expression::Infix(infix) => self.format_infix_expression(infix),
             Expression::FieldAccess(field) => self.format_field_access(field),
+            Expression::OptionalChaining(opt) => {
+                self.format_expression(&opt.object);
+                self.write("?.");
+                self.write(&opt.field.value);
+            }
             Expression::IndexAccess(index) => self.format_index_access(index),
             Expression::Match(match_expr) => self.format_match_expression(match_expr),
             Expression::IfExpression(if_expr) => self.format_if_expression(if_expr),
@@ -845,15 +864,23 @@ impl Formatter {
     fn format_object_literal(&mut self, obj_lit: &ObjectLiteral) {
         self.write("{");
 
-        if !obj_lit.fields.is_empty() {
+        if !obj_lit.properties.is_empty() {
             self.write(" ");
-            for (i, (name, value)) in obj_lit.fields.iter().enumerate() {
+            for (i, prop) in obj_lit.properties.iter().enumerate() {
                 if i > 0 {
                     self.write(", ");
                 }
-                self.write(&name.value);
-                self.write(": ");
-                self.format_expression(value);
+                match prop {
+                    ObjectProperty::Field(name, value) => {
+                        self.write(&name.value);
+                        self.write(": ");
+                        self.format_expression(value);
+                    }
+                    ObjectProperty::Spread(expr) => {
+                        self.write("...");
+                        self.format_expression(expr);
+                    }
+                }
             }
             self.write(" ");
         }
@@ -1347,6 +1374,49 @@ impl Formatter {
                     self.write(")");
                 }
             }
+            Pattern::Array(array_pattern) => {
+                self.write("[");
+                for (i, p) in array_pattern.elements.iter().enumerate() {
+                    if i > 0 {
+                        self.write(", ");
+                    }
+                    self.format_pattern(p);
+                }
+                if let Some(rest) = &array_pattern.rest {
+                    if !array_pattern.elements.is_empty() {
+                        self.write(", ");
+                    }
+                    self.write("...");
+                    self.format_pattern(rest);
+                }
+                self.write("]");
+            }
+            Pattern::Object(object_pattern) => {
+                self.write("{ ");
+                for (i, field) in object_pattern.fields.iter().enumerate() {
+                    if i > 0 {
+                        self.write(", ");
+                    }
+                    self.write(&field.key.value);
+                    match &field.pattern {
+                        Pattern::Identifier(id) if &id.value == &field.key.value => {
+                            // Shorthand: { name } instead of { name: name }
+                        }
+                        _ => {
+                            self.write(": ");
+                            self.format_pattern(&field.pattern);
+                        }
+                    }
+                }
+                if let Some(rest) = &object_pattern.rest {
+                    if !object_pattern.fields.is_empty() {
+                        self.write(", ");
+                    }
+                    self.write("...");
+                    self.write(&rest.value);
+                }
+                self.write(" }");
+            }
         }
     }
 
@@ -1838,6 +1908,7 @@ mod tests {
                         })),
                     })),
                     captures: vec![],
+                    is_async: false,
                 }),
             })],
         };

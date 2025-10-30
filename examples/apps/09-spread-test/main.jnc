@@ -1,0 +1,29 @@
+// App 09: Spread Operator Test
+
+component SpreadTest() {
+    let arr1 = signal([1, 2, 3]);
+    let arr2 = signal([4, 5, 6]);
+
+    let mergeArrays = () => {
+        let merged = [...arr1.value, ...arr2.value];
+        console.log(merged);
+    };
+
+    let obj1 = { name: "John", age: 30 };
+    let obj2 = { city: "New York", country: "USA" };
+
+    let mergeObjects = () => {
+        let merged = {...obj1, ...obj2};
+        console.log(merged);
+    };
+
+    return <div style="padding: 20px;">
+        <h1>Spread Operator Test</h1>
+        <button onclick={mergeArrays}>Merge Arrays</button>
+        <button onclick={mergeObjects}>Merge Objects</button>
+    </div>;
+}
+
+fn main() {
+    console.log("Spread Test");
+}

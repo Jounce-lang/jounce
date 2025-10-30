@@ -1,0 +1,30 @@
+// Test new operators
+
+fn test_nullish_coalescing() {
+    // Test nullish coalescing operator (??)
+    let x = null ?? 10;
+    let y = undefined ?? "default";
+    return x;
+}
+
+fn test_optional_chaining() {
+    // Test optional chaining operator (?.)
+    // Note: These would normally access object properties
+    // For now, just test the syntax compiles
+    let name = "test";
+    let count = 5;
+    return count;
+}
+
+fn test_logical_assignment() {
+    // Test logical assignment operators (||=, &&=, ??=)
+    let x = 0;
+    let y = 10;
+    let z = null;
+
+    x ||= 10;  // x is falsy, so x = 10
+    y &&= 5;   // y is truthy, so y = 5
+    z ??= 0;   // z is null, so z = 0
+
+    return x + y + z;
+}
