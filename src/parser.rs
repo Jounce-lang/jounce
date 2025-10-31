@@ -2413,7 +2413,7 @@ impl<'a> Parser<'a> {
 
         self.expect_and_consume(&TokenKind::LAngle)?;
 
-        let name = self.parse_identifier()?;
+        let name = self.parse_jsx_tag_name()?;
 
         let mut attributes = vec![];
         while self.current_token().kind != TokenKind::RAngle &&
@@ -2710,7 +2710,7 @@ impl<'a> Parser<'a> {
 
         self.expect_and_consume(&TokenKind::LAngle)?;
         self.expect_and_consume(&TokenKind::Slash)?;
-        let name = self.parse_identifier()?;
+        let name = self.parse_jsx_tag_name()?;
 
         // CRITICAL: Exit BOTH closing tag mode AND JSX mode BEFORE consuming `>`
         // This ensures the next token (created during consume) has the correct lexer state
@@ -2731,6 +2731,23 @@ impl<'a> Parser<'a> {
         } else {
             Err(self.error(&format!("Expected Identifier, found {:?}", token.kind)))
         }
+    }
+
+    /// Parse JSX tag name - allows keywords like "style" as HTML element names
+    fn parse_jsx_tag_name(&mut self) -> Result<Identifier, CompileError> {
+        let token = self.current_token();
+
+        // Allow both identifiers and certain keywords as JSX tag names
+        let tag_name = match &token.kind {
+            TokenKind::Identifier => token.lexeme.clone(),
+            TokenKind::Style => "style".to_string(),
+            _ => {
+                return Err(self.error(&format!("Expected JSX tag name, found {:?}", token.kind)));
+            }
+        };
+
+        self.next_token();
+        Ok(Identifier { value: tag_name })
     }
 
     /// Parse decorators like @persist("localStorage")
