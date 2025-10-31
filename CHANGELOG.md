@@ -5,6 +5,163 @@ All notable changes to Jounce will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2025-10-31 - "Developer Experience" 🚀
+
+### 🎯 Quick Wins - Major DX Improvements!
+
+**Release Highlights**:
+- ✅ **4 Starter Templates** - Production-ready starting points
+- ✅ **457 CSS Utility Classes** - Tailwind-inspired styling
+- ✅ **Enhanced Error Messages** - 20+ helpful error codes
+- ✅ **Comprehensive Documentation** - Guides for every template
+
+---
+
+### 🎨 Quick Win 2: CSS Utilities (457 Classes)
+
+**Added Tailwind-inspired utility classes** auto-included in every compilation:
+
+**Categories**:
+- **Layout**: display, position, flex, grid (50+ classes)
+- **Spacing**: margin, padding (0-16 scale, 180+ classes)
+- **Typography**: font sizes, weights, alignment (40+ classes)
+- **Colors**: text, background, border colors (33+ classes)
+- **Borders**: widths, radius, styles (20+ classes)
+- **Effects**: shadows, opacity, transitions (25+ classes)
+- **Components**: btn, card, badge (30+ classes)
+- **Responsive**: sm:, md:, lg: breakpoints (30+ classes)
+
+**Features**:
+- Zero configuration required
+- 19KB total size (uncompressed, ~5KB gzipped)
+- Auto-generated and prepended to styles.css
+- Full documentation with examples
+
+**Files**:
+- `src/css_utilities.rs` (800+ lines)
+- `docs/CSS_UTILITIES.md` (500+ lines)
+- Example: `examples/apps/34-utility-classes-test/`
+
+---
+
+### 💡 Quick Win 3: Enhanced Error Messages (20+ Codes)
+
+**Added error help database** with beautiful, helpful diagnostics:
+
+**Error Categories**:
+- **Parser Errors** (E001-E009): semicolons, tokens, identifiers
+- **Component Errors** (E010-E019): syntax, naming conventions
+- **JSX Errors** (E020-E029): unclosed tags, invalid attributes
+- **Reactivity Errors** (E030-E039): signal access, effects
+- **Type Errors** (E040-E049): mismatches, undefined variables
+- **Brace/Paren Errors** (E050-E059): missing/unexpected
+- **Import/Export Errors** (E060-E069): not found, syntax
+- **Style Errors** (E070-E079): invalid syntax
+
+**Features**:
+- Colored ANSI output
+- Source code snippets with context
+- Visual indicators (^) pointing to errors
+- Helpful suggestions with 💡 icons
+- Example code showing correct usage
+- Smart pattern matching
+
+**Files**:
+- `src/error_help.rs` (350+ lines, 58 tests)
+- `docs/ERROR_MESSAGES.md` (complete reference)
+- Updated `src/lib.rs` and `src/main.rs`
+
+---
+
+### 📦 Quick Win 4: Starter Templates (4 Templates)
+
+**Added production-ready templates** for common use cases:
+
+**Templates**:
+
+1. **Minimal Counter** (38 lines, 5 mins, Beginner)
+   - Reactive signals
+   - Event handlers
+   - JSX syntax
+   - CSS utilities
+   - Perfect first Jounce app
+
+2. **Todo App** (155 lines, 15 mins, Intermediate)
+   - Array operations (map, filter, spread)
+   - Computed values
+   - CRUD operations
+   - Filtering by status
+   - Keyboard shortcuts
+
+3. **Form App** (280 lines, 20 mins, Intermediate)
+   - Multi-field validation
+   - Error states and messages
+   - Loading states
+   - Success confirmation
+   - Production-ready patterns
+   - Regex validation
+
+4. **Dashboard** (140 lines, 15 mins, Intermediate)
+   - Component composition
+   - Responsive grid layouts
+   - Reusable components (StatCard, ActivityItem)
+   - Props with types
+   - Modern UI patterns
+
+**Each Template Includes**:
+- Production-ready code
+- Comprehensive README (100+ lines)
+- Quick start guide
+- Key concepts explained
+- Customization ideas
+- Advanced patterns
+- Learning path
+
+**Files**:
+- `templates/README.md` (master guide)
+- `templates/minimal-counter/`
+- `templates/todo-app/`
+- `templates/form-app/`
+- `templates/dashboard/`
+
+---
+
+### 📚 Documentation Improvements
+
+**Updated**:
+- `README.md` - Added sections for templates, CSS utilities, and error messages
+- All new documentation properly linked and cross-referenced
+
+**New Docs**:
+- `docs/CSS_UTILITIES.md` (500+ lines)
+- `docs/ERROR_MESSAGES.md` (complete error reference)
+- `templates/README.md` (comprehensive template guide)
+- 4 template READMEs with examples and learning paths
+
+---
+
+### 🎉 Impact Summary
+
+**Developer Experience**:
+- **Onboarding time reduced** - Templates get users productive in 5 minutes
+- **Styling productivity** - 457 utility classes eliminate CSS writing
+- **Debugging improved** - Helpful errors reduce confusion
+- **Learning accelerated** - Comprehensive docs with examples
+
+**Stats**:
+- **1500+ lines** of documentation added
+- **1200+ lines** of new functionality
+- **58 new tests** for error help system
+- **4 complete applications** as templates
+- **Zero breaking changes** - All additive improvements
+
+**Time Investment**: ~6 hours total
+- Quick Win 2 (CSS Utilities): ~1 hour
+- Quick Win 3 (Error Messages): ~2 hours
+- Quick Win 4 (Templates): ~3 hours
+
+---
+
 ## [0.8.0] - 2025-10-24 - "Complete Ecosystem" 🎉
 
 ### 🎉 MILESTONE: 35-Package Ecosystem Complete!
