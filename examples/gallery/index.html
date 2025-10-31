@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jounce Examples Gallery</title>
+    <link rel="stylesheet" href="assets/gallery.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">🎨 Jounce Examples Gallery</h1>
+            <p class="tagline">47 example apps to learn from and build with</p>
+        </div>
+    </header>
+
+    <nav class="filters">
+        <div class="container">
+            <div class="search-box">
+                <input type="text" id="search" placeholder="Search apps..." />
+            </div>
+            <div class="category-filters" id="categories">
+                <button class="category-btn active" data-category="all">All (47)</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="gallery">
+        <div class="container">
+            <div class="apps-grid" id="apps-grid">
+                <!-- Apps will be loaded here -->
+            </div>
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <p>No apps found matching your filters.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>Built with Jounce | <a href="https://github.com/yourusername/jounce" target="_blank">GitHub</a> | <a href="../docs/README.md">Documentation</a></p>
+        </div>
+    </footer>
+
+    <script src="assets/gallery.js"></script>
+</body>
+</html>
