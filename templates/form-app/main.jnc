@@ -1,0 +1,267 @@
+// Form App - Learn Input Validation & Form Handling
+// Features: Multi-field forms, validation, error messages
+
+component App() {
+    // Form fields
+    let name = signal("");
+    let email = signal("");
+    let password = signal("");
+    let confirmPassword = signal("");
+    let agreeToTerms = signal(false);
+
+    // Error states
+    let nameError = signal("");
+    let emailError = signal("");
+    let passwordError = signal("");
+    let confirmPasswordError = signal("");
+    let termsError = signal("");
+
+    // Form state
+    let submitted = signal(false);
+    let submitting = signal(false);
+
+    // Validation functions
+    let validateName = || {
+        if (name.value == "") {
+            nameError.value = "Name is required";
+            return false;
+        }
+        if (name.value.length < 2) {
+            nameError.value = "Name must be at least 2 characters";
+            return false;
+        }
+        nameError.value = "";
+        return true;
+    };
+
+    let validateEmail = || {
+        if (email.value == "") {
+            emailError.value = "Email is required";
+            return false;
+        }
+        // Simple email validation
+        let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.value)) {
+            emailError.value = "Please enter a valid email";
+            return false;
+        }
+        emailError.value = "";
+        return true;
+    };
+
+    let validatePassword = || {
+        if (password.value == "") {
+            passwordError.value = "Password is required";
+            return false;
+        }
+        if (password.value.length < 8) {
+            passwordError.value = "Password must be at least 8 characters";
+            return false;
+        }
+        passwordError.value = "";
+        return true;
+    };
+
+    let validateConfirmPassword = || {
+        if (confirmPassword.value == "") {
+            confirmPasswordError.value = "Please confirm your password";
+            return false;
+        }
+        if (confirmPassword.value != password.value) {
+            confirmPasswordError.value = "Passwords do not match";
+            return false;
+        }
+        confirmPasswordError.value = "";
+        return true;
+    };
+
+    let validateTerms = || {
+        if (!agreeToTerms.value) {
+            termsError.value = "You must agree to the terms";
+            return false;
+        }
+        termsError.value = "";
+        return true;
+    };
+
+    let handleSubmit = |e| {
+        e.preventDefault();
+
+        // Validate all fields
+        let isValid = validateName() &&
+                     validateEmail() &&
+                     validatePassword() &&
+                     validateConfirmPassword() &&
+                     validateTerms();
+
+        if (isValid) {
+            submitting.value = true;
+
+            // Simulate API call
+            setTimeout(() => {
+                submitting.value = false;
+                submitted.value = true;
+
+                // Reset form
+                name.value = "";
+                email.value = "";
+                password.value = "";
+                confirmPassword.value = "";
+                agreeToTerms.value = false;
+            }, 1500);
+        }
+    };
+
+    let resetForm = || {
+        name.value = "";
+        email.value = "";
+        password.value = "";
+        confirmPassword.value = "";
+        agreeToTerms.value = false;
+        nameError.value = "";
+        emailError.value = "";
+        passwordError.value = "";
+        confirmPasswordError.value = "";
+        termsError.value = "";
+        submitted.value = false;
+    };
+
+    return <div class="container mx-auto p-8 max-w-md">
+        <div class="card p-6 shadow-lg rounded-lg">
+            <h1 class="text-3xl font-bold text-center mb-6 text-primary">
+                Sign Up Form
+            </h1>
+
+            {submitted.value ? (
+                <div class="text-center">
+                    <div class="text-5xl mb-4">✅</div>
+                    <h2 class="text-2xl font-bold text-success mb-4">
+                        Success!
+                    </h2>
+                    <p class="text-gray mb-6">
+                        Your account has been created successfully.
+                    </p>
+                    <button
+                        onclick={resetForm}
+                        class="btn btn-primary rounded">
+                        Create Another Account
+                    </button>
+                </div>
+            ) : (
+                <form onsubmit={handleSubmit}>
+                    {/* Name Field */}
+                    <div class="mb-4">
+                        <label class="block font-semibold mb-2">
+                            Full Name *
+                        </label>
+                        <input
+                            type="text"
+                            value={name.value}
+                            oninput={(e) => name.value = e.target.value}
+                            onblur={validateName}
+                            class={`w-full p-3 border-2 rounded ${nameError.value ? "border-danger" : "border-gray"}`}
+                            placeholder="John Doe"
+                        />
+                        {nameError.value && (
+                            <p class="text-danger text-sm mt-1">
+                                {nameError.value}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Email Field */}
+                    <div class="mb-4">
+                        <label class="block font-semibold mb-2">
+                            Email Address *
+                        </label>
+                        <input
+                            type="email"
+                            value={email.value}
+                            oninput={(e) => email.value = e.target.value}
+                            onblur={validateEmail}
+                            class={`w-full p-3 border-2 rounded ${emailError.value ? "border-danger" : "border-gray"}`}
+                            placeholder="john@example.com"
+                        />
+                        {emailError.value && (
+                            <p class="text-danger text-sm mt-1">
+                                {emailError.value}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Password Field */}
+                    <div class="mb-4">
+                        <label class="block font-semibold mb-2">
+                            Password *
+                        </label>
+                        <input
+                            type="password"
+                            value={password.value}
+                            oninput={(e) => password.value = e.target.value}
+                            onblur={validatePassword}
+                            class={`w-full p-3 border-2 rounded ${passwordError.value ? "border-danger" : "border-gray"}`}
+                            placeholder="Min. 8 characters"
+                        />
+                        {passwordError.value && (
+                            <p class="text-danger text-sm mt-1">
+                                {passwordError.value}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Confirm Password Field */}
+                    <div class="mb-4">
+                        <label class="block font-semibold mb-2">
+                            Confirm Password *
+                        </label>
+                        <input
+                            type="password"
+                            value={confirmPassword.value}
+                            oninput={(e) => confirmPassword.value = e.target.value}
+                            onblur={validateConfirmPassword}
+                            class={`w-full p-3 border-2 rounded ${confirmPasswordError.value ? "border-danger" : "border-gray"}`}
+                            placeholder="Re-enter password"
+                        />
+                        {confirmPasswordError.value && (
+                            <p class="text-danger text-sm mt-1">
+                                {confirmPasswordError.value}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Terms Checkbox */}
+                    <div class="mb-6">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={agreeToTerms.value}
+                                onchange={(e) => agreeToTerms.value = e.target.checked}
+                                class="w-5 h-5"
+                            />
+                            <span>
+                                I agree to the Terms & Conditions *
+                            </span>
+                        </label>
+                        {termsError.value && (
+                            <p class="text-danger text-sm mt-1">
+                                {termsError.value}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                        type="submit"
+                        disabled={submitting.value}
+                        class="btn btn-primary btn-lg w-full rounded">
+                        {submitting.value ? "Creating Account..." : "Create Account"}
+                    </button>
+
+                    <p class="text-center text-sm text-gray mt-4">
+                        * Required fields
+                    </p>
+                </form>
+            )}
+        </div>
+    </div>;
+}
