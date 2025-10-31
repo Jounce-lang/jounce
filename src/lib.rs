@@ -12,6 +12,7 @@ pub mod css_utilities; // Quick Win 2: Tailwind-inspired utilities
 pub mod design_tokens; // Design token parser (Phase 8 Sprint 2)
 pub mod deployer; // Make sure deployer is a module
 pub mod errors;
+pub mod error_help; // Quick Win 3: Error help text database
 pub mod lexer;
 pub mod macros;
 pub mod parser;
@@ -292,10 +293,18 @@ impl Compiler {
 
     /// Display a compilation error with beautiful diagnostics
     pub fn display_error(error: &CompileError, source: Option<&str>, filename: &str) -> String {
-        
+        use crate::error_help::ErrorHelp;
 
         let diagnostic = error.to_diagnostic(filename);
-        diagnostic.display(source)
+        let mut output = diagnostic.display(source);
+
+        // Add helpful suggestions if available
+        let help = ErrorHelp::new();
+        if let Some(help_entry) = help.suggest_from_message(&error.to_string()) {
+            output.push_str(&help.format_help(help_entry));
+        }
+
+        output
     }
 }
 
