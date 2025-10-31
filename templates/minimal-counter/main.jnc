@@ -1,0 +1,36 @@
+// Minimal Counter - Your First Jounce App
+// Learn the basics: signals, JSX, and event handlers
+
+component App() {
+    let count = signal(0);
+
+    return <div class="container mx-auto p-8">
+        <div class="card p-6 shadow-lg rounded-lg max-w-md mx-auto text-center">
+            <h1 class="text-4xl font-bold mb-6">Counter App</h1>
+
+            <div class="text-6xl font-bold text-primary mb-8">
+                {count.value}
+            </div>
+
+            <div class="flex gap-4 justify-center">
+                <button
+                    onclick={|| count.value = count.value - 1}
+                    class="btn btn-danger btn-lg rounded">
+                    - Decrease
+                </button>
+
+                <button
+                    onclick={|| count.value = 0}
+                    class="btn btn-secondary btn-lg rounded">
+                    Reset
+                </button>
+
+                <button
+                    onclick={|| count.value = count.value + 1}
+                    class="btn btn-success btn-lg rounded">
+                    + Increase
+                </button>
+            </div>
+        </div>
+    </div>;
+}
