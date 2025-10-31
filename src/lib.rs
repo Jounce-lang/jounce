@@ -8,6 +8,7 @@ pub mod codegen;
 pub mod css_generator; // CSS generation (Phase 7.5)
 pub mod utility_config; // Utility class configuration (Phase 7.5 Sprint 3)
 pub mod utility_generator; // Utility class generation (Phase 7.5 Sprint 3)
+pub mod css_utilities; // Quick Win 2: Tailwind-inspired utilities
 pub mod design_tokens; // Design token parser (Phase 8 Sprint 2)
 pub mod deployer; // Make sure deployer is a module
 pub mod errors;
