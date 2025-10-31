@@ -1,8 +1,8 @@
 # Jounce Development Roadmap
 
-**Current Version**: 0.27.0 "All Critical Issues Fixed"
+**Current Version**: 0.8.1 "Developer Experience & Public Launch"
 **Target Version**: 1.0.0 "Language Lock"
-**Last Updated**: October 29, 2025 (Session 24 Complete)
+**Last Updated**: October 31, 2025 (Public Launch Preparation)
 
 ---
 
@@ -1037,8 +1037,8 @@ fn create_user(data: UserInput) {
 
 ---
 
-**Last Updated**: October 24, 2025
-**Current Focus**: Phase 15 - Real-World Example Applications
-**Latest Release**: v0.8.0 "Complete Ecosystem" (35 packages!)
-**Completed**: Phase 11 (Multi-file), Phase 12 (Reactivity), Phase 14 (35 packages), Phase 18 (exceeded)
-**Next Release**: v0.9.0 (example apps + tooling)
+**Last Updated**: October 31, 2025
+**Current Focus**: Public Launch & Community Growth
+**Latest Release**: v0.8.1 "Developer Experience & Public Launch"
+**Completed**: Phase 11 (Multi-file), Phase 12 (Reactivity), Phase 13 (Styles), Phase 14 (35 packages), Quick Wins (Templates, CSS, Errors)
+**Next Release**: v0.9.0 (database integration + example apps)
