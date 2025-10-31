@@ -1,0 +1,141 @@
+// Dashboard Layout - Learn Component Composition
+// Features: Multi-component layout, cards, stats
+
+component App() {
+    let users = signal(1247);
+    let revenue = signal(28450);
+    let orders = signal(186);
+    let conversionRate = signal(3.24);
+
+    return <div class="container mx-auto p-6">
+        {/* Header */}
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-dark">Dashboard</h1>
+                <p class="text-gray mt-1">Welcome back! Here's your overview.</p>
+            </div>
+            <button class="btn btn-primary rounded">
+                Export Report
+            </button>
+        </div>
+
+        {/* Stats Grid */}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <StatCard
+                title="Total Users"
+                value={users.value}
+                change="+12.5%"
+                trend="up"
+                icon="👥"
+            />
+            <StatCard
+                title="Revenue"
+                value={`$${revenue.value.toLocaleString()}`}
+                change="+8.2%"
+                trend="up"
+                icon="💰"
+            />
+            <StatCard
+                title="Orders"
+                value={orders.value}
+                change="-3.1%"
+                trend="down"
+                icon="📦"
+            />
+            <StatCard
+                title="Conversion"
+                value={`${conversionRate.value}%`}
+                change="+0.4%"
+                trend="up"
+                icon="📈"
+            />
+        </div>
+
+        {/* Main Content Grid */}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Recent Activity */}
+            <div class="lg:col-span-2">
+                <div class="card p-6 shadow rounded-lg">
+                    <h2 class="text-2xl font-bold mb-4">Recent Activity</h2>
+                    <div class="space-y-3">
+                        <ActivityItem
+                            user="Sarah Johnson"
+                            action="completed an order"
+                            time="2 minutes ago"
+                        />
+                        <ActivityItem
+                            user="Mike Chen"
+                            action="signed up"
+                            time="15 minutes ago"
+                        />
+                        <ActivityItem
+                            user="Emma Davis"
+                            action="left a review"
+                            time="1 hour ago"
+                        />
+                        <ActivityItem
+                            user="James Wilson"
+                            action="updated their profile"
+                            time="3 hours ago"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div class="card p-6 shadow rounded-lg">
+                <h2 class="text-2xl font-bold mb-4">Quick Actions</h2>
+                <div class="space-y-2">
+                    <button class="btn btn-secondary w-full text-left">
+                        📝 Create Invoice
+                    </button>
+                    <button class="btn btn-secondary w-full text-left">
+                        ➕ Add User
+                    </button>
+                    <button class="btn btn-secondary w-full text-left">
+                        📊 View Analytics
+                    </button>
+                    <button class="btn btn-secondary w-full text-left">
+                        ⚙️ Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>;
+}
+
+// StatCard Component
+component StatCard(title: String, value: String, change: String, trend: String, icon: String) {
+    let isPositive = trend == "up";
+
+    return <div class="card p-6 shadow rounded-lg">
+        <div class="flex justify-between items-start mb-3">
+            <div class="text-3xl">{icon}</div>
+            <span class={`text-sm font-semibold ${isPositive ? "text-success" : "text-danger"}`}>
+                {change}
+            </span>
+        </div>
+        <div class="text-3xl font-bold text-dark mb-1">
+            {value}
+        </div>
+        <div class="text-sm text-gray">
+            {title}
+        </div>
+    </div>;
+}
+
+// ActivityItem Component
+component ActivityItem(user: String, action: String, time: String) {
+    return <div class="flex items-center gap-3 p-3 hover:bg-light rounded">
+        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold">
+            {user.charAt(0)}
+        </div>
+        <div class="flex-1">
+            <p class="font-semibold">{user}</p>
+            <p class="text-sm text-gray">{action}</p>
+        </div>
+        <div class="text-sm text-gray">
+            {time}
+        </div>
+    </div>;
+}
