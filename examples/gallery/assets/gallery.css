@@ -47,6 +47,22 @@ body {
 .tagline {
     font-size: 1.1rem;
     opacity: 0.95;
+    margin-bottom: 20px;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 20px;
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.stat strong {
+    font-size: 1.3rem;
+    display: block;
+    margin-bottom: 5px;
 }
 
 /* Filters */
@@ -232,6 +248,20 @@ body {
 
 .footer a:hover {
     text-decoration: underline;
+}
+
+.footer .tip {
+    margin-top: 15px;
+    font-size: 0.9rem;
+}
+
+kbd {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-family: monospace;
+    font-size: 0.85em;
 }
 
 /* Responsive */
