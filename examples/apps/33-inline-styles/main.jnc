@@ -1,0 +1,216 @@
+// Inline Styles Example - Comprehensive Demo
+// Demonstrates static and reactive inline styling in Jounce
+
+component App() {
+    // State for interactive demos
+    let theme = signal("light");
+    let fontSize = signal(16);
+    let activeTab = signal(0);
+
+    // Event handlers
+    let toggleTheme = || {
+        theme.value = if theme.value == "light" { "dark" } else { "light" };
+    };
+
+    let increaseFontSize = || {
+        if fontSize.value < 32 {
+            fontSize.value = fontSize.value + 2;
+        }
+    };
+
+    let decreaseFontSize = || {
+        if fontSize.value > 12 {
+            fontSize.value = fontSize.value - 2;
+        }
+    };
+
+    // Computed background color based on theme
+    let bgColor = computed(|| {
+        if theme.value == "light" {
+            return "#ffffff";
+        } else {
+            return "#1a1a1a";
+        }
+    });
+
+    let textColor = computed(|| {
+        if theme.value == "light" {
+            return "#000000";
+        } else {
+            return "#ffffff";
+        }
+    });
+
+    return <div style={{
+        fontFamily: "system-ui, -apple-system, sans-serif",
+        minHeight: "100vh",
+        backgroundColor: bgColor.value,
+        color: textColor.value,
+        padding: "40px",
+        transition: "all 0.3s ease"
+    }}>
+        <h1 style={{
+            fontSize: "48px",
+            marginBottom: "10px",
+            textAlign: "center"
+        }}>Inline Styles in Jounce</h1>
+
+        <p style={{
+            textAlign: "center",
+            fontSize: "18px",
+            marginBottom: "40px",
+            opacity: "0.7"
+        }}>Demonstrating static and reactive inline styling</p>
+
+        <div style={{
+            maxWidth: "800px",
+            margin: "0 auto 40px",
+            padding: "30px",
+            backgroundColor: theme.value == "light" ? "#f5f5f5" : "#2a2a2a",
+            borderRadius: "12px",
+            border: "2px solid",
+            borderColor: theme.value == "light" ? "#e0e0e0" : "#404040",
+            transition: "all 0.3s ease"
+        }}>
+            <h2 style={{ marginTop: "0" }}>Theme Toggle</h2>
+            <p>Current theme: <strong style={{ color: theme.value == "light" ? "#0066cc" : "#66b3ff" }}>{theme.value}</strong></p>
+            <button
+                onclick={toggleTheme}
+                style={{
+                    padding: "12px 24px",
+                    fontSize: "16px",
+                    backgroundColor: theme.value == "light" ? "#0066cc" : "#66b3ff",
+                    color: theme.value == "light" ? "white" : "#000000",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease"
+                }}
+            >
+                Switch to {theme.value == "light" ? "Dark" : "Light"} Mode
+            </button>
+        </div>
+
+        <div style={{
+            maxWidth: "800px",
+            margin: "0 auto 40px",
+            padding: "30px",
+            backgroundColor: theme.value == "light" ? "#f5f5f5" : "#2a2a2a",
+            borderRadius: "12px",
+            border: "2px solid",
+            borderColor: theme.value == "light" ? "#e0e0e0" : "#404040"
+        }}>
+            <h2 style={{ marginTop: "0" }}>Dynamic Font Size</h2>
+            <p style={{ fontSize: "{fontSize.value}px", transition: "font-size 0.2s ease" }}>
+                This text changes size! Current: {fontSize.value}px
+            </p>
+            <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                    onclick={decreaseFontSize}
+                    style={{
+                        padding: "10px 20px",
+                        fontSize: "14px",
+                        backgroundColor: "#dc3545",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer"
+                    }}
+                >
+                    Decrease (-)
+                </button>
+                <button
+                    onclick={increaseFontSize}
+                    style={{
+                        padding: "10px 20px",
+                        fontSize: "14px",
+                        backgroundColor: "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer"
+                    }}
+                >
+                    Increase (+)
+                </button>
+            </div>
+        </div>
+
+        <div style={{
+            maxWidth: "800px",
+            margin: "0 auto 40px",
+            padding: "30px",
+            backgroundColor: theme.value == "light" ? "#f5f5f5" : "#2a2a2a",
+            borderRadius: "12px"
+        }}>
+            <h2 style={{ marginTop: "0" }}>Static Style Examples</h2>
+            <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "20px",
+                marginTop: "20px"
+            }}>
+                <div style={{
+                    padding: "20px",
+                    backgroundColor: "#ff6b6b",
+                    color: "white",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                    fontWeight: "bold"
+                }}>
+                    Red Card
+                </div>
+                <div style={{
+                    padding: "20px",
+                    backgroundColor: "#4ecdc4",
+                    color: "white",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                    fontWeight: "bold"
+                }}>
+                    Teal Card
+                </div>
+                <div style={{
+                    padding: "20px",
+                    backgroundColor: "#95e1d3",
+                    color: "#333",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                    fontWeight: "bold"
+                }}>
+                    Mint Card
+                </div>
+                <div style={{
+                    padding: "20px",
+                    backgroundColor: "#f38181",
+                    color: "white",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                    fontWeight: "bold"
+                }}>
+                    Pink Card
+                </div>
+            </div>
+        </div>
+
+        <div style={{
+            maxWidth: "800px",
+            margin: "0 auto",
+            padding: "30px",
+            backgroundColor: theme.value == "light" ? "#e8f4f8" : "#1a3a4a",
+            borderRadius: "12px",
+            borderLeft: "4px solid",
+            borderLeftColor: "#0066cc"
+        }}>
+            <h3 style={{ marginTop: "0" }}>Inline Styles Features</h3>
+            <ul style={{ lineHeight: "1.8", paddingLeft: "20px" }}>
+                <li style={{ marginBottom: "10px" }}>Static styles with object literal syntax</li>
+                <li style={{ marginBottom: "10px" }}>Reactive styles that update with signals</li>
+                <li style={{ marginBottom: "10px" }}>Computed values in style objects</li>
+                <li style={{ marginBottom: "10px" }}>Conditional styling based on state</li>
+                <li style={{ marginBottom: "10px" }}>Smooth transitions and animations</li>
+                <li style={{ marginBottom: "10px" }}>CSS Grid and Flexbox layouts</li>
+            </ul>
+        </div>
+    </div>;
+}
