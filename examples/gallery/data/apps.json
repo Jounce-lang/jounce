@@ -1,0 +1,766 @@
+{
+  "version": "1.0.0",
+  "generated": "2025-10-31",
+  "total": 47,
+  "categories": [
+    "Uncategorized",
+    "Real-World",
+    "Basics",
+    "Forms",
+    "Interactivity",
+    "Utilities",
+    "Advanced",
+    "Styling"
+  ],
+  "apps": [
+    {
+      "id": "01-click-counter",
+      "name": "Click Counter",
+      "description": "App 01: Click Counter",
+      "category": "Basics",
+      "tags": [
+        "signals",
+        "events",
+        "components",
+        "basics"
+      ],
+      "difficulty": "beginner",
+      "features": [
+        "Reactive Signals",
+        "Event Handling"
+      ],
+      "lines": 67
+    },
+    {
+      "id": "01-hello-counter",
+      "name": "Hello Counter",
+      "description": "App 1: Hello Counter",
+      "category": "Basics",
+      "tags": [
+        "components",
+        "basics"
+      ],
+      "difficulty": "beginner",
+      "features": [],
+      "lines": 39
+    },
+    {
+      "id": "02-color-picker",
+      "name": "Color Picker",
+      "description": "App 2: Color Picker",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 86
+    },
+    {
+      "id": "02-temperature-converter",
+      "name": "Temperature Converter",
+      "description": "App 02: Temperature Converter",
+      "category": "Utilities",
+      "tags": [
+        "signals",
+        "computed",
+        "events",
+        "components",
+        "utilities"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Computed Values",
+        "Event Handling"
+      ],
+      "lines": 76
+    },
+    {
+      "id": "03-bmi-calculator",
+      "name": "Bmi Calculator",
+      "description": "App 03: BMI Calculator",
+      "category": "Utilities",
+      "tags": [
+        "signals",
+        "computed",
+        "events",
+        "components",
+        "utilities"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Computed Values",
+        "Event Handling"
+      ],
+      "lines": 92
+    },
+    {
+      "id": "03-markdown-preview",
+      "name": "Markdown Preview",
+      "description": "App 3: Markdown Previewer",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 160
+    },
+    {
+      "id": "04-array-test",
+      "name": "Array Test",
+      "description": "App 04: Array Test",
+      "category": "Uncategorized",
+      "tags": [
+        "signals",
+        "events",
+        "arrays",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Event Handling",
+        "Array Operations"
+      ],
+      "lines": 27
+    },
+    {
+      "id": "04-calculator",
+      "name": "Calculator",
+      "description": "App 4: Simple Calculator",
+      "category": "Utilities",
+      "tags": [
+        "components",
+        "utilities"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 62
+    },
+    {
+      "id": "05-edge-cases",
+      "name": "Edge Cases",
+      "description": "App 05: Edge Cases Test",
+      "category": "Uncategorized",
+      "tags": [
+        "signals",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals"
+      ],
+      "lines": 22
+    },
+    {
+      "id": "05-todo-list",
+      "name": "Todo List",
+      "description": "Demonstrates list rendering and task management UI",
+      "category": "Real-World",
+      "tags": [
+        "components",
+        "real-world"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 85
+    },
+    {
+      "id": "06-server-test",
+      "name": "Server Test",
+      "description": "App 06: Server Function Test",
+      "category": "Advanced",
+      "tags": [
+        "signals",
+        "events",
+        "components",
+        "advanced"
+      ],
+      "difficulty": "advanced",
+      "features": [
+        "Reactive Signals",
+        "Event Handling"
+      ],
+      "lines": 50
+    },
+    {
+      "id": "06-weather-widget",
+      "name": "Weather Widget",
+      "description": "App 6: Weather Widget",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 129
+    },
+    {
+      "id": "07-image-gallery",
+      "name": "Image Gallery",
+      "description": "App 7: Image Gallery",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 164
+    },
+    {
+      "id": "07-self-closing",
+      "name": "Self Closing",
+      "description": "App 07: Self-Closing Tags Test",
+      "category": "Uncategorized",
+      "tags": [
+        "signals",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals"
+      ],
+      "lines": 25
+    },
+    {
+      "id": "08-async-test",
+      "name": "Async Test",
+      "description": "App 08: Async/Await Test",
+      "category": "Uncategorized",
+      "tags": [
+        "signals",
+        "events",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Event Handling"
+      ],
+      "lines": 27
+    },
+    {
+      "id": "08-timer-stopwatch",
+      "name": "Timer Stopwatch",
+      "description": "App 8: Timer & Stopwatch",
+      "category": "Interactivity",
+      "tags": [
+        "components",
+        "interactivity"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 108
+    },
+    {
+      "id": "09-quiz-app",
+      "name": "Quiz App",
+      "description": "App 9: Quiz App",
+      "category": "Interactivity",
+      "tags": [
+        "signals",
+        "components",
+        "interactivity"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals"
+      ],
+      "lines": 103
+    },
+    {
+      "id": "09-spread-test",
+      "name": "Spread Test",
+      "description": "App 09: Spread Operator Test",
+      "category": "Uncategorized",
+      "tags": [
+        "signals",
+        "events",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Event Handling"
+      ],
+      "lines": 30
+    },
+    {
+      "id": "10-expense-tracker",
+      "name": "Expense Tracker",
+      "description": "App 10: Expense Tracker",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 159
+    },
+    {
+      "id": "10-template-literal",
+      "name": "Template Literal",
+      "description": "App 10: Template Literal Test",
+      "category": "Uncategorized",
+      "tags": [
+        "signals",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals"
+      ],
+      "lines": 20
+    },
+    {
+      "id": "11-destructure-test",
+      "name": "Destructure Test",
+      "description": "App 11: Destructuring Test",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 27
+    },
+    {
+      "id": "12-nested-components",
+      "name": "Nested Components",
+      "description": "App 12: Nested Components",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 29
+    },
+    {
+      "id": "13-conditional-jsx",
+      "name": "Conditional Jsx",
+      "description": "App 13: Conditional JSX",
+      "category": "Uncategorized",
+      "tags": [
+        "events",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Event Handling"
+      ],
+      "lines": 47
+    },
+    {
+      "id": "14-array-map-keys",
+      "name": "Array Map Keys",
+      "description": "App 14: Array Map with Keys",
+      "category": "Uncategorized",
+      "tags": [
+        "arrays",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Array Operations"
+      ],
+      "lines": 19
+    },
+    {
+      "id": "15-event-args",
+      "name": "Event Args",
+      "description": "App 15: Event Handler Arguments",
+      "category": "Uncategorized",
+      "tags": [
+        "events",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Event Handling"
+      ],
+      "lines": 26
+    },
+    {
+      "id": "16-form-validation",
+      "name": "Form Validation",
+      "description": "App 16: Form Validation",
+      "category": "Forms",
+      "tags": [
+        "events",
+        "arrays",
+        "components",
+        "forms"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Event Handling",
+        "Array Operations"
+      ],
+      "lines": 40
+    },
+    {
+      "id": "17-computed-chain",
+      "name": "Computed Chain",
+      "description": "App 17: Chained Computed Values",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 13
+    },
+    {
+      "id": "18-timer",
+      "name": "Timer",
+      "description": "App 18: Timer with Math operations",
+      "category": "Interactivity",
+      "tags": [
+        "components",
+        "interactivity"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 11
+    },
+    {
+      "id": "19-null-jsx",
+      "name": "Null Jsx",
+      "description": "App 19: Null rendering",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 9
+    },
+    {
+      "id": "20-dynamic-class",
+      "name": "Dynamic Class",
+      "description": "App 20: Dynamic class names",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 11
+    },
+    {
+      "id": "21-refs",
+      "name": "Refs",
+      "description": "App 21: Testing if refs exist",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 9
+    },
+    {
+      "id": "22-svg",
+      "name": "Svg",
+      "description": "App 22: SVG elements",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 9
+    },
+    {
+      "id": "23-multiline-jsx",
+      "name": "Multiline Jsx",
+      "description": "App 23: Multi-line JSX",
+      "category": "Uncategorized",
+      "tags": [
+        "arrays",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Array Operations"
+      ],
+      "lines": 12
+    },
+    {
+      "id": "24-nested-ternary",
+      "name": "Nested Ternary",
+      "description": "App 24: Nested ternary operators",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 9
+    },
+    {
+      "id": "25-object-literal",
+      "name": "Object Literal",
+      "description": "App 25: Object literals in JSX",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 10
+    },
+    {
+      "id": "26-user-profile",
+      "name": "User Profile",
+      "description": "App 26: User Profile with Optional Chaining",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 43
+    },
+    {
+      "id": "27-settings-panel",
+      "name": "Settings Panel",
+      "description": "App 27: Settings Panel with Nullish Coalescing",
+      "category": "Uncategorized",
+      "tags": [
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [],
+      "lines": 55
+    },
+    {
+      "id": "28-theme-switcher",
+      "name": "Theme Switcher",
+      "description": "App 28: Theme Switcher with Logical Assignment",
+      "category": "Styling",
+      "tags": [
+        "signals",
+        "events",
+        "components",
+        "styling"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Event Handling"
+      ],
+      "lines": 45
+    },
+    {
+      "id": "29-combined-operators",
+      "name": "Combined Operators",
+      "description": "App 29: Combined Operators Demo",
+      "category": "Uncategorized",
+      "tags": [
+        "signals",
+        "events",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Event Handling"
+      ],
+      "lines": 58
+    },
+    {
+      "id": "30-form-defaults",
+      "name": "Form Defaults",
+      "description": "App 30: Form with Default Values",
+      "category": "Forms",
+      "tags": [
+        "signals",
+        "events",
+        "components",
+        "forms"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Event Handling"
+      ],
+      "lines": 48
+    },
+    {
+      "id": "31-golf-scorecard",
+      "name": "Golf Scorecard",
+      "description": "Golf Scorecard App - 4 Players, 9 Holes",
+      "category": "Uncategorized",
+      "tags": [
+        "signals",
+        "events",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Event Handling"
+      ],
+      "lines": 363
+    },
+    {
+      "id": "32-inline-styles-test",
+      "name": "Inline Styles Test",
+      "description": "Test inline <style> tags in JSX - Simple version",
+      "category": "Styling",
+      "tags": [
+        "signals",
+        "events",
+        "components",
+        "styling"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Event Handling"
+      ],
+      "lines": 29
+    },
+    {
+      "id": "33-inline-styles",
+      "name": "Inline Styles",
+      "description": "Inline Styles Example - Comprehensive Demo",
+      "category": "Styling",
+      "tags": [
+        "signals",
+        "computed",
+        "events",
+        "components",
+        "styling"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Computed Values",
+        "Event Handling"
+      ],
+      "lines": 217
+    },
+    {
+      "id": "ecommerce",
+      "name": "Ecommerce",
+      "description": "\ud83d\udecd\ufe0f ShopOne - Full-Stack E-Commerce Application",
+      "category": "Uncategorized",
+      "tags": [
+        "computed",
+        "effects",
+        "server",
+        "events",
+        "arrays",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Computed Values",
+        "Effects",
+        "Server Functions",
+        "Event Handling",
+        "Array Operations"
+      ],
+      "lines": 927
+    },
+    {
+      "id": "social",
+      "name": "Social",
+      "description": "\ud83c\udf10 SocialWave - Full-Stack Social Media Platform",
+      "category": "Uncategorized",
+      "tags": [
+        "effects",
+        "server",
+        "events",
+        "arrays",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Effects",
+        "Server Functions",
+        "Event Handling",
+        "Array Operations"
+      ],
+      "lines": 1023
+    },
+    {
+      "id": "taskboard",
+      "name": "Taskboard",
+      "description": "\ud83d\udccb TaskBoard - Project Management & Collaboration Platform",
+      "category": "Uncategorized",
+      "tags": [
+        "effects",
+        "server",
+        "events",
+        "arrays",
+        "components",
+        "uncategorized"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Effects",
+        "Server Functions",
+        "Event Handling",
+        "Array Operations"
+      ],
+      "lines": 1033
+    },
+    {
+      "id": "todo-app",
+      "name": "Todo App",
+      "description": "ONE .jnc FILE \u2192 WORKING APP",
+      "category": "Real-World",
+      "tags": [
+        "signals",
+        "events",
+        "arrays",
+        "components",
+        "real-world"
+      ],
+      "difficulty": "intermediate",
+      "features": [
+        "Reactive Signals",
+        "Event Handling",
+        "Array Operations"
+      ],
+      "lines": 196
+    }
+  ]
+}
