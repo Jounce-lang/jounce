@@ -1,0 +1,90 @@
+// Test CSS Utility Classes (Quick Win 2)
+// Demonstrates Tailwind-inspired utility classes
+
+component App() {
+    let count = signal(0);
+
+    let increment = || {
+        count.value = count.value + 1;
+    };
+
+    let decrement = || {
+        count.value = count.value - 1;
+    };
+
+    let reset = || {
+        count.value = 0;
+    };
+
+    return <div class="container mx-auto p-8">
+        <div class="card p-6 shadow-lg rounded-lg">
+            <h1 class="text-3xl font-bold text-center mb-4 text-primary">
+                CSS Utilities Demo
+            </h1>
+            <p class="text-center text-gray mb-6">
+                Using Tailwind-inspired utility classes
+            </p>
+
+            <div class="flex justify-center items-center gap-4 mb-6">
+                <button onclick={decrement} class="btn btn-danger btn-lg rounded">
+                    - Decrease
+                </button>
+
+                <div class="text-5xl font-bold text-primary px-8">
+                    {count.value}
+                </div>
+
+                <button onclick={increment} class="btn btn-success btn-lg rounded">
+                    + Increase
+                </button>
+            </div>
+
+            <div class="flex justify-center">
+                <button onclick={reset} class="btn btn-secondary">
+                    Reset Counter
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 mt-8">
+            <div class="card p-4 bg-primary text-white rounded shadow">
+                <h3 class="font-semibold mb-2">Layout</h3>
+                <p class="text-sm opacity-90">flex, grid, container</p>
+            </div>
+
+            <div class="card p-4 bg-success text-white rounded shadow">
+                <h3 class="font-semibold mb-2">Spacing</h3>
+                <p class="text-sm opacity-90">p-4, m-8, gap-2</p>
+            </div>
+
+            <div class="card p-4 bg-info text-white rounded shadow">
+                <h3 class="font-semibold mb-2">Typography</h3>
+                <p class="text-sm opacity-90">text-xl, font-bold</p>
+            </div>
+        </div>
+
+        <div class="mt-8 p-6 bg-light rounded border-2 border-primary">
+            <h2 class="text-2xl font-bold mb-4">Available Utilities</h2>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <div><strong>Layout:</strong> flex, grid, block, inline</div>
+                <div><strong>Position:</strong> relative, absolute, fixed</div>
+                <div><strong>Spacing:</strong> m-0 to m-16, p-0 to p-16</div>
+                <div><strong>Sizing:</strong> w-full, h-full, max-w-xl</div>
+                <div><strong>Typography:</strong> text-xs to text-5xl</div>
+                <div><strong>Colors:</strong> text-primary, bg-success</div>
+                <div><strong>Borders:</strong> rounded, border-2</div>
+                <div><strong>Effects:</strong> shadow-lg, opacity-50</div>
+                <div><strong>Components:</strong> btn, card, badge</div>
+                <div><strong>Responsive:</strong> sm:, md:, lg:</div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center mt-8 p-4 bg-dark text-white rounded">
+            <div>
+                <strong class="badge bg-warning text-dark">NEW</strong>
+                <span class="ml-2">457 utility classes available!</span>
+            </div>
+            <div class="text-sm opacity-75">19KB total • Zero config</div>
+        </div>
+    </div>;
+}

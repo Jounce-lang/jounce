@@ -363,15 +363,23 @@ fn main() {
             }
             println!("   ✓ {}", wasm_path.display());
 
-            // Write CSS output (Phase 7.5)
-            if !css_output.is_empty() {
-                let css_path = output_dir.join("styles.css");
-                if let Err(e) = fs::write(&css_path, css_output) {
-                    eprintln!("❌ Failed to write styles.css: {}", e);
-                    return;
-                }
-                println!("   ✓ {}", css_path.display());
+            // Write CSS output (Phase 7.5 + Quick Win 2: Utilities)
+            let utilities = jounce_compiler::css_utilities::generate_utilities();
+
+            let full_css = if !css_output.is_empty() {
+                // Prepend utilities to component styles
+                format!("{}\n\n/* Component Styles */\n{}", utilities, css_output)
+            } else {
+                // Just utilities if no component styles
+                utilities
+            };
+
+            let css_path = output_dir.join("styles.css");
+            if let Err(e) = fs::write(&css_path, full_css) {
+                eprintln!("❌ Failed to write styles.css: {}", e);
+                return;
             }
+            println!("   ✓ {}", css_path.display());
 
             // Write embedded runtime files
             const SERVER_RUNTIME: &str = include_str!("../runtime/server-runtime.js");
