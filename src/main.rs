@@ -218,7 +218,9 @@ fn main() {
                     p
                 }
                 Err(e) => {
-                    eprintln!("❌ Parsing failed: {:?}", e);
+                    eprintln!("❌ Parsing failed:\n");
+                    let error_display = Compiler::display_error(&e, Some(&source_code), &path.display().to_string());
+                    eprintln!("{}", error_display);
                     return;
                 }
             };
@@ -581,7 +583,9 @@ fn main() {
             let program = match parser.parse_program() {
                 Ok(p) => p,
                 Err(e) => {
-                    eprintln!("❌ Parsing failed: {:?}", e);
+                    eprintln!("❌ Parsing failed:\n");
+                    let error_display = Compiler::display_error(&e, Some(&source_code), &path.display().to_string());
+                    eprintln!("{}", error_display);
                     process::exit(1);
                 }
             };
