@@ -131,6 +131,116 @@ Your reactive app is live! Click the button and watch the UI update automaticall
 
 ---
 
+## 📦 Starter Templates
+
+**Skip the boilerplate** - Start with production-ready templates!
+
+We've created 4 comprehensive starter templates to accelerate your learning:
+
+### 1. **Minimal Counter** (5 mins, Beginner)
+Learn the basics: signals, JSX, and event handlers
+```bash
+cp -r templates/minimal-counter my-app && cd my-app
+jnc compile main.jnc && cd dist && node server.js
+```
+
+### 2. **Todo App** (15 mins, Intermediate)
+Master array operations, filtering, and computed values
+```bash
+cp -r templates/todo-app my-app && cd my-app
+```
+
+### 3. **Form App** (20 mins, Intermediate)
+Production-ready forms with validation and error handling
+```bash
+cp -r templates/form-app my-app && cd my-app
+```
+
+### 4. **Dashboard** (15 mins, Intermediate)
+Component composition and responsive layouts
+```bash
+cp -r templates/dashboard my-app && cd my-app
+```
+
+Each template includes:
+- ✅ **Production-ready code** - Copy, compile, done!
+- ✅ **Comprehensive README** - Step-by-step guides
+- ✅ **Key concepts** - Learn by doing
+- ✅ **Customization ideas** - Make it your own
+- ✅ **Advanced patterns** - Level up your skills
+
+[View All Templates →](./templates/)
+
+---
+
+## 🎨 CSS Utilities (457 Classes)
+
+**Tailwind-inspired utilities** built into every compilation!
+
+```jounce
+<div class="container mx-auto p-8">
+    <div class="card p-6 shadow-lg rounded-lg">
+        <h1 class="text-3xl font-bold text-primary mb-4">
+            Styled with Utilities!
+        </h1>
+        <button class="btn btn-primary btn-lg rounded">
+            Click Me
+        </button>
+    </div>
+</div>
+```
+
+**Includes:**
+- Layout (flex, grid, block, inline)
+- Spacing (m-0 to m-16, p-0 to p-16)
+- Typography (text-xs to text-5xl, font weights)
+- Colors (primary, secondary, success, danger, etc.)
+- Borders & Effects (rounded, shadow, opacity)
+- Components (btn, card, badge)
+- Responsive (sm:, md:, lg: breakpoints)
+
+[Full CSS Reference →](./docs/CSS_UTILITIES.md)
+
+---
+
+## 💡 Enhanced Error Messages
+
+**Beautiful, helpful errors** with suggestions and examples!
+
+**Before:**
+```
+❌ Parsing failed: ParserError { message: "...", line: 10 }
+```
+
+**After:**
+```
+error: Unexpected closing brace '}'
+  --> file.jnc:10:2
+   9 |     return <div>Test</div>;
+  10 | }
+   |      ^
+  [E050]
+
+💡 Missing closing brace [E050]
+   Every opening brace { must have a matching closing brace }
+
+📝 Example:
+   if (condition) {
+       doSomething();
+   }  // ← closing brace required
+```
+
+**Features:**
+- 20+ common error codes (E001-E079)
+- Helpful suggestions with 💡 icons
+- Example code showing correct usage
+- Smart pattern matching
+- Colored output with source context
+
+[Error Reference →](./docs/ERROR_MESSAGES.md)
+
+---
+
 ## 🎓 Language Features
 
 ### Fine-Grained Reactivity
