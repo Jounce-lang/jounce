@@ -1,6 +1,7 @@
 # Build artifacts
 /target
 /dist
+examples/**/dist/
 *.wasm
 
 # Test outputs
