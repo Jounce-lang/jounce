@@ -5,15 +5,105 @@ All notable changes to Jounce will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.8.1] - 2025-10-31 - "Developer Experience" 🚀
+## [0.8.1] - 2025-10-31 - "Developer Experience & Public Launch" 🚀
 
-### 🎯 Quick Wins - Major DX Improvements!
+### 🎯 Public Launch Preparation!
 
 **Release Highlights**:
+- ✅ **Community & Governance Files** - Ready for public contributions
+- ✅ **Polished README** - Professional landing page with badges and roadmap
 - ✅ **4 Starter Templates** - Production-ready starting points
 - ✅ **457 CSS Utility Classes** - Tailwind-inspired styling
 - ✅ **Enhanced Error Messages** - 20+ helpful error codes
-- ✅ **Comprehensive Documentation** - Guides for every template
+- ✅ **Comprehensive Documentation** - Organized and complete
+- ✅ **Repository Organization** - Clean, professional structure
+
+---
+
+### 🏛️ Community & Governance (October 31, 2025)
+
+**Added community standards** for public release:
+
+**Governance Files**:
+- `CODE_OF_CONDUCT.md` - Contributor Covenant v2.1
+- `CONTRIBUTING.md` - Comprehensive contribution guide (400+ lines)
+- `SECURITY.md` - Responsible disclosure policy
+- `LICENSE` - MIT License
+- `RELEASE_CHECKLIST.md` - Complete release preparation guide
+
+**GitHub Templates**:
+- `.github/ISSUE_TEMPLATE/bug_report.md` - Bug report template
+- `.github/ISSUE_TEMPLATE/feature_request.md` - Feature request template
+- `.github/ISSUE_TEMPLATE/question.md` - Question template
+- `.github/PULL_REQUEST_TEMPLATE.md` - PR template with comprehensive checklist
+
+**Contributing Guide Includes**:
+- Development setup and local build instructions
+- Coding guidelines (Rust formatting, commit conventions)
+- Testing requirements (cargo test, examples)
+- Pull request workflow
+- Issue reporting guidelines
+
+**Security Policy**:
+- Responsible disclosure process (security@jounce.dev)
+- Response timeline (24h acknowledgment, 7d detailed response)
+- Security best practices for Jounce code
+- Input validation, authentication, XSS prevention examples
+
+---
+
+### ✨ README Polish (October 31, 2025)
+
+**Transformed README into professional landing page**:
+
+**Added**:
+- **Badge row** - Build status, license, version, tests, docs
+- **Mission statement** - "A single-file, AI-native full-stack language built for humans and machines to code together"
+- **Visual pipeline diagram** - Shows one file → server + client + styles + HTML
+- **Simplified quick start** - Get started in 3 commands
+- **Development roadmap table** - Transparent progress (Phases 11-16, v1.0 goal)
+- **Prominent feedback & support section** - Multiple ways to get help
+- **Support Jounce section** - Star, sponsor, contribute, share
+
+**Improvements**:
+- More concise quick start (3 commands instead of 8)
+- Clear visualization of compilation pipeline
+- Professional badge display
+- Prominent roadmap with status indicators
+- Easy-to-find feedback channels
+- Call-to-action for community support
+
+---
+
+### 📁 Repository Organization (October 31, 2025)
+
+**Root directory cleanup** - Professional structure:
+
+**Organized**:
+- Moved 40+ markdown files to `archive/` (sessions/, planning/, old-docs/)
+- Moved test files to `tests/` (operators/, modules/, fixtures/, legacy/)
+- Moved scripts to `scripts/` (test_all_examples.sh, watch.sh)
+- Archived old branding: `vscode-raven/` → `archive/old-vscode-extension/`
+
+**Created READMEs** for all directories:
+- `archive/README.md` (updated)
+- `benches/README.md` (new)
+- `docs/README.md` (updated)
+- `packages/README.md` (new)
+- `runtime/README.md` (new)
+- `scripts/README.md` (new)
+- `src/README.md` (new)
+- `tests/README.md` (new)
+
+**Result**:
+- Root reduced from 50+ files to 7 essential markdown docs
+- Every directory has comprehensive documentation
+- Clear separation of current vs archived work
+- Professional, organized structure
+
+---
+
+### 🎯 Quick Wins - Major DX Improvements!
 
 ---
 
