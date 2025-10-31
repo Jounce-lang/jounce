@@ -127,9 +127,27 @@ function viewApp(appId) {
 }
 
 // Search functionality
-document.getElementById('search').addEventListener('input', (e) => {
+const searchInput = document.getElementById('search');
+searchInput.addEventListener('input', (e) => {
     currentSearch = e.target.value;
     renderApps();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    // Press / to focus search
+    if (e.key === '/' && document.activeElement !== searchInput) {
+        e.preventDefault();
+        searchInput.focus();
+    }
+
+    // Press Esc to clear search
+    if (e.key === 'Escape') {
+        searchInput.value = '';
+        currentSearch = '';
+        searchInput.blur();
+        renderApps();
+    }
 });
 
 // Initialize
