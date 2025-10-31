@@ -1,0 +1,362 @@
+// Golf Scorecard App - 4 Players, 9 Holes
+// Beautiful premium golf course design
+
+component App() {
+    // Current hole (1-9)
+    let currentHole = signal(1);
+
+    // Player 1 scores for each hole
+    let p1h1 = signal(0);
+    let p1h2 = signal(0);
+    let p1h3 = signal(0);
+    let p1h4 = signal(0);
+    let p1h5 = signal(0);
+    let p1h6 = signal(0);
+    let p1h7 = signal(0);
+    let p1h8 = signal(0);
+    let p1h9 = signal(0);
+
+    // Player 2 scores
+    let p2h1 = signal(0);
+    let p2h2 = signal(0);
+    let p2h3 = signal(0);
+    let p2h4 = signal(0);
+    let p2h5 = signal(0);
+    let p2h6 = signal(0);
+    let p2h7 = signal(0);
+    let p2h8 = signal(0);
+    let p2h9 = signal(0);
+
+    // Player 3 scores
+    let p3h1 = signal(0);
+    let p3h2 = signal(0);
+    let p3h3 = signal(0);
+    let p3h4 = signal(0);
+    let p3h5 = signal(0);
+    let p3h6 = signal(0);
+    let p3h7 = signal(0);
+    let p3h8 = signal(0);
+    let p3h9 = signal(0);
+
+    // Player 4 scores
+    let p4h1 = signal(0);
+    let p4h2 = signal(0);
+    let p4h3 = signal(0);
+    let p4h4 = signal(0);
+    let p4h5 = signal(0);
+    let p4h6 = signal(0);
+    let p4h7 = signal(0);
+    let p4h8 = signal(0);
+    let p4h9 = signal(0);
+
+    // Display score for current hole
+    let p1CurrentScore = signal(0);
+    let p2CurrentScore = signal(0);
+    let p3CurrentScore = signal(0);
+    let p4CurrentScore = signal(0);
+
+    // Total scores
+    let p1Total = signal(0);
+    let p2Total = signal(0);
+    let p3Total = signal(0);
+    let p4Total = signal(0);
+
+    // Update current scores when hole changes
+    let updateCurrentScores = || {
+        if (currentHole.value == 1) {
+            p1CurrentScore.value = p1h1.value;
+            p2CurrentScore.value = p2h1.value;
+            p3CurrentScore.value = p3h1.value;
+            p4CurrentScore.value = p4h1.value;
+        } else if (currentHole.value == 2) {
+            p1CurrentScore.value = p1h2.value;
+            p2CurrentScore.value = p2h2.value;
+            p3CurrentScore.value = p3h2.value;
+            p4CurrentScore.value = p4h2.value;
+        } else if (currentHole.value == 3) {
+            p1CurrentScore.value = p1h3.value;
+            p2CurrentScore.value = p2h3.value;
+            p3CurrentScore.value = p3h3.value;
+            p4CurrentScore.value = p4h3.value;
+        } else if (currentHole.value == 4) {
+            p1CurrentScore.value = p1h4.value;
+            p2CurrentScore.value = p2h4.value;
+            p3CurrentScore.value = p3h4.value;
+            p4CurrentScore.value = p4h4.value;
+        } else if (currentHole.value == 5) {
+            p1CurrentScore.value = p1h5.value;
+            p2CurrentScore.value = p2h5.value;
+            p3CurrentScore.value = p3h5.value;
+            p4CurrentScore.value = p4h5.value;
+        } else if (currentHole.value == 6) {
+            p1CurrentScore.value = p1h6.value;
+            p2CurrentScore.value = p2h6.value;
+            p3CurrentScore.value = p3h6.value;
+            p4CurrentScore.value = p4h6.value;
+        } else if (currentHole.value == 7) {
+            p1CurrentScore.value = p1h7.value;
+            p2CurrentScore.value = p2h7.value;
+            p3CurrentScore.value = p3h7.value;
+            p4CurrentScore.value = p4h7.value;
+        } else if (currentHole.value == 8) {
+            p1CurrentScore.value = p1h8.value;
+            p2CurrentScore.value = p2h8.value;
+            p3CurrentScore.value = p3h8.value;
+            p4CurrentScore.value = p4h8.value;
+        } else if (currentHole.value == 9) {
+            p1CurrentScore.value = p1h9.value;
+            p2CurrentScore.value = p2h9.value;
+            p3CurrentScore.value = p3h9.value;
+            p4CurrentScore.value = p4h9.value;
+        }
+    };
+
+    // Recalculate totals
+    let recalculateTotals = || {
+        p1Total.value = p1h1.value + p1h2.value + p1h3.value + p1h4.value + p1h5.value + p1h6.value + p1h7.value + p1h8.value + p1h9.value;
+        p2Total.value = p2h1.value + p2h2.value + p2h3.value + p2h4.value + p2h5.value + p2h6.value + p2h7.value + p2h8.value + p2h9.value;
+        p3Total.value = p3h1.value + p3h2.value + p3h3.value + p3h4.value + p3h5.value + p3h6.value + p3h7.value + p3h8.value + p3h9.value;
+        p4Total.value = p4h1.value + p4h2.value + p4h3.value + p4h4.value + p4h5.value + p4h6.value + p4h7.value + p4h8.value + p4h9.value;
+    };
+
+    // Update player scores
+    let updateP1 = |delta| {
+        if (currentHole.value == 1) {
+            p1h1.value = p1h1.value + delta;
+            p1CurrentScore.value = p1h1.value;
+        } else if (currentHole.value == 2) {
+            p1h2.value = p1h2.value + delta;
+            p1CurrentScore.value = p1h2.value;
+        } else if (currentHole.value == 3) {
+            p1h3.value = p1h3.value + delta;
+            p1CurrentScore.value = p1h3.value;
+        } else if (currentHole.value == 4) {
+            p1h4.value = p1h4.value + delta;
+            p1CurrentScore.value = p1h4.value;
+        } else if (currentHole.value == 5) {
+            p1h5.value = p1h5.value + delta;
+            p1CurrentScore.value = p1h5.value;
+        } else if (currentHole.value == 6) {
+            p1h6.value = p1h6.value + delta;
+            p1CurrentScore.value = p1h6.value;
+        } else if (currentHole.value == 7) {
+            p1h7.value = p1h7.value + delta;
+            p1CurrentScore.value = p1h7.value;
+        } else if (currentHole.value == 8) {
+            p1h8.value = p1h8.value + delta;
+            p1CurrentScore.value = p1h8.value;
+        } else if (currentHole.value == 9) {
+            p1h9.value = p1h9.value + delta;
+            p1CurrentScore.value = p1h9.value;
+        }
+    };
+
+    let updateP2 = |delta| {
+        if (currentHole.value == 1) {
+            p2h1.value = p2h1.value + delta;
+            p2CurrentScore.value = p2h1.value;
+        } else if (currentHole.value == 2) {
+            p2h2.value = p2h2.value + delta;
+            p2CurrentScore.value = p2h2.value;
+        } else if (currentHole.value == 3) {
+            p2h3.value = p2h3.value + delta;
+            p2CurrentScore.value = p2h3.value;
+        } else if (currentHole.value == 4) {
+            p2h4.value = p2h4.value + delta;
+            p2CurrentScore.value = p2h4.value;
+        } else if (currentHole.value == 5) {
+            p2h5.value = p2h5.value + delta;
+            p2CurrentScore.value = p2h5.value;
+        } else if (currentHole.value == 6) {
+            p2h6.value = p2h6.value + delta;
+            p2CurrentScore.value = p2h6.value;
+        } else if (currentHole.value == 7) {
+            p2h7.value = p2h7.value + delta;
+            p2CurrentScore.value = p2h7.value;
+        } else if (currentHole.value == 8) {
+            p2h8.value = p2h8.value + delta;
+            p2CurrentScore.value = p2h8.value;
+        } else if (currentHole.value == 9) {
+            p2h9.value = p2h9.value + delta;
+            p2CurrentScore.value = p2h9.value;
+        }
+    };
+
+    let updateP3 = |delta| {
+        if (currentHole.value == 1) {
+            p3h1.value = p3h1.value + delta;
+            p3CurrentScore.value = p3h1.value;
+        } else if (currentHole.value == 2) {
+            p3h2.value = p3h2.value + delta;
+            p3CurrentScore.value = p3h2.value;
+        } else if (currentHole.value == 3) {
+            p3h3.value = p3h3.value + delta;
+            p3CurrentScore.value = p3h3.value;
+        } else if (currentHole.value == 4) {
+            p3h4.value = p3h4.value + delta;
+            p3CurrentScore.value = p3h4.value;
+        } else if (currentHole.value == 5) {
+            p3h5.value = p3h5.value + delta;
+            p3CurrentScore.value = p3h5.value;
+        } else if (currentHole.value == 6) {
+            p3h6.value = p3h6.value + delta;
+            p3CurrentScore.value = p3h6.value;
+        } else if (currentHole.value == 7) {
+            p3h7.value = p3h7.value + delta;
+            p3CurrentScore.value = p3h7.value;
+        } else if (currentHole.value == 8) {
+            p3h8.value = p3h8.value + delta;
+            p3CurrentScore.value = p3h8.value;
+        } else if (currentHole.value == 9) {
+            p3h9.value = p3h9.value + delta;
+            p3CurrentScore.value = p3h9.value;
+        }
+    };
+
+    let updateP4 = |delta| {
+        if (currentHole.value == 1) {
+            p4h1.value = p4h1.value + delta;
+            p4CurrentScore.value = p4h1.value;
+        } else if (currentHole.value == 2) {
+            p4h2.value = p4h2.value + delta;
+            p4CurrentScore.value = p4h2.value;
+        } else if (currentHole.value == 3) {
+            p4h3.value = p4h3.value + delta;
+            p4CurrentScore.value = p4h3.value;
+        } else if (currentHole.value == 4) {
+            p4h4.value = p4h4.value + delta;
+            p4CurrentScore.value = p4h4.value;
+        } else if (currentHole.value == 5) {
+            p4h5.value = p4h5.value + delta;
+            p4CurrentScore.value = p4h5.value;
+        } else if (currentHole.value == 6) {
+            p4h6.value = p4h6.value + delta;
+            p4CurrentScore.value = p4h6.value;
+        } else if (currentHole.value == 7) {
+            p4h7.value = p4h7.value + delta;
+            p4CurrentScore.value = p4h7.value;
+        } else if (currentHole.value == 8) {
+            p4h8.value = p4h8.value + delta;
+            p4CurrentScore.value = p4h8.value;
+        } else if (currentHole.value == 9) {
+            p4h9.value = p4h9.value + delta;
+            p4CurrentScore.value = p4h9.value;
+        }
+    };
+
+    // Wrappers that update totals
+    let updateP1WithTotal = |delta| {
+        updateP1(delta);
+        recalculateTotals();
+    };
+
+    let updateP2WithTotal = |delta| {
+        updateP2(delta);
+        recalculateTotals();
+    };
+
+    let updateP3WithTotal = |delta| {
+        updateP3(delta);
+        recalculateTotals();
+    };
+
+    let updateP4WithTotal = |delta| {
+        updateP4(delta);
+        recalculateTotals();
+    };
+
+    // Navigation
+    let nextHole = || {
+        if (currentHole.value < 9) {
+            currentHole.value = currentHole.value + 1;
+            updateCurrentScores();
+        }
+    };
+
+    let prevHole = || {
+        if (currentHole.value > 1) {
+            currentHole.value = currentHole.value - 1;
+            updateCurrentScores();
+        }
+    };
+
+    return <div class="golf-app">
+        <link rel="stylesheet" href="styles.css"/>
+
+        <div class="header">
+            <h1>Golf Scorecard</h1>
+            <p class="subtitle">4 Players - 9 Holes</p>
+        </div>
+
+        <div class="hole-nav">
+            <button onclick={prevHole}>Previous</button>
+            <h2>Hole {currentHole.value} (Par 4)</h2>
+            <button onclick={nextHole}>Next</button>
+        </div>
+
+        <div class="scorecard">
+            <div class="player-row">
+                <div class="player-info">
+                    <div class="player-name">Player 1</div>
+                </div>
+                <div class="score-controls">
+                    <button onclick={|| { updateP1WithTotal(-1); }}>-</button>
+                    <span class="score">{p1CurrentScore.value}</span>
+                    <button onclick={|| { updateP1WithTotal(1); }}>+</button>
+                </div>
+                <div class="total">Total: {p1Total.value}</div>
+            </div>
+
+            <div class="player-row">
+                <div class="player-info">
+                    <div class="player-name">Player 2</div>
+                </div>
+                <div class="score-controls">
+                    <button onclick={|| { updateP2WithTotal(-1); }}>-</button>
+                    <span class="score">{p2CurrentScore.value}</span>
+                    <button onclick={|| { updateP2WithTotal(1); }}>+</button>
+                </div>
+                <div class="total">Total: {p2Total.value}</div>
+            </div>
+
+            <div class="player-row">
+                <div class="player-info">
+                    <div class="player-name">Player 3</div>
+                </div>
+                <div class="score-controls">
+                    <button onclick={|| { updateP3WithTotal(-1); }}>-</button>
+                    <span class="score">{p3CurrentScore.value}</span>
+                    <button onclick={|| { updateP3WithTotal(1); }}>+</button>
+                </div>
+                <div class="total">Total: {p3Total.value}</div>
+            </div>
+
+            <div class="player-row">
+                <div class="player-info">
+                    <div class="player-name">Player 4</div>
+                </div>
+                <div class="score-controls">
+                    <button onclick={|| { updateP4WithTotal(-1); }}>-</button>
+                    <span class="score">{p4CurrentScore.value}</span>
+                    <button onclick={|| { updateP4WithTotal(1); }}>+</button>
+                </div>
+                <div class="total">Total: {p4Total.value}</div>
+            </div>
+        </div>
+
+        <div class="hole-selector">
+            <h3>Jump to Hole:</h3>
+            <div class="holes">
+                <button onclick={|| { currentHole.value = 1; updateCurrentScores(); }} class={currentHole.value == 1 ? "active" : ""}>1</button>
+                <button onclick={|| { currentHole.value = 2; updateCurrentScores(); }} class={currentHole.value == 2 ? "active" : ""}>2</button>
+                <button onclick={|| { currentHole.value = 3; updateCurrentScores(); }} class={currentHole.value == 3 ? "active" : ""}>3</button>
+                <button onclick={|| { currentHole.value = 4; updateCurrentScores(); }} class={currentHole.value == 4 ? "active" : ""}>4</button>
+                <button onclick={|| { currentHole.value = 5; updateCurrentScores(); }} class={currentHole.value == 5 ? "active" : ""}>5</button>
+                <button onclick={|| { currentHole.value = 6; updateCurrentScores(); }} class={currentHole.value == 6 ? "active" : ""}>6</button>
+                <button onclick={|| { currentHole.value = 7; updateCurrentScores(); }} class={currentHole.value == 7 ? "active" : ""}>7</button>
+                <button onclick={|| { currentHole.value = 8; updateCurrentScores(); }} class={currentHole.value == 8 ? "active" : ""}>8</button>
+                <button onclick={|| { currentHole.value = 9; updateCurrentScores(); }} class={currentHole.value == 9 ? "active" : ""}>9</button>
+            </div>
+        </div>
+    </div>;
+}
