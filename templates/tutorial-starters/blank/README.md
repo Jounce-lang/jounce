@@ -15,14 +15,14 @@ A minimal starting point for your Jounce app.
 jnc compile main.jnc
 
 # Run development server
-jnc dev
+cd dist && node server.js
 
 # Open http://localhost:3000
 ```
 
 ## Next Steps
 
-1. **Add state** - Use `createSignal()` for reactive data
+1. **Add state** - Use `signal()` for reactive data
 2. **Add components** - Break your UI into reusable pieces
 3. **Add styles** - Use utility classes or style blocks
 4. **Add interactivity** - Wire up event handlers
@@ -32,12 +32,5 @@ jnc dev
 - [Jounce Docs](https://docs.jounce.dev)
 - [Tutorial](https://tutorial.jounce.dev)
 - [Examples](https://examples.jounce.dev)
-
-## Deploy
-
-```bash
-# Deploy to production
-jnc deploy --platform vercel
-```
 
 **Happy building!** 🚀
