@@ -1,7 +1,7 @@
 // Test security annotations parsing (Phase 17)
 
-use jounce::lexer::Lexer;
-use jounce::parser::Parser;
+use jounce_compiler::lexer::Lexer;
+use jounce_compiler::parser::Parser;
 
 #[test]
 fn test_simple_secure_annotation() {
@@ -12,16 +12,16 @@ fn test_simple_secure_annotation() {
         }
     "#;
 
-    let lexer = Lexer::new(source.to_string());
-    let mut parser = Parser::new(lexer);
-    let ast = parser.parse();
+    let mut lexer = Lexer::new(source.to_string());
+    let mut parser = Parser::new(&mut lexer, source);
+    let ast = parser.parse_program();
 
     assert!(ast.is_ok(), "Failed to parse @secure annotation: {:?}", ast.err());
     let program = ast.unwrap();
 
     // Find the function statement
     let func = program.statements.iter().find_map(|stmt| {
-        if let jounce::ast::Statement::Function(f) = stmt {
+        if let jounce_compiler::ast::Statement::Function(f) = stmt {
             Some(f)
         } else {
             None
@@ -45,15 +45,15 @@ fn test_auth_annotation_with_role() {
         }
     "#;
 
-    let lexer = Lexer::new(source.to_string());
-    let mut parser = Parser::new(lexer);
-    let ast = parser.parse();
+    let mut lexer = Lexer::new(source.to_string());
+    let mut parser = Parser::new(&mut lexer, source);
+    let ast = parser.parse_program();
 
     assert!(ast.is_ok(), "Failed to parse @auth annotation: {:?}", ast.err());
     let program = ast.unwrap();
 
     let func = program.statements.iter().find_map(|stmt| {
-        if let jounce::ast::Statement::Function(f) = stmt {
+        if let jounce_compiler::ast::Statement::Function(f) = stmt {
             Some(f)
         } else {
             None
@@ -69,7 +69,7 @@ fn test_auth_annotation_with_role() {
     assert_eq!(func.annotations[0].arguments[0].name, "role");
 
     match &func.annotations[0].arguments[0].value {
-        jounce::ast::AnnotationValue::String(s) => assert_eq!(s, "admin"),
+        jounce_compiler::ast::AnnotationValue::String(s) => assert_eq!(s, "admin"),
         _ => panic!("Expected string value for role"),
     }
 }
@@ -83,15 +83,15 @@ fn test_auth_annotation_with_roles_array() {
         }
     "#;
 
-    let lexer = Lexer::new(source.to_string());
-    let mut parser = Parser::new(lexer);
-    let ast = parser.parse();
+    let mut lexer = Lexer::new(source.to_string());
+    let mut parser = Parser::new(&mut lexer, source);
+    let ast = parser.parse_program();
 
     assert!(ast.is_ok(), "Failed to parse @auth with array: {:?}", ast.err());
     let program = ast.unwrap();
 
     let func = program.statements.iter().find_map(|stmt| {
-        if let jounce::ast::Statement::Function(f) = stmt {
+        if let jounce_compiler::ast::Statement::Function(f) = stmt {
             Some(f)
         } else {
             None
@@ -105,14 +105,14 @@ fn test_auth_annotation_with_roles_array() {
     assert_eq!(func.annotations[0].arguments[0].name, "roles");
 
     match &func.annotations[0].arguments[0].value {
-        jounce::ast::AnnotationValue::Array(arr) => {
+        jounce_compiler::ast::AnnotationValue::Array(arr) => {
             assert_eq!(arr.len(), 2);
             match &arr[0] {
-                jounce::ast::AnnotationValue::String(s) => assert_eq!(s, "admin"),
+                jounce_compiler::ast::AnnotationValue::String(s) => assert_eq!(s, "admin"),
                 _ => panic!("Expected string in array"),
             }
             match &arr[1] {
-                jounce::ast::AnnotationValue::String(s) => assert_eq!(s, "moderator"),
+                jounce_compiler::ast::AnnotationValue::String(s) => assert_eq!(s, "moderator"),
                 _ => panic!("Expected string in array"),
             }
         }
@@ -129,15 +129,15 @@ fn test_validate_annotation_with_schema() {
         }
     "#;
 
-    let lexer = Lexer::new(source.to_string());
-    let mut parser = Parser::new(lexer);
-    let ast = parser.parse();
+    let mut lexer = Lexer::new(source.to_string());
+    let mut parser = Parser::new(&mut lexer, source);
+    let ast = parser.parse_program();
 
     assert!(ast.is_ok(), "Failed to parse @validate annotation: {:?}", ast.err());
     let program = ast.unwrap();
 
     let func = program.statements.iter().find_map(|stmt| {
-        if let jounce::ast::Statement::Function(f) = stmt {
+        if let jounce_compiler::ast::Statement::Function(f) = stmt {
             Some(f)
         } else {
             None
@@ -152,7 +152,7 @@ fn test_validate_annotation_with_schema() {
     assert_eq!(func.annotations[0].arguments[0].name, "schema");
 
     match &func.annotations[0].arguments[0].value {
-        jounce::ast::AnnotationValue::Identifier(id) => assert_eq!(id, "UserSchema"),
+        jounce_compiler::ast::AnnotationValue::Identifier(id) => assert_eq!(id, "UserSchema"),
         _ => panic!("Expected identifier value for schema"),
     }
 }
@@ -166,15 +166,15 @@ fn test_ratelimit_annotation() {
         }
     "#;
 
-    let lexer = Lexer::new(source.to_string());
-    let mut parser = Parser::new(lexer);
-    let ast = parser.parse();
+    let mut lexer = Lexer::new(source.to_string());
+    let mut parser = Parser::new(&mut lexer, source);
+    let ast = parser.parse_program();
 
     assert!(ast.is_ok(), "Failed to parse @ratelimit annotation: {:?}", ast.err());
     let program = ast.unwrap();
 
     let func = program.statements.iter().find_map(|stmt| {
-        if let jounce::ast::Statement::Function(f) = stmt {
+        if let jounce_compiler::ast::Statement::Function(f) = stmt {
             Some(f)
         } else {
             None
@@ -192,7 +192,7 @@ fn test_ratelimit_annotation() {
     let max_arg = func.annotations[0].arguments.iter().find(|a| a.name == "max");
     assert!(max_arg.is_some());
     match &max_arg.unwrap().value {
-        jounce::ast::AnnotationValue::Integer(n) => assert_eq!(*n, 100),
+        jounce_compiler::ast::AnnotationValue::Integer(n) => assert_eq!(*n, 100),
         _ => panic!("Expected integer value for max"),
     }
 
@@ -200,7 +200,7 @@ fn test_ratelimit_annotation() {
     let window_arg = func.annotations[0].arguments.iter().find(|a| a.name == "window");
     assert!(window_arg.is_some());
     match &window_arg.unwrap().value {
-        jounce::ast::AnnotationValue::Integer(n) => assert_eq!(*n, 60),
+        jounce_compiler::ast::AnnotationValue::Integer(n) => assert_eq!(*n, 60),
         _ => panic!("Expected integer value for window"),
     }
 }
@@ -217,15 +217,15 @@ fn test_multiple_annotations() {
         }
     "#;
 
-    let lexer = Lexer::new(source.to_string());
-    let mut parser = Parser::new(lexer);
-    let ast = parser.parse();
+    let mut lexer = Lexer::new(source.to_string());
+    let mut parser = Parser::new(&mut lexer, source);
+    let ast = parser.parse_program();
 
     assert!(ast.is_ok(), "Failed to parse multiple annotations: {:?}", ast.err());
     let program = ast.unwrap();
 
     let func = program.statements.iter().find_map(|stmt| {
-        if let jounce::ast::Statement::Function(f) = stmt {
+        if let jounce_compiler::ast::Statement::Function(f) = stmt {
             Some(f)
         } else {
             None
@@ -255,15 +255,15 @@ fn test_annotation_with_server_decorator() {
         }
     "#;
 
-    let lexer = Lexer::new(source.to_string());
-    let mut parser = Parser::new(lexer);
-    let ast = parser.parse();
+    let mut lexer = Lexer::new(source.to_string());
+    let mut parser = Parser::new(&mut lexer, source);
+    let ast = parser.parse_program();
 
     assert!(ast.is_ok(), "Failed to parse annotation with @server: {:?}", ast.err());
     let program = ast.unwrap();
 
     let func = program.statements.iter().find_map(|stmt| {
-        if let jounce::ast::Statement::Function(f) = stmt {
+        if let jounce_compiler::ast::Statement::Function(f) = stmt {
             Some(f)
         } else {
             None
@@ -287,15 +287,15 @@ fn test_function_without_annotations() {
         }
     "#;
 
-    let lexer = Lexer::new(source.to_string());
-    let mut parser = Parser::new(lexer);
-    let ast = parser.parse();
+    let mut lexer = Lexer::new(source.to_string());
+    let mut parser = Parser::new(&mut lexer, source);
+    let ast = parser.parse_program();
 
     assert!(ast.is_ok());
     let program = ast.unwrap();
 
     let func = program.statements.iter().find_map(|stmt| {
-        if let jounce::ast::Statement::Function(f) = stmt {
+        if let jounce_compiler::ast::Statement::Function(f) = stmt {
             Some(f)
         } else {
             None

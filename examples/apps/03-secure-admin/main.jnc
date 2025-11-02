@@ -1,0 +1,68 @@
+// Secure Admin Panel Example - Phase 17
+// Demonstrates security annotations: @auth, @validate, @ratelimit, @sanitize, @secure
+
+// User schema for validation
+const UserSchema = {
+    username: { type: "string", required: true, minLength: 3, maxLength: 20 },
+    email: { type: "string", required: true, pattern: "^[^@]+@[^@]+\\.[^@]+$" },
+    age: { type: "number", min: 0, max: 150 }
+};
+
+// Admin-only function to get all users
+@auth(role = "admin")
+@server
+fn get_users() {
+    return db.query("SELECT * FROM users");
+}
+
+// Admin-only function to create a user with validation
+@auth(role = "admin")
+@validate(schema = UserSchema)
+@server
+fn create_user(username: String, email: String, age: i64) {
+    return db.insert("users", { username, email, age });
+}
+
+// Admin-only function to delete a user with rate limiting
+@auth(role = "admin")
+@ratelimit(max = 10, window = 60000)
+@server
+fn delete_user(id: i64) {
+    return db.delete("users", id);
+}
+
+// User function to update profile with input sanitization
+@auth(role = "user")
+@sanitize(fields = ["bio", "comment"])
+@server
+fn update_profile(bio: String, comment: String) {
+    return db.update("profile", { bio, comment });
+}
+
+// Secure payment processing (requires HTTPS)
+@secure
+@auth(role = "user")
+@ratelimit(max = 5, window = 60000)
+@server
+fn process_payment(amount: f64) {
+    return payment_gateway.charge(amount);
+}
+
+// Admin panel component
+component AdminPanel() {
+    let users = signal([]);
+
+    fn load_users() {
+        console.log("Loading users...");
+    }
+
+    <div class="admin-panel">
+        <h1>Admin Panel</h1>
+
+        <button onClick={load_users}>
+            Load Users
+        </button>
+
+        <p>Total users: {users.value.length}</p>
+    </div>
+}
