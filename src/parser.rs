@@ -34,6 +34,8 @@ lazy_static::lazy_static! {
         m.insert(TokenKind::Ampersand, Precedence::BitwiseAnd);   // &
         m.insert(TokenKind::Eq, Precedence::Equals);
         m.insert(TokenKind::NotEq, Precedence::Equals);
+        m.insert(TokenKind::StrictEq, Precedence::Equals);
+        m.insert(TokenKind::StrictNotEq, Precedence::Equals);
         m.insert(TokenKind::LAngle, Precedence::LessGreater);
         m.insert(TokenKind::RAngle, Precedence::LessGreater);
         m.insert(TokenKind::LtEq, Precedence::LessGreater);
@@ -97,6 +99,8 @@ impl<'a> Parser<'a> {
             TokenKind::Arrow => "Unexpected '->'. Arrow is used for function return types (e.g., fn foo() -> i32) or in match arms.".to_string(),
             TokenKind::Eq => "Comparison operator '==' must be used in an expression context (e.g., if x == y)".to_string(),
             TokenKind::NotEq => "Comparison operator '!=' must be used in an expression context (e.g., if x != y)".to_string(),
+            TokenKind::StrictEq => "Comparison operator '===' must be used in an expression context (e.g., if x === y)".to_string(),
+            TokenKind::StrictNotEq => "Comparison operator '!==' must be used in an expression context (e.g., if x !== y)".to_string(),
             TokenKind::LtEq | TokenKind::GtEq | TokenKind::LAngle | TokenKind::RAngle => {
                 "Comparison operators (<, >, <=, >=) must be used in expression context (e.g., if x < y)".to_string()
             },
