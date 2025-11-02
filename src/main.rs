@@ -1592,19 +1592,108 @@ fn build_project(release: bool) -> std::io::Result<()> {
 fn init_project(path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     use jounce_compiler::package_manager::PackageManager;
 
-    let pkg_mgr = PackageManager::new(path);
-    let project_name = path.file_name()
+    // Resolve to absolute path
+    let project_path = if path == &PathBuf::from(".") {
+        std::env::current_dir()?
+    } else {
+        path.canonicalize().unwrap_or_else(|_| path.clone())
+    };
+
+    // Get project name from directory name
+    let project_name = project_path
+        .file_name()
         .and_then(|n| n.to_str())
-        .unwrap_or("my-package");
+        .unwrap_or("jounce-app");
 
+    println!("🚀 Initializing Jounce project '{}'...", project_name);
+
+    // Create project directory if it doesn't exist
+    if !project_path.exists() {
+        fs::create_dir_all(&project_path)?;
+    } else {
+        // Check if directory is empty (allow hidden files like .git)
+        let entries: Vec<_> = fs::read_dir(&project_path)?
+            .filter_map(|e| e.ok())
+            .filter(|e| {
+                // Ignore hidden files/directories
+                e.file_name().to_str().map_or(false, |n| !n.starts_with('.'))
+            })
+            .collect();
+
+        if !entries.is_empty() {
+            return Err(format!(
+                "Directory '{}' is not empty. Please use an empty directory or create a new one.",
+                project_path.display()
+            ).into());
+        }
+    }
+
+    // Create project structure
+    println!("   📁 Creating project structure...");
+    fs::create_dir_all(project_path.join("src"))?;
+
+    // Copy blank template as starting point
+    let template_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("templates/tutorial-starters/blank");
+
+    if template_path.exists() {
+        // Copy main.jnc
+        let template_main = template_path.join("main.jnc");
+        if template_main.exists() {
+            let main_content = fs::read_to_string(&template_main)?;
+            // Replace "Blank Template" with project name
+            let customized = main_content.replace("Blank Template", &format!("{}", project_name));
+            fs::write(project_path.join("src/main.jnc"), customized)?;
+            println!("   ✅ Created src/main.jnc");
+        }
+    } else {
+        // Fallback if template doesn't exist
+        fs::write(
+            project_path.join("src/main.jnc"),
+            format!("// Welcome to Jounce!\n\ncomponent App() {{\n    return <div class=\"container p-8\">\n        <h1 class=\"text-4xl font-bold\">Welcome to {}!</h1>\n        <p class=\"mt-4\">Start building your app here.</p>\n    </div>;\n}}\n", project_name),
+        )?;
+        println!("   ✅ Created src/main.jnc");
+    }
+
+    // Create jounce.toml using PackageManager
+    let pkg_mgr = PackageManager::new(&project_path);
     pkg_mgr.init(project_name, vec!["Developer <dev@example.com>".to_string()])?;
+    println!("   ✅ Created jounce.toml");
 
-    println!("✅ Initialized Jounce project in {}", path.display());
-    println!("   Created jounce.toml");
+    // Create .gitignore
+    fs::write(
+        project_path.join(".gitignore"),
+        "/dist/\n/target/\n*.wasm\nnode_modules/\n.DS_Store\n",
+    )?;
+    println!("   ✅ Created .gitignore");
+
+    // Create README.md
+    fs::write(
+        project_path.join("README.md"),
+        format!("# {}\n\nA Jounce application.\n\n## Getting Started\n\n```bash\n# Compile your app\njnc compile src/main.jnc\n\n# Start development server\ncd dist && node server.js\n```\n\nOpen http://localhost:3000 in your browser.\n\n## Learn More\n\n- [Jounce Documentation](https://github.com/Jounce-lang/jounce-pre-production)\n- [Example Templates](https://github.com/Jounce-lang/jounce-pre-production/tree/main/templates/tutorial-starters)\n", project_name),
+    )?;
+    println!("   ✅ Created README.md");
+
+    // Initialize git repository
+    let git_init = process::Command::new("git")
+        .arg("init")
+        .current_dir(&project_path)
+        .output();
+
+    if git_init.is_ok() {
+        println!("   ✅ Initialized git repository");
+    }
+
+    println!("\n✨ Project '{}' initialized successfully!", project_name);
     println!("\n💡 Next steps:");
-    println!("   1. Edit jounce.toml to add package metadata");
-    println!("   2. Run 'jnc build' to compile your project");
-    println!("   3. Run 'jnc serve' to start a local development server");
+    println!("   cd {}", if path == &PathBuf::from(".") {
+        ".".to_string()
+    } else {
+        project_name.to_string()
+    });
+    println!("   jnc compile src/main.jnc");
+    println!("   cd dist && node server.js");
+    println!("\n   Open http://localhost:3000 in your browser 🚀");
 
     Ok(())
 }
