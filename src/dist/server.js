@@ -17,10 +17,6 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {
 
 // Server function implementations
 // Shared utility functions
-module.exports.main = function() {
-
-}
-
 // RPC Server Setup
 // Auto-generated RPC server handlers
 const server = new HttpServer(process.env.PORT || 3000);
