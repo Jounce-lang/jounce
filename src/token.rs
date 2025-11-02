@@ -77,6 +77,8 @@ pub enum TokenKind {
     // Comparison operators
     Eq,          // ==
     NotEq,       // !=
+    StrictEq,    // ===
+    StrictNotEq, // !==
     LtEq,        // <=
     GtEq,        // >=
 

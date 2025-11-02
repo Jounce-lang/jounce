@@ -253,6 +253,11 @@ impl Lexer {
                 } else if self.peek() == '=' {
                     self.read_char();
                     self.read_char();
+                    // Check for === (strict equality)
+                    if self.ch == '=' {
+                        self.read_char();
+                        return Token::with_position(TokenKind::StrictEq, "===".to_string(), self.line, start_col, start_pos);
+                    }
                     return Token::with_position(TokenKind::Eq, "==".to_string(), self.line, start_col, start_pos);
                 } else {
                     Token::with_position(TokenKind::Assign, "=".to_string(), self.line, start_col, start_pos)
@@ -364,6 +369,11 @@ impl Lexer {
                 if self.peek() == '=' {
                     self.read_char();
                     self.read_char();
+                    // Check for !== (strict inequality)
+                    if self.ch == '=' {
+                        self.read_char();
+                        return Token::with_position(TokenKind::StrictNotEq, "!==".to_string(), self.line, start_col, start_pos);
+                    }
                     return Token::with_position(TokenKind::NotEq, "!=".to_string(), self.line, start_col, start_pos);
                 } else {
                     Token::with_position(TokenKind::Bang, "!".to_string(), self.line, start_col, start_pos)
