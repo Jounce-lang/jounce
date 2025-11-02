@@ -39,9 +39,8 @@ component App() {
             emailError.value = "Email is required";
             return false;
         }
-        // Simple email validation
-        let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.value)) {
+        // Simple email validation - check for @ and . characters
+        if (email.value.indexOf("@") == -1 || email.value.indexOf(".") == -1) {
             emailError.value = "Please enter a valid email";
             return false;
         }

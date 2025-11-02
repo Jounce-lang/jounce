@@ -82,17 +82,17 @@ component App() {
             {/* Filter Buttons */}
             <div class="flex gap-2 mb-4">
                 <button
-                    onclick={|| filter.value = "all"}
+                    onclick={() => { filter.value = "all"; }}
                     class={`btn btn-sm rounded ${filter.value == "all" ? "btn-primary" : "btn-secondary"}`}>
                     All ({todos.value.length})
                 </button>
                 <button
-                    onclick={|| filter.value = "active"}
+                    onclick={() => { filter.value = "active"; }}
                     class={`btn btn-sm rounded ${filter.value == "active" ? "btn-primary" : "btn-secondary"}`}>
                     Active ({activeCount.value})
                 </button>
                 <button
-                    onclick={|| filter.value = "completed"}
+                    onclick={() => { filter.value = "completed"; }}
                     class={`btn btn-sm rounded ${filter.value == "completed" ? "btn-primary" : "btn-secondary"}`}>
                     Completed ({todos.value.length - activeCount.value})
                 </button>
