@@ -1,60 +1,51 @@
-# Getting Started with Jounce - 5-Minute Quick Start
+# Getting Started with Jounce - Quick Start
 
 **Last Updated**: November 1, 2025
-**Version**: v0.9.0 "Super Easy Start"
+**Version**: v0.9.0
 **Time to First App**: 5 minutes
 
 ---
 
-## 🚀 Quick Start (3 Commands)
+## 🚀 Quick Start
 
 ```bash
-# 1. Install Jounce
-curl -fsSL https://jounce.dev/install.sh | sh
+# 1. Install Jounce via Cargo
+cargo install jounce
 
 # 2. Create your first app
-jnc init my-app
-cd my-app
+echo 'component App() {
+    let count = signal(0);
 
-# 3. Run it!
-jnc dev
+    return <div class="container p-8">
+        <h1 class="text-4xl mb-4">Count: {count.value}</h1>
+        <button onClick={() => count.value = count.value + 1} class="btn btn-primary">
+            Click Me!
+        </button>
+    </div>;
+}' > app.jnc
+
+# 3. Compile and run it!
+jnc compile app.jnc
+cd dist && node server.js
 ```
 
 **Open http://localhost:3000** - Your app is running! 🎉
 
 ---
 
-## 📦 Installation Methods
+## 📦 Installation
 
-### Method 1: One-Line Install (Recommended)
-
-**macOS / Linux**:
-```bash
-curl -fsSL https://jounce.dev/install.sh | sh
-```
-
-**Windows** (PowerShell):
-```powershell
-irm https://jounce.dev/install.ps1 | iex
-```
-
-### Method 2: Cargo (Rust)
+### Method 1: Cargo (Rust) - **Currently Available**
 
 ```bash
 cargo install jounce
-```
-
-### Method 3: NPM (Node.js)
-
-```bash
-npm install -g jounce-cli
 ```
 
 ### Verify Installation
 
 ```bash
 jnc --version
-# Output: jounce 0.9.0
+# Output: jnc 0.9.0
 ```
 
 ---
@@ -65,90 +56,73 @@ Create `app.jnc`:
 
 ```jounce
 component App() {
-    let count = createSignal(0);
+    let count = signal(0);
 
-    <div class="container p-8">
+    return <div class="container p-8">
         <h1 class="text-4xl mb-4">Count: {count.value}</h1>
-        <button onClick={() => count.set(count.value + 1)} class="btn btn-primary">
+        <button onClick={() => count.value = count.value + 1} class="btn btn-primary">
             Click Me!
         </button>
-    </div>
+    </div>;
 }
 ```
 
 **Compile and run**:
 ```bash
 jnc compile app.jnc
-jnc dev
+cd dist && node server.js
 ```
 
-**That's it!** You've built a reactive app in 10 lines.
+**Open http://localhost:3000** - That's it! You've built a reactive app in 10 lines.
 
 ---
 
 ## 🎓 What You Just Built
 
 Your app has:
-- ✅ **Reactive state** (`createSignal`)
+- ✅ **Reactive state** (`signal`)
 - ✅ **Event handling** (`onClick`)
 - ✅ **Automatic UI updates** (when count changes)
 - ✅ **Component architecture** (`component App`)
 - ✅ **Utility CSS classes** (`btn`, `btn-primary`)
+- ✅ **Full-stack output** (server.js + client.js + WASM)
 
 ---
 
 ## 📖 Next Steps
 
-### 1. Take the Interactive Tutorial (50 mins)
-**Learn by doing** - Interactive lessons in your browser:
-```
-https://tutorial.jounce.dev
-```
-
-### 2. Use a Starter Template
+### 1. Use a Starter Template
 **Skip the boilerplate** - Start with a template:
 ```bash
-jnc init my-app --template todo
-jnc init my-blog --template blog
-jnc init my-dashboard --template dashboard
+jnc new my-app
+cd my-app
+# Edit templates/tutorial-starters/counter/main.jnc (or todo, form, dashboard)
+jnc compile templates/tutorial-starters/counter/main.jnc
+cd dist && node server.js
 ```
 
-### 3. Read the Docs
-**Deep dive** - Full documentation:
-```
-https://docs.jounce.dev
-```
+### 2. Read the Docs
+**Deep dive** - Full documentation in `docs/` directory:
+- [Language Guide](../docs/README.md)
+- [CSS Utilities](../docs/CSS_UTILITIES.md)
+- [Examples](../examples/)
 
 ---
 
-## 🛠️ Common CLI Commands
+## 🛠️ Available CLI Commands
 
 ```bash
-# Create new project
-jnc init my-app
+# Create new project structure
+jnc new my-app
 
-# Compile code
+# Compile a .jnc file to JavaScript + WASM
 jnc compile app.jnc
 
-# Development server with hot reload
-jnc dev
-
-# Build for production
-jnc build --release
-
-# Deploy to production
-jnc deploy
-
-# Check project health
-jnc doctor
-
-# Add packages
-jnc add jounce-router
-jnc add jounce-db
-
-# Run tests
-jnc test
+# Serve compiled output (basic server)
+jnc serve
 ```
+
+**Note**: Additional commands like `jnc init`, `jnc dev`, `jnc deploy` are planned for future releases.
 
 ---
 
@@ -180,55 +154,18 @@ Jounce includes **457 utility classes** out of the box:
 
 ## 🐛 Troubleshooting
 
-### Command not found: jnc
-**Solution**: Add to PATH
-```bash
-# macOS/Linux
-echo 'export PATH="$HOME/.jounce/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-
-# Windows
-# Add %USERPROFILE%\.jounce\bin to PATH
-```
-
 ### Port 3000 already in use
-**Solution**: Use a different port
-```bash
-jnc dev --port 8080
+**Solution**: Edit `dist/server.js` and change the port:
+```javascript
+const PORT = process.env.PORT || 8080;
 ```
 
 ### Compilation errors
-**Solution**: Check syntax
+**Solution**: Check syntax against working examples:
 ```bash
-jnc check app.jnc  # Check for errors
-jnc format app.jnc  # Auto-format code
+# Test with a known-good template
+jnc compile templates/tutorial-starters/counter/main.jnc
 ```
-
-### Can't install on Windows
-**Solution**: Use WSL2
-```bash
-wsl --install
-# Then use Linux install method
-```
-
----
-
-## 📚 Learning Resources
-
-### 🎥 Video Tutorials
-- [Jounce in 100 Seconds](https://youtube.com/jounce) - Quick overview
-- [Build a Todo App](https://youtube.com/jounce/todo) - 15-min tutorial
-- [Full Course](https://youtube.com/jounce/course) - 2-hour deep dive
-
-### 📖 Documentation
-- [Language Guide](https://docs.jounce.dev/guide)
-- [API Reference](https://docs.jounce.dev/api)
-- [Cookbook](https://docs.jounce.dev/cookbook) - Common patterns
-
-### 🎮 Interactive
-- [Tutorial](https://tutorial.jounce.dev) - 10 lessons, 50 minutes
-- [Playground](https://play.jounce.dev) - Try code in browser
-- [Examples](https://examples.jounce.dev) - 20+ copy-paste examples
 
 ---
 
@@ -236,15 +173,15 @@ wsl --install
 
 ### Signals (Reactive State)
 ```jounce
-let count = createSignal(0);     // Create
+let count = signal(0);           // Create
 console.log(count.value);         // Read
-count.set(5);                     // Update
+count.value = 5;                  // Update
 // UI updates automatically! ✨
 ```
 
 ### Computed Values
 ```jounce
-let count = createSignal(5);
+let count = signal(5);
 let doubled = computed(() => count.value * 2);
 // doubled updates automatically when count changes!
 ```
@@ -252,9 +189,9 @@ let doubled = computed(() => count.value * 2);
 ### Components
 ```jounce
 component Card(title: String) {
-    <div class="card">
+    return <div class="card">
         <h2>{title}</h2>
-    </div>
+    </div>;
 }
 
 // Use it
@@ -263,7 +200,11 @@ component Card(title: String) {
 
 ### Event Handlers
 ```jounce
-<button onClick={() => doSomething()}>
+function handleClick() {
+    console.log("Clicked!");
+}
+
+<button onClick={handleClick}>
     Click Me
 </button>
 ```
@@ -282,23 +223,18 @@ style MyComponent {
 
 ---
 
-## 🚀 Deploy to Production
+## 📚 Learning Resources
 
-### Option 1: Vercel (One Command)
-```bash
-jnc deploy --platform vercel
-```
+### 📖 Documentation
+- Language Guide - `docs/README.md`
+- CSS Reference - `docs/CSS_UTILITIES.md`
+- Example Apps - `examples/apps/`
 
-### Option 2: Fly.io
-```bash
-jnc deploy --platform fly
-```
-
-### Option 3: Docker
-```bash
-jnc build --docker
-docker run -p 3000:3000 my-app
-```
+### 🎮 Example Templates
+- Counter - `templates/tutorial-starters/counter/`
+- Todo - `templates/tutorial-starters/todo/`
+- Form - `templates/tutorial-starters/form/`
+- Dashboard - `templates/tutorial-starters/dashboard/`
 
 ---
 
@@ -307,26 +243,24 @@ docker run -p 3000:3000 my-app
 **Q: Do I need to know Rust?**
 A: No! Jounce syntax is similar to JavaScript/TypeScript.
 
-**Q: Can I use npm packages?**
-A: Yes! Import any npm package.
+**Q: What's the difference between `signal()` and `createSignal()`?**
+A: `signal()` is the current API. `createSignal()` was an older API that's no longer supported.
 
 **Q: Is it production-ready?**
-A: Yes! 635/635 tests passing, zero known bugs.
+A: The compiler is stable (635/635 tests passing), but some developer tools are still in development.
 
 **Q: How big are the bundles?**
 A: Tiny! ~50KB for a full app (gzipped).
 
-**Q: Does it work with VS Code?**
-A: Yes! Install the Jounce extension.
+**Q: Why doesn't `jnc dev` work?**
+A: The `jnc dev` command is planned but not yet implemented. Currently use: `jnc compile app.jnc && cd dist && node server.js`
 
 ---
 
 ## 🆘 Get Help
 
-- **Discord**: [discord.jounce.dev](https://discord.jounce.dev)
-- **GitHub**: [github.com/Jounce-lang/Jounce](https://github.com/Jounce-lang/Jounce)
-- **Discussions**: [github.com/Jounce-lang/Jounce/discussions](https://github.com/Jounce-lang/Jounce/discussions)
-- **Twitter**: [@JounceJS](https://twitter.com/JounceJS)
+- **GitHub**: [github.com/jrez-soft/jounce-pre-production](https://github.com/jrez-soft/jounce-pre-production)
+- **Issues**: [github.com/jrez-soft/jounce-pre-production/issues](https://github.com/jrez-soft/jounce-pre-production/issues)
 
 ---
 
@@ -334,17 +268,23 @@ A: Yes! Install the Jounce extension.
 
 Choose your path:
 
-1. **Learn** → [Take the tutorial](https://tutorial.jounce.dev)
-2. **Build** → [Use a template](https://examples.jounce.dev)
-3. **Explore** → [Try the playground](https://play.jounce.dev)
+1. **Learn** → Explore example templates in `templates/tutorial-starters/`
+2. **Build** → Create your own app with `jnc new my-app`
+3. **Contribute** → Check `CONTRIBUTING.md` to help build Jounce!
 
 ---
 
 **Ready to build amazing apps?** 🚀
 
-**Start here**: `jnc init my-app && cd my-app && jnc dev`
+**Start here**:
+```bash
+jnc new my-app
+cd my-app
+jnc compile templates/tutorial-starters/counter/main.jnc
+cd dist && node server.js
+```
 
 ---
 
 **Last Updated**: November 1, 2025
-**Questions?** [Ask on Discord](https://discord.jounce.dev) or [GitHub Discussions](https://github.com/Jounce-lang/Jounce/discussions)
+**Questions?** [Open an issue](https://github.com/jrez-soft/jounce-pre-production/issues)
