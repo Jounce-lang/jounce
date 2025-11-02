@@ -1678,6 +1678,13 @@ impl JSEmitter {
                 let op = &infix.operator.lexeme;
                 format!("({} {} {})", left, op, right)
             }
+            Expression::Assignment(assignment) => {
+                // Generate JavaScript assignment expression: target = value
+                // This allows assignments in lambda expressions: () => x = 5
+                let target = self.generate_expression_js(&assignment.target);
+                let value = self.generate_expression_js(&assignment.value);
+                format!("({} = {})", target, value)
+            }
             Expression::Prefix(prefix) => {
                 let operand = self.generate_expression_js(&prefix.right);
                 format!("({}{})", prefix.operator.lexeme, operand)

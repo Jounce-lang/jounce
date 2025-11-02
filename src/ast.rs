@@ -347,6 +347,7 @@ pub enum Expression {
     Postfix(PostfixExpression),  // x++ or x-- (postfix increment/decrement)
     Spread(SpreadExpression),  // ...expr (spread operator in arrays)
     Infix(InfixExpression),
+    Assignment(AssignmentExpression),  // x = value, obj.field = value (assignment as expression)
     FieldAccess(FieldAccessExpression),
     OptionalChaining(OptionalChainingExpression),  // object?.field (optional chaining)
     IndexAccess(IndexExpression),
@@ -427,6 +428,12 @@ pub struct InfixExpression {
     pub left: Box<Expression>,
     pub operator: Token,
     pub right: Box<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AssignmentExpression {
+    pub target: Box<Expression>,  // Can be Identifier, FieldAccess, IndexAccess, etc.
+    pub value: Box<Expression>,   // The value being assigned
 }
 
 #[derive(Debug, Clone)]

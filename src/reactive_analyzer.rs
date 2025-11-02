@@ -47,6 +47,11 @@ impl ReactiveAnalyzer {
                 Self::is_reactive(&infix.left) || Self::is_reactive(&infix.right)
             }
 
+            // Assignment expressions: x.value = 5 or obj.value = newValue
+            Expression::Assignment(assignment) => {
+                Self::is_reactive(&assignment.target) || Self::is_reactive(&assignment.value)
+            }
+
             // Unary operations: !flag.value
             Expression::Prefix(prefix) => {
                 Self::is_reactive(&prefix.right)

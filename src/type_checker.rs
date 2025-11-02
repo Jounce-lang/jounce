@@ -394,6 +394,14 @@ impl TypeChecker {
                 self.infer_expression(&spread.expression)
             }
 
+            Expression::Assignment(assignment) => {
+                // Type check both target and value
+                self.infer_expression(&assignment.target)?;
+                let value_type = self.infer_expression(&assignment.value)?;
+                // Assignment expression returns the value type
+                Ok(value_type)
+            }
+
             Expression::Infix(infix) => {
                 self.check_infix_expression(infix)
             }

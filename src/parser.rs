@@ -1969,7 +1969,56 @@ impl<'a> Parser<'a> {
             Ok(Expression::Block(BlockStatement { statements }))
         } else {
             // Otherwise it's an expression body: () => expr
-            self.parse_expression(Precedence::Lowest)
+            // Parse the expression first
+            let expr = self.parse_expression(Precedence::Lowest)?;
+
+            // Check if this is followed by an assignment operator
+            // This handles: () => x = 5, () => obj.field = value, etc.
+            if self.current_token().kind == TokenKind::Assign {
+                self.next_token(); // consume =
+                let value = self.parse_expression(Precedence::Lowest)?;
+                Ok(Expression::Assignment(AssignmentExpression {
+                    target: Box::new(expr),
+                    value: Box::new(value),
+                }))
+            } else if matches!(
+                self.current_token().kind,
+                TokenKind::PlusAssign | TokenKind::MinusAssign | TokenKind::StarAssign |
+                TokenKind::SlashAssign | TokenKind::PercentAssign |
+                TokenKind::PipePipeAssign | TokenKind::AmpAmpAssign | TokenKind::QuestionQuestionAssign
+            ) {
+                // Compound assignment: x += 5 becomes x = x + 5
+                let op_kind = self.current_token().kind.clone();
+                self.next_token(); // consume compound operator
+                let rhs = self.parse_expression(Precedence::Lowest)?;
+
+                // Convert compound assignment to regular assignment with binary operation
+                let (binary_op, op_symbol) = match op_kind {
+                    TokenKind::PlusAssign => (TokenKind::Plus, "+"),
+                    TokenKind::MinusAssign => (TokenKind::Minus, "-"),
+                    TokenKind::StarAssign => (TokenKind::Star, "*"),
+                    TokenKind::SlashAssign => (TokenKind::Slash, "/"),
+                    TokenKind::PercentAssign => (TokenKind::Percent, "%"),
+                    TokenKind::PipePipeAssign => (TokenKind::PipePipe, "||"),
+                    TokenKind::AmpAmpAssign => (TokenKind::AmpAmp, "&&"),
+                    TokenKind::QuestionQuestionAssign => (TokenKind::QuestionQuestion, "??"),
+                    _ => unreachable!(),
+                };
+
+                let value = Expression::Infix(InfixExpression {
+                    left: Box::new(expr.clone()),
+                    operator: Token::new(binary_op, op_symbol.to_string(), self.current_token().line, self.current_token().column),
+                    right: Box::new(rhs),
+                });
+
+                Ok(Expression::Assignment(AssignmentExpression {
+                    target: Box::new(expr),
+                    value: Box::new(value),
+                }))
+            } else {
+                // Otherwise it's just a regular expression
+                Ok(expr)
+            }
         }
     }
 

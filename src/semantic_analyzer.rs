@@ -691,6 +691,13 @@ impl SemanticAnalyzer {
                 // Spread preserves the type of the array being spread
                 Ok(ResolvedType::Unit)  // Type will be inferred from context
             }
+            Expression::Assignment(assignment) => {
+                // Analyze both target and value
+                self.analyze_expression_with_expected(&assignment.target, None)?;
+                let value_type = self.analyze_expression_with_expected(&assignment.value, None)?;
+                // Assignment expression returns the value type
+                Ok(value_type)
+            }
             Expression::Infix(infix_expr) => self.analyze_infix_expression(infix_expr),
             Expression::ArrayLiteral(array_lit) => {
                 let mut expected_element_type = match expected {
