@@ -1,7 +1,7 @@
 use clap::Parser as ClapParser;
 use colored::Colorize;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::Arc;
 use std::time::Instant;
@@ -1007,41 +1007,141 @@ fn display_compile_result(stats: &CompileStats, _clear: bool) {
 }
 
 fn start_dev_server(port: u16) -> std::io::Result<()> {
-    println!("✅ Development server starting...");
-    println!("   📦 HTTP Server: http://localhost:{}", port);
-    println!("   🔥 HMR Server: ws://localhost:3002/hmr");
-    println!("   👀 File watcher: Active\n");
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
 
-    // Start file watcher in background
-    let watch_thread = std::thread::spawn(|| {
-        let _ = watch_and_compile(
-            PathBuf::from("src"),
-            PathBuf::from("dist"),
-            false,
-            false
-        );
-    });
+    // Find source file (default: src/main.jnc)
+    let source_file = if PathBuf::from("src/main.jnc").exists() {
+        PathBuf::from("src/main.jnc")
+    } else if PathBuf::from("main.jnc").exists() {
+        PathBuf::from("main.jnc")
+    } else {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "No source file found. Expected src/main.jnc or main.jnc"
+        ));
+    };
 
-    // Start HMR server
-    let hmr_thread = std::thread::spawn(|| {
-        let _ = std::process::Command::new("node")
-            .arg("scripts/hmr-server.js")
-            .spawn();
-    });
+    let output_dir = PathBuf::from("dist");
 
-    // Start HTTP server
-    println!("🌐 Starting HTTP server...");
-    let http_result = std::process::Command::new("python3")
-        .arg("serve.py")
-        .spawn();
+    println!("🚀 Jounce Development Server");
+    println!("   📁 Source: {}", source_file.display());
+    println!("   📦 Output: {}", output_dir.display());
+    println!("   🌐 Server: http://localhost:{}", port);
+    println!();
 
-    if let Ok(mut child) = http_result {
-        println!("✨ Dev server running! Press Ctrl+C to stop.\n");
-        let _ = child.wait();
+    // Initial compilation
+    println!("⚡ Initial compilation...");
+    let compile_result = compile_file(&source_file, &output_dir, false);
+    display_compile_result(&compile_result, false);
+
+    if !compile_result.success {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Initial compilation failed. Fix errors before starting dev server."
+        ));
     }
 
-    let _ = watch_thread.join();
-    let _ = hmr_thread.join();
+    // Check if python3 is available
+    let python_check = process::Command::new("python3")
+        .arg("--version")
+        .output();
+
+    if python_check.is_err() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "python3 not found. Please install Python 3 to use the dev server."
+        ));
+    }
+
+    println!();
+
+    // Start HTTP server in background
+    println!("🌐 Starting HTTP server on port {}...", port);
+    let mut http_server = process::Command::new("python3")
+        .arg("-m")
+        .arg("http.server")
+        .arg(port.to_string())
+        .arg("--directory")
+        .arg("dist")
+        .stdout(process::Stdio::null())
+        .stderr(process::Stdio::null())
+        .spawn()?;
+
+    // Give server a moment to start
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
+    println!("✅ Server ready at http://localhost:{}", port);
+    println!();
+
+    // Set up file watching
+    println!("👀 Watching for changes...");
+    println!("   Press Ctrl+C to stop");
+    println!();
+
+    // Flag to handle graceful shutdown
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
+    // Handle Ctrl+C
+    ctrlc::set_handler(move || {
+        println!("\n\n🛑 Shutting down dev server...");
+        r.store(false, Ordering::SeqCst);
+    }).expect("Error setting Ctrl-C handler");
+
+    // Create watch configuration for src/ directory or the source file's directory
+    let watch_path = if PathBuf::from("src").exists() {
+        PathBuf::from("src")
+    } else {
+        source_file.parent().unwrap_or(Path::new(".")).to_path_buf()
+    };
+
+    let config = WatchConfig {
+        path: watch_path.clone(),
+        output_dir: output_dir.clone(),
+        debounce_ms: 150,
+        clear_console: false,
+        verbose: false,
+    };
+
+    // Create and start file watcher
+    let mut watcher = match FileWatcher::new(config) {
+        Ok(w) => w,
+        Err(e) => {
+            let _ = http_server.kill();
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to create file watcher: {}", e)
+            ));
+        }
+    };
+
+    if let Err(e) = watcher.watch() {
+        let _ = http_server.kill();
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Failed to start file watcher: {}", e)
+        ));
+    }
+
+    // Watch loop
+    while running.load(Ordering::SeqCst) {
+        // Wait for file change with timeout to check shutdown flag
+        if let Some(_changed_path) = watcher.wait_for_change() {
+            println!("⚡ Change detected, recompiling...");
+            let compile_result = compile_file(&source_file, &output_dir, false);
+            display_compile_result(&compile_result, false);
+
+            if compile_result.success {
+                println!("✨ Ready at http://localhost:{}", port);
+            }
+            println!();
+        }
+    }
+
+    // Cleanup: kill HTTP server
+    let _ = http_server.kill();
+    println!("✅ Dev server stopped");
 
     Ok(())
 }

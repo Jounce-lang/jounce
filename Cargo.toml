@@ -58,6 +58,7 @@ dirs = "5.0"
 urlencoding = "2.1"
 colored = "2.1"
 regex = "1.10"
+ctrlc = "3.4"
 
 # Performance Optimization (Phase 9 Sprint 1)
 xxhash-rust = { version = "0.8", features = ["xxh64"] }  # Fast hashing for cache keys
