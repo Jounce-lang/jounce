@@ -2,21 +2,21 @@
 // Practice what you learned in the tutorial!
 
 component App() {
-    let count = createSignal(0);
+    let count = signal(0);
 
     function increment() {
-        count.set(count.value + 1);
+        count.value = count.value + 1;
     }
 
     function decrement() {
-        count.set(count.value - 1);
+        count.value = count.value - 1;
     }
 
     function reset() {
-        count.set(0);
+        count.value = 0;
     }
 
-    <div class="container mx-auto p-8 text-center">
+    return <div class="container mx-auto p-8 text-center">
         <h1 class="text-5xl font-bold mb-8">
             Counter App
         </h1>
@@ -53,5 +53,5 @@ component App() {
         <div class="mt-8 text-gray-600">
             <p>Click the buttons to change the counter!</p>
         </div>
-    </div>
+    </div>;
 }
