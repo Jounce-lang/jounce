@@ -1,0 +1,35 @@
+// Lesson 9: Forms & Validation - SOLUTION
+
+component App() {
+    let name = createSignal("");
+    let email = createSignal("");
+
+    let handleSubmit = () => {
+        console.log("Name:", name.value);
+        console.log("Email:", email.value);
+    };
+
+    <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="container p-8 max-w-md">
+        <h1 class="text-3xl font-bold mb-6">Sign Up Form</h1>
+
+        <input
+            type="text"
+            placeholder="Your Name"
+            class="w-full mb-4 p-3 border rounded"
+            value={name.value}
+            onInput={(e) => name.set(e.target.value)}
+        />
+
+        <input
+            type="email"
+            placeholder="Your Email"
+            class="w-full mb-4 p-3 border rounded"
+            value={email.value}
+            onInput={(e) => email.set(e.target.value)}
+        />
+
+        <button type="submit" class="btn btn-primary w-full">
+            Submit
+        </button>
+    </form>
+}

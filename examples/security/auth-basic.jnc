@@ -1,0 +1,137 @@
+// Basic Authentication Example
+// Demonstrates @auth annotation for protecting routes
+
+import { hash_password, verify_password, generate_token } from "jounce-security";
+import { db } from "jounce-db";
+
+// Public endpoint - no auth required
+fn get_public_info() -> String {
+    return "This is public information";
+}
+
+// Protected endpoint - auth required
+@auth
+fn get_user_profile() -> User {
+    // context.user is guaranteed to exist here
+    let user = db.find_one("users", { id: context.user.id });
+    return user;
+}
+
+// Protected endpoint - update own profile
+@auth
+@validate(schema = UpdateProfileSchema)
+fn update_my_profile(data: ProfileData) -> User {
+    let user_id = context.user.id;
+
+    db.update("users", user_id, {
+        name: data.name,
+        bio: data.bio,
+        avatar: data.avatar
+    });
+
+    return db.find_one("users", { id: user_id });
+}
+
+// Login - creates auth token
+fn login(email: String, password: String) -> Token {
+    let user = db.find_one("users", { email: email });
+
+    if (!user) {
+        throw new Error("Invalid credentials");
+    }
+
+    if (!verify_password(password, user.password_hash)) {
+        throw new Error("Invalid credentials");
+    }
+
+    let token = generate_token(user.id);
+    return { token: token, user: user };
+}
+
+// Register - creates new user
+@validate(schema = RegisterSchema)
+fn register(email: String, password: String, name: String) -> User {
+    // Check if email already exists
+    let existing = db.find_one("users", { email: email });
+    if (existing) {
+        throw new Error("Email already registered");
+    }
+
+    let password_hash = hash_password(password);
+
+    let user = {
+        id: generate_id(),
+        email: email,
+        name: name,
+        password_hash: password_hash,
+        role: "user",
+        created_at: Date.now()
+    };
+
+    db.insert("users", user);
+
+    return user;
+}
+
+// Logout - invalidates token
+@auth
+fn logout() -> Boolean {
+    // Invalidate the current token
+    let token = context.token;
+    db.insert("invalid_tokens", { token: token, invalidated_at: Date.now() });
+
+    return true;
+}
+
+// Change password - requires current password
+@auth
+fn change_password(current_password: String, new_password: String) -> Boolean {
+    let user = db.find_one("users", { id: context.user.id });
+
+    if (!verify_password(current_password, user.password_hash)) {
+        throw new Error("Current password is incorrect");
+    }
+
+    let new_hash = hash_password(new_password);
+
+    db.update("users", user.id, {
+        password_hash: new_hash
+    });
+
+    return true;
+}
+
+// Validation schemas
+let RegisterSchema = {
+    email: { type: "string", format: "email", required: true },
+    password: { type: "string", min_length: 8, required: true },
+    name: { type: "string", min_length: 2, required: true }
+};
+
+let UpdateProfileSchema = {
+    name: { type: "string", min_length: 2 },
+    bio: { type: "string", max_length: 500 },
+    avatar: { type: "string", format: "url" }
+};
+
+// Types
+type User = {
+    id: String,
+    email: String,
+    name: String,
+    bio: String,
+    avatar: String,
+    role: String,
+    created_at: i64
+};
+
+type ProfileData = {
+    name: String,
+    bio: String,
+    avatar: String
+};
+
+type Token = {
+    token: String,
+    user: User
+};

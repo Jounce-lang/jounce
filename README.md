@@ -480,8 +480,8 @@ All apps compile successfully and run in the browser!
 
 ## 🎯 Current Status
 
-**Version**: v0.27.0 "All Critical Issues Fixed"
-**Release Date**: October 29, 2025
+**Version**: v0.8.1 "Developer Experience & Public Launch"
+**Release Date**: October 31, 2025
 **Tests**: 635/635 passing (100%)
 **Known Bugs**: 0 critical, 0 medium, 0 low
 
@@ -705,7 +705,7 @@ Built with ❤️ and careful attention to quality.
 
 ---
 
-**🚀 Jounce v0.27.0 - Production Ready!**
+**🚀 Jounce v0.8.1 - Production Ready!**
 
 _"One file. Full reactivity. Zero bugs. Maximum confidence."_
 

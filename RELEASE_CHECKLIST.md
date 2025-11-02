@@ -2,6 +2,9 @@
 
 **Guide for preparing Jounce for public release**
 
+**Versioning System**: See [VERSIONING.md](VERSIONING.md) for our sprint-based development workflow
+**Last Updated**: November 1, 2025
+
 ---
 
 ## 🎯 Pre-Release Checklist
@@ -65,15 +68,38 @@
 
 ### 5. Release Preparation
 
-#### Version Bump
-```bash
-# Update version in Cargo.toml
-version = "0.8.1"
+#### Determine Release Type
 
-# Create git tag
-git tag -a v0.8.1 -m "Release v0.8.1 - Developer Experience"
-git push origin v0.8.1
+See [VERSIONING.md](VERSIONING.md) for complete details. In summary:
+
+| Type | When to Use | Example |
+|------|-------------|---------|
+| **MAJOR** | Breaking changes | 0.9.x → 1.0.0 |
+| **MINOR** | New features (backwards-compatible) | 0.8.x → 0.9.0 |
+| **PATCH** | Bug fixes and docs | 0.8.1 → 0.8.2 |
+
+#### Version Bump
+
+```bash
+# 1. Determine new version (see VERSIONING.md)
+# - MAJOR: Breaking changes (0.x.x → 1.0.0)
+# - MINOR: New features (0.8.x → 0.9.0)
+# - PATCH: Bug fixes (0.8.1 → 0.8.2)
+
+# 2. Update version in Cargo.toml
+version = "0.9.0"
+
+# 3. Update version in README.md badges
+# Find and replace version numbers
+
+# 4. Create git tag
+git tag -a v0.9.0 -m "Release v0.9.0 - Example Applications"
+git push origin v0.9.0
 ```
+
+**For Sprint-Based Releases**:
+- Each sprint should target a specific release (see ROADMAP.md)
+- Example: Sprint 15.2 → v0.9.0 (MINOR - new example apps)
 
 #### Release Notes Template
 ```markdown
@@ -302,6 +328,28 @@ git tag -a v0.8.2 -m "Hotfix for v0.8.1"
 
 ---
 
-**Last Updated**: October 31, 2025
-**Current Version**: v0.8.1-beta
-**Target Release Date**: TBD
+---
+
+## 📖 Additional Resources
+
+- **[VERSIONING.md](VERSIONING.md)** - Complete versioning and sprint workflow guide
+  - Daily flow template
+  - Sprint and task naming conventions
+  - Git branching strategy
+  - Advanced tagging (beta, alpha, dev)
+
+- **[ROADMAP.md](ROADMAP.md)** - Phase and sprint roadmap
+  - Current phase and sprint details
+  - Release calendar
+  - Success metrics
+
+- **[CHANGELOG.md](CHANGELOG.md)** - Detailed release history
+  - All releases with version numbers
+  - Features, fixes, and improvements
+
+---
+
+**Last Updated**: November 1, 2025
+**Current Version**: v0.8.1
+**Next Release**: v0.9.0 (November 21, 2025)
+**Workflow**: Phase 15, Sprint 15.2 (Blog Platform)

@@ -348,6 +348,114 @@ impl<'a> Parser<'a> {
         Ok(type_params)
     }
 
+    // Parse security annotations (@auth, @secure, @validate, etc.) - Phase 17
+    fn parse_annotations(&mut self) -> Result<Vec<Annotation>, CompileError> {
+        let mut annotations = Vec::new();
+
+        // Parse all @ annotations before the function
+        while self.current_token().kind == TokenKind::At {
+            // Peek ahead to check if this is @server or @client (not security annotations)
+            if self.peek_token().kind == TokenKind::Server || self.peek_token().kind == TokenKind::Client {
+                break; // Stop, let parse_function_definition handle @server/@client
+            }
+
+            self.next_token(); // consume @
+
+            // Parse annotation name
+            let name = self.parse_identifier()?;
+
+            // Parse optional arguments: @auth(role = "admin")
+            let mut arguments = Vec::new();
+            if self.consume_if_matches(&TokenKind::LParen) {
+                while self.current_token().kind != TokenKind::RParen {
+                    // Parse argument name
+                    let arg_name_token = self.current_token().clone();
+                    if let TokenKind::Identifier = arg_name_token.kind {
+                        self.next_token();
+                        let arg_name = arg_name_token.lexeme.clone();
+
+                        self.expect_and_consume(&TokenKind::Assign)?;
+
+                        // Parse argument value
+                        let arg_value = match &self.current_token().kind {
+                            TokenKind::String(s) => {
+                                let value = AnnotationValue::String(s.clone());
+                                self.next_token();
+                                value
+                            }
+                            TokenKind::Integer(n) => {
+                                let value = AnnotationValue::Integer(*n);
+                                self.next_token();
+                                value
+                            }
+                            TokenKind::Identifier => {
+                                // Identifier without quotes: schema=UserSchema
+                                let ident = self.parse_identifier()?;
+                                AnnotationValue::Identifier(ident.value)
+                            }
+                            TokenKind::LBracket => {
+                                // Array: roles=["admin", "moderator"]
+                                self.next_token(); // consume [
+                                let mut array_values = Vec::new();
+                                while self.current_token().kind != TokenKind::RBracket {
+                                    match &self.current_token().kind {
+                                        TokenKind::String(s) => {
+                                            array_values.push(AnnotationValue::String(s.clone()));
+                                            self.next_token();
+                                        }
+                                        TokenKind::Integer(n) => {
+                                            array_values.push(AnnotationValue::Integer(*n));
+                                            self.next_token();
+                                        }
+                                        _ => {
+                                            return Err(CompileError::ParserError {
+                                                message: format!("Expected string or integer in array, got {:?}", self.current_token().kind),
+                                                line: self.current_token().line,
+                                                column: self.current_token().column,
+                                            });
+                                        }
+                                    }
+                                    if !self.consume_if_matches(&TokenKind::Comma) {
+                                        break;
+                                    }
+                                }
+                                self.expect_and_consume(&TokenKind::RBracket)?;
+                                AnnotationValue::Array(array_values)
+                            }
+                            _ => {
+                                return Err(CompileError::ParserError {
+                                    message: format!("Expected string, integer, identifier, or array, got {:?}", self.current_token().kind),
+                                    line: self.current_token().line,
+                                    column: self.current_token().column,
+                                });
+                            }
+                        };
+
+                        arguments.push(AnnotationArgument {
+                            name: arg_name,
+                            value: arg_value,
+                        });
+
+                        if !self.consume_if_matches(&TokenKind::Comma) {
+                            break;
+                        }
+                    } else {
+                        return Err(CompileError::ParserError {
+                            message: format!("Expected argument name, got {:?}", self.current_token().kind),
+                            line: self.current_token().line,
+                            column: self.current_token().column,
+                        });
+                    }
+                }
+                self.expect_and_consume(&TokenKind::RParen)?;
+            }
+
+            annotations.push(Annotation { name, arguments });
+        }
+
+        Ok(annotations)
+    }
+
     fn parse_struct_definition(&mut self) -> Result<StructDefinition, CompileError> {
         self.expect_and_consume(&TokenKind::Struct)?;
         let name = self.parse_identifier()?;
@@ -676,6 +784,9 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function_definition(&mut self) -> Result<FunctionDefinition, CompileError> {
+        // Parse security annotations (@auth, @secure, @validate, etc.)
+        let annotations = self.parse_annotations()?;
+
         // Check for optional @ symbol (for @server or @client)
         let has_at = self.consume_if_matches(&TokenKind::At);
 
@@ -769,6 +880,7 @@ impl<'a> Parser<'a> {
             is_server,
             is_client,
             is_async,
+            annotations,
             body: BlockStatement { statements },
         })
     }

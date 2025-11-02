@@ -1,0 +1,51 @@
+// Lesson 10: Deploy Your App! - SOLUTION
+// (This lesson is already complete - just click the deploy button!)
+
+component App() {
+    let deployed = createSignal(false);
+
+    <div class="container mx-auto p-8 text-center">
+        <h1 class="text-5xl font-bold mb-6">
+            🎉 Congratulations!
+        </h1>
+
+        <p class="text-xl text-gray-700 mb-8">
+            You've completed all 10 lessons!
+        </p>
+
+        <div class="bg-blue-50 p-8 rounded-lg mb-8">
+            <h2 class="text-2xl font-bold mb-4">What You've Learned:</h2>
+            <ul class="text-left max-w-md mx-auto space-y-2">
+                <li>✅ Hello World & Console Logging</li>
+                <li>✅ Reactive Signals</li>
+                <li>✅ JSX Basics</li>
+                <li>✅ Event Handlers</li>
+                <li>✅ Computed Values</li>
+                <li>✅ Reusable Components</li>
+                <li>✅ Props & Composition</li>
+                <li>✅ Styling</li>
+                <li>✅ Forms & Validation</li>
+                <li>✅ Deployment</li>
+            </ul>
+        </div>
+
+        {deployed.value ? (
+            <div class="bg-green-50 p-6 rounded-lg">
+                <h2 class="text-3xl font-bold text-green-700 mb-4">
+                    🚀 Your App is Live!
+                </h2>
+                <p class="text-lg mb-4">You're now a Jounce developer!</p>
+                <a href="#certificate" class="btn btn-success btn-lg">
+                    Get Your Certificate →
+                </a>
+            </div>
+        ) : (
+            <button
+                onClick={() => deployed.set(true)}
+                class="btn btn-primary btn-lg text-2xl px-12 py-4"
+            >
+                Deploy to Production 🚀
+            </button>
+        )}
+    </div>
+}

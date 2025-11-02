@@ -1,0 +1,17 @@
+// Lesson 6: Reusable Components - SOLUTION
+// Learn how to create and use reusable components
+
+component Button() {
+    <button class="btn btn-primary rounded-lg px-6 py-3">
+        Click Me
+    </button>
+}
+
+component App() {
+    <div class="container p-8">
+        <h1 class="text-3xl font-bold mb-6">My Component Demo</h1>
+        <Button />
+        <Button />
+        <Button />
+    </div>
+}

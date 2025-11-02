@@ -1,0 +1,376 @@
+// Input Validation Example
+// Demonstrates @validate annotation for secure data handling
+
+import { db } from "jounce-db";
+
+// ============================================
+// SCHEMA VALIDATION
+// ============================================
+
+// Simple schema validation
+@validate(schema = UserSchema)
+fn create_user(data: UserData) -> User {
+    let user = {
+        id: generate_id(),
+        name: data.name,
+        email: data.email,
+        age: data.age,
+        created_at: Date.now()
+    };
+
+    db.insert("users", user);
+    return user;
+}
+
+// Multiple parameter validation
+@validate(email = EmailSchema, password = PasswordSchema)
+fn register(email: String, password: String) -> User {
+    // email and password are both validated
+    let user = {
+        id: generate_id(),
+        email: email,
+        password_hash: hash_password(password),
+        created_at: Date.now()
+    };
+
+    db.insert("users", user);
+    return user;
+}
+
+// Nested schema validation
+@validate(schema = ProductSchema)
+fn create_product(data: ProductData) -> Product {
+    let product = {
+        id: generate_id(),
+        name: data.name,
+        price: data.price,
+        inventory: data.inventory,
+        categories: data.categories,
+        metadata: data.metadata
+    };
+
+    db.insert("products", product);
+    return product;
+}
+
+// Array validation
+@validate(schema = BulkUserSchema)
+fn create_users_bulk(users: Array<UserData>) -> Array<User> {
+    let created_users = [];
+
+    for (let user_data in users) {
+        let user = create_user(user_data);
+        created_users.push(user);
+    }
+
+    return created_users;
+}
+
+// ============================================
+// CUSTOM VALIDATORS
+// ============================================
+
+@validate(validator = is_valid_slug)
+fn create_blog_post(slug: String, title: String, content: String) -> Post {
+    // slug is validated by custom function
+    let post = {
+        id: generate_id(),
+        slug: slug,
+        title: title,
+        content: content,
+        created_at: Date.now()
+    };
+
+    db.insert("posts", post);
+    return post;
+}
+
+fn is_valid_slug(slug: String) -> ValidationResult {
+    // Slug must be lowercase, alphanumeric, with hyphens only
+    let regex = /^[a-z0-9-]+$/;
+
+    if (!regex.test(slug)) {
+        return {
+            success: false,
+            errors: ["Slug must contain only lowercase letters, numbers, and hyphens"]
+        };
+    }
+
+    if (slug.length < 3) {
+        return {
+            success: false,
+            errors: ["Slug must be at least 3 characters"]
+        };
+    }
+
+    if (slug.length > 100) {
+        return {
+            success: false,
+            errors: ["Slug must be at most 100 characters"]
+        };
+    }
+
+    return { success: true, errors: [] };
+}
+
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
+
+let UserSchema = {
+    name: {
+        type: "string",
+        required: true,
+        min_length: 2,
+        max_length: 100
+    },
+    email: {
+        type: "string",
+        required: true,
+        format: "email"
+    },
+    age: {
+        type: "integer",
+        min: 13,
+        max: 120
+    }
+};
+
+let EmailSchema = {
+    type: "string",
+    required: true,
+    format: "email",
+    max_length: 255
+};
+
+let PasswordSchema = {
+    type: "string",
+    required: true,
+    min_length: 8,
+    max_length: 128,
+    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/  // At least 1 lowercase, 1 uppercase, 1 digit
+};
+
+let ProductSchema = {
+    name: {
+        type: "string",
+        required: true,
+        min_length: 3,
+        max_length: 200
+    },
+    price: {
+        type: "number",
+        required: true,
+        min: 0,
+        max: 1000000
+    },
+    inventory: {
+        type: "integer",
+        required: true,
+        min: 0
+    },
+    categories: {
+        type: "array",
+        items: { type: "string" },
+        min_items: 1,
+        max_items: 10
+    },
+    metadata: {
+        type: "object",
+        properties: {
+            brand: { type: "string" },
+            sku: { type: "string", pattern: /^[A-Z0-9-]+$/ },
+            weight: { type: "number", min: 0 }
+        }
+    }
+};
+
+let BulkUserSchema = {
+    type: "array",
+    items: UserSchema,
+    min_items: 1,
+    max_items: 100
+};
+
+// ============================================
+// SANITIZATION + VALIDATION
+// ============================================
+
+@sanitize(html = true)
+@validate(schema = CommentSchema)
+fn create_comment(post_id: String, content: String) -> Comment {
+    // content is:
+    // 1. Validated (correct length, type, etc.)
+    // 2. Sanitized (HTML escaped to prevent XSS)
+
+    let comment = {
+        id: generate_id(),
+        post_id: post_id,
+        content: content,  // Safe HTML
+        author_id: context.user.id,
+        created_at: Date.now()
+    };
+
+    db.insert("comments", comment);
+    return comment;
+}
+
+let CommentSchema = {
+    content: {
+        type: "string",
+        required: true,
+        min_length: 1,
+        max_length: 5000
+    }
+};
+
+// ============================================
+// CONDITIONAL VALIDATION
+// ============================================
+
+@validate(schema = PaymentSchema)
+fn process_payment(data: PaymentData) -> Payment {
+    // Different validation based on payment method
+    if (data.method === "credit_card") {
+        // Requires card number, CVV, etc.
+    } else if (data.method === "paypal") {
+        // Requires PayPal email
+    }
+
+    let payment = {
+        id: generate_id(),
+        amount: data.amount,
+        method: data.method,
+        status: "pending",
+        created_at: Date.now()
+    };
+
+    db.insert("payments", payment);
+    return payment;
+}
+
+let PaymentSchema = {
+    amount: {
+        type: "number",
+        required: true,
+        min: 0.01
+    },
+    method: {
+        type: "string",
+        required: true,
+        enum: ["credit_card", "paypal", "bank_transfer"]
+    },
+    // Conditional fields based on method
+    card_number: {
+        type: "string",
+        required_if: { method: "credit_card" },
+        pattern: /^\d{16}$/
+    },
+    cvv: {
+        type: "string",
+        required_if: { method: "credit_card" },
+        pattern: /^\d{3,4}$/
+    },
+    paypal_email: {
+        type: "string",
+        format: "email",
+        required_if: { method: "paypal" }
+    }
+};
+
+// ============================================
+// VALIDATION ERROR HANDLING
+// ============================================
+
+fn handle_validation_example() {
+    try {
+        let user = create_user({
+            name: "A",  // Too short!
+            email: "not-an-email",  // Invalid format!
+            age: 150  // Too old!
+        });
+    } catch (error) {
+        if (error instanceof ValidationError) {
+            console.log("Validation failed:");
+            for (let err in error.errors) {
+                console.log("-", err.field, ":", err.message);
+            }
+            // Output:
+            // - name : Must be at least 2 characters
+            // - email : Must be a valid email address
+            // - age : Must be at most 120
+        }
+    }
+}
+
+// ============================================
+// TYPES
+// ============================================
+
+type UserData = {
+    name: String,
+    email: String,
+    age: i64
+};
+
+type User = {
+    id: String,
+    name: String,
+    email: String,
+    age: i64,
+    created_at: i64
+};
+
+type ProductData = {
+    name: String,
+    price: f64,
+    inventory: i64,
+    categories: Array<String>,
+    metadata: Object
+};
+
+type Product = {
+    id: String,
+    name: String,
+    price: f64,
+    inventory: i64,
+    categories: Array<String>,
+    metadata: Object
+};
+
+type Post = {
+    id: String,
+    slug: String,
+    title: String,
+    content: String,
+    created_at: i64
+};
+
+type Comment = {
+    id: String,
+    post_id: String,
+    content: String,
+    author_id: String,
+    created_at: i64
+};
+
+type PaymentData = {
+    amount: f64,
+    method: String,
+    card_number: String,
+    cvv: String,
+    paypal_email: String
+};
+
+type Payment = {
+    id: String,
+    amount: f64,
+    method: String,
+    status: String,
+    created_at: i64
+};
+
+type ValidationResult = {
+    success: Boolean,
+    errors: Array<String>
+};

@@ -1,0 +1,152 @@
+// Form Validation Template
+// Learn form handling and validation in Jounce!
+
+component App() {
+    let name = createSignal("");
+    let email = createSignal("");
+    let password = createSignal("");
+    let submitted = createSignal(false);
+
+    let nameError = computed(() => {
+        if (name.value.length === 0) {
+            return "Name is required";
+        }
+        if (name.value.length < 2) {
+            return "Name must be at least 2 characters";
+        }
+        return "";
+    });
+
+    let emailError = computed(() => {
+        if (email.value.length === 0) {
+            return "Email is required";
+        }
+        if (!email.value.includes("@")) {
+            return "Email must be valid";
+        }
+        return "";
+    });
+
+    let passwordError = computed(() => {
+        if (password.value.length === 0) {
+            return "Password is required";
+        }
+        if (password.value.length < 8) {
+            return "Password must be at least 8 characters";
+        }
+        return "";
+    });
+
+    let isValid = computed(() => {
+        return nameError.value === "" &&
+               emailError.value === "" &&
+               passwordError.value === "";
+    });
+
+    function handleSubmit(e) {
+        e.preventDefault();
+
+        if (isValid.value) {
+            submitted.set(true);
+            console.log("Form submitted!", {
+                name: name.value,
+                email: email.value,
+                password: password.value
+            });
+        }
+    }
+
+    function reset() {
+        name.set("");
+        email.set("");
+        password.set("");
+        submitted.set(false);
+    }
+
+    <div class="container mx-auto p-8 max-w-md">
+        <h1 class="text-4xl font-bold mb-8 text-center">
+            Sign Up Form
+        </h1>
+
+        {submitted.value ? (
+            <div class="bg-green-50 p-8 rounded-lg text-center">
+                <h2 class="text-2xl font-bold text-green-700 mb-4">
+                    Success! 🎉
+                </h2>
+                <p class="text-gray-700 mb-4">
+                    Welcome, {name.value}!
+                </p>
+                <button
+                    onClick={reset}
+                    class="btn btn-primary"
+                >
+                    Sign Up Another User
+                </button>
+            </div>
+        ) : (
+            <form onSubmit={handleSubmit} class="bg-white p-8 rounded-lg shadow">
+                <div class="mb-6">
+                    <label class="block text-sm font-bold mb-2">
+                        Name
+                    </label>
+                    <input
+                        type="text"
+                        value={name.value}
+                        onInput={(e) => name.set(e.target.value)}
+                        class="w-full p-3 border border-gray-300 rounded"
+                        placeholder="John Doe"
+                    />
+                    {nameError.value && (
+                        <p class="text-red-500 text-sm mt-1">
+                            {nameError.value}
+                        </p>
+                    )}
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold mb-2">
+                        Email
+                    </label>
+                    <input
+                        type="email"
+                        value={email.value}
+                        onInput={(e) => email.set(e.target.value)}
+                        class="w-full p-3 border border-gray-300 rounded"
+                        placeholder="john@example.com"
+                    />
+                    {emailError.value && (
+                        <p class="text-red-500 text-sm mt-1">
+                            {emailError.value}
+                        </p>
+                    )}
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold mb-2">
+                        Password
+                    </label>
+                    <input
+                        type="password"
+                        value={password.value}
+                        onInput={(e) => password.set(e.target.value)}
+                        class="w-full p-3 border border-gray-300 rounded"
+                        placeholder="********"
+                    />
+                    {passwordError.value && (
+                        <p class="text-red-500 text-sm mt-1">
+                            {passwordError.value}
+                        </p>
+                    )}
+                </div>
+
+                <button
+                    type="submit"
+                    class={isValid.value ? "btn btn-primary w-full" : "btn btn-disabled w-full"}
+                    disabled={!isValid.value}
+                >
+                    Sign Up
+                </button>
+            </form>
+        )}
+    </div>
+}

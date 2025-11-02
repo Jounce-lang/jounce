@@ -1,0 +1,14 @@
+// Lesson 3: JSX Basics
+// JSX lets you write HTML-like syntax directly in your code
+
+component App() {
+    <div class="container p-8">
+        <h1 class="text-3xl font-bold mb-4">My First App</h1>
+
+        <!-- TODO: Add a <p> tag here with the text "This is a paragraph!" -->
+
+
+        <!-- TODO: Add a <button> tag here with the text "Click Me" -->
+
+    </div>
+}
