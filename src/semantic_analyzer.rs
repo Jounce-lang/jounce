@@ -1051,6 +1051,14 @@ impl SemanticAnalyzer {
                 let result_type = self.analyze_expression_with_expected(&batch_expr.body, None)?;
                 Ok(result_type)  // Returns function result
             }
+            Expression::OnMount(on_mount_expr) => {
+                self.analyze_expression_with_expected(&on_mount_expr.callback, None)?;
+                Ok(ResolvedType::ComplexType)  // Lifecycle hook (returns void)
+            }
+            Expression::OnDestroy(on_destroy_expr) => {
+                self.analyze_expression_with_expected(&on_destroy_expr.callback, None)?;
+                Ok(ResolvedType::ComplexType)  // Lifecycle hook (returns void)
+            }
             Expression::ScriptBlock(_) => {
                 // Script blocks contain raw JavaScript - skip semantic analysis
                 Ok(ResolvedType::ComplexType)

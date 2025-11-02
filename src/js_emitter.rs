@@ -1984,6 +1984,14 @@ impl JSEmitter {
                 let body = self.generate_expression_js(&batch_expr.body);
                 format!("batch({})", body)
             }
+            Expression::OnMount(on_mount_expr) => {
+                let callback = self.generate_expression_js(&on_mount_expr.callback);
+                format!("onMount({})", callback)
+            }
+            Expression::OnDestroy(on_destroy_expr) => {
+                let callback = self.generate_expression_js(&on_destroy_expr.callback);
+                format!("onDestroy({})", callback)
+            }
             Expression::CssMacro(_) => {
                 // CSS macro handled separately
                 "/* CSS */".to_string()

@@ -1336,6 +1336,12 @@ impl<'a> Parser<'a> {
                     "batch" => {
                         return self.parse_batch_expression();
                     },
+                    "onMount" => {
+                        return self.parse_on_mount_expression();
+                    },
+                    "onDestroy" => {
+                        return self.parse_on_destroy_expression();
+                    },
                     _ => {}
                 }
 
@@ -3888,6 +3894,38 @@ impl<'a> Parser<'a> {
 
         Ok(Expression::Batch(BatchExpression {
             body: Box::new(body),
+        }))
+    }
+
+    /// Parse onMount expression: onMount(() => { ... })
+    fn parse_on_mount_expression(&mut self) -> Result<Expression, CompileError> {
+        // Expect opening parenthesis
+        self.expect_and_consume(&TokenKind::LParen)?;
+
+        // Parse callback function (must be a lambda/closure)
+        let callback = self.parse_expression(Precedence::Lowest)?;
+
+        // Expect closing parenthesis
+        self.expect_and_consume(&TokenKind::RParen)?;
+
+        Ok(Expression::OnMount(OnMountExpression {
+            callback: Box::new(callback),
+        }))
+    }
+
+    /// Parse onDestroy expression: onDestroy(() => { ... })
+    fn parse_on_destroy_expression(&mut self) -> Result<Expression, CompileError> {
+        // Expect opening parenthesis
+        self.expect_and_consume(&TokenKind::LParen)?;
+
+        // Parse callback function (must be a lambda/closure)
+        let callback = self.parse_expression(Precedence::Lowest)?;
+
+        // Expect closing parenthesis
+        self.expect_and_consume(&TokenKind::RParen)?;
+
+        Ok(Expression::OnDestroy(OnDestroyExpression {
+            callback: Box::new(callback),
         }))
     }
 

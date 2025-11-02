@@ -824,6 +824,14 @@ impl TypeChecker {
                 // Batch returns the result of the function
                 self.infer_expression(&batch_expr.body)
             }
+            Expression::OnMount(_) => {
+                // Lifecycle hook returns void
+                Ok(Type::Any)
+            }
+            Expression::OnDestroy(_) => {
+                // Lifecycle hook returns void
+                Ok(Type::Any)
+            }
             Expression::ScriptBlock(_) => {
                 // Script blocks contain raw JavaScript - skip type checking
                 Ok(Type::Any)
