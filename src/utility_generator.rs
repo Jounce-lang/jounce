@@ -1260,7 +1260,11 @@ impl UtilityGenerator {
 #[derive(Debug, Clone)]
 enum Variant {
     /// Responsive variant (e.g., "md:", "lg:")
-    Responsive { breakpoint: String, min_width: String },
+    Responsive {
+        #[allow(dead_code)]
+        breakpoint: String,
+        min_width: String
+    },
     /// State variant (e.g., "hover:", "focus:")
     State(String),
     /// Dark mode variant (e.g., "dark:")

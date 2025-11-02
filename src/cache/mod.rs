@@ -36,6 +36,7 @@ pub struct CompilationCache {
     dependencies: Arc<Mutex<dependency_graph::DependencyGraph>>,
 
     /// Cache directory
+    #[allow(dead_code)]
     cache_dir: PathBuf,
 
     /// Cache statistics (using atomics for thread-safety)
@@ -46,6 +47,7 @@ pub struct CompilationCache {
 
 #[derive(Clone)]
 struct FileMetadata {
+    #[allow(dead_code)]
     last_modified: SystemTime,
     hash: u64,
 }

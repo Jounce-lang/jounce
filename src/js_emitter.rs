@@ -10,7 +10,7 @@
 // - server.js: Server-side code with HTTP server and RPC handlers
 // - client.js: Client-side code with RPC stubs and UI components
 
-use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression, ForInStatement, ForStatement, ImplBlock, JsxChild, ObjectProperty, TemplatePart, ArrayPattern, ObjectPattern, Annotation, AnnotationValue};
+use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression, ForInStatement, ForStatement, ImplBlock, JsxChild, ObjectProperty, TemplatePart, Annotation, AnnotationValue};
 use crate::code_splitter::CodeSplitter;
 use crate::rpc_generator::RPCGenerator;
 use crate::source_map::SourceMapBuilder;
@@ -2361,6 +2361,7 @@ impl JSEmitter {
     }
 
     /// Checks if a function name is a server function
+    #[allow(dead_code)]
     fn is_server_function(&self, name: &str) -> bool {
         self.splitter.server_functions
             .iter()

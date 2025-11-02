@@ -159,16 +159,6 @@ fn write_grid_utilities(css: &mut String) {
 fn write_spacing_utilities(css: &mut String) {
     writeln!(css, "/* Spacing */").unwrap();
 
-    let sides = [
-        ("", ""),
-        ("t", "-top"),
-        ("r", "-right"),
-        ("b", "-bottom"),
-        ("l", "-left"),
-        ("x", "-left; {}: "), // Special handling needed
-        ("y", "-top; {}: "),  // Special handling needed
-    ];
-
     for i in 0..=16 {
         let rem = i as f32 * 0.25;
 

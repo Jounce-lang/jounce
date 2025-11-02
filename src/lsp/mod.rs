@@ -181,6 +181,7 @@ struct SymbolInfo {
 
 /// Kind of symbol (function, variable, etc.)
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 enum SymbolKind {
     Function,
     Variable,
