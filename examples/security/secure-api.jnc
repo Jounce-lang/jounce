@@ -1,0 +1,402 @@
+// Secure API Example
+// Demonstrates combining multiple security annotations
+
+import { db } from "jounce-db";
+import { hash_password, verify_password, generate_token } from "jounce-security";
+
+// ============================================
+// PUBLIC API (No Security)
+// ============================================
+
+fn health_check() -> Status {
+    return { status: "ok", timestamp: Date.now() };
+}
+
+@ratelimit(max = 100, window = "1m", key = "ip")
+fn search_products(query: String) -> Array<Product> {
+    // Rate limited by IP address
+    return db.find("products", {
+        name: { $regex: query, $options: "i" }
+    });
+}
+
+// ============================================
+// AUTHENTICATED API
+// ============================================
+
+@auth
+@ratelimit(max = 60, window = "1m")
+fn get_my_orders() -> Array<Order> {
+    // Authenticated users can see their orders
+    // Rate limited to 60 requests/min per user
+    return db.find("orders", {
+        user_id: context.user.id
+    });
+}
+
+@auth
+@validate(schema = CreateOrderSchema)
+@ratelimit(max = 10, window = "1h")
+fn create_order(data: OrderData) -> Order {
+    // Create order with:
+    // - Authentication required
+    // - Input validation
+    // - Rate limiting (10 orders per hour)
+
+    let order = {
+        id: generate_id(),
+        user_id: context.user.id,
+        items: data.items,
+        total: calculate_total(data.items),
+        status: "pending",
+        created_at: Date.now()
+    };
+
+    db.insert("orders", order);
+    return order;
+}
+
+@auth
+@ratelimit(max = 5, window = "1h")
+fn cancel_order(order_id: String) -> Order {
+    // Cancel order with rate limiting
+    let order = db.find_one("orders", { id: order_id });
+
+    if (order.user_id !== context.user.id) {
+        throw new Error("Not authorized to cancel this order");
+    }
+
+    if (order.status !== "pending") {
+        throw new Error("Order cannot be cancelled");
+    }
+
+    db.update("orders", order_id, {
+        status: "cancelled",
+        cancelled_at: Date.now()
+    });
+
+    return db.find_one("orders", { id: order_id });
+}
+
+// ============================================
+// ADMIN API (Maximum Security)
+// ============================================
+
+@secure
+@auth(role = "admin")
+@ratelimit(max = 10, window = "1m")
+fn get_all_orders() -> Array<Order> {
+    // Admins can see all orders
+    // Requires HTTPS, admin role, rate limited
+    return db.find("orders", {});
+}
+
+@secure
+@auth(role = "admin")
+@validate(schema = UpdateOrderSchema)
+fn admin_update_order(order_id: String, data: UpdateOrderData) -> Order {
+    // Update any order (admin only)
+    db.update("orders", order_id, data);
+    return db.find_one("orders", { id: order_id });
+}
+
+@secure
+@auth(role = "admin")
+fn admin_delete_order(order_id: String) -> Boolean {
+    // Delete order (admin only, HTTPS required)
+    db.delete("orders", order_id);
+    return true;
+}
+
+@secure
+@auth(role = "admin")
+@ratelimit(max = 1, window = "1h")
+fn admin_export_data() -> Blob {
+    // Export all data
+    // - HTTPS required
+    // - Admin only
+    // - Rate limited to 1 request per hour
+    let users = db.find("users", {});
+    let orders = db.find("orders", {});
+    let products = db.find("products", {});
+
+    return JSON.stringify({
+        users: users,
+        orders: orders,
+        products: products
+    });
+}
+
+// ============================================
+// SENSITIVE OPERATIONS (Triple Security)
+// ============================================
+
+@secure
+@auth(role = "admin")
+@validate(schema = DeleteUserSchema)
+@ratelimit(max = 5, window = "1d", scope = "global")
+fn admin_delete_user(user_id: String, reason: String) -> Boolean {
+    // Delete user account
+    // - HTTPS required
+    // - Admin role required
+    // - Input validated
+    // - Global rate limit (only 5 user deletions per day across all admins)
+
+    console.warn("USER DELETION:", {
+        user_id: user_id,
+        reason: reason,
+        deleted_by: context.user.id,
+        timestamp: Date.now()
+    });
+
+    db.delete("users", user_id);
+    return true;
+}
+
+@secure
+@auth(role = "admin")
+@ratelimit(max = 1, window = "1d", scope = "global")
+fn admin_wipe_database(confirmation: String) -> Boolean {
+    // DANGER: Wipe entire database
+    // - HTTPS required
+    // - Admin role required
+    // - Can only be done once per day (globally)
+    // - Requires explicit confirmation
+
+    if (confirmation !== "I UNDERSTAND THIS WILL DELETE EVERYTHING") {
+        throw new Error("Invalid confirmation");
+    }
+
+    console.error("DATABASE WIPE INITIATED BY:", context.user.id);
+
+    db.drop("users");
+    db.drop("orders");
+    db.drop("products");
+
+    return true;
+}
+
+// ============================================
+// PAYMENT API (Extra Secure)
+// ============================================
+
+@secure
+@auth
+@validate(schema = PaymentSchema)
+@sanitize(sql = true)
+@ratelimit(max = 3, window = "1m")
+fn process_payment(order_id: String, payment_data: PaymentData) -> Payment {
+    // Process payment with maximum security:
+    // - HTTPS required
+    // - User authenticated
+    // - Input validated
+    // - SQL injection prevention
+    // - Rate limited to 3 attempts per minute
+
+    let order = db.find_one("orders", { id: order_id });
+
+    if (order.user_id !== context.user.id) {
+        throw new Error("Not authorized");
+    }
+
+    // Process payment (pseudo-code)
+    let payment = {
+        id: generate_id(),
+        order_id: order_id,
+        amount: order.total,
+        method: payment_data.method,
+        status: "processing",
+        created_at: Date.now()
+    };
+
+    db.insert("payments", payment);
+
+    // Call payment gateway
+    // ...
+
+    return payment;
+}
+
+@secure
+@auth
+@ratelimit(max = 5, window = "1h")
+fn refund_payment(payment_id: String) -> Payment {
+    // Refund payment
+    let payment = db.find_one("payments", { id: payment_id });
+    let order = db.find_one("orders", { id: payment.order_id });
+
+    if (order.user_id !== context.user.id) {
+        throw new Error("Not authorized");
+    }
+
+    db.update("payments", payment_id, {
+        status: "refunded",
+        refunded_at: Date.now()
+    });
+
+    return db.find_one("payments", { id: payment_id });
+}
+
+// ============================================
+// API KEY AUTHENTICATION
+// ============================================
+
+@auth(type = "api_key")
+@ratelimit(max = 1000, window = "1h")
+fn api_get_products() -> Array<Product> {
+    // Public API using API key authentication
+    // Higher rate limit for API key users
+    return db.find("products", {});
+}
+
+@auth(type = "api_key", permission = "products:write")
+@validate(schema = ProductSchema)
+@ratelimit(max = 100, window = "1h")
+fn api_create_product(data: ProductData) -> Product {
+    // Create product via API
+    // Requires API key with write permission
+    let product = {
+        id: generate_id(),
+        name: data.name,
+        price: data.price,
+        inventory: data.inventory,
+        created_at: Date.now()
+    };
+
+    db.insert("products", product);
+    return product;
+}
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+fn calculate_total(items: Array<OrderItem>) -> f64 {
+    let total = 0.0;
+    for (let item in items) {
+        total = total + (item.price * item.quantity);
+    }
+    return total;
+}
+
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
+
+let CreateOrderSchema = {
+    items: {
+        type: "array",
+        required: true,
+        min_items: 1,
+        max_items: 50,
+        items: {
+            type: "object",
+            properties: {
+                product_id: { type: "string", required: true },
+                quantity: { type: "integer", min: 1, max: 100, required: true }
+            }
+        }
+    }
+};
+
+let UpdateOrderSchema = {
+    status: {
+        type: "string",
+        enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
+    }
+};
+
+let DeleteUserSchema = {
+    reason: {
+        type: "string",
+        required: true,
+        min_length: 10,
+        max_length: 500
+    }
+};
+
+let PaymentSchema = {
+    method: {
+        type: "string",
+        required: true,
+        enum: ["credit_card", "paypal", "bank_transfer"]
+    },
+    card_number: {
+        type: "string",
+        required_if: { method: "credit_card" },
+        pattern: /^\d{16}$/
+    },
+    cvv: {
+        type: "string",
+        required_if: { method: "credit_card" },
+        pattern: /^\d{3,4}$/
+    }
+};
+
+let ProductSchema = {
+    name: { type: "string", required: true, min_length: 3 },
+    price: { type: "number", required: true, min: 0 },
+    inventory: { type: "integer", required: true, min: 0 }
+};
+
+// ============================================
+// TYPES
+// ============================================
+
+type Status = {
+    status: String,
+    timestamp: i64
+};
+
+type Product = {
+    id: String,
+    name: String,
+    price: f64,
+    inventory: i64
+};
+
+type Order = {
+    id: String,
+    user_id: String,
+    items: Array<OrderItem>,
+    total: f64,
+    status: String,
+    created_at: i64,
+    cancelled_at: i64
+};
+
+type OrderItem = {
+    product_id: String,
+    quantity: i64,
+    price: f64
+};
+
+type OrderData = {
+    items: Array<OrderItem>
+};
+
+type UpdateOrderData = {
+    status: String
+};
+
+type Payment = {
+    id: String,
+    order_id: String,
+    amount: f64,
+    method: String,
+    status: String,
+    created_at: i64,
+    refunded_at: i64
+};
+
+type PaymentData = {
+    method: String,
+    card_number: String,
+    cvv: String
+};
+
+type ProductData = {
+    name: String,
+    price: f64,
+    inventory: i64
+};

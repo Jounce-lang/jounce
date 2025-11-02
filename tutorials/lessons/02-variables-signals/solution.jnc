@@ -1,0 +1,11 @@
+// Lesson 2: Variables & Signals - SOLUTION
+// Signals are reactive variables that automatically update the UI
+
+let name = createSignal("Alice"); // Changed to actual name
+
+component App() {
+    <div class="container p-8">
+        <h1 class="text-3xl font-bold">Hello, {name.value}!</h1>
+        <p class="text-gray-600 mt-2">Welcome to reactive programming!</p>
+    </div>
+}

@@ -1,0 +1,128 @@
+// Dashboard Template
+// Build a beautiful admin dashboard!
+
+component StatCard(title: String, value: String, change: String, positive: Boolean) {
+    <div class="bg-white p-6 rounded-lg shadow">
+        <p class="text-sm text-gray-600 mb-1">{title}</p>
+        <p class="text-3xl font-bold mb-2">{value}</p>
+        <p class={positive ? "text-sm text-green-600" : "text-sm text-red-600"}>
+            {change}
+        </p>
+    </div>
+}
+
+component App() {
+    let selectedTab = createSignal("overview");
+
+    let stats = createSignal([
+        { title: "Total Users", value: "12,543", change: "+12% from last month", positive: true },
+        { title: "Revenue", value: "$45,231", change: "+8% from last month", positive: true },
+        { title: "Active Sessions", value: "3,421", change: "-3% from last month", positive: false },
+        { title: "Conversion Rate", value: "24.5%", change: "+5% from last month", positive: true }
+    ]);
+
+    function setTab(tab) {
+        selectedTab.set(tab);
+    }
+
+    <div class="min-h-screen bg-gray-100">
+        <nav class="bg-white shadow mb-8">
+            <div class="container mx-auto px-8 py-4">
+                <h1 class="text-2xl font-bold">Dashboard</h1>
+            </div>
+        </nav>
+
+        <div class="container mx-auto px-8">
+            <div class="flex gap-4 mb-8">
+                <button
+                    onClick={() => setTab("overview")}
+                    class={selectedTab.value === "overview" ? "btn btn-primary" : "btn btn-outline"}
+                >
+                    Overview
+                </button>
+                <button
+                    onClick={() => setTab("analytics")}
+                    class={selectedTab.value === "analytics" ? "btn btn-primary" : "btn btn-outline"}
+                >
+                    Analytics
+                </button>
+                <button
+                    onClick={() => setTab("reports")}
+                    class={selectedTab.value === "reports" ? "btn btn-primary" : "btn btn-outline"}
+                >
+                    Reports
+                </button>
+            </div>
+
+            {selectedTab.value === "overview" && (
+                <div>
+                    <h2 class="text-2xl font-bold mb-6">Overview</h2>
+
+                    <div class="grid grid-cols-4 gap-6 mb-8">
+                        {stats.value.map((stat) => {
+                            return <StatCard
+                                title={stat.title}
+                                value={stat.value}
+                                change={stat.change}
+                                positive={stat.positive}
+                            />;
+                        })}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-xl font-bold mb-4">Recent Activity</h3>
+                            <div class="space-y-3">
+                                <div class="border-l-4 border-blue-500 pl-4">
+                                    <p class="font-medium">New user registered</p>
+                                    <p class="text-sm text-gray-600">2 minutes ago</p>
+                                </div>
+                                <div class="border-l-4 border-green-500 pl-4">
+                                    <p class="font-medium">Payment received</p>
+                                    <p class="text-sm text-gray-600">15 minutes ago</p>
+                                </div>
+                                <div class="border-l-4 border-yellow-500 pl-4">
+                                    <p class="font-medium">New order placed</p>
+                                    <p class="text-sm text-gray-600">1 hour ago</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-xl font-bold mb-4">Quick Actions</h3>
+                            <div class="space-y-2">
+                                <button class="btn btn-primary w-full">
+                                    Create New User
+                                </button>
+                                <button class="btn btn-outline w-full">
+                                    Generate Report
+                                </button>
+                                <button class="btn btn-outline w-full">
+                                    Export Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {selectedTab.value === "analytics" && (
+                <div class="bg-white p-8 rounded-lg shadow">
+                    <h2 class="text-2xl font-bold mb-4">Analytics</h2>
+                    <p class="text-gray-600">Analytics content goes here...</p>
+                </div>
+            )}
+
+            {selectedTab.value === "reports" && (
+                <div class="bg-white p-8 rounded-lg shadow">
+                    <h2 class="text-2xl font-bold mb-4">Reports</h2>
+                    <p class="text-gray-600">Reports content goes here...</p>
+                </div>
+            )}
+        </div>
+    </div>
+}
+
+style App {
+    min-height: 100vh;
+}

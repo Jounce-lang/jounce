@@ -1,0 +1,111 @@
+// Simple Security Annotations Example
+// Phase 17: Security & Production Features
+
+// No annotation - public function
+fn get_public_data() -> String {
+    return "Public information";
+}
+
+// @secure annotation - requires HTTPS
+@secure
+fn get_sensitive_data() -> String {
+    return "Sensitive information";
+}
+
+// @auth annotation - requires authentication
+@auth
+fn get_user_profile() -> User {
+    let user = {
+        id: "123",
+        name: "Alice",
+        email: "alice@example.com"
+    };
+    return user;
+}
+
+// @auth with role - requires specific role
+@auth(role = "admin")
+fn delete_user(id: String) -> Boolean {
+    console.log("Deleting user:", id);
+    return true;
+}
+
+// @auth with multiple roles
+@auth(roles = ["admin", "moderator"])
+fn ban_user(id: String) -> Boolean {
+    console.log("Banning user:", id);
+    return true;
+}
+
+// @validate annotation - validates input
+@validate(schema = UserSchema)
+fn create_user(data: UserData) -> User {
+    let user = {
+        id: generate_id(),
+        name: data.name,
+        email: data.email
+    };
+    return user;
+}
+
+// @ratelimit annotation - limits request rate
+@ratelimit(max = 100, window = 60)
+fn search_products(query: String) -> Array<Product> {
+    let products = [];
+    return products;
+}
+
+// Multiple annotations combined
+@secure
+@auth(role = "admin")
+@validate(schema = CreateUserSchema)
+@ratelimit(max = 10, window = 60)
+fn admin_create_user(data: UserData) -> User {
+    // This function has ALL security layers:
+    // - HTTPS required (@secure)
+    // - Admin role required (@auth)
+    // - Input validated (@validate)
+    // - Rate limited (@ratelimit)
+
+    let user = {
+        id: generate_id(),
+        name: data.name,
+        email: data.email,
+        role: "user"
+    };
+
+    return user;
+}
+
+// Types
+type User = {
+    id: String,
+    name: String,
+    email: String
+};
+
+type UserData = {
+    name: String,
+    email: String
+};
+
+type Product = {
+    id: String,
+    name: String,
+    price: f64
+};
+
+// Schema definitions (would be imported from jounce-security in real code)
+let UserSchema = {
+    name: { type: "string", required: true },
+    email: { type: "string", format: "email", required: true }
+};
+
+let CreateUserSchema = {
+    name: { type: "string", min_length: 2, required: true },
+    email: { type: "string", format: "email", required: true }
+};
+
+fn generate_id() -> String {
+    return "generated-id-123";
+}

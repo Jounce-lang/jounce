@@ -1,0 +1,254 @@
+// Role-Based Access Control (RBAC) Example
+// Demonstrates @auth(role="...") annotation
+
+import { db } from "jounce-db";
+
+// ============================================
+// USER ROLES
+// ============================================
+// - guest: Not logged in
+// - user: Regular authenticated user
+// - moderator: Can manage content
+// - admin: Full system access
+
+// ============================================
+// PUBLIC ENDPOINTS (No Auth)
+// ============================================
+
+fn get_posts() -> Array<Post> {
+    return db.find("posts", { published: true });
+}
+
+fn get_post(id: String) -> Post {
+    return db.find_one("posts", { id: id, published: true });
+}
+
+// ============================================
+// USER ENDPOINTS (Authenticated)
+// ============================================
+
+@auth
+fn create_post(data: PostData) -> Post {
+    let post = {
+        id: generate_id(),
+        title: data.title,
+        content: data.content,
+        author_id: context.user.id,
+        published: false,
+        created_at: Date.now()
+    };
+
+    db.insert("posts", post);
+    return post;
+}
+
+@auth
+fn update_my_post(id: String, data: PostData) -> Post {
+    let post = db.find_one("posts", { id: id });
+
+    // Only author can update their own post
+    if (post.author_id !== context.user.id) {
+        throw new Error("Not authorized to update this post");
+    }
+
+    db.update("posts", id, {
+        title: data.title,
+        content: data.content,
+        updated_at: Date.now()
+    });
+
+    return db.find_one("posts", { id: id });
+}
+
+@auth
+fn delete_my_post(id: String) -> Boolean {
+    let post = db.find_one("posts", { id: id });
+
+    // Only author can delete their own post
+    if (post.author_id !== context.user.id) {
+        throw new Error("Not authorized to delete this post");
+    }
+
+    db.delete("posts", id);
+    return true;
+}
+
+// ============================================
+// MODERATOR ENDPOINTS
+// ============================================
+
+@auth(role = "moderator")
+fn publish_post(id: String) -> Post {
+    db.update("posts", id, { published: true });
+    return db.find_one("posts", { id: id });
+}
+
+@auth(role = "moderator")
+fn unpublish_post(id: String) -> Post {
+    db.update("posts", id, { published: false });
+    return db.find_one("posts", { id: id });
+}
+
+@auth(role = "moderator")
+fn delete_any_post(id: String) -> Boolean {
+    // Moderators can delete any post
+    db.delete("posts", id);
+    return true;
+}
+
+@auth(role = "moderator")
+fn ban_user(user_id: String, reason: String) -> Boolean {
+    db.update("users", user_id, {
+        banned: true,
+        ban_reason: reason,
+        banned_at: Date.now(),
+        banned_by: context.user.id
+    });
+
+    return true;
+}
+
+@auth(role = "moderator")
+fn unban_user(user_id: String) -> Boolean {
+    db.update("users", user_id, {
+        banned: false,
+        ban_reason: null,
+        unbanned_at: Date.now(),
+        unbanned_by: context.user.id
+    });
+
+    return true;
+}
+
+// ============================================
+// ADMIN ENDPOINTS
+// ============================================
+
+@auth(role = "admin")
+fn get_all_users() -> Array<User> {
+    return db.find("users", {});
+}
+
+@auth(role = "admin")
+fn delete_user(user_id: String) -> Boolean {
+    db.delete("users", user_id);
+    return true;
+}
+
+@auth(role = "admin")
+fn promote_to_moderator(user_id: String) -> User {
+    db.update("users", user_id, { role: "moderator" });
+    return db.find_one("users", { id: user_id });
+}
+
+@auth(role = "admin")
+fn demote_from_moderator(user_id: String) -> User {
+    db.update("users", user_id, { role: "user" });
+    return db.find_one("users", { id: user_id });
+}
+
+@auth(role = "admin")
+fn get_system_stats() -> Stats {
+    return {
+        total_users: db.count("users"),
+        total_posts: db.count("posts"),
+        published_posts: db.count("posts", { published: true }),
+        banned_users: db.count("users", { banned: true })
+    };
+}
+
+@auth(role = "admin")
+@secure
+fn reset_database() -> Boolean {
+    // Super sensitive operation!
+    // Only admins, only over HTTPS
+    console.warn("DATABASE RESET INITIATED BY:", context.user.id);
+
+    db.drop("posts");
+    db.drop("users");
+
+    return true;
+}
+
+// ============================================
+// MULTIPLE ROLES (OR logic)
+// ============================================
+
+@auth(roles = ["admin", "moderator"])
+fn get_pending_posts() -> Array<Post> {
+    // Either admins OR moderators can access
+    return db.find("posts", { published: false });
+}
+
+@auth(roles = ["admin", "moderator"])
+fn get_flagged_content() -> Array<Flag> {
+    return db.find("flags", { resolved: false });
+}
+
+// ============================================
+// CUSTOM PERMISSIONS
+// ============================================
+
+@auth(permission = "posts:delete")
+fn delete_post_with_permission(id: String) -> Boolean {
+    // Check custom permission from permissions table
+    db.delete("posts", id);
+    return true;
+}
+
+@auth(permission = "analytics:view")
+fn get_analytics() -> Analytics {
+    return {
+        page_views: 123456,
+        unique_visitors: 5432,
+        bounce_rate: 0.45
+    };
+}
+
+// ============================================
+// TYPES
+// ============================================
+
+type Post = {
+    id: String,
+    title: String,
+    content: String,
+    author_id: String,
+    published: Boolean,
+    created_at: i64,
+    updated_at: i64
+};
+
+type PostData = {
+    title: String,
+    content: String
+};
+
+type User = {
+    id: String,
+    email: String,
+    name: String,
+    role: String,
+    banned: Boolean,
+    ban_reason: String
+};
+
+type Stats = {
+    total_users: i64,
+    total_posts: i64,
+    published_posts: i64,
+    banned_users: i64
+};
+
+type Flag = {
+    id: String,
+    post_id: String,
+    reason: String,
+    resolved: Boolean
+};
+
+type Analytics = {
+    page_views: i64,
+    unique_visitors: i64,
+    bounce_rate: f64
+};

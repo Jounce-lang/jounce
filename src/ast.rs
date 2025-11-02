@@ -139,7 +139,29 @@ pub struct FunctionDefinition {
     pub is_server: bool,
     pub is_client: bool,
     pub is_async: bool,
+    pub annotations: Vec<Annotation>,  // Security annotations like @auth, @secure
     pub body: BlockStatement,
+}
+
+// Security Annotation (Phase 17)
+#[derive(Debug, Clone)]
+pub struct Annotation {
+    pub name: Identifier,  // e.g., "auth", "secure", "validate"
+    pub arguments: Vec<AnnotationArgument>,  // e.g., role="admin"
+}
+
+#[derive(Debug, Clone)]
+pub struct AnnotationArgument {
+    pub name: String,  // e.g., "role", "schema"
+    pub value: AnnotationValue,
+}
+
+#[derive(Debug, Clone)]
+pub enum AnnotationValue {
+    String(String),  // "admin", "UserSchema"
+    Integer(i64),    // 100
+    Array(Vec<AnnotationValue>),  // ["admin", "moderator"]
+    Identifier(String),  // UserSchema (without quotes)
 }
 
 #[derive(Debug, Clone)]

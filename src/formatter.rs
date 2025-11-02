@@ -1587,6 +1587,7 @@ mod tests {
                 is_server: false,
                 is_client: false,
                 is_async: false,
+                annotations: vec![],
                 body: BlockStatement {
                     statements: vec![Statement::Return(ReturnStatement {
                         value: Expression::Infix(InfixExpression {
@@ -2186,6 +2187,7 @@ mod tests {
                 is_server: false,
                 is_client: false,
                 is_async: true,
+                annotations: vec![],
                 body: BlockStatement {
                     statements: vec![Statement::Return(ReturnStatement {
                         value: Expression::IntegerLiteral(42),

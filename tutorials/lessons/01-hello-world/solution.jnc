@@ -1,0 +1,4 @@
+// Lesson 1: Hello World - SOLUTION
+// Welcome to Jounce! Let's write your first program.
+
+console.log("Hello, Jounce!");

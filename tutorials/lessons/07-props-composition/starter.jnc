@@ -1,0 +1,17 @@
+// Lesson 7: Props & Composition
+// Pass data to components to make them flexible
+
+// TODO: Add parameters: title: String, subtitle: String
+component Card() {
+    <div class="card p-6 rounded shadow mb-4">
+        <h2 class="text-2xl font-bold">???</h2>
+        <p class="text-gray-600">???</p>
+    </div>
+}
+
+component App() {
+    <div class="container p-8">
+        <!-- TODO: Pass title and subtitle as props -->
+        <Card />
+    </div>
+}
