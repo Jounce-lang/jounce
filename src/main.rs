@@ -39,6 +39,9 @@ enum Commands {
     Init {
         #[arg(default_value = ".")]
         path: PathBuf,
+        /// Template to use (blank, counter, todo, form, dashboard)
+        #[arg(short = 't', long)]
+        template: Option<String>,
     },
     /// Start a local development server
     Serve {
@@ -483,9 +486,21 @@ fn main() {
             }
             println!("✅ Project '{}' created successfully! 🚀", name);
         }
-        Commands::Init { path } => {
-            println!("🚀 Initializing Jounce project...");
-            if let Err(e) = init_project(&path) {
+        Commands::Init { path, template } => {
+            // Get template choice (from flag or interactive prompt)
+            let template_name = if let Some(t) = template {
+                t
+            } else {
+                match get_template_choice() {
+                    Ok(t) => t,
+                    Err(e) => {
+                        eprintln!("❌ Template selection failed: {}", e);
+                        process::exit(1);
+                    }
+                }
+            };
+
+            if let Err(e) = init_project(&path, &template_name) {
                 eprintln!("❌ Initialization failed: {}", e);
                 process::exit(1);
             }
@@ -1689,7 +1704,46 @@ fn build_project(release: bool) -> std::io::Result<()> {
 
 // New CLI commands
 
-fn init_project(path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+fn get_template_choice() -> Result<String, Box<dyn std::error::Error>> {
+    use std::io::{self, Write};
+
+    println!("\n📦 Choose a template for your project:\n");
+    println!("  1. blank      - Minimal starting point");
+    println!("  2. counter    - Interactive counter with buttons");
+    println!("  3. todo       - Full-featured todo list app");
+    println!("  4. form       - Form handling example");
+    println!("  5. dashboard  - Data dashboard example");
+    println!();
+
+    print!("Enter your choice (1-5) [1]: ");
+    io::stdout().flush()?;
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    let input = input.trim();
+
+    // Default to "blank" if empty
+    if input.is_empty() {
+        return Ok("blank".to_string());
+    }
+
+    let template = match input {
+        "1" => "blank",
+        "2" => "counter",
+        "3" => "todo",
+        "4" => "form",
+        "5" => "dashboard",
+        "blank" | "counter" | "todo" | "form" | "dashboard" => input,
+        _ => {
+            return Err(format!("Invalid template choice: '{}'. Please choose 1-5.", input).into());
+        }
+    };
+
+    println!("✅ Selected template: {}\n", template);
+    Ok(template.to_string())
+}
+
+fn init_project(path: &PathBuf, template: &str) -> Result<(), Box<dyn std::error::Error>> {
     use jounce_compiler::package_manager::PackageManager;
 
     // Resolve to absolute path
@@ -1732,27 +1786,42 @@ fn init_project(path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     println!("   📁 Creating project structure...");
     fs::create_dir_all(project_path.join("src"))?;
 
-    // Copy blank template as starting point
+    // Copy selected template
     let template_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("templates/tutorial-starters/blank");
+        .join(format!("templates/tutorial-starters/{}", template));
 
-    if template_path.exists() {
-        // Copy main.jnc
-        let template_main = template_path.join("main.jnc");
-        if template_main.exists() {
-            let main_content = fs::read_to_string(&template_main)?;
-            // Replace "Blank Template" with project name
-            let customized = main_content.replace("Blank Template", &format!("{}", project_name));
-            fs::write(project_path.join("src/main.jnc"), customized)?;
-            println!("   ✅ Created src/main.jnc");
-        }
+    if !template_path.exists() {
+        return Err(format!(
+            "Template '{}' not found. Available templates: blank, counter, todo, form, dashboard",
+            template
+        ).into());
+    }
+
+    // Copy main.jnc from template
+    let template_main = template_path.join("main.jnc");
+    if template_main.exists() {
+        let main_content = fs::read_to_string(&template_main)?;
+        fs::write(project_path.join("src/main.jnc"), main_content)?;
+        println!("   ✅ Created src/main.jnc (from {} template)", template);
     } else {
-        // Fallback if template doesn't exist
+        return Err(format!("Template '{}' is missing main.jnc file", template).into());
+    }
+
+    // Copy README.md from template if it exists
+    let template_readme = template_path.join("README.md");
+    if template_readme.exists() {
+        let readme_content = fs::read_to_string(&template_readme)?;
+        // Customize with project name
+        let customized_readme = readme_content.replace("# Template", &format!("# {}", project_name));
+        fs::write(project_path.join("README.md"), customized_readme)?;
+        println!("   ✅ Created README.md (from {} template)", template);
+    } else {
+        // Fallback: Create default README
         fs::write(
-            project_path.join("src/main.jnc"),
-            format!("// Welcome to Jounce!\n\ncomponent App() {{\n    return <div class=\"container p-8\">\n        <h1 class=\"text-4xl font-bold\">Welcome to {}!</h1>\n        <p class=\"mt-4\">Start building your app here.</p>\n    </div>;\n}}\n", project_name),
+            project_path.join("README.md"),
+            format!("# {}\n\nA Jounce application.\n\n## Getting Started\n\n```bash\n# Start development server\njnc dev\n\n# Or compile manually\njnc compile src/main.jnc\ncd dist && python3 -m http.server 3000\n```\n\nOpen http://localhost:3000 in your browser.\n\n## Learn More\n\n- [Jounce Documentation](https://github.com/Jounce-lang/jounce-pre-production)\n- [Example Templates](https://github.com/Jounce-lang/jounce-pre-production/tree/main/templates/tutorial-starters)\n", project_name),
         )?;
-        println!("   ✅ Created src/main.jnc");
+        println!("   ✅ Created README.md");
     }
 
     // Create jounce.toml using PackageManager
@@ -1767,13 +1836,6 @@ fn init_project(path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     )?;
     println!("   ✅ Created .gitignore");
 
-    // Create README.md
-    fs::write(
-        project_path.join("README.md"),
-        format!("# {}\n\nA Jounce application.\n\n## Getting Started\n\n```bash\n# Compile your app\njnc compile src/main.jnc\n\n# Start development server\ncd dist && node server.js\n```\n\nOpen http://localhost:3000 in your browser.\n\n## Learn More\n\n- [Jounce Documentation](https://github.com/Jounce-lang/jounce-pre-production)\n- [Example Templates](https://github.com/Jounce-lang/jounce-pre-production/tree/main/templates/tutorial-starters)\n", project_name),
-    )?;
-    println!("   ✅ Created README.md");
-
     // Initialize git repository
     let git_init = process::Command::new("git")
         .arg("init")
@@ -1785,14 +1847,14 @@ fn init_project(path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     println!("\n✨ Project '{}' initialized successfully!", project_name);
+    println!("   📦 Template: {}", template);
     println!("\n💡 Next steps:");
     println!("   cd {}", if path == &PathBuf::from(".") {
         ".".to_string()
     } else {
         project_name.to_string()
     });
-    println!("   jnc compile src/main.jnc");
-    println!("   cd dist && node server.js");
+    println!("   jnc dev");
     println!("\n   Open http://localhost:3000 in your browser 🚀");
 
     Ok(())
