@@ -3,12 +3,12 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Jounce-lang/Jounce)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.8.1--beta-orange)](https://github.com/Jounce-lang/Jounce/releases)
-[![Tests](https://img.shields.io/badge/tests-635%2F635-brightgreen)](TESTING_GUIDE.md)
+[![Tests](https://img.shields.io/badge/tests-640%2F640-brightgreen)](TESTING_GUIDE.md)
 [![Docs](https://img.shields.io/badge/docs-complete-blue)](docs/)
 
 **A single-file, AI-native full-stack language built for humans and machines to code together.**
 
-> ✅ **Status**: **Production Ready** with 635 tests passing, zero known bugs, and fine-grained reactivity!
+> ✅ **Status**: **Production Ready** with 640 tests passing, zero known bugs, and fine-grained reactivity!
 
 Jounce is a revolutionary web framework where you write **ONE `.jnc` file** that automatically compiles into optimized server and client code. Build production applications with reactive state management, component-scoped styling, and automatic code splitting — all from a single source file.
 
@@ -94,7 +94,7 @@ cargo run --release -- compile app.jnc
 - **Self-closing tags** for cleaner code
 
 ### **🔒 Production Quality**
-- **635 tests passing** (100% pass rate)
+- **640 tests passing** (100% pass rate)
 - **Zero known critical bugs**
 - **Zero technical debt**
 - **Comprehensive documentation**
@@ -104,20 +104,33 @@ cargo run --release -- compile app.jnc
 
 ## 🚀 Quick Start
 
-### Get Started in 3 Commands
+### Get Started in 2 Commands
 
 ```bash
-# 1. Clone and build
-git clone https://github.com/Jounce-lang/Jounce.git && cd Jounce && cargo build --release
+# 1. Install Jounce
+git clone https://github.com/Jounce-lang/jounce-pre-production.git
+cd jounce-pre-production
+cargo build --release
 
-# 2. Create your first app (or use a template)
-cp -r templates/minimal-counter my-app && cd my-app
-
-# 3. Compile and run
-../target/release/jnc compile main.jnc && cd dist && node server.js
+# 2. Create and run your first app
+./target/release/jnc init my-app --template counter
+cd my-app
+../target/release/jnc dev
 ```
 
-**Open http://localhost:3000** — Your reactive app is live! 🎉
+**Open http://localhost:3000** — Your reactive app is live with auto-reload! 🎉
+
+### Or Add to PATH (Recommended)
+
+```bash
+# Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
+export PATH="$PATH:/path/to/jounce-pre-production/target/release"
+
+# Now use jnc anywhere!
+jnc init my-app
+cd my-app
+jnc dev  # Auto-compiles on file changes!
+```
 
 ### Your First Reactive App
 
@@ -146,41 +159,71 @@ component Counter() {
 
 **Skip the boilerplate** - Start with production-ready templates!
 
-We've created 4 comprehensive starter templates to accelerate your learning:
+Choose from 5 interactive templates when creating a new project:
 
-### 1. **Minimal Counter** (5 mins, Beginner)
-Learn the basics: signals, JSX, and event handlers
+### 🎨 Template Gallery
+
 ```bash
-cp -r templates/minimal-counter my-app && cd my-app
-jnc compile main.jnc && cd dist && node server.js
+jnc init my-app
+# Interactive prompt shows all templates!
+
+# Or use --template flag:
+jnc init my-app --template counter
 ```
 
-### 2. **Todo App** (15 mins, Intermediate)
-Master array operations, filtering, and computed values
-```bash
-cp -r templates/todo-app my-app && cd my-app
+**Available Templates:**
+
+### 1. 🎯 **Blank** - Minimal Starting Point
+Perfect for learning or starting from scratch
+```jounce
+component App() {
+    <div class="container mx-auto p-8">
+        <h1 class="text-4xl font-bold mb-4">
+            Welcome to Jounce!
+        </h1>
+        <p class="text-lg text-gray-700">
+            Start building your app here.
+        </p>
+    </div>
+}
 ```
 
-### 3. **Form App** (20 mins, Intermediate)
-Production-ready forms with validation and error handling
+### 2. 🔢 **Counter** - Interactive Counter App
+Learn signals, events, and reactive updates
 ```bash
-cp -r templates/form-app my-app && cd my-app
+jnc init my-counter --template counter
 ```
+**Features:** Signals, event handlers, reactive UI
 
-### 4. **Dashboard** (15 mins, Intermediate)
-Component composition and responsive layouts
+### 3. ✅ **Todo** - Full-Featured Todo List
+Master arrays, filtering, and computed values
 ```bash
-cp -r templates/dashboard my-app && cd my-app
+jnc init my-todo --template todo
 ```
+**Features:** Array operations, computed values, forms
 
-Each template includes:
-- ✅ **Production-ready code** - Copy, compile, done!
+### 4. 📝 **Form** - Form Handling Example
+Production-ready forms with validation
+```bash
+jnc init my-form --template form
+```
+**Features:** Input handling, validation, error states
+
+### 5. 📊 **Dashboard** - Data Dashboard
+Component composition and layouts
+```bash
+jnc init my-dashboard --template dashboard
+```
+**Features:** Multiple components, data visualization
+
+### 🚀 All Templates Include:
+- ✅ **Production-ready code** - Compiles instantly!
 - ✅ **Comprehensive README** - Step-by-step guides
-- ✅ **Key concepts** - Learn by doing
-- ✅ **Customization ideas** - Make it your own
-- ✅ **Advanced patterns** - Level up your skills
+- ✅ **Best practices** - Learn by example
+- ✅ **Auto-reload dev server** - Use `jnc dev`
+- ✅ **Customization ready** - Make it your own
 
-[View All Templates →](./templates/)
+[View Template Source →](./templates/tutorial-starters/)
 
 ---
 
@@ -415,7 +458,7 @@ We believe in **transparency and forward motion**. Here's where we are and where
 - ✅ Single-file compilation workflow
 
 **Quality:**
-- ✅ 635/635 tests passing (100%)
+- ✅ 640/640 tests passing (100%)
 - ✅ Zero known critical bugs
 - ✅ Zero technical debt
 - ✅ Production-ready codebase
@@ -429,7 +472,7 @@ We believe in **transparency and forward motion**. Here's where we are and where
 ### Run All Tests
 ```bash
 cargo test --lib
-# Expected: 635/635 passing (100%)
+# Expected: 640/640 passing (100%)
 ```
 
 ### Test an Example
@@ -458,6 +501,150 @@ All apps compile successfully and run in the browser!
 
 ---
 
+## 🔧 CLI Reference
+
+Jounce provides a powerful CLI for building and developing applications.
+
+### Core Commands
+
+#### `jnc init` - Create New Project
+Create a new Jounce project with interactive template selection:
+
+```bash
+# Interactive mode (prompts for template)
+jnc init my-app
+
+# With template flag
+jnc init my-app --template counter
+jnc init my-app -t todo
+
+# Initialize in current directory
+jnc init .
+```
+
+**Templates:** blank, counter, todo, form, dashboard
+
+---
+
+#### `jnc dev` - Development Server
+Start development server with auto-reload:
+
+```bash
+# Start on default port (3000)
+jnc dev
+
+# Custom port
+jnc dev --port 8080
+```
+
+**Features:**
+- ✅ Auto-compiles on file changes
+- ✅ Live development server
+- ✅ Shows compilation errors
+- ✅ Graceful shutdown (Ctrl+C)
+
+---
+
+#### `jnc compile` - Compile Project
+Compile `.jnc` file to JavaScript:
+
+```bash
+# Basic compilation
+jnc compile src/main.jnc
+
+# Custom output directory
+jnc compile src/main.jnc --output dist
+
+# Minified production build
+jnc compile src/main.jnc --minify
+
+# With performance profiling
+jnc compile src/main.jnc --profile
+```
+
+**Output:**
+- `dist/client.js` - Client-side code
+- `dist/server.js` - Server code (with SSR)
+- `dist/styles.css` - Compiled styles
+- `dist/index.html` - HTML entry point
+
+---
+
+#### `jnc serve` - Static Server
+Serve compiled files (legacy command):
+
+```bash
+# Start server on default port (8000)
+jnc serve
+
+# Custom port
+jnc serve --port 3000
+
+# Auto-open browser
+jnc serve --open
+```
+
+**Note:** Use `jnc dev` for development with auto-reload!
+
+---
+
+### Additional Commands
+
+#### `jnc new` - Create Project Directory
+Create new project in a new directory:
+
+```bash
+jnc new my-app
+cd my-app
+jnc dev
+```
+
+#### `jnc doctor` - Diagnose Issues
+Check your Jounce setup:
+
+```bash
+jnc doctor
+```
+
+Validates:
+- Rust installation
+- Cargo configuration
+- Python3 availability (for dev server)
+- Project structure
+
+---
+
+### Workflow Examples
+
+**Quick Start Workflow:**
+```bash
+# Create, develop, iterate
+jnc init my-app --template counter
+cd my-app
+jnc dev  # Auto-reloads on changes!
+```
+
+**Production Build:**
+```bash
+# Compile with minification
+jnc compile src/main.jnc --minify
+
+# Deploy dist/ folder
+```
+
+**Multi-Project Workflow:**
+```bash
+# Add jnc to PATH
+export PATH="$PATH:/path/to/jounce/target/release"
+
+# Create multiple projects
+jnc init project-1 -t counter
+jnc init project-2 -t todo
+jnc init project-3 -t dashboard
+```
+
+---
+
 ## 📚 Documentation
 
 ### Main Documentation
@@ -480,9 +667,9 @@ All apps compile successfully and run in the browser!
 
 ## 🎯 Current Status
 
-**Version**: v0.8.1 "Developer Experience & Public Launch"
-**Release Date**: October 31, 2025
-**Tests**: 635/635 passing (100%)
+**Version**: v0.8.2 "Enhanced Developer Experience"
+**Release Date**: November 2, 2025
+**Tests**: 640/640 passing (100%)
 **Known Bugs**: 0 critical, 0 medium, 0 low
 
 ### What Works ✅
@@ -498,6 +685,9 @@ All apps compile successfully and run in the browser!
 - ✅ **Method call tracking** (.toFixed, .map, .filter, etc.)
 - ✅ **Computed values** with auto-dependencies
 - ✅ **Batch updates** for performance
+- ✅ **CLI with `jnc dev`** - Auto-reload development server
+- ✅ **5 starter templates** - Interactive project scaffolding
+- ✅ **Interactive prompts** - Guided project creation
 
 ### Production Ready
 - ✅ Zero known critical bugs
@@ -705,13 +895,14 @@ Built with ❤️ and careful attention to quality.
 
 ---
 
-**🚀 Jounce v0.8.1 - Production Ready!**
+**🚀 Jounce v0.8.2 - Production Ready with Enhanced DX!**
 
-_"One file. Full reactivity. Zero bugs. Maximum confidence."_
+_"One file. Full reactivity. Auto-reload. Maximum productivity."_
 
 **Status**: ✅ Ready for production use
-**Tests**: ✅ 635/635 passing (100%)
+**Tests**: ✅ 640/640 passing (100%)
 **Bugs**: ✅ 0 known critical issues
 **Quality**: ✅ Zero technical debt
+**DX**: ✅ `jnc init` + `jnc dev` = instant productivity!
 
 **Ready to build amazing things!** 🎉
