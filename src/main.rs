@@ -387,6 +387,7 @@ fn main() {
             const SERVER_RUNTIME: &str = include_str!("../runtime/server-runtime.js");
             const CLIENT_RUNTIME: &str = include_str!("../runtime/client-runtime.js");
             const REACTIVITY_RUNTIME: &str = include_str!("../runtime/reactivity.js");
+            const SECURITY_RUNTIME: &str = include_str!("../runtime/security.js");
 
             let server_runtime_path = output_dir.join("server-runtime.js");
             if let Err(e) = fs::write(&server_runtime_path, SERVER_RUNTIME) {
@@ -407,6 +408,19 @@ fn main() {
                 eprintln!("⚠️  Warning: Failed to write reactivity.js: {}", e);
             } else {
                 println!("   ✓ {}", reactivity_path.display());
+            }
+
+            // Create runtime directory for security module (Phase 17)
+            let runtime_dir = output_dir.join("runtime");
+            if let Err(e) = fs::create_dir_all(&runtime_dir) {
+                eprintln!("⚠️  Warning: Failed to create runtime directory: {}", e);
+            }
+
+            let security_path = runtime_dir.join("security.js");
+            if let Err(e) = fs::write(&security_path, SECURITY_RUNTIME) {
+                eprintln!("⚠️  Warning: Failed to write runtime/security.js: {}", e);
+            } else {
+                println!("   ✓ {}", security_path.display());
             }
 
             // Create index.html

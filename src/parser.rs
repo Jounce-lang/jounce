@@ -138,9 +138,20 @@ impl<'a> Parser<'a> {
             TokenKind::At => {
                 // Check what follows the @ to determine what to parse
                 // @server/@client -> function annotations
+                // @auth/@validate/etc -> security annotations on functions
                 // @persist/etc -> decorators on let statements
-                if matches!(self.peek_token().kind, TokenKind::Server | TokenKind::Client) {
-                    // Parse as function annotation: @server fn or @client fn
+                //
+                // Simple heuristic: if peek is Server/Client, or if peek is an identifier
+                // (potential security annotation), check if this looks like it will lead to a function
+                // We'll assume annotations that aren't specifically for let statements are for functions
+                if matches!(self.peek_token().kind, TokenKind::Server | TokenKind::Client | TokenKind::Fn | TokenKind::Async) {
+                    // Definitely a function
+                    self.parse_function_definition().map(Statement::Function)
+                } else if matches!(self.peek_token().kind, TokenKind::Identifier) {
+                    // Could be security annotation (e.g., @auth, @validate) or decorator (e.g., @persist)
+                    // Security annotations are followed by functions, decorators by let statements
+                    // Try to parse as function - the parse_function_definition will call parse_annotations
+                    // which will handle the security annotations
                     self.parse_function_definition().map(Statement::Function)
                 } else {
                     // Parse as decorator: @persist("localStorage") let x = ...

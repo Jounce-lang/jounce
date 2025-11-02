@@ -10,7 +10,7 @@
 // - server.js: Server-side code with HTTP server and RPC handlers
 // - client.js: Client-side code with RPC stubs and UI components
 
-use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression, ForInStatement, ForStatement, ImplBlock, JsxChild, ObjectProperty, TemplatePart, ArrayPattern, ObjectPattern};
+use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression, ForInStatement, ForStatement, ImplBlock, JsxChild, ObjectProperty, TemplatePart, ArrayPattern, ObjectPattern, Annotation, AnnotationValue};
 use crate::code_splitter::CodeSplitter;
 use crate::rpc_generator::RPCGenerator;
 use crate::source_map::SourceMapBuilder;
@@ -66,6 +66,11 @@ impl JSEmitter {
         }
     }
 
+    /// Check if any functions in a list use security annotations
+    fn uses_security_annotations(functions: &[FunctionDefinition]) -> bool {
+        functions.iter().any(|func| !func.annotations.is_empty())
+    }
+
     /// Generates the complete server.js file
     pub fn generate_server_js(&self) -> String {
         let mut output = String::new();
@@ -82,7 +87,16 @@ impl JSEmitter {
             output.push_str("const { HttpServer, loadWasm } = require('./server-runtime.js');\n");
         }
         output.push_str("const fs = require('fs');\n");
-        output.push_str("const path = require('path');\n\n");
+        output.push_str("const path = require('path');\n");
+
+        // Import security runtime if any functions use security annotations (Phase 17)
+        let uses_security = Self::uses_security_annotations(&self.splitter.server_functions) ||
+                           Self::uses_security_annotations(&self.splitter.shared_functions);
+        if uses_security {
+            output.push_str("const { __jounce_auth_check, __jounce_validate, __jounce_ratelimit, __jounce_sanitize, __jounce_require_https, __jounce_set_security_context } = require('./runtime/security.js');\n");
+        }
+
+        output.push_str("\n");
 
         // Generate struct constructors
         if !self.splitter.structs.is_empty() {
@@ -299,7 +313,16 @@ impl JSEmitter {
 
         // Import runtime (Session 18: Added lifecycle hooks, Session 19: Added error handling + Suspense)
         output.push_str("import { h, RPCClient, mountComponent, navigate, getRouter, onMount, onUnmount, onUpdate, onError, ErrorBoundary, Suspense } from './client-runtime.js';\n");
-        output.push_str("import { signal, persistentSignal, computed, effect, batch } from './reactivity.js';\n\n");
+        output.push_str("import { signal, persistentSignal, computed, effect, batch } from './reactivity.js';\n");
+
+        // Import security runtime if any functions use security annotations (Phase 17)
+        let uses_security = Self::uses_security_annotations(&self.splitter.client_functions) ||
+                           Self::uses_security_annotations(&self.splitter.shared_functions);
+        if uses_security {
+            output.push_str("import { __jounce_auth_check, __jounce_validate, __jounce_ratelimit, __jounce_sanitize, __jounce_require_https, __jounce_set_security_context } from './runtime/security.js';\n");
+        }
+
+        output.push_str("\n");
 
         // Node.js crypto module for hashing and random functions
         output.push_str("// Node.js crypto module (for tests and server-side code)\n");
@@ -941,6 +964,109 @@ impl JSEmitter {
     }
 
     /// Generates a JavaScript function implementation from AST
+    /// Generate security middleware code from annotations
+    /// Returns JavaScript code that performs security checks at the start of the function
+    fn generate_security_middleware(&self, annotations: &[Annotation]) -> String {
+        let mut middleware = String::new();
+
+        for annotation in annotations {
+            match annotation.name.value.as_str() {
+                "auth" => {
+                    middleware.push_str("  // Authentication check\n");
+                    middleware.push_str("  if (!__jounce_auth_check(");
+
+                    // Generate requirements object
+                    middleware.push_str("{");
+                    let args: Vec<String> = annotation.arguments.iter()
+                        .map(|arg| {
+                            let value = self.format_annotation_value(&arg.value);
+                            format!("{}: {}", arg.name, value)
+                        })
+                        .collect();
+                    middleware.push_str(&args.join(", "));
+                    middleware.push_str("})) {\n");
+                    middleware.push_str("    throw new Error(\"Unauthorized\");\n");
+                    middleware.push_str("  }\n");
+                }
+
+                "validate" => {
+                    middleware.push_str("  // Input validation\n");
+
+                    // Find schema argument
+                    if let Some(schema_arg) = annotation.arguments.iter().find(|arg| arg.name == "schema") {
+                        let schema_name = if let AnnotationValue::Identifier(name) = &schema_arg.value {
+                            name.clone()
+                        } else {
+                            "UnknownSchema".to_string()
+                        };
+
+                        middleware.push_str(&format!("  __jounce_validate({}, arguments[0]);\n", schema_name));
+                    }
+                }
+
+                "ratelimit" => {
+                    middleware.push_str("  // Rate limiting\n");
+                    middleware.push_str("  __jounce_ratelimit(");
+
+                    middleware.push_str("{");
+                    let args: Vec<String> = annotation.arguments.iter()
+                        .map(|arg| {
+                            let value = self.format_annotation_value(&arg.value);
+                            format!("{}: {}", arg.name, value)
+                        })
+                        .collect();
+                    middleware.push_str(&args.join(", "));
+                    middleware.push_str("});\n");
+                }
+
+                "sanitize" => {
+                    middleware.push_str("  // Input sanitization\n");
+
+                    // Find fields argument
+                    if let Some(fields_arg) = annotation.arguments.iter().find(|arg| arg.name == "fields") {
+                        if let AnnotationValue::Array(field_names) = &fields_arg.value {
+                            for field_name in field_names {
+                                if let AnnotationValue::String(name) = field_name {
+                                    middleware.push_str(&format!("  {} = __jounce_sanitize({});\n", name, name));
+                                }
+                            }
+                        }
+                    } else {
+                        // Sanitize all parameters if no specific fields specified
+                        middleware.push_str("  const __args = __jounce_sanitize(arguments[0]);\n");
+                        middleware.push_str("  Object.assign(arguments[0], __args);\n");
+                    }
+                }
+
+                "secure" => {
+                    middleware.push_str("  // HTTPS enforcement\n");
+                    middleware.push_str("  __jounce_require_https();\n");
+                }
+
+                _ => {
+                    // Unknown annotation, skip
+                }
+            }
+        }
+
+        middleware
+    }
+
+    /// Format an annotation value as JavaScript code
+    fn format_annotation_value(&self, value: &AnnotationValue) -> String {
+        match value {
+            AnnotationValue::String(s) => format!("\"{}\"", s),
+            AnnotationValue::Integer(n) => n.to_string(),
+            AnnotationValue::Identifier(id) => id.clone(),
+            AnnotationValue::Array(values) => {
+                let formatted: Vec<String> = values.iter()
+                    .map(|v| self.format_annotation_value(v))
+                    .collect();
+                format!("[{}]", formatted.join(", "))
+            }
+        }
+    }
+
     fn generate_function_impl(&self, func: &FunctionDefinition, is_server: bool) -> String {
         let name = Self::escape_js_reserved_word(&func.name.value);
         let params = func.parameters
@@ -950,8 +1076,17 @@ impl JSEmitter {
             .join(", ");
 
         let async_keyword = if func.is_async { "async " } else { "" };
+
+        // Generate security middleware if annotations present
+        let security_middleware = if !func.annotations.is_empty() {
+            self.generate_security_middleware(&func.annotations)
+        } else {
+            String::new()
+        };
+
         // Use generate_block_js_impl with is_function_body=true to handle implicit returns
-        let body = self.generate_block_js_impl(&func.body, true);
+        let mut body = security_middleware;
+        body.push_str(&self.generate_block_js_impl(&func.body, true));
 
         if is_server {
             // Server-side: module.exports.name = function() { ... }
