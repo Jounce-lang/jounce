@@ -14,21 +14,21 @@ component App() {
 
             <div class="flex gap-4 justify-center">
                 <button
-                    onclick={|| count.value = count.value - 1}
+                    onclick={() => { count.value = count.value - 1; }}
                     class="btn btn-danger btn-lg rounded">
-                    - Decrease
+                    Decrease
                 </button>
 
                 <button
-                    onclick={|| count.value = 0}
+                    onclick={() => { count.value = 0; }}
                     class="btn btn-secondary btn-lg rounded">
                     Reset
                 </button>
 
                 <button
-                    onclick={|| count.value = count.value + 1}
+                    onclick={() => { count.value = count.value + 1; }}
                     class="btn btn-success btn-lg rounded">
-                    + Increase
+                    Increase
                 </button>
             </div>
         </div>
