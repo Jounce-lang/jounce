@@ -2858,7 +2858,9 @@ impl<'a> Parser<'a> {
         // This ensures the next token (created during consume) has the correct lexer state
         // including the correct baseline brace depth for at_baseline calculation
         self.lexer.exit_closing_tag_mode();
-        self.lexer.exit_jsx_mode();
+        if !was_jsx_mode {
+            self.lexer.exit_jsx_mode();
+        }
         self.expect_and_consume(&TokenKind::RAngle)?;
 
         Ok(name)
