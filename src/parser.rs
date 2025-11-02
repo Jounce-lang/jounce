@@ -790,6 +790,21 @@ impl<'a> Parser<'a> {
         }
         self.expect_and_consume(&TokenKind::RBrace)?;
 
+        // Auto-convert implicit JSX returns:
+        // If the last statement is an expression statement containing JSX,
+        // convert it to a return statement
+        if let Some(last_stmt) = statements.last_mut() {
+            if let Statement::Expression(expr) = last_stmt {
+                // Check if this is a JSX expression
+                if matches!(expr, Expression::JsxElement(_)) {
+                    // Convert to return statement
+                    *last_stmt = Statement::Return(ReturnStatement {
+                        value: expr.clone(),
+                    });
+                }
+            }
+        }
+
         Ok(ComponentDefinition {
             name,
             parameters,
