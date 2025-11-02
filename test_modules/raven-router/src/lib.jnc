@@ -1,0 +1,6 @@
+// Test module for raven-router
+
+pub fn create_router() {
+    // Router implementation
+}
+

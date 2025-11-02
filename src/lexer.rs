@@ -538,7 +538,7 @@ impl Lexer {
                     let saved_col = self.column;
 
                     self.read_char(); // Move past the quote
-                    let next_ch = self.ch;
+                    let _next_ch = self.ch;
                     self.read_char(); // Move to what's after the character
 
                     if self.ch == '\'' {

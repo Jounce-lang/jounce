@@ -65,6 +65,7 @@ fn is_css_unit(s: &str) -> bool {
 }
 
 /// Check if a token kind represents a number
+#[allow(dead_code)]
 fn is_number_token(kind: &TokenKind) -> bool {
     matches!(kind, TokenKind::Integer(_) | TokenKind::Float(_))
 }
@@ -1260,6 +1261,7 @@ impl<'a> Parser<'a> {
         })
     }
 
+    #[allow(dead_code)]
     fn parse_expression_statement(&mut self) -> Result<Expression, CompileError> {
         self.parse_expression(Precedence::Lowest)
     }
@@ -2895,7 +2897,7 @@ impl<'a> Parser<'a> {
         Ok(children)
     }
 
-    fn parse_jsx_closing_tag_with_mode_check(&mut self, was_jsx_mode: bool) -> Result<Identifier, CompileError> {
+    fn parse_jsx_closing_tag_with_mode_check(&mut self, _was_jsx_mode: bool) -> Result<Identifier, CompileError> {
         // Enter closing tag mode to prevent lexer from reading JSX text during closing tag parsing
         self.lexer.enter_closing_tag_mode();
 
@@ -2986,6 +2988,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Refresh the peek token (needed after changing lexer modes)
+    #[allow(dead_code)]
     fn refresh_peek_token(&mut self) {
         self.peek = self.lexer.next_token();
     }
@@ -4030,7 +4033,7 @@ impl<'a> Parser<'a> {
         // Check if this is a global style block (style { ... }) or component style (style Button { ... })
         if self.current_token().kind == TokenKind::LBrace {
             // Global style block - capture raw CSS text
-            let start_line = self.current_token().line;
+            let _start_line = self.current_token().line;
             self.next_token(); // consume {
 
             let mut raw_css = String::new();

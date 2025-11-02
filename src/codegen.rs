@@ -540,6 +540,7 @@ impl CodeGenerator {
     }
 
     /// Generates a component as a WASM function
+    #[allow(dead_code)]
     fn generate_component(&mut self, comp: &ComponentDefinition) -> Result<Function, CompileError> {
         self.local_symbol_table.clear();
         self.local_type_table.clear();
