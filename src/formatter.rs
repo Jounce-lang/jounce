@@ -747,6 +747,11 @@ impl Formatter {
             Expression::Postfix(postfix) => self.format_postfix_expression(postfix),
             Expression::Spread(spread) => self.format_spread_expression(spread),
             Expression::Infix(infix) => self.format_infix_expression(infix),
+            Expression::Assignment(assignment) => {
+                self.format_expression(&assignment.target);
+                self.write(" = ");
+                self.format_expression(&assignment.value);
+            }
             Expression::FieldAccess(field) => self.format_field_access(field),
             Expression::OptionalChaining(opt) => {
                 self.format_expression(&opt.object);

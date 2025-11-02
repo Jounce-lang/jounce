@@ -313,6 +313,13 @@ impl BorrowChecker {
                 self.check_expression(&infix_expr.right)?;
                 Ok(ResolvedType::Integer)
             }
+            Expression::Assignment(assignment) => {
+                // Check both target and value expressions
+                self.check_expression(&assignment.target)?;
+                let value_type = self.check_expression(&assignment.value)?;
+                // Assignment expression returns the value that was assigned
+                Ok(value_type)
+            }
             Expression::ArrayLiteral(array_lit) => {
                 // Check all elements
                 if array_lit.elements.is_empty() {

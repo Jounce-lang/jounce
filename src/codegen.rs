@@ -1057,6 +1057,15 @@ impl CodeGenerator {
                 // For now, push a placeholder value
                 f.instruction(&Instruction::I32Const(0));
             }
+            Expression::Assignment(assignment) => {
+                // For assignment expressions: target = value
+                // Generate the value first (leaves result on stack)
+                self.generate_expression(&assignment.value, f)?;
+
+                // For now, treat assignments in expressions as no-ops in WASM
+                // The JS layer will handle the actual mutation
+                // Just leave the value on the stack (assignment expression returns the value)
+            }
             Expression::Infix(infix) => {
                 self.generate_expression(&infix.left, f)?;
                 self.generate_expression(&infix.right, f)?;
@@ -2137,6 +2146,10 @@ impl CodeGenerator {
             Expression::Spread(spread) => {
                 self.collect_lambdas_from_expression(&spread.expression);
             }
+            Expression::Assignment(assignment) => {
+                self.collect_lambdas_from_expression(&assignment.target);
+                self.collect_lambdas_from_expression(&assignment.value);
+            }
             Expression::Infix(infix) => {
                 self.collect_lambdas_from_expression(&infix.left);
                 self.collect_lambdas_from_expression(&infix.right);
@@ -2327,6 +2340,10 @@ impl CodeGenerator {
             }
             Expression::Spread(spread) => {
                 self.collect_variable_references(&spread.expression, vars);
+            }
+            Expression::Assignment(assignment) => {
+                self.collect_variable_references(&assignment.target, vars);
+                self.collect_variable_references(&assignment.value, vars);
             }
             Expression::Infix(infix) => {
                 self.collect_variable_references(&infix.left, vars);
