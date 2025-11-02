@@ -1599,7 +1599,8 @@ impl CodeGenerator {
             }
             // Reactivity primitives (Phase 12) - Not supported in WASM backend yet
             Expression::Signal(_) | Expression::Computed(_) |
-            Expression::Effect(_) | Expression::Batch(_) => {
+            Expression::Effect(_) | Expression::Batch(_) |
+            Expression::OnMount(_) | Expression::OnDestroy(_) => {
                 // Reactivity is JavaScript-only for now
                 // Return placeholder for WASM backend
                 f.instruction(&Instruction::I32Const(0));
@@ -2273,6 +2274,12 @@ impl CodeGenerator {
             Expression::Batch(batch_expr) => {
                 self.collect_lambdas_from_expression(&batch_expr.body);
             }
+            Expression::OnMount(on_mount_expr) => {
+                self.collect_lambdas_from_expression(&on_mount_expr.callback);
+            }
+            Expression::OnDestroy(on_destroy_expr) => {
+                self.collect_lambdas_from_expression(&on_destroy_expr.callback);
+            }
             // Base cases - no nested expressions to search
             Expression::IntegerLiteral(_)
             | Expression::FloatLiteral(_)
@@ -2448,6 +2455,12 @@ impl CodeGenerator {
             }
             Expression::Batch(batch_expr) => {
                 self.collect_variable_references(&batch_expr.body, vars);
+            }
+            Expression::OnMount(on_mount_expr) => {
+                self.collect_variable_references(&on_mount_expr.callback, vars);
+            }
+            Expression::OnDestroy(on_destroy_expr) => {
+                self.collect_variable_references(&on_destroy_expr.callback, vars);
             }
             // Base cases - no variable references
             Expression::IntegerLiteral(_)

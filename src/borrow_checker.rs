@@ -519,6 +519,14 @@ impl BorrowChecker {
                 self.check_expression(&batch_expr.body)?;
                 Ok(ResolvedType::Unknown)  // Returns function result
             }
+            Expression::OnMount(on_mount_expr) => {
+                self.check_expression(&on_mount_expr.callback)?;
+                Ok(ResolvedType::Unknown)  // Lifecycle hook (returns void)
+            }
+            Expression::OnDestroy(on_destroy_expr) => {
+                self.check_expression(&on_destroy_expr.callback)?;
+                Ok(ResolvedType::Unknown)  // Lifecycle hook (returns void)
+            }
             Expression::ScriptBlock(_) => {
                 // Script blocks contain raw JavaScript - no borrow checking needed
                 Ok(ResolvedType::Unknown)

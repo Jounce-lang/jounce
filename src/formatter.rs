@@ -807,6 +807,16 @@ impl Formatter {
                 self.format_expression(&batch_expr.body);
                 self.write(")");
             }
+            Expression::OnMount(on_mount_expr) => {
+                self.write("onMount(");
+                self.format_expression(&on_mount_expr.callback);
+                self.write(")");
+            }
+            Expression::OnDestroy(on_destroy_expr) => {
+                self.write("onDestroy(");
+                self.format_expression(&on_destroy_expr.callback);
+                self.write(")");
+            }
             Expression::ScriptBlock(script_block) => {
                 // Format script block as: script { ... }
                 self.write("script { ");

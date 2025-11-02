@@ -372,6 +372,9 @@ pub enum Expression {
     Computed(ComputedExpression),  // computed<T>(() => expr)
     Effect(EffectExpression),  // effect(() => { })
     Batch(BatchExpression),  // batch(() => { })
+    // Lifecycle hooks
+    OnMount(OnMountExpression),  // onMount(() => { })
+    OnDestroy(OnDestroyExpression),  // onDestroy(() => { })
     // Inline JavaScript (Session 16)
     ScriptBlock(ScriptBlockExpression),  // script { ... } - raw JavaScript
 }
@@ -937,6 +940,20 @@ pub struct EffectExpression {
 #[derive(Debug, Clone)]
 pub struct BatchExpression {
     pub body: Box<Expression>,  // Must be a lambda/closure
+}
+
+/// OnMount expression: onMount(() => { ... })
+/// Runs callback when component is mounted to the DOM
+#[derive(Debug, Clone)]
+pub struct OnMountExpression {
+    pub callback: Box<Expression>,  // Must be a lambda/closure
+}
+
+/// OnDestroy expression: onDestroy(() => { ... })
+/// Runs callback when component is destroyed/unmounted from the DOM
+#[derive(Debug, Clone)]
+pub struct OnDestroyExpression {
+    pub callback: Box<Expression>,  // Must be a lambda/closure
 }
 
 // ============================================================================

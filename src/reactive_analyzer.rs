@@ -191,7 +191,9 @@ impl ReactiveAnalyzer {
             Expression::Signal(_) |
             Expression::Computed(_) |
             Expression::Effect(_) |
-            Expression::Batch(_) => false,
+            Expression::Batch(_) |
+            Expression::OnMount(_) |
+            Expression::OnDestroy(_) => false,
 
             // JSX elements - need to check children recursively
             Expression::JsxElement(jsx) => {
