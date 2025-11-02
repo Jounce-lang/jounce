@@ -215,23 +215,121 @@ Each lesson includes:
 
 ---
 
-### **Priority 3: Implement `jnc init` Command** (MEDIUM)
+## ✅ WHAT WAS DONE (Session 26)
 
-**Time**: 2-3 hours
-**Why**: Better UX than current `jnc new`, matches documentation
+### **Priority 1: Fix Parser Limitations** ✅ COMPLETE
 
-Tasks:
-1. Add `init` subcommand to `src/main.rs`
-2. Copy starter template to current directory
-3. Initialize git repo
-4. Install dependencies (if any)
-5. Print "what's next" instructions
+**Time Allocated**: 2 hours
+**Time Actual**: ~30 minutes
+**Status**: Inline lambda assignments now work!
 
-**Acceptance**: `jnc init my-app` creates working project
+**Problem:**
+```jounce
+<button onClick={() => count.value = count.value + 1}>  // ❌ Parse error!
+```
+
+**Solution:**
+1. ✅ Added `Expression::Assignment` variant to AST
+2. ✅ Added `AssignmentExpression` struct (target, value)
+3. ✅ Updated `parse_lambda_body()` to handle assignments after expressions
+4. ✅ Added JS emitter support: `(target = value)`
+5. ✅ Updated all expression matchers (7 files)
+
+**Testing:**
+- ✅ `onClick={() => count.value = count.value + 1}` compiles
+- ✅ `onInput={(e) => name.value = e.target.value}` compiles
+- ✅ All templates still compile successfully
+- ✅ 638/638 core tests passing
+
+**Generated JS:**
+```javascript
+onClick: () => (count.value = (count.value + 1))
+onInput: (e) => (name.value = e.target.value)
+```
+
+**Commits:**
+- `a7ce1a0` - feat(parser): Add assignment expressions for lambda bodies
 
 ---
 
-### **Priority 4: Implement `jnc dev` Command** (MEDIUM)
+### **Priority 2: Verify WASM Type Inference** ✅ COMPLETE
+
+**Time Allocated**: 30 minutes
+**Time Actual**: ~5 minutes
+**Status**: No issues found!
+
+**Testing:**
+- ✅ Conditional expressions with different return types work
+- ✅ Ternary operators compile correctly
+- ✅ Form validation patterns work
+
+**Conclusion:** The "WASM type inference" issue was a false alarm - it was actually caused by the missing parser features (assignment expressions), not WASM codegen.
+
+---
+
+### **Priority 3: Implement `jnc init` Command** ✅ COMPLETE
+
+**Time Allocated**: 2-3 hours
+**Time Actual**: ~1 hour
+**Status**: `jnc init` command fully working!
+
+**Implementation:**
+1. ✅ Enhanced `init_project()` function in `src/main.rs`
+2. ✅ Creates project structure: `src/`, `.git/`, etc.
+3. ✅ Copies blank template as starting point
+4. ✅ Generates jounce.toml with project name
+5. ✅ Creates .gitignore (dist/, target/, *.wasm)
+6. ✅ Generates README.md with getting started guide
+7. ✅ Initializes git repository
+8. ✅ Prints clear next steps
+
+**Usage:**
+```bash
+jnc init .              # Initialize in current directory
+jnc init my-app         # Create new project directory
+```
+
+**Generated Files:**
+```
+my-app/
+├── .git/               # Git repository
+├── .gitignore          # Ignores build artifacts
+├── README.md           # Getting started guide
+├── jounce.toml         # Package configuration
+└── src/
+    └── main.jnc        # Blank template (customized with project name)
+```
+
+**Testing:**
+- ✅ `jnc init .` in empty directory
+- ✅ `jnc init my-app` creates new project
+- ✅ Compiled initialized project successfully
+- ✅ Git repository initialized correctly
+
+**Commits:**
+- `553eb5d` - feat(cli): Implement proper `jnc init` command
+
+---
+
+### **Session 26 Summary**
+
+**Time Spent**: ~1.5 hours
+**Tasks Completed**: 3/3 (100%)
+**Commits**: 2
+**Tests Passing**: 638/638 (100%)
+
+**Impact:**
+- ✨ Users can now use inline assignments in JSX event handlers (huge DX win!)
+- ✨ `jnc init` provides proper project scaffolding
+- ✨ All Phase 15 parser limitations resolved
+
+**Remaining Work:**
+- `jnc dev` command (2-3 hours)
+- Tutorial platform (40-60 hours - future sprint)
+
+---
+
+### **Priority 4: Implement `jnc dev` Command** (MEDIUM) - PENDING
 
 **Time**: 2-3 hours
 **Why**: Much better DX than manual compile + serve
