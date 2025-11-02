@@ -1652,52 +1652,61 @@ fn lint_file(path: &PathBuf, fix: bool) -> std::io::Result<(usize, usize)> {
 }
 
 fn build_project(release: bool) -> std::io::Result<()> {
-    let dist_dir = PathBuf::from("dist");
-    fs::create_dir_all(&dist_dir)?;
+    // Find source file (default: src/main.jnc)
+    let source_file = if PathBuf::from("src/main.jnc").exists() {
+        PathBuf::from("src/main.jnc")
+    } else if PathBuf::from("main.jnc").exists() {
+        PathBuf::from("main.jnc")
+    } else {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "No source file found. Expected src/main.jnc or main.jnc"
+        ));
+    };
 
-    println!("📦 Building all components...\n");
+    let output_dir = PathBuf::from("dist");
 
-    let src_dir = PathBuf::from("src");
-    let mut compiled = 0;
-    let mut errors = 0;
-
-    for entry in fs::read_dir(src_dir)?.flatten() {
-        let path = entry.path();
-        if path.extension().map_or(false, |ext| ext == "jnc") {
-            println!("  Compiling {}...", path.file_name().unwrap().to_string_lossy());
-
-            if let Ok(source) = fs::read_to_string(&path) {
-                let compiler = Compiler::new();
-                let target = if release { BuildTarget::Client } else { BuildTarget::Client };
-
-                match compiler.compile_source(&source, target) {
-                    Ok(wasm_bytes) => {
-                        let output_name = path.file_stem().unwrap().to_string_lossy();
-                        let output_path = dist_dir.join(format!("{}.wasm", output_name));
-                        fs::write(&output_path, wasm_bytes)?;
-                        compiled += 1;
-                        println!("    ✅ → {}", output_path.display());
-                    }
-                    Err(e) => {
-                        errors += 1;
-                        println!("    ❌ Error: {}", e);
-                    }
-                }
-            }
-        }
+    if release {
+        println!("📦 Building for production (minified)...");
+        println!("   📁 Source: {}", source_file.display());
+        println!("   📦 Output: {}", output_dir.display());
+        println!();
+    } else {
+        println!("📦 Building for development...");
+        println!("   📁 Source: {}", source_file.display());
+        println!("   📦 Output: {}", output_dir.display());
+        println!();
     }
 
-    println!("\n📊 Build complete:");
-    println!("   ✅ Compiled: {} file(s)", compiled);
-    if errors > 0 {
-        println!("   ❌ Errors: {} file(s)", errors);
+    // Compile with minification in release mode
+    let compile_result = compile_file(&source_file, &output_dir, release);
+    display_compile_result(&compile_result, false);
+
+    if !compile_result.success {
         return Err(std::io::Error::new(
             std::io::ErrorKind::Other,
-            "Build failed with errors"
+            "Build failed with compilation errors"
         ));
     }
 
-    println!("\n✨ Build artifacts in dist/");
+    println!();
+    println!("✨ Build complete!");
+    println!("   📦 Output: {}/", output_dir.display());
+    println!();
+
+    if release {
+        println!("💡 Production build ready:");
+        println!("   • client.js - Minified client code");
+        println!("   • server.js - Server with SSR");
+        println!("   • styles.css - Compiled styles");
+        println!("   • index.html - Entry point");
+        println!();
+        println!("📤 Ready to deploy dist/ folder!");
+    } else {
+        println!("💡 Development build ready:");
+        println!("   • Run: cd dist && node server.js");
+        println!("   • Or use: jnc dev (for auto-reload)");
+    }
 
     Ok(())
 }
