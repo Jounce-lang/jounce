@@ -1,9 +1,9 @@
 # CLAUDE.md - Jounce Development Guide
 
-**Version**: v0.8.1 "Developer Experience & Public Launch"
-**Current Status**: ✅ Ready for Public Launch! All Issues Fixed! Community Files Complete!
-**Last Updated**: October 31, 2025 (Public Launch Preparation)
-**Tests**: ✅ 635/635 passing (100%)
+**Version**: v0.8.2 "Lifecycle Hooks & Parser Investigation"
+**Current Status**: 🔧 Lifecycle Hooks Complete! Issue #27-1 Identified & Planned!
+**Last Updated**: November 2, 2025
+**Tests**: ✅ 640/640 passing (100%)
 
 ---
 
@@ -48,11 +48,197 @@
 
 ---
 
-## 🎉 ALL KNOWN ISSUES FIXED! (5/5 Complete - 100%)
+## ⚠️ KNOWN ISSUES
 
-**ZERO CRITICAL ISSUES REMAINING!**
+**CRITICAL ISSUES**: 1 (Parser bug)
+**Status**: Root cause identified, proper fix planned
 
-All issues from Session 21's discovery phase have been successfully fixed!
+### **Issue #27-1: Function Keyword + JSX Self-Closing Tag Parser Error** ⚠️ OPEN
+
+**Status**: Root cause identified, workaround exists, proper fix planned
+
+**Symptom**:
+When using `function` keyword to declare a function inside a component, followed by JSX with self-closing tags (`/>`), parser throws error:
+```
+Error: Division operator '/' must be used in an expression context
+```
+
+**Example (BREAKS)**:
+```jounce
+component App() {
+    function handleClick() {
+        console.log("Clicked!");
+    }
+
+    <div>
+        <button onClick={handleClick} />  // ❌ Error here
+    </div>
+}
+```
+
+**Workaround (WORKS)**:
+```jounce
+component App() {
+    function handleClick() {
+        console.log("Clicked!");
+    };  // ← Add semicolon
+
+    <div>
+        <button onClick={handleClick} />  // ✅ Now works
+    </div>
+}
+```
+
+**Root Cause Analysis**:
+
+The issue occurs due to the interaction between three parser mechanisms:
+
+1. **Statement Parsing** (`src/parser.rs:parse_statement()` around line 264):
+   - After parsing a function declaration, parser consumes optional semicolons
+   - When no semicolon is present, parser immediately continues to next statement
+   - At this point, `current` token is the first token of JSX (`<`)
+   - But `peek` token was ALREADY fetched during function parsing
+
+2. **JSX Mode Entry** (`src/parser.rs:parse_jsx_element()` around line 2381):
+   - Parser enters JSX mode when it sees `<` token
+   - BUT: `peek` token was fetched BEFORE JSX mode was entered
+   - This means the `/` in `/>` is still tokenized in normal mode
+   - In normal mode, `/` is tokenized as `TokenKind::Divide`
+
+3. **Lookahead Token Buffering**:
+   - Parser has both `current` and `peek` tokens buffered
+   - `peek` token is fetched by `peek_token()` during expression parsing
+   - Once fetched, the token's kind is fixed (it doesn't re-tokenize)
+
+**Why Semicolon Fixes It**:
+- Semicolon acts as a statement boundary
+- After consuming `;`, parser fully completes function statement
+- When JSX starts, BOTH `current` and `peek` are fetched fresh in JSX mode
+- The `/` in `/>` is correctly tokenized as `TokenKind::JSXSelfClose`
+
+**Investigation History** (Session 27):
+
+Spent ~2 hours investigating with extensive testing:
+
+1. **Test Files Created**:
+   - `/tmp/test-function-issue.jnc` - Reproduced bug
+   - `/tmp/test-without-function.jnc` - Arrow functions work fine
+   - `/tmp/test-function-semicolon.jnc` - Semicolon workaround verified
+   - `/tmp/test-function-jsx-no-newline.jnc` - Confirmed newlines irrelevant
+   - `/tmp/test-simple-function-jsx.jnc` - Minimal reproduction
+
+2. **Failed Fix Attempts**:
+   - ❌ Added `refresh_peek_token()` after entering JSX mode (line 2605) - broke all cases
+   - ❌ Added `refresh_peek_token()` after consuming `>` (line 2649) - broke all cases
+   - ❌ Tried entering JSX mode early in `parse_statement()` (line 211-214) - broke semicolon case
+   - All changes were reverted
+
+3. **Git History Investigation**:
+   - Commit `e8928436d` removed `refresh_peek_token()` calls with message:
+     > "Removed unnecessary `refresh_peek()` calls that were causing re-tokenization issues"
+   - Historical evidence shows `refresh_peek_token()` has consistently CAUSED more bugs than it fixed
+
+**The Proper Fix Plan** (DO NOT CUT CORNERS):
+
+This requires architectural changes to how JSX mode interacts with lookahead tokens. **DO NOT** implement quick fixes.
+
+**Option 1: Context-Aware Token Buffering (RECOMMENDED)**
+
+Change the token buffering system to be context-aware:
+
+1. **Modify Lexer** (`src/lexer.rs`):
+   - Add `pending_jsx_mode_change: Option<bool>` to Lexer state
+   - When `enter_jsx_mode()` is called, set this flag instead of immediately changing mode
+   - Actual mode change happens when current token is consumed
+
+2. **Modify Parser** (`src/parser.rs`):
+   - After calling `enter_jsx_mode()`, add logic to invalidate buffered `peek` token
+   - Create new method: `invalidate_lookahead()` that forces re-fetch
+   - This is DIFFERENT from `refresh_peek_token()` - it doesn't re-tokenize current token
+
+3. **Testing**:
+   - Test all existing JSX cases (lambda bodies, attributes, text content)
+   - Test function + JSX without semicolon
+   - Test with semicolon (should still work)
+   - Verify no regressions in 640 existing tests
+
+**Estimated Time**: 4-6 hours (proper implementation, testing, regression checks)
+
+**Option 2: Statement Boundary Detection (ALTERNATIVE)**
+
+Make the parser smarter about statement boundaries:
+
+1. **Modify Statement Parser** (`src/parser.rs:parse_statement()`):
+   - After parsing function declaration, if next token is `<`, assume JSX follows
+   - Call `enter_jsx_mode()` BEFORE fetching peek token
+   - Add special handling for this case
+
+2. **Risks**:
+   - More complex logic in statement parser
+   - Potential conflicts with other statement types
+   - May introduce edge cases
+
+**Estimated Time**: 6-8 hours (more complex, more edge cases)
+
+**Option 3: Two-Phase JSX Mode Entry (SAFEST)**
+
+Separate JSX mode entry into two phases:
+
+1. **Phase 1 - Notification**: Parser tells lexer "JSX is coming"
+2. **Phase 2 - Activation**: Lexer enters JSX mode when current buffer is exhausted
+
+This prevents the lookahead problem without re-tokenization.
+
+**Estimated Time**: 8-10 hours (most architecturally sound, safest)
+
+**Recommendation**: Start with Option 1 (Context-Aware Token Buffering) as it's the most direct fix with reasonable complexity.
+
+**DO NOT**:
+- ❌ Use `refresh_peek_token()` anywhere
+- ❌ Add token kind remapping hacks
+- ❌ String manipulation workarounds
+- ❌ Tell users to always add semicolons
+- ❌ Implement partial fixes
+
+**Test Cases Required**:
+```jounce
+// Case 1: Function without semicolon + self-closing tag (CURRENTLY BREAKS)
+component App() {
+    function handleClick() { }
+    <button onClick={handleClick} />
+}
+
+// Case 2: Function with semicolon (CURRENTLY WORKS)
+component App() {
+    function handleClick() { };
+    <button onClick={handleClick} />
+}
+
+// Case 3: Function + closing tag (should work in both cases)
+component App() {
+    function handleClick() { }
+    <button onClick={handleClick}>Click</button>
+}
+
+// Case 4: Multiple functions
+component App() {
+    function onClick() { }
+    function onHover() { }
+    <button />
+}
+
+// Case 5: Arrow function (CURRENTLY WORKS)
+component App() {
+    let handleClick = () => { }
+    <button onClick={handleClick} />
+}
+```
+
+**Priority**: HIGH - This violates the "FIX THE COMPILER" rule. Users should not need workarounds.
+
+**Assigned To**: Next available session after memory clear
+
+**Session**: 27 (investigation), 28 (fix implementation)
 
 ---
 
@@ -155,14 +341,21 @@ class: (() => {
 
 ---
 
-## 🎯 CURRENT STATUS: ALL ISSUES FIXED! 🎉
+## 🎯 CURRENT STATUS
 
-**ALL 5 CRITICAL ISSUES FROM SESSION 21 HAVE BEEN RESOLVED!**
+**Version**: v0.8.2 (Lifecycle Hooks + Issue #27-1 Identified)
+**Last Updated**: November 2, 2025
+**Tests**: ✅ **640/640 passing (100%)**
 
-**Total Time Invested**: ~3 hours (estimated 32-48 hours!)
-**Efficiency**: 90%+ faster than expected!
+**Recent Completions**:
+- ✅ Session 27: Lifecycle hooks (onMount, onDestroy) - ~1.5 hours
+- ✅ Session 27: Issue #27-1 root cause identified - ~2 hours
 
-**No known critical bugs remaining!**
+**Known Issues**:
+- ⚠️ Issue #27-1: Function keyword + JSX self-closing tag parser error (workaround: add semicolon)
+
+**Previously Resolved**:
+- ✅ All 5 critical issues from Session 21 (completed Sessions 22-24)
 
 ---
 
@@ -230,40 +423,63 @@ class: (() => {
 - ✅ JSX in lambda expressions - including block bodies
 - ✅ JSX text content with any characters
 - ✅ Style system with themes
+- ✅ Lifecycle hooks (onMount, onDestroy) - NEW in v0.8.2!
 
 ---
 
-## 🔧 NEXT STEPS - PHASE 17
+## 🔧 NEXT STEPS
 
-### **Now**: Implement Feature 1 - Security Middleware Generation (8-12 hours)
+### **IMMEDIATE PRIORITY: Fix Issue #27-1** (4-6 hours)
 
-**Step 1**: Create Security Runtime Library (2-3 hours)
-- Create `runtime/security.js`
-- Implement `__jounce_auth_check()`
-- Implement `__jounce_validate()`
-- Implement `__jounce_ratelimit()`
-- Implement `__jounce_sanitize()`
-- Write tests in `tests/security_runtime.rs`
+**Why This Is Critical**:
+- Violates "FIX THE COMPILER, don't tell users to work around it" rule
+- Users should not need semicolon workarounds
+- Parser bugs erode confidence in the language
+- Must be fixed properly, not with band-aids
 
-**Step 2**: Middleware Generation in Emitter (4-6 hours)
-- Modify `src/js_emitter.rs`
-- Add `generate_security_middleware()`
-- Handle all annotation types (@auth, @validate, @ratelimit, @sanitize, @secure)
-- Generate correct JavaScript middleware code
-- Write tests in `tests/security_middleware.rs`
+**Implementation Plan** (Option 1 - Context-Aware Token Buffering):
 
-**Step 3**: Runtime Import Generation (1-2 hours)
-- Modify `emit_program()` in `src/js_emitter.rs`
-- Auto-import security functions when annotations detected
-- Test import generation
+**Step 1**: Understand Current Token Flow (1 hour)
+- Read and document `src/lexer.rs` token fetching mechanism
+- Read and document `src/parser.rs` lookahead buffering
+- Diagram the exact token flow when issue occurs
+- Identify all places where `peek` token is fetched
 
-**Step 4**: Integration Testing (2-3 hours)
-- Create `examples/apps/03-secure-admin/main.jnc`
-- Test all annotation types end-to-end
-- Verify middleware executes correctly
-- Document in `docs/SECURITY_FEATURES.md`
+**Step 2**: Implement Context-Aware Buffering (2-3 hours)
+- Add `pending_jsx_mode_change: Option<bool>` to Lexer state
+- Modify `enter_jsx_mode()` to set flag instead of changing mode immediately
+- Add `invalidate_lookahead()` method to Parser
+- Call `invalidate_lookahead()` after `enter_jsx_mode()`
+- Ensure peek token is re-fetched in JSX mode
 
-### **Later**: Phase 17 Features 2 & 3
+**Step 3**: Comprehensive Testing (1-2 hours)
+- Test all 5 cases from Issue #27-1 description
+- Run full test suite (640 tests)
+- Test JSX in lambda bodies (Issue #23-1 regression check)
+- Test string interpolation (Issue #20-1 regression check)
+- Test all tutorial starters compile correctly
+
+**Step 4**: Commit and Document (30 minutes)
+- Commit with detailed explanation of fix
+- Update CLAUDE.md to mark Issue #27-1 as FIXED
+- Update version to v0.8.3
+- Document the architecture change
+
+**DO NOT**:
+- ❌ Skip any test cases
+- ❌ Use `refresh_peek_token()` anywhere
+- ❌ Add temporary workarounds
+- ❌ Mark as complete if ANY tests fail
+
+---
+
+### **After Issue #27-1**: Phase 17 - Security & Production
+
+**Feature 1**: Security Middleware Generation (8-12 hours)
+- Security runtime library
+- Middleware generation in emitter
+- Runtime import generation
+- Integration testing
 
 **Feature 2**: Dead Code Elimination (12-16 hours)
 - Usage analysis with call graph
