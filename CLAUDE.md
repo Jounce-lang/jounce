@@ -15,6 +15,8 @@
 
 ### **WE ARE BUILDING IT TO COMPILE 1 .jnc APP! NOT SEVERAL FILES! NOT CSS FILES!! DO YOU UNDERSTAND!**
 
+### **ONLY EVER PUSH TO jounce-pre-production GITHUB REPO. NEVER EVER COMMIT OR PUSH TO jounce GITHUB REPO.**
+
 **These principles are PERMANENT and guide ALL development decisions.**
 
 **BANNED PRACTICES:**
