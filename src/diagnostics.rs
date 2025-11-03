@@ -133,15 +133,15 @@ impl Diagnostic {
         self.location.as_ref().map(|loc| {
             crate::lsp::Range {
                 start: crate::lsp::Position {
-                    line: if loc.line > 0 { loc.line - 1 } else { 0 },
-                    character: if loc.column > 0 { loc.column - 1 } else { 0 },
+                    line: if loc.line > 0 { (loc.line - 1) as u32 } else { 0 },
+                    character: if loc.column > 0 { (loc.column - 1) as u32 } else { 0 },
                 },
                 end: crate::lsp::Position {
-                    line: if loc.line > 0 { loc.line - 1 } else { 0 },
+                    line: if loc.line > 0 { (loc.line - 1) as u32 } else { 0 },
                     character: if loc.column > 0 {
-                        loc.column - 1 + loc.length
+                        (loc.column - 1 + loc.length) as u32
                     } else {
-                        loc.length
+                        loc.length as u32
                     },
                 },
             }

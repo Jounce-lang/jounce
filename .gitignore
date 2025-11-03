@@ -77,3 +77,5 @@ examples/**/target/
 
 # Claude-specific development files (optional - uncomment if you want to exclude)
 # .claude/
+dist/
+vscode-extension/dist/
