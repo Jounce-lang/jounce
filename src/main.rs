@@ -122,6 +122,8 @@ enum Commands {
         #[command(subcommand)]
         command: PkgCommands,
     },
+    /// Start the Language Server Protocol server
+    Lsp,
 }
 
 #[derive(clap::Subcommand)]
@@ -828,6 +830,16 @@ fn main() {
                         process::exit(1);
                     }
                 }
+            }
+        }
+        Commands::Lsp => {
+            // Run the LSP server
+            use jounce_compiler::lsp::run_lsp_server;
+
+            let runtime = tokio::runtime::Runtime::new().unwrap();
+            if let Err(e) = runtime.block_on(run_lsp_server()) {
+                eprintln!("❌ LSP server error: {}", e);
+                process::exit(1);
             }
         }
     }

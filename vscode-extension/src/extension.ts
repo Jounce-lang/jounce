@@ -25,11 +25,11 @@ export function deactivate(): Thenable<void> | undefined {
 
 function startLanguageClient(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration('jounce');
-    const ravenPath = config.get<string>('lspPath', 'raven');
+    const jncPath = config.get<string>('lspPath', 'jnc');
 
-    // Server options - spawn the 'raven lsp' process
+    // Server options - spawn the 'jnc lsp' process
     const serverOptions: ServerOptions = {
-        command: ravenPath,
+        command: jncPath,
         args: ['lsp'],
         options: {
             cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
@@ -38,7 +38,7 @@ function startLanguageClient(context: vscode.ExtensionContext) {
 
     // Client options - configure the language client
     const clientOptions: LanguageClientOptions = {
-        documentSelector: [{ scheme: 'file', language: 'raven' }],
+        documentSelector: [{ scheme: 'file', language: 'jnc' }],
         synchronize: {
             fileEvents: vscode.workspace.createFileSystemWatcher('**/*.jnc')
         }
@@ -66,47 +66,47 @@ function startLanguageClient(context: vscode.ExtensionContext) {
 function registerCommands(context: vscode.ExtensionContext) {
     // Command: Compile Current File
     context.subscriptions.push(
-        vscode.commands.registerCommand('raven.compile', async () => {
+        vscode.commands.registerCommand('jounce.compile', async () => {
             const editor = vscode.window.activeTextEditor;
-            if (!editor || editor.document.languageId !== 'raven') {
+            if (!editor || editor.document.languageId !== 'jnc') {
                 vscode.window.showErrorMessage('No active .jnc file');
                 return;
             }
 
             const filePath = editor.document.uri.fsPath;
             const config = vscode.workspace.getConfiguration('jounce');
-            const ravenPath = config.get<string>('lspPath', 'raven');
+            const jncPath = config.get<string>('lspPath', 'jnc');
 
             const terminal = vscode.window.createTerminal('Jounce Compile');
             terminal.show();
-            terminal.sendText(`${ravenPath} compile "${filePath}"`);
+            terminal.sendText(`${jncPath} compile "${filePath}"`);
         })
     );
 
     // Command: Watch Current File
     context.subscriptions.push(
-        vscode.commands.registerCommand('raven.watch', async () => {
+        vscode.commands.registerCommand('jounce.watch', async () => {
             const editor = vscode.window.activeTextEditor;
-            if (!editor || editor.document.languageId !== 'raven') {
+            if (!editor || editor.document.languageId !== 'jnc') {
                 vscode.window.showErrorMessage('No active .jnc file');
                 return;
             }
 
             const filePath = editor.document.uri.fsPath;
             const config = vscode.workspace.getConfiguration('jounce');
-            const ravenPath = config.get<string>('lspPath', 'raven');
+            const jncPath = config.get<string>('lspPath', 'jnc');
 
             const terminal = vscode.window.createTerminal('Jounce Watch');
             terminal.show();
-            terminal.sendText(`${ravenPath} watch "${filePath}"`);
+            terminal.sendText(`${jncPath} watch "${filePath}"`);
         })
     );
 
     // Command: Format Document
     context.subscriptions.push(
-        vscode.commands.registerCommand('raven.format', async () => {
+        vscode.commands.registerCommand('jounce.format', async () => {
             const editor = vscode.window.activeTextEditor;
-            if (!editor || editor.document.languageId !== 'raven') {
+            if (!editor || editor.document.languageId !== 'jnc') {
                 vscode.window.showErrorMessage('No active .jnc file');
                 return;
             }
@@ -117,7 +117,7 @@ function registerCommands(context: vscode.ExtensionContext) {
 
     // Command: Run Tests
     context.subscriptions.push(
-        vscode.commands.registerCommand('raven.test', async () => {
+        vscode.commands.registerCommand('jounce.test', async () => {
             const terminal = vscode.window.createTerminal('Jounce Tests');
             terminal.show();
             terminal.sendText('cargo test');
@@ -126,20 +126,20 @@ function registerCommands(context: vscode.ExtensionContext) {
 
     // Command: Show Profiling
     context.subscriptions.push(
-        vscode.commands.registerCommand('raven.profile', async () => {
+        vscode.commands.registerCommand('jounce.profile', async () => {
             const editor = vscode.window.activeTextEditor;
-            if (!editor || editor.document.languageId !== 'raven') {
+            if (!editor || editor.document.languageId !== 'jnc') {
                 vscode.window.showErrorMessage('No active .jnc file');
                 return;
             }
 
             const filePath = editor.document.uri.fsPath;
             const config = vscode.workspace.getConfiguration('jounce');
-            const ravenPath = config.get<string>('lspPath', 'raven');
+            const jncPath = config.get<string>('lspPath', 'jnc');
 
             const terminal = vscode.window.createTerminal('Jounce Profile');
             terminal.show();
-            terminal.sendText(`${ravenPath} compile "${filePath}" --profile`);
+            terminal.sendText(`${jncPath} compile "${filePath}" --profile`);
         })
     );
 }
@@ -150,7 +150,7 @@ function setupFormatOnSave(context: vscode.ExtensionContext) {
             const config = vscode.workspace.getConfiguration('jounce');
             const formatOnSave = config.get<boolean>('formatOnSave', false);
 
-            if (event.document.languageId === 'raven' && formatOnSave) {
+            if (event.document.languageId === 'jnc' && formatOnSave) {
                 event.waitUntil(
                     vscode.commands.executeCommand('editor.action.formatDocument')
                 );

@@ -28,7 +28,7 @@
     "wasm"
   ],
   "activationEvents": [
-    "onLanguage:raven"
+    "onLanguage:jnc"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -54,36 +54,36 @@
     ],
     "commands": [
       {
-        "command": "raven.compile",
+        "command": "jounce.compile",
         "title": "Jounce: Compile Current File",
         "category": "Jounce"
       },
       {
-        "command": "raven.watch",
+        "command": "jounce.watch",
         "title": "Jounce: Watch Current File",
         "category": "Jounce"
       },
       {
-        "command": "raven.format",
+        "command": "jounce.format",
         "title": "Jounce: Format Document",
         "category": "Jounce"
       },
       {
-        "command": "raven.test",
+        "command": "jounce.test",
         "title": "Jounce: Run Tests",
         "category": "Jounce"
       },
       {
-        "command": "raven.profile",
+        "command": "jounce.profile",
         "title": "Jounce: Show Profiling",
         "category": "Jounce"
       }
     ],
     "keybindings": [
       {
-        "command": "raven.format",
+        "command": "jounce.format",
         "key": "shift+alt+f",
-        "when": "editorTextFocus && editorLangId == 'raven'"
+        "when": "editorTextFocus && editorLangId == 'jnc'"
       }
     ],
     "configuration": {
