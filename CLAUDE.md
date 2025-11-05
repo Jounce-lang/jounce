@@ -17,6 +17,14 @@
 
 ### **ONLY EVER PUSH TO jounce-pre-production GITHUB REPO. NEVER EVER COMMIT OR PUSH TO jounce GITHUB REPO.**
 
+### **GIT CONFIGURATION - REQUIRED**
+
+**ALWAYS use these git credentials for this repository:**
+```bash
+git config user.name "jounce-admin"
+git config user.email "dev@jounce-lang.dev"
+```
+
 **These principles are PERMANENT and guide ALL development decisions.**
 
 **BANNED PRACTICES:**
