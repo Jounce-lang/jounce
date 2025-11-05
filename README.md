@@ -10,6 +10,16 @@
 
 > ✅ **Status**: **Production Ready** with 640 tests passing, zero known bugs, and fine-grained reactivity!
 
+## 📚 Documentation
+
+**New to Jounce?** Follow this learning path:
+
+1. 🚀 **[Start Here: Learn Jounce](LEARN_JOUNCE.md)** - Complete language guide for beginners
+2. ⚠️ **[Syntax Limitations](SYNTAX_LIMITATIONS.md)** - What works vs what doesn't
+3. 📖 **[Documentation Roadmap](DOCUMENTATION_ROADMAP.md)** - Full reading guide
+
+**Looking for examples?** Check out [`templates/tutorial-starters/`](templates/tutorial-starters/) for hands-on tutorials.
+
 Jounce is a revolutionary web framework where you write **ONE `.jnc` file** that automatically compiles into optimized server and client code. Build production applications with reactive state management, component-scoped styling, and automatic code splitting — all from a single source file.
 
 ## 📊 One File → Full Stack
@@ -859,6 +869,34 @@ We welcome contributions! With our production-ready foundation, now is a great t
 - **Testing**: More test cases and edge cases
 - **Features**: Implement Phase 14+ features
 - **Developer Tools**: LSP, formatters, linters
+
+---
+
+## 📖 Complete Documentation Guide
+
+### For Learning Jounce
+
+| Document | Purpose | Best For |
+|----------|---------|----------|
+| **[LEARN_JOUNCE.md](LEARN_JOUNCE.md)** | Complete language guide with examples | LLMs, Beginners, Reference |
+| **[SYNTAX_LIMITATIONS.md](SYNTAX_LIMITATIONS.md)** | What works vs what doesn't | Avoiding errors |
+| **[DOCUMENTATION_ROADMAP.md](DOCUMENTATION_ROADMAP.md)** | Where to start and what to read | Navigation |
+| **[Tutorial Starters](templates/tutorial-starters/)** | Hands-on examples to learn from | Practice |
+
+### For Development
+
+| Document | Purpose | Best For |
+|----------|---------|----------|
+| **[CLAUDE.md](CLAUDE.md)** | Compiler development guide | Contributors, Maintainers |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Contribution guidelines | Contributors |
+| **[TESTING_GUIDE.md](TESTING_GUIDE.md)** | Testing strategies | QA, Contributors |
+
+### Quick Links
+
+- 🚀 **New to Jounce?** → Start with [LEARN_JOUNCE.md](LEARN_JOUNCE.md)
+- ⚠️ **Having errors?** → Check [SYNTAX_LIMITATIONS.md](SYNTAX_LIMITATIONS.md)
+- 📚 **Lost in docs?** → See [DOCUMENTATION_ROADMAP.md](DOCUMENTATION_ROADMAP.md)
+- 🔧 **Want to contribute?** → Read [CLAUDE.md](CLAUDE.md)
 
 ---
 

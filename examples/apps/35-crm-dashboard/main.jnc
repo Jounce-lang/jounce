@@ -1,0 +1,291 @@
+// App 35: Sales CRM Dashboard
+// A complete SaaS sales rep dashboard with metrics tracking and deal management
+//
+// Features:
+// - 4 computed metrics (Closing Ratio, Total Deals, Won Deals, Revenue)
+// - Interactive deal cards with status management
+// - Real-time reactive updates
+// - Professional UI with hover effects and transitions
+//
+// Demonstrates:
+// - Computed values with complex logic
+// - Array filtering and reducing
+// - Event handlers with parameters
+// - Conditional rendering
+// - Top-level style blocks (Jounce's CSS system)
+
+style {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f5f7fa;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .dashboard {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    h1 {
+        font-size: 32px;
+        color: #2d3748;
+        margin-bottom: 30px;
+        font-weight: 700;
+    }
+
+    h2 {
+        font-size: 24px;
+        color: #2d3748;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    h3 {
+        font-size: 18px;
+        color: #4a5568;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .metric-card {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .metric-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: #4299e1;
+        margin-top: 10px;
+    }
+
+    .deals-section {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .deals-list {
+        display: grid;
+        gap: 16px;
+    }
+
+    .deal-card {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s;
+    }
+
+    .deal-card:hover {
+        border-color: #4299e1;
+        box-shadow: 0 2px 8px rgba(66, 153, 225, 0.1);
+    }
+
+    .deal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .deal-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #38a169;
+    }
+
+    .deal-info {
+        margin-bottom: 16px;
+        color: #4a5568;
+        font-size: 14px;
+    }
+
+    .deal-info p {
+        margin: 4px 0;
+    }
+
+    .deal-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    button {
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .deal-actions button:first-child {
+        background: #48bb78;
+        color: white;
+    }
+
+    .deal-actions button:first-child:hover {
+        background: #38a169;
+        transform: translateY(-2px);
+    }
+
+    .deal-actions button:last-child {
+        background: #f56565;
+        color: white;
+    }
+
+    .deal-actions button:last-child:hover {
+        background: #e53e3e;
+        transform: translateY(-2px);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+}
+
+component CRMDashboard() {
+    // Sales deals data
+    let deals = signal([
+        { id: 1, company: "Acme Corp", value: 50000, status: "open", contact: "John Smith" },
+        { id: 2, company: "TechStart Inc", value: 75000, status: "won", contact: "Sarah Johnson" },
+        { id: 3, company: "Global Systems", value: 120000, status: "open", contact: "Mike Chen" },
+        { id: 4, company: "Innovation Labs", value: 45000, status: "lost", contact: "Emma Wilson" },
+        { id: 5, company: "Digital Solutions", value: 90000, status: "won", contact: "David Brown" },
+        { id: 6, company: "Cloud Ventures", value: 150000, status: "open", contact: "Lisa Anderson" }
+    ]);
+
+    // Computed metrics
+    let totalDeals = computed(() => {
+        return deals.value.length;
+    });
+
+    let wonDeals = computed(() => {
+        return deals.value.filter((deal) => {
+            return deal.status == "won";
+        }).length;
+    });
+
+    let closingRatio = computed(() => {
+        let total = deals.value.length;
+        let won = deals.value.filter((deal) => {
+            return deal.status == "won";
+        }).length;
+        if (total == 0) {
+            return 0;
+        }
+        return Math.floor((won / total) * 100);
+    });
+
+    let totalRevenue = computed(() => {
+        return deals.value.filter((deal) => {
+            return deal.status == "won";
+        }).reduce((sum, deal) => {
+            return sum + deal.value;
+        }, 0);
+    });
+
+    // Event handlers
+    fn markWon(dealId: i32) {
+        deals.value = deals.value.map((deal) => {
+            if (deal.id == dealId) {
+                return { id: deal.id, company: deal.company, value: deal.value, status: "won", contact: deal.contact };
+            }
+            return deal;
+        });
+    }
+
+    fn markLost(dealId: i32) {
+        deals.value = deals.value.map((deal) => {
+            if (deal.id == dealId) {
+                return { id: deal.id, company: deal.company, value: deal.value, status: "lost", contact: deal.contact };
+            }
+            return deal;
+        });
+    }
+
+    fn formatCurrency(amount: i32) {
+        return amount / 1000;
+    }
+
+    <div class="dashboard">
+        <h1>Sales Dashboard</h1>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>Closing Ratio</h3>
+                <div class="metric-value">{closingRatio.value}%</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Total Deals</h3>
+                <div class="metric-value">{totalDeals.value}</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Won Deals</h3>
+                <div class="metric-value">{wonDeals.value}</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Revenue</h3>
+                <div class="metric-value">${formatCurrency(totalRevenue.value)}k</div>
+            </div>
+        </div>
+
+        <div class="deals-section">
+            <h2>Active Deals</h2>
+            <div class="deals-list">
+                {deals.value.map((deal) => {
+                    return <div class="deal-card">
+                        <div class="deal-header">
+                            <h3>{deal.company}</h3>
+                            <span class="deal-value">${formatCurrency(deal.value)}k</span>
+                        </div>
+                        <div class="deal-info">
+                            <p>Contact: {deal.contact}</p>
+                            <p>Status: {deal.status}</p>
+                        </div>
+                        <div class="deal-actions">
+                            {deal.status == "open" ? (
+                                <div>
+                                    <button onClick={() => markWon(deal.id)}>Mark Won</button>
+                                    <button onClick={() => markLost(deal.id)}>Mark Lost</button>
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>;
+                })}
+            </div>
+        </div>
+    </div>
+}
+
+component App() {
+    <CRMDashboard />
+}

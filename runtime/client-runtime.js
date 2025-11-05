@@ -139,14 +139,38 @@ export function h(tag, props, ...children) {
         } else if (child instanceof Node) {
             element.appendChild(child);
         } else if (child && typeof child === 'object' && '_value' in child && '_subscribers' in child) {
-            // This is a reactive signal! Create a text node and set up auto-update
-            const textNode = document.createTextNode(String(child.value));
-            element.appendChild(textNode);
+            // This is a reactive signal! Check if it contains an array or a single value
+            if (Array.isArray(child.value)) {
+                // Signal contains an array of elements - create a placeholder and track elements
+                const placeholder = document.createComment('reactive-array');
+                element.appendChild(placeholder);
+                let currentElements = [];
 
-            // Set up effect to update text node when signal changes
-            effect(() => {
-                textNode.textContent = String(child.value);
-            });
+                // Set up effect to update array elements when signal changes
+                effect(() => {
+                    // Remove old elements
+                    currentElements.forEach(el => el.remove());
+                    currentElements = [];
+
+                    // Add new elements
+                    const newElements = child.value.filter(v => v != null);
+                    newElements.forEach(newEl => {
+                        if (newEl instanceof Node) {
+                            placeholder.parentNode.insertBefore(newEl, placeholder);
+                            currentElements.push(newEl);
+                        }
+                    });
+                });
+            } else {
+                // Signal contains a simple value - create a text node
+                const textNode = document.createTextNode(String(child.value));
+                element.appendChild(textNode);
+
+                // Set up effect to update text node when signal changes
+                effect(() => {
+                    textNode.textContent = String(child.value);
+                });
+            }
         }
     }
 
