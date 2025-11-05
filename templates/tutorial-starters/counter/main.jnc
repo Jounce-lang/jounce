@@ -4,15 +4,15 @@
 component App() {
     let count = signal(0);
 
-    function increment() {
+    fn increment() {
         count.value = count.value + 1;
     }
 
-    function decrement() {
+    fn decrement() {
         count.value = count.value - 1;
     }
 
-    function reset() {
+    fn reset() {
         count.value = 0;
     }
 

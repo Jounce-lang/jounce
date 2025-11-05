@@ -6,15 +6,15 @@ component App() {
     let email = signal("");
     let submitted = signal(false);
 
-    function handleNameInput(e) {
+    fn handleNameInput(e: JSEvent) {
         name.value = e.target.value;
     }
 
-    function handleEmailInput(e) {
+    fn handleEmailInput(e: JSEvent) {
         email.value = e.target.value;
     }
 
-    function handleSubmit(e) {
+    fn handleSubmit(e: JSEvent) {
         e.preventDefault();
         submitted.value = true;
         console.log("Form submitted!", {
@@ -23,7 +23,7 @@ component App() {
         });
     }
 
-    function reset() {
+    fn reset() {
         name.value = "";
         email.value = "";
         submitted.value = false;

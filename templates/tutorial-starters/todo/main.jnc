@@ -5,7 +5,7 @@ component App() {
     let todos = signal([]);
     let newTodo = signal("");
 
-    function addTodo() {
+    fn addTodo() {
         if (newTodo.value.trim() == "") {
             return;
         }
@@ -20,7 +20,7 @@ component App() {
         newTodo.value = "";
     }
 
-    function toggleTodo(id) {
+    fn toggleTodo(id: i64) {
         todos.value = todos.value.map((todo) => {
             if (todo.id == id) {
                 return { ...todo, completed: !todo.completed };
@@ -29,7 +29,7 @@ component App() {
         });
     }
 
-    function deleteTodo(id) {
+    fn deleteTodo(id: i64) {
         todos.value = todos.value.filter((todo) => todo.id != id);
     }
 
@@ -37,7 +37,7 @@ component App() {
         return todos.value.filter((todo) => !todo.completed).length;
     });
 
-    function handleNewTodoInput(e) {
+    fn handleNewTodoInput(e: JSEvent) {
         newTodo.value = e.target.value;
     }
 

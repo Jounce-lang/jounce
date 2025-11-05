@@ -21,7 +21,7 @@ component App() {
         { title: "Conversion Rate", value: "24.5%", change: "+5% from last month", positive: true }
     ]);
 
-    function setTab(tab) {
+    fn setTab(tab: String) {
         selectedTab.value = tab;
     }
 
