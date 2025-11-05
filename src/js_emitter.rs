@@ -10,7 +10,7 @@
 // - server.js: Server-side code with HTTP server and RPC handlers
 // - client.js: Client-side code with RPC stubs and UI components
 
-use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression, ForInStatement, ForStatement, ImplBlock, JsxChild, ObjectProperty, TemplatePart, Annotation, AnnotationValue};
+use crate::ast::{Program, Statement, FunctionDefinition, ComponentDefinition, Expression, BlockStatement, Pattern, TypeExpression, ForInStatement, ForStatement, ImplBlock, JsxChild, ObjectProperty, TemplatePart, Annotation, AnnotationValue, UseStatement};
 use crate::code_splitter::CodeSplitter;
 use crate::rpc_generator::RPCGenerator;
 use crate::source_map::SourceMapBuilder;
@@ -812,17 +812,15 @@ impl JSEmitter {
         output.push_str("window.addEventListener('DOMContentLoaded', () => {\n");
         output.push_str("  console.log('Jounce client initialized');\n");
 
-        // Auto-mount first component if exists
-        if let Some(comp) = self.splitter.client_components.first() {
-            output.push_str(&format!("  mountComponent({});\n", comp.name.value));
-        } else {
-            // Check if there's an App function (convention for main component)
-            let has_app = self.splitter.client_functions.iter().any(|f| f.name.value == "App")
-                || self.splitter.shared_functions.iter().any(|f| f.name.value == "App");
+        // Check if there's an App component (convention for main component)
+        let has_app_component = self.splitter.client_components.iter().any(|c| c.name.value == "App");
 
-            if has_app {
-                output.push_str("  mountComponent(App);\n");
-            }
+        if has_app_component {
+            // Prefer App component if it exists
+            output.push_str("  mountComponent(App);\n");
+        } else if let Some(comp) = self.splitter.client_components.first() {
+            // Fallback to first component if no App component
+            output.push_str(&format!("  mountComponent({});\n", comp.name.value));
         }
 
         output.push_str("});\n");
@@ -937,19 +935,17 @@ impl JSEmitter {
         output.push_str("  console.log('Jounce client initialized');\n");
         current_line += 1;
 
-        // Auto-mount first component if exists
-        if let Some(comp) = self.splitter.client_components.first() {
+        // Check if there's an App component (convention for main component)
+        let has_app_component = self.splitter.client_components.iter().any(|c| c.name.value == "App");
+
+        if has_app_component {
+            // Prefer App component if it exists
+            output.push_str("  mountComponent(App);\n");
+            current_line += 1;
+        } else if let Some(comp) = self.splitter.client_components.first() {
+            // Fallback to first component if no App component
             output.push_str(&format!("  mountComponent({});\n", comp.name.value));
             current_line += 1;
-        } else {
-            // Check if there's an App function (convention for main component)
-            let has_app = self.splitter.client_functions.iter().any(|f| f.name.value == "App")
-                || self.splitter.shared_functions.iter().any(|f| f.name.value == "App");
-
-            if has_app {
-                output.push_str("  mountComponent(App);\n");
-                current_line += 1;
-            }
         }
 
         output.push_str("});\n");
@@ -1428,6 +1424,10 @@ impl JSEmitter {
                     async_keyword, name, params, body
                 )
             }
+            Statement::Use(use_stmt) => {
+                // Generate JavaScript import statement
+                self.generate_use_statement_js(use_stmt)
+            }
             _ => "// Unsupported statement".to_string(),
         }
     }
@@ -1487,6 +1487,53 @@ impl JSEmitter {
         let body = self.generate_block_js(&stmt.body);
 
         format!("for ({}; {}; {}) {{\n{}\n  }}", init, condition, update, body)
+    }
+
+    /// Generates JavaScript import statement from a use statement
+    fn generate_use_statement_js(&self, use_stmt: &UseStatement) -> String {
+        // Build the module path from the path segments
+        let mut path_parts = Vec::new();
+        for segment in &use_stmt.path {
+            path_parts.push(segment.value.clone());
+        }
+
+        // Convert path to JavaScript module path
+        // Examples:
+        // - [".", "components"] -> "./components.js"
+        // - ["..", "utils"] -> "../utils.js"
+        // - [".", "lib", "helpers"] -> "./lib/helpers.js"
+        let module_path = if path_parts.is_empty() {
+            return "// ERROR: Empty use statement path".to_string();
+        } else {
+            let path_str = path_parts.join("/");
+            // Add .js extension if not already present
+            if path_str.ends_with(".js") {
+                path_str
+            } else {
+                format!("{}.js", path_str)
+            }
+        };
+
+        // Generate import statement based on import type
+        if use_stmt.is_glob {
+            // import * as module from './path.js'
+            // Use the last path segment as the namespace name
+            let namespace = path_parts.last()
+                .map(|s| s.replace("-", "_"))
+                .unwrap_or_else(|| "module".to_string());
+            format!("import * as {} from '{}';", namespace, module_path)
+        } else if use_stmt.imports.is_empty() {
+            // import './path.js' (side effects only)
+            format!("import '{}';", module_path)
+        } else {
+            // import { A, B, C } from './path.js'
+            let imports = use_stmt.imports
+                .iter()
+                .map(|id| id.value.clone())
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("import {{ {} }} from '{}';", imports, module_path)
+        }
     }
 
     /// Generates JavaScript helper functions for enum variants

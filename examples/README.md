@@ -104,16 +104,17 @@ Progressive complexity series designed to test all 35 Jounce packages:
 
 ### Current Progress
 
-**Apps Complete**: 1/20
+**Apps Complete**: 2/20
 
 - ✅ **App 1: Hello Counter** - Simple JSX demonstration
+- ✅ **App 35: Sales CRM Dashboard** - Complete business application with computed metrics, deal management, and reactive UI
 
 **Apps Planned**:
 - App 2: Color Picker (jounce-theme)
 - App 3: Markdown Previewer (jounce-markdown, jounce-sanitizer)
 - App 4: Todo List (jounce-store, local storage)
 - App 5: Weather Widget (jounce-http, external API)
-- ...and 15 more!
+- ...and 14 more!
 
 **See [20_APPS_PLAN.md](../20_APPS_PLAN.md) for complete roadmap.**
 
@@ -228,9 +229,10 @@ cargo run -- watch examples/apps/01-hello-counter/main.jnc
 
 - **Total Examples**: 48+ tutorial examples
 - **Tutorial Progress**: 6/6 categories complete
-- **Apps Progress**: 1/20 apps complete
+- **Apps Progress**: 2/20 apps complete (10%)
 - **Test Coverage**: 100% of examples compile successfully
 - **Package Coverage**: Testing 35 ecosystem packages
+- **Latest Addition**: Sales CRM Dashboard - Real-world business application
 
 ---
 
@@ -279,6 +281,6 @@ These are kept for reference but are not actively maintained.
 
 ---
 
-**Last Updated**: October 24, 2025
-**Jounce Version**: v0.8.0
-**Total Examples**: 48 tutorials + 1 app + 20+ feature demos
+**Last Updated**: November 3, 2025
+**Jounce Version**: v0.8.2+
+**Total Examples**: 48 tutorials + 2 apps + 20+ feature demos

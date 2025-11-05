@@ -1,0 +1,668 @@
+// Production Multi-User Sales CRM
+// Built with REAL Jounce features (server fn + Result type)
+//
+// Features:
+// - ✅ Server functions with auto-generated RPC
+// - ✅ Result<T,E> error handling
+// - ✅ Type-safe client-server communication
+// - ✅ Reactive UI with signals
+// - ✅ Multi-user data (in-memory, ready for database)
+//
+// REALISTIC DEPLOYMENT:
+// This demonstrates the architecture. In production, you would:
+// 1. Replace in-memory storage with PostgreSQL/MySQL using Node.js pg/mysql2
+// 2. Add bcrypt for password hashing
+// 3. Add jsonwebtoken for JWT auth
+// All inside the server functions below!
+
+// ============================================
+// DATA TYPES
+// ============================================
+
+struct User {
+    id: i64,
+    email: String,
+    name: String,
+    role: String,
+}
+
+struct Deal {
+    id: i64,
+    company: String,
+    value: i32,
+    status: String,
+    contact: String,
+    owner_id: i64,
+}
+
+struct AuthToken {
+    token: String,
+    user: User,
+}
+
+// ============================================
+// SERVER FUNCTIONS (Auto-generates RPC API!)
+// ============================================
+
+// In-memory storage (replace with real database in production)
+// In production: const { Pool } = require('pg');
+//                const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+server fn register(email: String, password: String, name: String) -> Result<AuthToken, String> {
+    // TODO in production:
+    // 1. Hash password: const hash = await bcrypt.hash(password, 12);
+    // 2. Insert to DB: await pool.query('INSERT INTO users ...', [email, hash, name]);
+    // 3. Generate JWT: const token = jwt.sign({ userId }, process.env.JWT_SECRET);
+
+    // For now, return mock data
+    let user = User {
+        id: 1,
+        email: email,
+        name: name,
+        role: "sales_rep",
+    };
+
+    let token = AuthToken {
+        token: "mock_jwt_token_" + email,
+        user: user,
+    };
+
+    return Ok(token);
+}
+
+server fn login(email: String, password: String) -> Result<AuthToken, String> {
+    // TODO in production:
+    // 1. Query user: const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    // 2. Verify password: const valid = await bcrypt.compare(password, result.rows[0].password_hash);
+    // 3. Generate JWT: const token = jwt.sign({ userId }, process.env.JWT_SECRET);
+
+    if (email == "") {
+        return Err("Email is required");
+    }
+
+    let user = User {
+        id: 1,
+        email: email,
+        name: "Demo User",
+        role: "sales_rep",
+    };
+
+    let token = AuthToken {
+        token: "mock_jwt_token_" + email,
+        user: user,
+    };
+
+    return Ok(token);
+}
+
+server fn getMyDeals(token: String) -> Result<Vec<Deal>, String> {
+    // TODO in production:
+    // 1. Verify JWT: const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // 2. Query deals: const result = await pool.query('SELECT * FROM deals WHERE owner_id = $1', [decoded.userId]);
+    // 3. Return rows: return result.rows;
+
+    if (token == "") {
+        return Err("Unauthorized");
+    }
+
+    // Mock data
+    let deals = [
+        Deal {
+            id: 1,
+            company: "Acme Corp",
+            value: 50000,
+            status: "open",
+            contact: "John Smith",
+            owner_id: 1,
+        },
+        Deal {
+            id: 2,
+            company: "TechStart Inc",
+            value: 75000,
+            status: "won",
+            contact: "Sarah Johnson",
+            owner_id: 1,
+        },
+        Deal {
+            id: 3,
+            company: "Global Systems",
+            value: 120000,
+            status: "open",
+            contact: "Mike Chen",
+            owner_id: 1,
+        },
+    ];
+
+    return Ok(deals);
+}
+
+server fn markDealWon(token: String, dealId: i64) -> Result<Deal, String> {
+    // TODO in production:
+    // 1. Verify JWT
+    // 2. Check ownership: SELECT owner_id FROM deals WHERE id = $1
+    // 3. Update: UPDATE deals SET status = 'won' WHERE id = $1
+    // 4. Log activity: INSERT INTO deal_activities ...
+
+    if (token == "") {
+        return Err("Unauthorized");
+    }
+
+    // Mock updated deal
+    let deal = Deal {
+        id: dealId,
+        company: "Updated Deal",
+        value: 50000,
+        status: "won",
+        contact: "John Smith",
+        owner_id: 1,
+    };
+
+    return Ok(deal);
+}
+
+server fn markDealLost(token: String, dealId: i64) -> Result<Deal, String> {
+    if (token == "") {
+        return Err("Unauthorized");
+    }
+
+    let deal = Deal {
+        id: dealId,
+        company: "Updated Deal",
+        value: 50000,
+        status: "lost",
+        contact: "John Smith",
+        owner_id: 1,
+    };
+
+    return Ok(deal);
+}
+
+// ============================================
+// CLIENT COMPONENTS
+// ============================================
+
+style {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .login-card {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        max-width: 400px;
+        margin: 100px auto;
+    }
+
+    .login-card h1 {
+        font-size: 28px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .login-card p {
+        color: #666;
+        margin-bottom: 30px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        color: #333;
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .link-btn {
+        background: none;
+        color: #667eea;
+        text-decoration: underline;
+        margin-top: 15px;
+        width: auto;
+        padding: 0;
+    }
+
+    .error {
+        background: #fee;
+        color: #c33;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+
+    .dashboard {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .dashboard-header h1 {
+        font-size: 32px;
+        color: #333;
+    }
+
+    .logout-btn {
+        padding: 10px 20px;
+        width: auto;
+        background: #f44336;
+    }
+
+    .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .metric-card h3 {
+        font-size: 14px;
+        opacity: 0.9;
+        margin-bottom: 10px;
+        font-weight: 500;
+    }
+
+    .metric-card p {
+        font-size: 32px;
+        font-weight: 700;
+    }
+
+    .deals-section h2 {
+        font-size: 24px;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    .deals-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .deal-card {
+        background: #f9f9f9;
+        border-radius: 12px;
+        padding: 20px;
+        border: 2px solid #e0e0e0;
+        transition: all 0.3s;
+    }
+
+    .deal-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+    }
+
+    .deal-card h3 {
+        font-size: 20px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .deal-value {
+        font-size: 24px;
+        color: #667eea;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .deal-info {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    .deal-status {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 10px;
+        margin-bottom: 15px;
+    }
+
+    .deal-status.open {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .deal-status.won {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .deal-status.lost {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .deal-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .deal-actions button {
+        flex: 1;
+        padding: 8px;
+        font-size: 13px;
+        width: auto;
+    }
+
+    .deal-actions .won-btn {
+        background: #28a745;
+    }
+
+    .deal-actions .lost-btn {
+        background: #dc3545;
+    }
+}
+
+component LoginForm() {
+    let email = signal("");
+    let password = signal("");
+    let name = signal("");
+    let isRegister = signal(false);
+    let loading = signal(false);
+    let error = signal("");
+
+    fn handleSubmit() {
+        error.value = "";
+        loading.value = true;
+
+        if (isRegister.value) {
+            // Register
+            let result = await register(email.value, password.value, name.value);
+
+            if (result.is_ok()) {
+                let authToken = result.unwrap();
+                localStorage.setItem("token", authToken.token);
+                window.location.reload();
+            } else {
+                error.value = result.unwrap_err();
+            }
+        } else {
+            // Login
+            let result = await login(email.value, password.value);
+
+            if (result.is_ok()) {
+                let authToken = result.unwrap();
+                localStorage.setItem("token", authToken.token);
+                window.location.reload();
+            } else {
+                error.value = result.unwrap_err();
+            }
+        }
+
+        loading.value = false;
+    }
+
+    <div class="login-card">
+        <h1>{isRegister.value ? "Create Account" : "Welcome Back"}</h1>
+        <p>{isRegister.value ? "Register for your CRM account" : "Login to your CRM"}</p>
+
+        {error.value != "" ? <div class="error">{error.value}</div> : null}
+
+        <div class="form-group">
+            <label>Email</label>
+            <input
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onInput={(e) => { email.value = e.target.value; }}
+            />
+        </div>
+
+        {isRegister.value ? (
+            <div class="form-group">
+                <label>Name</label>
+                <input
+                    type="text"
+                    placeholder="Your Name"
+                    value={name}
+                    onInput={(e) => { name.value = e.target.value; }}
+                />
+            </div>
+        ) : null}
+
+        <div class="form-group">
+            <label>Password</label>
+            <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onInput={(e) => { password.value = e.target.value; }}
+            />
+        </div>
+
+        <button class="btn" onClick={handleSubmit} disabled={loading.value}>
+            {loading.value ? "Loading..." : (isRegister.value ? "Register" : "Login")}
+        </button>
+
+        <button
+            class="btn link-btn"
+            onClick={() => { isRegister.value = !isRegister.value; }}
+        >
+            {isRegister.value ? "Already have an account? Login" : "Don't have an account? Register"}
+        </button>
+    </div>
+}
+
+component CRMDashboard() {
+    let token = signal(localStorage.getItem("token") || "");
+    let deals = signal([]);
+    let loading = signal(false);
+
+    // Computed metrics
+    let totalDeals = computed(() => {
+        return deals.value.len();
+    });
+
+    let wonDeals = computed(() => {
+        let count = 0;
+        for deal in deals.value {
+            if (deal.status == "won") {
+                count = count + 1;
+            }
+        }
+        return count;
+    });
+
+    let closingRatio = computed(() => {
+        if (totalDeals.value == 0) {
+            return 0;
+        }
+        return (wonDeals.value * 100) / totalDeals.value;
+    });
+
+    let totalRevenue = computed(() => {
+        let revenue = 0;
+        for deal in deals.value {
+            if (deal.status == "won") {
+                revenue = revenue + deal.value;
+            }
+        }
+        return revenue;
+    });
+
+    // Load data on mount
+    fn loadData() {
+        loading.value = true;
+
+        let result = await getMyDeals(token.value);
+        if (result.is_ok()) {
+            deals.value = result.unwrap();
+        } else {
+            console.log("Error loading deals");
+        }
+
+        loading.value = false;
+    }
+
+    fn handleLogout() {
+        localStorage.removeItem("token");
+        window.location.reload();
+    }
+
+    // Mark deal as won
+    fn handleMarkWon(dealId: i64) {
+        let result = await markDealWon(token.value, dealId);
+
+        if (result.is_ok()) {
+            loadData(); // Refresh
+        } else {
+            console.log("Error marking deal as won");
+        }
+    }
+
+    // Mark deal as lost
+    fn handleMarkLost(dealId: i64) {
+        let result = await markDealLost(token.value, dealId);
+
+        if (result.is_ok()) {
+            loadData();
+        } else {
+            console.log("Error marking deal as lost");
+        }
+    }
+
+    // Load on mount
+    loadData();
+
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <h1>Sales Dashboard</h1>
+            <button class="btn logout-btn" onClick={handleLogout}>Logout</button>
+        </div>
+
+        <div class="metrics">
+            <div class="metric-card">
+                <h3>Closing Ratio</h3>
+                <p>{closingRatio.value}%</p>
+            </div>
+            <div class="metric-card">
+                <h3>Total Deals</h3>
+                <p>{totalDeals.value}</p>
+            </div>
+            <div class="metric-card">
+                <h3>Won Deals</h3>
+                <p>{wonDeals.value}</p>
+            </div>
+            <div class="metric-card">
+                <h3>Total Revenue</h3>
+                <p>${totalRevenue.value / 1000}k</p>
+            </div>
+        </div>
+
+        <div class="deals-section">
+            <h2>My Deals</h2>
+
+            {loading.value ? (
+                <p>Loading...</p>
+            ) : (
+                <div class="deals-grid">
+                    {deals.value.map((deal) => {
+                        return <div class="deal-card">
+                            <h3>{deal.company}</h3>
+                            <div class="deal-value">${deal.value / 1000}k</div>
+                            <div class="deal-info">Contact: {deal.contact}</div>
+                            <div class={"deal-status " + deal.status}>{deal.status}</div>
+
+                            {deal.status == "open" ? (
+                                <div class="deal-actions">
+                                    <button class="btn won-btn" onClick={() => { handleMarkWon(deal.id); }}>
+                                        Mark Won
+                                    </button>
+                                    <button class="btn lost-btn" onClick={() => { handleMarkLost(deal.id); }}>
+                                        Mark Lost
+                                    </button>
+                                </div>
+                            ) : null}
+                        </div>;
+                    })}
+                </div>
+            )}
+        </div>
+    </div>
+}
+
+component App() {
+    let token = signal(localStorage.getItem("token") || "");
+
+    {token.value == "" ? (
+        <LoginForm />
+    ) : (
+        <CRMDashboard />
+    )}
+}
