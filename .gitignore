@@ -75,7 +75,9 @@ coverage/
 examples/**/backend/target/
 examples/**/target/
 
-# Claude-specific development files (optional - uncomment if you want to exclude)
-# .claude/
+# Claude-specific development files
+.claude/
+CLAUDE.md
+CLAUDE_ARCHIVE*.md
 dist/
 vscode-extension/dist/
