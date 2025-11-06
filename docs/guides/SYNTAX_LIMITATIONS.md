@@ -1266,8 +1266,8 @@ onMount(() => {
 ### See More
 
 For complete documentation of all 9 protected gotchas, see:
-- **[GOTCHA_FIXES.md](GOTCHA_FIXES.md)** - Full implementation details
-- **[CHANGELOG.md](CHANGELOG.md)** - v0.8.2 release notes
+- **[GOTCHA_FIXES.md](../project/GOTCHA_FIXES.md)** - Full implementation details
+- **[CHANGELOG.md](../../CHANGELOG.md)** - v0.8.2 release notes
 
 ---
 

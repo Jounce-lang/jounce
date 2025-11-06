@@ -3,7 +3,7 @@
 **Current Version**: v0.8.2 "Runtime Safety Nets"
 **Target Version**: v1.0.0 "Language Lock & Stable Release"
 **Last Updated**: November 5, 2025
-**Versioning System**: See [VERSIONING.md](VERSIONING.md)
+**Versioning System**: See [VERSIONING.md](../guides/VERSIONING.md)
 
 ---
 
@@ -76,7 +76,7 @@ This roadmap uses a **Phase → Sprint → Release** hierarchy:
 - **Sprint**: 1-2 week development cycle within a phase
 - **Release**: Public version following semantic versioning
 
-See [VERSIONING.md](VERSIONING.md) for complete details on our development workflow.
+See [VERSIONING.md](../guides/VERSIONING.md) for complete details on our development workflow.
 
 ---
 
@@ -803,7 +803,7 @@ This roadmap is a **living document** and will evolve based on:
 
 ## 📚 Related Documents
 
-- [VERSIONING.md](VERSIONING.md) - Sprint-based development workflow
+- [VERSIONING.md](../guides/VERSIONING.md) - Sprint-based development workflow
 - [CHANGELOG.md](CHANGELOG.md) - Detailed release history
 - [CLAUDE.md](CLAUDE.md) - Development guide and current status
 - [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) - Release preparation guide

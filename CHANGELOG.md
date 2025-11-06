@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    ```
 
 **Documentation Updates**:
-- Updated `GOTCHA_FIXES.md` with Phase 2 and Phase 3 completion status
+- Updated `docs/project/GOTCHA_FIXES.md` with Phase 2 and Phase 3 completion status
 - Added implementation summary at top of gotcha documentation
 - Marked all 9 critical gotcha fixes as implemented
 
@@ -60,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Test Coverage**: ✅ All 580 library tests passing
 **Files Modified**:
 - `runtime/reactivity.js` - Frozen signals + dev-mode detection
-- `GOTCHA_FIXES.md` - Updated completion status
+- `docs/project/GOTCHA_FIXES.md` - Updated completion status
 
 **Defense Layers**:
 1. **Type Checker** (Phase 1): Compile-time errors prevent dangerous code

@@ -14,9 +14,9 @@
 
 **New to Jounce?** Follow this learning path:
 
-1. 🚀 **[Start Here: Learn Jounce](LEARN_JOUNCE.md)** - Complete language guide for beginners
-2. ⚠️ **[Syntax Limitations](SYNTAX_LIMITATIONS.md)** - What works vs what doesn't
-3. 📖 **[Documentation Roadmap](DOCUMENTATION_ROADMAP.md)** - Full reading guide
+1. 🚀 **[Start Here: Learn Jounce](docs/guides/LEARN_JOUNCE.md)** - Complete language guide for beginners
+2. ⚠️ **[Syntax Limitations](docs/guides/SYNTAX_LIMITATIONS.md)** - What works vs what doesn't
+3. 📖 **[Documentation Roadmap](docs/DOCUMENTATION_ROADMAP.md)** - Full reading guide
 
 **Looking for examples?** Check out [`templates/tutorial-starters/`](templates/tutorial-starters/) for hands-on tutorials.
 
@@ -480,7 +480,7 @@ We believe in **transparency and forward motion**. Here's where we are and where
 - ✅ Zero technical debt
 - ✅ Production-ready codebase
 
-[View Full Roadmap →](ROADMAP.md)
+[View Full Roadmap →](docs/project/ROADMAP.md)
 
 ---
 
@@ -666,7 +666,7 @@ jnc init project-3 -t dashboard
 
 ### Main Documentation
 - **[CLAUDE.md](CLAUDE.md)** - Development guide and current status
-- **[ROADMAP.md](ROADMAP.md)** - Project phases and timeline
+- **[ROADMAP.md](docs/project/ROADMAP.md)** - Project phases and timeline
 - **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - Complete project overview
 - **[JOURNEY_RETROSPECTIVE.md](JOURNEY_RETROSPECTIVE.md)** - Bug-fixing journey
 
@@ -885,9 +885,9 @@ We welcome contributions! With our production-ready foundation, now is a great t
 
 | Document | Purpose | Best For |
 |----------|---------|----------|
-| **[LEARN_JOUNCE.md](LEARN_JOUNCE.md)** | Complete language guide with examples | LLMs, Beginners, Reference |
-| **[SYNTAX_LIMITATIONS.md](SYNTAX_LIMITATIONS.md)** | What works vs what doesn't | Avoiding errors |
-| **[DOCUMENTATION_ROADMAP.md](DOCUMENTATION_ROADMAP.md)** | Where to start and what to read | Navigation |
+| **[LEARN_JOUNCE.md](docs/guides/LEARN_JOUNCE.md)** | Complete language guide with examples | LLMs, Beginners, Reference |
+| **[SYNTAX_LIMITATIONS.md](docs/guides/SYNTAX_LIMITATIONS.md)** | What works vs what doesn't | Avoiding errors |
+| **[DOCUMENTATION_ROADMAP.md](docs/DOCUMENTATION_ROADMAP.md)** | Where to start and what to read | Navigation |
 | **[Tutorial Starters](templates/tutorial-starters/)** | Hands-on examples to learn from | Practice |
 
 ### For Development
@@ -900,9 +900,9 @@ We welcome contributions! With our production-ready foundation, now is a great t
 
 ### Quick Links
 
-- 🚀 **New to Jounce?** → Start with [LEARN_JOUNCE.md](LEARN_JOUNCE.md)
-- ⚠️ **Having errors?** → Check [SYNTAX_LIMITATIONS.md](SYNTAX_LIMITATIONS.md)
-- 📚 **Lost in docs?** → See [DOCUMENTATION_ROADMAP.md](DOCUMENTATION_ROADMAP.md)
+- 🚀 **New to Jounce?** → Start with [LEARN_JOUNCE.md](docs/guides/LEARN_JOUNCE.md)
+- ⚠️ **Having errors?** → Check [SYNTAX_LIMITATIONS.md](docs/guides/SYNTAX_LIMITATIONS.md)
+- 📚 **Lost in docs?** → See [DOCUMENTATION_ROADMAP.md](docs/DOCUMENTATION_ROADMAP.md)
 - 🔧 **Want to contribute?** → Read [CLAUDE.md](CLAUDE.md)
 
 ---
