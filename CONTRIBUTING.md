@@ -119,6 +119,13 @@ Jounce/
 - Aim for 80%+ test coverage
 - Include both unit and integration tests
 
+**Runtime Testing (v0.8.2+):**
+- Test runtime safety features in `runtime/reactivity.js`
+- Verify frozen signal behavior with `Object.freeze()`
+- Test dev-mode side effect detection in computed()
+- Ensure production mode doesn't include dev checks
+- Test that runtime errors provide helpful messages
+
 **Example:**
 ```rust
 // ✓ Good

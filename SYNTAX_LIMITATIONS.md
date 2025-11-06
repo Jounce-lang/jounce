@@ -1,11 +1,13 @@
 # Jounce Syntax Limitations
 
-**Version**: v0.8.3
-**Last Updated**: November 4, 2025
+**Version**: v0.8.2
+**Last Updated**: November 5, 2025
 
 ## Overview
 
 Jounce uses Rust-inspired syntax rather than JavaScript syntax for certain features. This document describes what Jounce does **NOT** support and what syntax to use instead.
+
+**NEW in v0.8.2**: Comprehensive runtime safety with 3-layer defense-in-depth protection! See [Common Gotchas & Runtime Safety](#common-gotchas--runtime-safety) section below.
 
 ---
 
@@ -1101,6 +1103,174 @@ This will be fixed in a future session - it's a type system issue, not a languag
 
 ---
 
+## Common Gotchas & Runtime Safety
+
+**NEW in v0.8.2**: Comprehensive 3-layer defense-in-depth protection! 🛡️
+
+Jounce now provides multiple layers of protection against common programming mistakes that compile successfully but break at runtime.
+
+### Defense Layers
+
+1. **Type Checker (Phase 1)**: Compile-time errors prevent dangerous code
+2. **Static Analyzer (Phase 2)**: Non-blocking warnings guide developers
+3. **Runtime Safety (Phase 3)**: Dev-mode checks catch remaining issues
+
+---
+
+### ⚠️ Gotcha #1: Forgetting `.value` on Signals
+
+**❌ Wrong** (compiles but breaks reactivity):
+```jounce
+let count = signal(0);
+count = count + 1;  // Overwrites signal object!
+```
+
+**✅ Correct**:
+```jounce
+let count = signal(0);
+count.value = count.value + 1;  // Updates signal value
+```
+
+**Protection**:
+- **Type Checker**: Compile error when reassigning signal variables
+- **Runtime**: Signal objects are frozen with `Object.freeze()` - throws TypeError on reassignment
+
+---
+
+### ⚠️ Gotcha #2: Side Effects in `computed()`
+
+**❌ Wrong** (throws error in dev mode):
+```jounce
+let doubled = computed(() => {
+    console.log("Computing...");  // Side effect!
+    return count.value * 2;
+});
+```
+
+**✅ Correct**:
+```jounce
+// Use effect() for side effects
+effect(() => {
+    console.log("Count changed:", count.value);
+});
+
+// Keep computed() pure
+let doubled = computed(() => count.value * 2);
+```
+
+**Protection**:
+- **Runtime**: Dev-mode instrumentation detects console, fetch, storage mutations
+- **Error Message**: Helpful message with correct pattern example
+
+---
+
+### ⚠️ Gotcha #3: `await` Inside JSX
+
+**❌ Wrong** (compile error):
+```jounce
+<div>{await fetchData()}</div>
+```
+
+**✅ Correct**:
+```jounce
+component DataDisplay() {
+    let data = signal(null);
+
+    onMount(async () => {
+        data.value = await fetchData();
+    });
+
+    <div>{data.value}</div>
+}
+```
+
+**Protection**:
+- **Type Checker**: Compile error with helpful message
+- **Suggestion**: Use onMount() + signals pattern
+
+---
+
+### ⚠️ Gotcha #4: `.length()` vs `.length`
+
+**❌ Wrong** (compile error):
+```jounce
+let size = items.value.length();  // .length is a property!
+```
+
+**✅ Correct**:
+```jounce
+let size = items.value.length;  // No parentheses
+```
+
+**Protection**:
+- **Type Checker**: Detects method call on `.length` property
+- **Error Message**: "Use '.length' without parentheses"
+
+---
+
+### ⚠️ Gotcha #5: Signal Shadowing
+
+**⚠️ Warning** (non-blocking):
+```jounce
+let count = signal(0);
+
+fn inner() {
+    let count = 5;  // Shadows the signal!
+}
+```
+
+**✅ Better**:
+```jounce
+let count = signal(0);
+
+fn inner() {
+    let innerCount = 5;  // Different name
+}
+```
+
+**Protection**:
+- **Static Analyzer**: Warning when variables shadow signals
+- **Suggestion**: Rename inner variable
+
+---
+
+### ⚠️ Gotcha #6: Missing Cleanup in `onMount()`
+
+**⚠️ Warning** (non-blocking):
+```jounce
+onMount(() => {
+    setInterval(() => {
+        count.value += 1;
+    }, 1000);
+    // No cleanup! Memory leak!
+});
+```
+
+**✅ Correct**:
+```jounce
+onMount(() => {
+    let timer = setInterval(() => {
+        count.value += 1;
+    }, 1000);
+
+    return () => clearInterval(timer);  // Cleanup!
+});
+```
+
+**Protection**:
+- **Static Analyzer**: Warns when setInterval/setTimeout lack cleanup
+- **Suggestion**: Return cleanup function
+
+---
+
+### See More
+
+For complete documentation of all 9 protected gotchas, see:
+- **[GOTCHA_FIXES.md](GOTCHA_FIXES.md)** - Full implementation details
+- **[CHANGELOG.md](CHANGELOG.md)** - v0.8.2 release notes
+
+---
+
 ## Why These Limitations?
 
 ### Syntax Choices
@@ -1123,5 +1293,5 @@ This will be fixed in a future session - it's a type system issue, not a languag
 
 ---
 
-**Last Updated**: November 4, 2025
-**Jounce Version**: v0.8.3
+**Last Updated**: November 5, 2025
+**Jounce Version**: v0.8.2

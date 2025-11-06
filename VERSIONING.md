@@ -1,7 +1,7 @@
 # Jounce Versioning & Release Management
 
-**Last Updated**: November 1, 2025
-**Current Version**: v0.8.1
+**Last Updated**: November 5, 2025
+**Current Version**: v0.8.2
 **System**: Semantic Versioning with Sprint-Based Development
 
 ---

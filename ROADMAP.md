@@ -1,17 +1,18 @@
 # Jounce Development Roadmap
 
-**Current Version**: v0.8.1 "Developer Experience & Public Launch"
+**Current Version**: v0.8.2 "Runtime Safety Nets"
 **Target Version**: v1.0.0 "Language Lock & Stable Release"
-**Last Updated**: November 1, 2025
+**Last Updated**: November 5, 2025
 **Versioning System**: See [VERSIONING.md](VERSIONING.md)
 
 ---
 
-## 📍 Current Status (v0.8.1)
+## 📍 Current Status (v0.8.2)
 
 **Production Ready!** ✅
-- **Tests**: 635/635 passing (100%)
+- **Tests**: 580/580 passing (100%)
 - **Bugs**: 0 critical issues
+- **Safety**: 3-layer defense-in-depth protection complete
 - **Packages**: 35/100 complete (35%)
 - **Status**: Ready for public launch
 
@@ -31,6 +32,14 @@
 - ✅ 4 production-ready starter templates
 - ✅ Compilation cache (102x faster builds)
 - ✅ HMR dev server with live reload
+
+**Runtime Safety** (100%) - NEW in v0.8.2!:
+- ✅ **Phase 1**: Type checker prevents dangerous code compilation
+- ✅ **Phase 2**: Static analyzer warns about problematic patterns
+- ✅ **Phase 3**: Runtime catches issues in dev mode
+- ✅ Frozen signal objects (Object.freeze protection)
+- ✅ Dev-mode side effect detection in computed()
+- ✅ 9 critical gotcha fixes implemented
 
 **Ecosystem** (35%):
 - ✅ 35 packages published (jounce-router, jounce-db, jounce-auth, etc.)

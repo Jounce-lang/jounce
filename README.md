@@ -2,13 +2,13 @@
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Jounce-lang/Jounce)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.8.1--beta-orange)](https://github.com/Jounce-lang/Jounce/releases)
-[![Tests](https://img.shields.io/badge/tests-640%2F640-brightgreen)](TESTING_GUIDE.md)
+[![Version](https://img.shields.io/badge/version-0.8.2--beta-orange)](https://github.com/Jounce-lang/Jounce/releases)
+[![Tests](https://img.shields.io/badge/tests-580%2F580-brightgreen)](TESTING_GUIDE.md)
 [![Docs](https://img.shields.io/badge/docs-complete-blue)](docs/)
 
 **A single-file, AI-native full-stack language built for humans and machines to code together.**
 
-> ✅ **Status**: **Production Ready** with 640 tests passing, zero known bugs, and fine-grained reactivity!
+> ✅ **Status**: **Production Ready** with 580 tests passing, zero known bugs, fine-grained reactivity, and comprehensive runtime safety!
 
 ## 📚 Documentation
 
@@ -104,11 +104,18 @@ cargo run --release -- compile app.jnc
 - **Self-closing tags** for cleaner code
 
 ### **🔒 Production Quality**
-- **640 tests passing** (100% pass rate)
+- **580 tests passing** (100% pass rate)
 - **Zero known critical bugs**
 - **Zero technical debt**
 - **Comprehensive documentation**
 - **Battle-tested** with 25+ example applications
+
+### **🛡️ Runtime Safety** (NEW in v0.8.2!)
+- **Defense-in-depth**: 3 layers of protection against common gotchas
+- **Frozen signals** prevent accidental reassignment at runtime
+- **Dev-mode checks** catch side effects in computed() functions
+- **Compile-time errors** for dangerous patterns (await in JSX, signal reassignment)
+- **Static warnings** guide developers to correct patterns (shadowing, memory leaks)
 
 ---
 

@@ -1,6 +1,7 @@
 # Learn Jounce - Complete Language Guide
 
-**Last Updated**: November 4, 2025
+**Last Updated**: November 5, 2025
+**Version**: v0.8.2 "Runtime Safety Nets"
 **Target Audience**: LLMs, AI assistants, and developers learning Jounce
 **Prerequisite Knowledge**: Basic understanding of JavaScript/TypeScript and Rust
 
@@ -256,6 +257,73 @@ component MyComponent() {
         console.log("Component destroyed");
     });
 }
+```
+
+### 6. Runtime Safety (NEW in v0.8.2!) 🛡️
+
+Jounce provides **3 layers of defense-in-depth protection** against common gotchas:
+
+#### Layer 1: Type Checker (Compile-Time Errors)
+
+```jounce
+let count = signal(0);
+count = 5;  // ❌ COMPILE ERROR: Cannot reassign signal variable
+```
+
+```jounce
+let size = items.length();  // ❌ COMPILE ERROR: .length is a property
+```
+
+```jounce
+<div>{await fetchData()}</div>  // ❌ COMPILE ERROR: await not allowed in JSX
+```
+
+#### Layer 2: Static Analyzer (Warnings)
+
+```jounce
+let count = signal(0);
+
+fn inner() {
+    let count = 5;  // ⚠️ WARNING: Shadows signal 'count'
+}
+```
+
+```jounce
+onMount(() => {
+    setInterval(() => {
+        count.value += 1;
+    }, 1000);
+    // ⚠️ WARNING: Missing cleanup function
+});
+```
+
+#### Layer 3: Runtime Safety (Dev Mode)
+
+```jounce
+// Frozen signals prevent accidental reassignment
+let count = signal(0);
+count = 5;  // TypeError at runtime (if type checker missed it)
+```
+
+```jounce
+// Dev-mode side effect detection
+let doubled = computed(() => {
+    console.log("Computing...");  // ❌ ERROR in dev mode!
+    return count.value * 2;
+});
+```
+
+**Key Principle**: `computed()` must be pure - no logging, network requests, or storage mutations.
+
+**Correct Pattern**:
+```jounce
+// Use effect() for side effects
+effect(() => {
+    console.log("Count:", count.value);
+});
+
+// Keep computed() pure
+let doubled = computed(() => count.value * 2);
 ```
 
 ---
