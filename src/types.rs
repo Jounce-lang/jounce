@@ -36,6 +36,9 @@ pub enum Type {
     // Optional type
     Option(Box<Type>),
 
+    // Result type
+    Result(Box<Type>, Box<Type>), // Result<T, E>
+
     // Type variable (for inference)
     Var(usize),
 
@@ -94,6 +97,7 @@ impl fmt::Display for Type {
                 Ok(())
             }
             Type::Option(inner) => write!(f, "{}?", inner),
+            Type::Result(ok_type, err_type) => write!(f, "Result<{}, {}>", ok_type, err_type),
             Type::Var(id) => write!(f, "τ{}", id),
             Type::Named(name) => write!(f, "{}", name),
         }
@@ -127,6 +131,11 @@ impl Type {
             // Optional types
             (Type::Option(inner), ty) | (ty, Type::Option(inner)) => {
                 inner.as_ref().is_compatible_with(ty)
+            }
+
+            // Result types
+            (Type::Result(ok_a, err_a), Type::Result(ok_b, err_b)) => {
+                ok_a.is_compatible_with(ok_b) && err_a.is_compatible_with(err_b)
             }
 
             // Union types
@@ -174,6 +183,11 @@ impl Type {
         Type::Option(Box::new(inner_type))
     }
 
+    /// Create a result type
+    pub fn result(ok_type: Type, err_type: Type) -> Self {
+        Type::Result(Box::new(ok_type), Box::new(err_type))
+    }
+
     /// Get free type variables in a type
     pub fn free_vars(&self) -> HashSet<usize> {
         match self {
@@ -184,6 +198,11 @@ impl Type {
             }
             Type::Array(inner) => inner.free_vars(),
             Type::Option(inner) => inner.free_vars(),
+            Type::Result(ok_type, err_type) => {
+                let mut set = ok_type.free_vars();
+                set.extend(err_type.free_vars());
+                set
+            }
             Type::Function { params, return_type } => {
                 let mut set = HashSet::new();
                 for param in params {
@@ -359,6 +378,10 @@ impl Substitution {
             }
             Type::Array(inner) => Type::Array(Box::new(self.apply_with_depth(inner, depth + 1))),
             Type::Option(inner) => Type::Option(Box::new(self.apply_with_depth(inner, depth + 1))),
+            Type::Result(ok_type, err_type) => Type::Result(
+                Box::new(self.apply_with_depth(ok_type, depth + 1)),
+                Box::new(self.apply_with_depth(err_type, depth + 1))
+            ),
             Type::Function { params, return_type } => Type::Function {
                 params: params.iter().map(|p| self.apply_with_depth(p, depth + 1)).collect(),
                 return_type: Box::new(self.apply_with_depth(return_type, depth + 1)),

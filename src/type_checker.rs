@@ -77,6 +77,12 @@ impl TypeChecker {
                     "Option" if args.len() == 1 => {
                         Type::Option(Box::new(self.type_expr_to_type(&args[0])))
                     }
+                    "Result" if args.len() == 2 => {
+                        Type::Result(
+                            Box::new(self.type_expr_to_type(&args[0])),
+                            Box::new(self.type_expr_to_type(&args[1]))
+                        )
+                    }
                     _ => Type::Named(ident.value.clone()),
                 }
             }
@@ -585,6 +591,26 @@ impl TypeChecker {
                     }
                 }
 
+                // For Result<T, E> methods (FIX #1: Result Type Methods)
+                if let Type::Result(_, _) = &object_type {
+                    return Ok(match field_name.as_str() {
+                        // Methods that return bool (no arguments)
+                        "is_ok" | "is_err" => {
+                            Type::Function {
+                                params: vec![],
+                                return_type: Box::new(Type::Bool),
+                            }
+                        },
+                        // Methods that return Option<T> (unwrap, ok, err)
+                        "ok" | "err" | "unwrap" | "unwrap_or" | "unwrap_or_else" => {
+                            // For now, return Any for these more complex methods
+                            Type::Any
+                        },
+                        // Default: return Any for unknown methods
+                        _ => Type::Any,
+                    });
+                }
+
                 // For String methods, return function type with proper signature
                 if object_type == Type::String {
                     return Ok(match field_name.as_str() {
@@ -652,6 +678,26 @@ impl TypeChecker {
                 // Infer object type
                 let object_type = self.infer_expression(&opt_chain.object)?;
                 let field_name = &opt_chain.field.value;
+
+                // For Result<T, E> methods (FIX #1: Result Type Methods)
+                if let Type::Result(_, _) = &object_type {
+                    return Ok(match field_name.as_str() {
+                        // Methods that return bool (no arguments)
+                        "is_ok" | "is_err" => {
+                            Type::Function {
+                                params: vec![],
+                                return_type: Box::new(Type::Bool),
+                            }
+                        },
+                        // Methods that return Option<T> (unwrap, ok, err)
+                        "ok" | "err" | "unwrap" | "unwrap_or" | "unwrap_or_else" => {
+                            // For now, return Any for these more complex methods
+                            Type::Any
+                        },
+                        // Default: return Any for unknown methods
+                        _ => Type::Any,
+                    });
+                }
 
                 // For String methods, return function type with proper signature
                 if object_type == Type::String {
@@ -779,9 +825,12 @@ impl TypeChecker {
                     return Ok(*inner);
                 }
 
-                // For Result<T, E> and other cases, return Any
-                // This is consistent with how Ok/Err are treated (line 304-307)
-                // TODO: Add proper Result<T, E> type support to the type system
+                // If the inner type is Result<T, E>, extract T (FIX #1: Result Type Methods)
+                if let Type::Result(ok_type, _err_type) = inner_type {
+                    return Ok(*ok_type);
+                }
+
+                // For other cases, return Any
                 Ok(Type::Any)
             }
 
@@ -1060,6 +1109,13 @@ impl TypeChecker {
             // Options
             (Type::Option(t1), Type::Option(t2)) => self.unify(t1, t2),
 
+            // Results
+            (Type::Result(ok1, err1), Type::Result(ok2, err2)) => {
+                let ok_subst = self.unify(ok1, ok2)?;
+                let err_subst = self.unify(&ok_subst.apply(err1), &ok_subst.apply(err2))?;
+                Ok(ok_subst.compose(&err_subst))
+            }
+
             // Tuples
             (Type::Tuple(t1), Type::Tuple(t2)) => {
                 if t1.len() != t2.len() {
@@ -1090,6 +1146,9 @@ impl TypeChecker {
             Type::Var(id) => *id == var,
             Type::Array(inner) => self.occurs_check(var, inner),
             Type::Option(inner) => self.occurs_check(var, inner),
+            Type::Result(ok_type, err_type) => {
+                self.occurs_check(var, ok_type) || self.occurs_check(var, err_type)
+            }
             Type::Function { params, return_type } => {
                 params.iter().any(|p| self.occurs_check(var, p))
                     || self.occurs_check(var, return_type)

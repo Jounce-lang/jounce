@@ -707,20 +707,19 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Parser doesn't support sized array syntax [T; N] yet
     fn test_early_return_in_function() {
         let source = r#"
-            fn find_first_positive(numbers: [i32; 5]) -> i32 {
+            fn find_first_positive(numbers: Vec<i32>) -> i32 {
                 for num in numbers {
                     if num > 0 {
                         return num;
                     }
                 }
-                -1
+                return -1;
             }
 
             fn main() {
-                let nums = [1, 2, 3, 4, 5];
+                let nums = vec![1, 2, 3, 4, 5];
                 let result = find_first_positive(nums);
             }
         "#;
