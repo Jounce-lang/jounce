@@ -25,6 +25,8 @@ pub struct TypeChecker {
     traits: HashMap<String, TraitInfo>,  // Track trait definitions
     impls: HashMap<String, Vec<String>>,  // Track which traits are implemented for each type
     methods: HashMap<String, HashMap<String, FunctionSignature>>,  // type_name -> (method_name -> signature)
+    // PHASE 1 FIX #1: Track which variables are signals to detect incorrect reassignment
+    signal_variables: HashSet<String>,
 }
 
 impl TypeChecker {
@@ -41,6 +43,7 @@ impl TypeChecker {
             traits: HashMap::new(),
             impls: HashMap::new(),
             methods: HashMap::new(),
+            signal_variables: HashSet::new(),
         }
     }
 
@@ -127,14 +130,36 @@ impl TypeChecker {
         match stmt {
             Statement::Let(let_stmt) => {
                 let value_type = self.infer_expression(&let_stmt.value)?;
+
+                // PHASE 1 FIX #1: Track if this variable is initialized with signal()
+                let is_signal = matches!(&let_stmt.value, Expression::Signal(_));
+
                 // Register all identifiers from the pattern
                 for ident in let_stmt.pattern.bound_identifiers() {
                     self.env.bind(ident.value.clone(), value_type.clone());
+
+                    // Track signal variables
+                    if is_signal {
+                        self.signal_variables.insert(ident.value.clone());
+                    }
                 }
                 Ok(value_type)
             }
 
             Statement::Assignment(assign_stmt) => {
+                // PHASE 1 FIX #1: Check if trying to reassign a signal variable without .value
+                if let Expression::Identifier(ident) = &assign_stmt.target {
+                    if self.signal_variables.contains(&ident.value) {
+                        // This is a signal variable - error if trying to reassign it directly
+                        return Err(CompileError::Generic(format!(
+                            "Cannot reassign signal variable '{}' directly. Signals are reactive objects that must not be overwritten.\n\
+                             Did you mean '{}.value = ...' to update the signal's value?\n\
+                             Assigning directly to '{}' would destroy the signal's reactivity.",
+                            ident.value, ident.value, ident.value
+                        )));
+                    }
+                }
+
                 // Infer the type of the target expression
                 let target_type = match &assign_stmt.target {
                     Expression::Identifier(ident) => {
@@ -439,11 +464,29 @@ impl TypeChecker {
                         Ok((**return_type).clone())
                     }
                     Type::Any => {
+                        // PHASE 1 FIX #2: Check if trying to call .length property even on Any types
+                        if let Expression::FieldAccess(field_access) = &*call.function {
+                            if field_access.field.value == "length" {
+                                return Err(CompileError::Generic(
+                                    ".length is a property, not a method. Use '.length' without parentheses (e.g., 'items.length' instead of 'items.length()')".to_string()
+                                ));
+                            }
+                        }
+
                         // If function type is Any (e.g., from external functions), skip checking
                         Ok(Type::Any)
                     }
                     _ => {
-                        // Not a function type
+                        // Not a function type - provide helpful error (PHASE 1 FIX #2)
+                        // Check if trying to call .length property
+                        if let Expression::FieldAccess(field_access) = &*call.function {
+                            if field_access.field.value == "length" {
+                                return Err(CompileError::Generic(
+                                    ".length is a property, not a method. Use '.length' without parentheses (e.g., 'items.length' instead of 'items.length()')".to_string()
+                                ));
+                            }
+                        }
+
                         Err(CompileError::Generic(format!(
                             "Cannot call non-function type: {}",
                             func_type
@@ -530,6 +573,17 @@ impl TypeChecker {
                 // Infer object type
                 let object_type = self.infer_expression(&field_access.object)?;
                 let field_name = &field_access.field.value;
+
+                // Check for .length property on arrays and strings (PHASE 1 FIX #2)
+                // .length is a PROPERTY, not a method - should not be called with ()
+                if field_name == "length" {
+                    match &object_type {
+                        Type::Array(_) | Type::String => {
+                            return Ok(Type::Int);
+                        }
+                        _ => {}
+                    }
+                }
 
                 // For String methods, return function type with proper signature
                 if object_type == Type::String {

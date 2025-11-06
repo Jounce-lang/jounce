@@ -2875,6 +2875,26 @@ impl<'a> Parser<'a> {
                 }
 
                 let expr = self.parse_expression(Precedence::Lowest)?;
+
+                // PHASE 1 FIX #3: Detect await inside JSX expressions
+                if self.contains_await(&expr) {
+                    return Err(CompileError::Generic(
+                        "await cannot be used inside JSX expressions.\n\
+                         \n\
+                         JSX must render synchronously. To use async data:\n\
+                         1. Fetch data in onMount() or an event handler\n\
+                         2. Store the result in a signal\n\
+                         3. Reference the signal in JSX\n\
+                         \n\
+                         Example:\n\
+                           let data = signal(null);\n\
+                           onMount(() => {\n\
+                             fetch(\"/api\").then(res => data.value = res);\n\
+                           });\n\
+                           <div>{data.value}</div>".to_string()
+                    ));
+                }
+
                 if !self.consume_if_matches(&TokenKind::JsxCloseBrace) {
                     self.expect_and_consume(&TokenKind::RBrace)?;
                 }
@@ -2919,6 +2939,63 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::RAngle)?;
 
         Ok(name)
+    }
+
+    // PHASE 1 FIX #3: Helper to check if expression contains await
+    fn contains_await(&self, expr: &Expression) -> bool {
+        match expr {
+            Expression::Await(_) => true,
+            Expression::Prefix(prefix) => self.contains_await(&prefix.right),
+            Expression::Postfix(postfix) => self.contains_await(&postfix.left),
+            Expression::Infix(infix) => {
+                self.contains_await(&infix.left) || self.contains_await(&infix.right)
+            }
+            Expression::FunctionCall(call) => {
+                self.contains_await(&call.function) ||
+                call.arguments.iter().any(|arg| self.contains_await(arg))
+            }
+            Expression::FieldAccess(field) => self.contains_await(&field.object),
+            Expression::OptionalChaining(opt) => self.contains_await(&opt.object),
+            Expression::IndexAccess(idx) => {
+                self.contains_await(&idx.array) || self.contains_await(&idx.index)
+            }
+            Expression::ArrayLiteral(arr) => {
+                arr.elements.iter().any(|el| self.contains_await(el))
+            }
+            Expression::Assignment(assign) => {
+                self.contains_await(&assign.target) || self.contains_await(&assign.value)
+            }
+            Expression::Lambda(lambda) => self.contains_await(&lambda.body),
+            Expression::Ternary(ternary) => {
+                self.contains_await(&ternary.condition) ||
+                self.contains_await(&ternary.true_expr) ||
+                self.contains_await(&ternary.false_expr)
+            }
+            Expression::IfExpression(if_expr) => {
+                self.contains_await(&if_expr.condition) ||
+                self.contains_await(&if_expr.then_expr) ||
+                if_expr.else_expr.as_ref().map_or(false, |e| self.contains_await(e))
+            }
+            Expression::Block(block) => {
+                block.statements.iter().any(|s| self.statement_contains_await(s))
+            }
+            _ => false,
+        }
+    }
+
+    fn statement_contains_await(&self, stmt: &Statement) -> bool {
+        match stmt {
+            Statement::Expression(expr) => self.contains_await(expr),
+            Statement::Return(ret) => self.contains_await(&ret.value),
+            Statement::Let(let_stmt) => self.contains_await(&let_stmt.value),
+            Statement::Assignment(assign) => self.contains_await(&assign.value),
+            Statement::If(if_stmt) => {
+                self.contains_await(&if_stmt.condition) ||
+                if_stmt.then_branch.statements.iter().any(|s| self.statement_contains_await(s)) ||
+                if_stmt.else_branch.as_ref().map_or(false, |e| self.statement_contains_await(e))
+            }
+            _ => false,
+        }
     }
 
     fn parse_identifier(&mut self) -> Result<Identifier, CompileError> {
