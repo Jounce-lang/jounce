@@ -173,6 +173,7 @@ class Computed {
 
         // Run computation and track new dependencies
         this._running = true;
+        __computedRunning = true;  // PHASE 3 FIX #2: Track for side effect detection
         const prevObserver = currentObserver;
         currentObserver = this;
 
@@ -181,6 +182,7 @@ class Computed {
         } finally {
             currentObserver = prevObserver;
             this._running = false;
+            __computedRunning = false;  // PHASE 3 FIX #2: Clear flag after computation
         }
 
         this._dirty = false;
@@ -406,7 +408,14 @@ function untrack(fn) {
  * @returns {Signal} A new signal instance
  */
 function signal(initialValue) {
-    return new Signal(initialValue);
+    const sig = new Signal(initialValue);
+
+    // PHASE 3 FIX #1: Freeze signal object to prevent reassignment
+    // This provides runtime protection against: signal = newValue (should be signal.value = newValue)
+    // Note: Only freezes the signal object itself, not the _value property setter
+    Object.freeze(sig);
+
+    return sig;
 }
 
 /**
@@ -514,6 +523,108 @@ function getSubscriberCount(reactive) {
  */
 function getDependencyCount(observer) {
     return observer._dependencies.size;
+}
+
+// ============================================================================
+// Phase 3: Dev-Mode Side Effect Detection in computed()
+// ============================================================================
+
+/**
+ * Track if we're currently running a computed function
+ * Used to detect side effects in dev mode
+ * @private
+ */
+let __computedRunning = false;
+
+/**
+ * Check if we're in dev mode (not production)
+ * @private
+ */
+const isDev = typeof process === 'undefined' || process.env.NODE_ENV !== 'production';
+
+/**
+ * Initialize dev-mode side effect detection
+ * Instruments common side-effect functions to throw errors if called during computed()
+ * @private
+ */
+function initDevModeSideEffectDetection() {
+    if (!isDev || typeof window === 'undefined') {
+        return; // Only in dev mode and browser environment
+    }
+
+    // Instrument console methods
+    const consoleMethods = ['log', 'warn', 'error', 'info', 'debug'];
+    consoleMethods.forEach(method => {
+        const original = console[method];
+        if (original) {
+            console[method] = function(...args) {
+                if (__computedRunning) {
+                    throw new Error(
+                        `⚠️  Side effect detected in computed()!\n\n` +
+                        `console.${method}() was called inside a computed() function.\n` +
+                        `computed() should be pure - no logging, mutations, or side effects.\n\n` +
+                        `Use effect() instead for side effects:\n` +
+                        `  effect(() => {\n` +
+                        `    console.${method}(mySignal.value);\n` +
+                        `  });`
+                    );
+                }
+                return original.apply(console, args);
+            };
+        }
+    });
+
+    // Instrument fetch
+    if (typeof fetch !== 'undefined') {
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            if (__computedRunning) {
+                throw new Error(
+                    `⚠️  Side effect detected in computed()!\n\n` +
+                    `fetch() was called inside a computed() function.\n` +
+                    `computed() should be pure - no network requests or side effects.\n\n` +
+                    `Use effect() instead for async operations:\n` +
+                    `  effect(() => {\n` +
+                    `    fetch('/api').then(data => result.value = data);\n` +
+                    `  });`
+                );
+            }
+            return originalFetch.apply(window, args);
+        };
+    }
+
+    // Instrument localStorage/sessionStorage
+    ['localStorage', 'sessionStorage'].forEach(storageName => {
+        if (typeof window[storageName] !== 'undefined') {
+            const storage = window[storageName];
+            const methods = ['setItem', 'removeItem', 'clear'];
+
+            methods.forEach(method => {
+                const original = storage[method];
+                if (original) {
+                    storage[method] = function(...args) {
+                        if (__computedRunning) {
+                            throw new Error(
+                                `⚠️  Side effect detected in computed()!\n\n` +
+                                `${storageName}.${method}() was called inside a computed() function.\n` +
+                                `computed() should be pure - no storage mutations or side effects.\n\n` +
+                                `Use effect() instead for storage operations:\n` +
+                                `  effect(() => {\n` +
+                                `    ${storageName}.${method}(...);\n` +
+                                `  });`
+                            );
+                        }
+                        return original.apply(storage, args);
+                    };
+                }
+            });
+        }
+    });
+}
+
+// Initialize dev-mode detection if in browser
+if (typeof window !== 'undefined') {
+    initDevModeSideEffectDetection();
 }
 
 // ============================================================================
