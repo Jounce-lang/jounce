@@ -141,6 +141,11 @@ impl Compiler {
         let mut analyzer = SemanticAnalyzer::new();
         analyzer.analyze_program(&program_ast)?;
 
+        // Print lint warnings (non-blocking)
+        for warning in analyzer.warnings() {
+            eprintln!("\n{}", warning);
+        }
+
         // Type checking with inference
         let mut type_checker = TypeChecker::new();
         type_checker.check_program(&program_ast.statements)?;
@@ -213,6 +218,11 @@ impl Compiler {
         // --- Analysis Passes ---
         let mut analyzer = SemanticAnalyzer::new();
         analyzer.analyze_program(&program_ast)?;
+
+        // Print lint warnings (non-blocking)
+        for warning in analyzer.warnings() {
+            eprintln!("\n{}", warning);
+        }
 
         // Type checking with inference
         let mut type_checker = TypeChecker::new();

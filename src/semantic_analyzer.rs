@@ -151,6 +151,8 @@ pub struct SemanticAnalyzer {
     in_component: bool,  // Track if we're inside a component
     reactive_variables: HashSet<String>,  // Track reactive variable names
     module_loader: ModuleLoader,  // Module loader for imports
+    // PHASE 2: Lint warnings (non-blocking)
+    warnings: Vec<String>,
 }
 
 impl Default for SemanticAnalyzer {
@@ -172,7 +174,18 @@ impl SemanticAnalyzer {
             in_component: false,
             reactive_variables: HashSet::new(),
             module_loader: ModuleLoader::new(package_root.into()),
+            warnings: Vec::new(),
         }
+    }
+
+    /// Get all warnings collected during analysis
+    pub fn warnings(&self) -> &[String] {
+        &self.warnings
+    }
+
+    /// Add a warning (non-blocking)
+    fn warn(&mut self, message: String) {
+        self.warnings.push(message);
     }
 
     pub fn analyze_program(&mut self, program: &Program) -> Result<(), CompileError> {
@@ -450,6 +463,33 @@ impl SemanticAnalyzer {
     }
 
     fn analyze_for_in_statement(&mut self, stmt: &ForInStatement) -> Result<ResolvedType, CompileError> {
+        // PHASE 2 FIX #17: Warn about non-reactive range loops
+        if let Expression::Range(range_expr) = &stmt.iterator {
+            let uses_signal_in_range =
+                (range_expr.start.as_ref().map_or(false, |s| self.expression_uses_signal_value(s))) ||
+                (range_expr.end.as_ref().map_or(false, |e| self.expression_uses_signal_value(e)));
+
+            if uses_signal_in_range {
+                self.warn(format!(
+                    "⚠️  Range loop uses signal.value but won't re-run when signal changes.\n\
+                     \n\
+                     Range expressions like '0..count.value' are evaluated once when the loop starts.\n\
+                     Changes to the signal afterward won't update the loop.\n\
+                     \n\
+                     To make the loop reactive:\n\
+                     1. Wrap the entire loop in effect(() => {{ ... }})\n\
+                     2. Or use computed(() => items.value.map(...)) for derived lists\n\
+                     \n\
+                     Example:\n\
+                       effect(() => {{\n\
+                         for i in 0..count.value {{\n\
+                           console.log(i);\n\
+                         }}\n\
+                       }});"
+                ));
+            }
+        }
+
         // Analyze the iterator expression
         let iterator_type = self.analyze_expression(&stmt.iterator)?;
 
@@ -581,6 +621,9 @@ impl SemanticAnalyzer {
             .as_ref()
             .map(|ty| self.type_expression_to_resolved_type(ty));
 
+        // PHASE 2 FIX #5: Track if value is a signal expression
+        let is_signal_expr = matches!(&stmt.value, Expression::Signal(_));
+
         let mut value_type = if let Some(expected) = annotation_type.as_ref() {
             self.analyze_expression_with_expected(&stmt.value, Some(expected))?
         } else {
@@ -602,6 +645,26 @@ impl SemanticAnalyzer {
             value_type = expected_type;
         }
 
+        // PHASE 2 FIX #2: Warn about let mut in components (won't trigger re-renders)
+        if self.in_component && stmt.mutable {
+            let var_name = match &stmt.pattern {
+                Pattern::Identifier(id) => id.value.clone(),
+                Pattern::Tuple(_) => "(tuple)".to_string(),
+                _ => "(pattern)".to_string(),
+            };
+            self.warn(format!(
+                "⚠️  Mutable variable '{}' in component won't trigger re-renders.\n\
+                 \n\
+                 Reactivity in Jounce requires signals, not mutable variables.\n\
+                 \n\
+                 ❌ Wrong:  let mut {} = 0;\n\
+                 ✅ Correct: let {} = signal(0);\n\
+                 \n\
+                 Then update with: {}.value = new_value",
+                var_name, var_name, var_name, var_name
+            ));
+        }
+
         // Register all bound identifiers from the pattern
         let identifiers = stmt.pattern.bound_identifiers();
         for (idx, ident) in identifiers.iter().enumerate() {
@@ -618,14 +681,43 @@ impl SemanticAnalyzer {
                 _ => value_type.clone(),
             };
 
+            // PHASE 2 FIX #5: Detect signal shadowing
+            if let Some(outer_type) = self.symbols.lookup(&ident.value) {
+                // Check if outer variable is a signal (either Signal<T> or ComplexType from signal())
+                // Also check if it's in our reactive_variables set
+                let is_reactive_shadow = matches!(outer_type, ResolvedType::Signal(_) | ResolvedType::ComplexType)
+                    && self.reactive_variables.contains(&ident.value);
+
+                if is_reactive_shadow {
+                    self.warn(format!(
+                        "⚠️  Variable '{}' shadows a signal from outer scope, breaking reactivity.\n\
+                         \n\
+                         Shadowing reactive signals prevents the inner scope from accessing the signal.\n\
+                         This is usually unintentional and breaks reactivity tracking.\n\
+                         \n\
+                         Consider:\n\
+                         1. Rename the inner variable (e.g., 'local_{}' or '{}_copy')\n\
+                         2. Use the outer signal directly instead of shadowing it\n\
+                         3. If intentional, use a different name to make the distinction clear",
+                        ident.value, ident.value, ident.value
+                    ));
+                }
+            }
+
             // Auto-wrap in Signal<T> if inside a component and type is simple
-            let final_type = if self.in_component && self.should_be_reactive(&ident_type) {
+            // BUT: Don't auto-wrap mutable variables (they won't trigger re-renders anyway)
+            let final_type = if self.in_component && !stmt.mutable && self.should_be_reactive(&ident_type) {
                 self.reactive_variables.insert(ident.value.clone());
                 println!("[Reactive] Variable '{}' marked as reactive: {}", ident.value, ident_type);
                 ResolvedType::Signal(Box::new(ident_type))
             } else {
                 ident_type
             };
+
+            // PHASE 2 FIX #5: Also track signal expressions even if not auto-wrapped
+            if is_signal_expr {
+                self.reactive_variables.insert(ident.value.clone());
+            }
 
             self.symbols.define(ident.value.clone(), final_type);
         }
@@ -641,6 +733,89 @@ impl SemanticAnalyzer {
             ResolvedType::String |
             ResolvedType::Bool
         )
+    }
+
+    // PHASE 2 FIX #17: Helper to check if expression accesses a signal's value
+    fn expression_uses_signal_value(&self, expr: &Expression) -> bool {
+        match expr {
+            Expression::FieldAccess(field_access) => {
+                if field_access.field.value == "value" {
+                    if let Expression::Identifier(ident) = &*field_access.object {
+                        return self.reactive_variables.contains(&ident.value);
+                    }
+                }
+                self.expression_uses_signal_value(&field_access.object)
+            }
+            Expression::Infix(infix) => {
+                self.expression_uses_signal_value(&infix.left) ||
+                self.expression_uses_signal_value(&infix.right)
+            }
+            Expression::Prefix(prefix) => {
+                self.expression_uses_signal_value(&prefix.right)
+            }
+            Expression::FunctionCall(call) => {
+                self.expression_uses_signal_value(&call.function) ||
+                call.arguments.iter().any(|arg| self.expression_uses_signal_value(arg))
+            }
+            _ => false,
+        }
+    }
+
+    // PHASE 2 FIX #7: Check if expression calls setInterval/setTimeout/addEventListener
+    fn expression_uses_lifecycle_resource(&self, expr: &Expression) -> bool {
+        match expr {
+            Expression::FunctionCall(call) => {
+                if let Expression::Identifier(ident) = &*call.function {
+                    if ident.value == "setInterval" || ident.value == "setTimeout" || ident.value == "addEventListener" {
+                        return true;
+                    }
+                }
+                call.arguments.iter().any(|arg| self.expression_uses_lifecycle_resource(arg))
+            }
+            Expression::Lambda(lambda) => {
+                self.expression_uses_lifecycle_resource(&lambda.body)
+            }
+            Expression::Block(block) => {
+                block.statements.iter().any(|stmt| self.statement_uses_lifecycle_resource(stmt))
+            }
+            Expression::IfExpression(if_expr) => {
+                self.expression_uses_lifecycle_resource(&if_expr.condition) ||
+                self.expression_uses_lifecycle_resource(&if_expr.then_expr) ||
+                if_expr.else_expr.as_ref().map_or(false, |e| self.expression_uses_lifecycle_resource(e))
+            }
+            _ => false,
+        }
+    }
+
+    fn statement_uses_lifecycle_resource(&self, stmt: &Statement) -> bool {
+        match stmt {
+            Statement::Expression(expr) => self.expression_uses_lifecycle_resource(expr),
+            Statement::Let(let_stmt) => self.expression_uses_lifecycle_resource(&let_stmt.value),
+            Statement::If(if_stmt) => {
+                if_stmt.then_branch.statements.iter().any(|s| self.statement_uses_lifecycle_resource(s)) ||
+                if_stmt.else_branch.as_ref().map_or(false, |e| self.statement_uses_lifecycle_resource(e))
+            }
+            _ => false,
+        }
+    }
+
+    // PHASE 2 FIX #7: Check if expression/lambda returns something
+    fn expression_has_return(&self, expr: &Expression) -> bool {
+        match expr {
+            Expression::Lambda(lambda) => {
+                self.expression_has_return_inner(&lambda.body)
+            }
+            _ => false,
+        }
+    }
+
+    fn expression_has_return_inner(&self, expr: &Expression) -> bool {
+        match expr {
+            Expression::Block(block) => {
+                block.statements.iter().any(|stmt| matches!(stmt, Statement::Return(_)))
+            }
+            _ => false,
+        }
     }
 
     fn analyze_return_statement(&mut self, stmt: &ReturnStatement) -> Result<ResolvedType, CompileError> {
@@ -1052,6 +1227,28 @@ impl SemanticAnalyzer {
                 Ok(result_type)  // Returns function result
             }
             Expression::OnMount(on_mount_expr) => {
+                // PHASE 2 FIX #7: Check for potential missing cleanup
+                let uses_interval_or_listener = self.expression_uses_lifecycle_resource(&on_mount_expr.callback);
+                let has_return = self.expression_has_return(&on_mount_expr.callback);
+
+                if uses_interval_or_listener && !has_return {
+                    self.warn(format!(
+                        "⚠️  onMount() uses setInterval/setTimeout/addEventListener but doesn't return cleanup.\n\
+                         \n\
+                         Resources like intervals and event listeners must be cleaned up when the component\n\
+                         unmounts to prevent memory leaks.\n\
+                         \n\
+                         To fix:\n\
+                         Return a cleanup function from onMount():\n\
+                         \n\
+                         Example:\n\
+                           onMount(() => {{\n\
+                             let intervalId = setInterval(() => {{ ... }}, 1000);\n\
+                             return () => clearInterval(intervalId);  // Cleanup!\n\
+                           }});"
+                    ));
+                }
+
                 self.analyze_expression_with_expected(&on_mount_expr.callback, None)?;
                 Ok(ResolvedType::ComplexType)  // Lifecycle hook (returns void)
             }
