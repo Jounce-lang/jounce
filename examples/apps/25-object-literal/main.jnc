@@ -1,6 +1,6 @@
 // App 25: Object literals in JSX
 component App() {
-    let user = createSignal({ name: "Alice", age: 30 });
+    let user = signal({ name: "Alice", age: 30 });
 
     <div>
         <p>Name: {user.value.name}</p>

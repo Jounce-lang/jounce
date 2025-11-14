@@ -8,8 +8,8 @@ component HomePage() {
     <div>
         <h1>Home Page</h1>
         <p>Welcome to the Jounce Routing Demo!</p>
-        <button onClick={() => navigate("/about")}>Go to About</button>
-        <button onClick={() => navigate("/contact")}>Go to Contact</button>
+        <button onclick={() => navigate("/about")}>Go to About</button>
+        <button onclick={() => navigate("/contact")}>Go to Contact</button>
     </div>
 }
 
@@ -18,8 +18,8 @@ component AboutPage() {
     <div>
         <h1>About Page</h1>
         <p>This is the about page.</p>
-        <button onClick={() => navigate("/")}>Go to Home</button>
-        <button onClick={() => navigate("/contact")}>Go to Contact</button>
+        <button onclick={() => navigate("/")}>Go to Home</button>
+        <button onclick={() => navigate("/contact")}>Go to Contact</button>
     </div>
 }
 
@@ -28,8 +28,8 @@ component ContactPage() {
     <div>
         <h1>Contact Page</h1>
         <p>Get in touch with us!</p>
-        <button onClick={() => navigate("/")}>Go to Home</button>
-        <button onClick={() => navigate("/about")}>Go to About</button>
+        <button onclick={() => navigate("/")}>Go to Home</button>
+        <button onclick={() => navigate("/about")}>Go to About</button>
     </div>
 }
 
@@ -46,9 +46,9 @@ fn main() {
         <p>Current path: {get_current_path()}</p>
 
         <nav>
-            <button onClick={() => navigate("/")}>Home</button>
-            <button onClick={() => navigate("/about")}>About</button>
-            <button onClick={() => navigate("/contact")}>Contact</button>
+            <button onclick={() => navigate("/")}>Home</button>
+            <button onclick={() => navigate("/about")}>About</button>
+            <button onclick={() => navigate("/contact")}>Contact</button>
         </nav>
 
         <div id="router-outlet">

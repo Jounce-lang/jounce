@@ -1,0 +1,18 @@
+// Regression test for E_STY_001: Unsupported or Malformed Nested Style Rule
+// This should fail with E_STY_001 because of deeply nested selectors
+
+component Box() {
+    return <div class="box">Hi</div>;
+}
+
+style Box {
+    .box {
+        color: red;
+        &:hover {
+            color: blue;
+            &:focus {
+                color: green;
+            }
+        }
+    }
+}

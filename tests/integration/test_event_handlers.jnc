@@ -5,7 +5,7 @@ component Counter() {
 
     return <div>
         <h1>Counter: {count}</h1>
-        <button onClick={() => count + 1}>
+        <button onclick={() => count + 1}>
             Increment
         </button>
     </div>;

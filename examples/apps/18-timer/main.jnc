@@ -1,7 +1,7 @@
 // App 18: Timer with Math operations
 component App() {
-    let seconds = createSignal(0);
-    let minutes = createComputed(() => Math.floor(seconds.value / 60));
+    let seconds = signal(0);
+    let minutes = computed(() => Math.floor(seconds.value / 60));
 
     <div>
         <h1>Timer: {minutes.value} min</h1>

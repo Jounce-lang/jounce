@@ -1,5 +1,7 @@
 # Parser Enhancement Sprint - Complete ✅
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: October 21, 2025
 **Duration**: ~3 hours
 **Status**: All 5 parser fixes completed successfully

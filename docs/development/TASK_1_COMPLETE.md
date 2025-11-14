@@ -1,5 +1,7 @@
 # Task 1 Complete: Real-World JSX Application Examples
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-21
 **Task**: Create real-world JSX application examples to validate Jounce's capabilities
 **Status**: ✅ **COMPLETE**

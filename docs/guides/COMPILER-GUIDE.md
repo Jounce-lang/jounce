@@ -1,9 +1,11 @@
 # Jounce Compiler Guide
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 ## Complete Compilation Pipeline Documentation
 
 ### Overview
-The Jounce compiler transforms `.jnc` source code into WebAssembly bytecode.
+The Jounce compiler transforms `.jnc` source code into JavaScript (and experimentally WASM in v0.8.x).
 
 ---
 

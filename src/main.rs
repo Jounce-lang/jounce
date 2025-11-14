@@ -177,6 +177,40 @@ enum PkgCommands {
     Audit,
 }
 
+/// Extract app folder name from input path for per-app output directories
+/// Examples:
+///   examples/apps/36-animations/main.jnc  -> "36-animations"
+///   app/src/main.jnc                      -> "src"
+///   main.jnc                              -> "app"
+fn get_app_folder_name(input_path: &Path) -> String {
+    // Get the parent directory of the input file
+    if let Some(parent) = input_path.parent() {
+        if let Some(folder_name) = parent.file_name() {
+            // Sanitize the folder name (remove invalid characters)
+            let name = folder_name.to_string_lossy();
+            return sanitize_folder_name(&name);
+        }
+    }
+
+    // Fallback to "app" if we can't determine the folder
+    "app".to_string()
+}
+
+/// Sanitize a folder name to be filesystem-safe
+fn sanitize_folder_name(name: &str) -> String {
+    name.chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else if c == ' ' {
+                '-'
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -187,6 +221,14 @@ fn main() {
             use jounce_compiler::js_emitter::JSEmitter;
             use jounce_compiler::js_minifier::JSMinifier;
 
+            // Check file extension before compiling
+            if !path.to_str().unwrap_or("").ends_with(".jnc") {
+                eprintln!("error[E100]: Jounce files must use the .jnc extension");
+                eprintln!("  --> {}", path.display());
+                eprintln!("help: rename the file to end with `.jnc` (for example: app.jnc)");
+                process::exit(1);
+            }
+
             let compile_start = Instant::now();
 
             println!("🔥 Compiling full-stack application: {}", path.display());
@@ -196,7 +238,7 @@ fn main() {
             if profile {
                 println!("   📊 Profiling: enabled");
             }
-            println!("   📦 Output: server.js + client.js + app.wasm\n");
+            println!("   📦 Output: server.js + client.js + app.wasm + styles.css + index.html\n");
 
             // Read source code
             let io_start = Instant::now();
@@ -282,11 +324,12 @@ fn main() {
                 minify_time = minify_start.elapsed();
             }
 
-            // Compile to WASM with caching
+            // Compile to WASM with caching (best-effort in v0.8.x)
+            // TODO(v0.9): make WASM required once coverage ≥ 90%
             println!("   {} {} {}",
                 "⚙️ ".dimmed(),
                 "Compiling to WebAssembly".bold(),
-                "(with caching)".dimmed());
+                "(best-effort, v0.8.x)".dimmed());
             let wasm_start = Instant::now();
 
             // Initialize compilation cache
@@ -305,10 +348,11 @@ fn main() {
                     (bytes, css)
                 }
                 Err(e) => {
-                    eprintln!("\n❌ Compilation failed:\n");
-                    let diagnostic_output = Compiler::display_error(&e, Some(&source_code), &path.to_string_lossy());
-                    eprintln!("{}", diagnostic_output);
-                    return;
+                    // WASM compilation failed, but JS succeeded - this is non-blocking in v0.8.x
+                    eprintln!("\n⚠️  Warning: WASM emission failed. JS output generated successfully (v0.8.x)");
+                    eprintln!("   Details: {}", e);
+                    // Return empty WASM bytes and extract CSS from the error if available
+                    (Vec::new(), String::new())
                 }
             };
 
@@ -336,8 +380,17 @@ fn main() {
 
             let wasm_time = wasm_start.elapsed();
 
-            // Determine output directory
-            let output_dir = output.unwrap_or_else(|| PathBuf::from("dist"));
+            // Determine output directory - use per-app subdirectories
+            let base_output = output.unwrap_or_else(|| PathBuf::from("dist"));
+            let app_folder = get_app_folder_name(&path);
+            let output_dir = base_output.join(&app_folder);
+
+            // Create output directory, clearing old contents if it exists
+            if output_dir.exists() {
+                if let Err(e) = fs::remove_dir_all(&output_dir) {
+                    eprintln!("⚠️  Warning: Could not clear old output directory: {}", e);
+                }
+            }
             if let Err(e) = fs::create_dir_all(&output_dir) {
                 eprintln!("❌ Failed to create output directory: {}", e);
                 return;
@@ -363,12 +416,17 @@ fn main() {
             }
             println!("   ✓ {}", client_path.display());
 
-            let wasm_path = output_dir.join("app.wasm");
-            if let Err(e) = fs::write(&wasm_path, wasm_bytes) {
-                eprintln!("❌ Failed to write app.wasm: {}", e);
-                return;
+            // Only write WASM file if compilation succeeded (v0.8.x)
+            if !wasm_bytes.is_empty() {
+                let wasm_path = output_dir.join("app.wasm");
+                if let Err(e) = fs::write(&wasm_path, wasm_bytes) {
+                    eprintln!("❌ Failed to write app.wasm: {}", e);
+                    return;
+                }
+                println!("   ✓ {}", wasm_path.display());
+            } else {
+                println!("   ⚠️  app.wasm skipped (WASM compilation failed)");
             }
-            println!("   ✓ {}", wasm_path.display());
 
             // Write CSS output (Phase 7.5 + Quick Win 2: Utilities)
             let utilities = jounce_compiler::css_utilities::generate_utilities();
@@ -1931,7 +1989,7 @@ fn generate_index_html() -> String {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jounce App</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="./styles.css">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -1953,7 +2011,7 @@ fn generate_index_html() -> String {
     <div id="app">
         <h1>Loading Jounce App...</h1>
     </div>
-    <script type="module" src="client.js"></script>
+    <script type="module" src="./client.js"></script>
 </body>
 </html>"#.to_string()
 }

@@ -1526,10 +1526,16 @@ impl JSEmitter {
             // import './path.js' (side effects only)
             format!("import '{}';", module_path)
         } else {
-            // import { A, B, C } from './path.js'
+            // import { A, B, C } from './path.js' or import { A as AliasA, B as AliasB } from './path.js'
             let imports = use_stmt.imports
                 .iter()
-                .map(|id| id.value.clone())
+                .map(|import_item| {
+                    if let Some(alias) = &import_item.alias {
+                        format!("{} as {}", import_item.name.value, alias.value)
+                    } else {
+                        import_item.name.value.clone()
+                    }
+                })
                 .collect::<Vec<_>>()
                 .join(", ");
             format!("import {{ {} }} from '{}';", imports, module_path)
@@ -1866,15 +1872,26 @@ impl JSEmitter {
                 format!("[{}]", elements)
             }
             Expression::StructLiteral(struct_lit) => {
-                // Generate constructor call: new StructName(field1, field2, ...)
-                // Extract field values in the order they appear
-                let struct_name = &struct_lit.name.value;
-                let field_values = struct_lit.fields
+                // Generate object literal: { field1: value1, field2: value2, ...spread, ... }
+                // This allows struct literals to work with spread syntax
+                let properties = struct_lit.fields
                     .iter()
-                    .map(|(_name, value)| self.generate_expression_js(value))
+                    .map(|prop| {
+                        match prop {
+                            ObjectProperty::Field(name, value) => {
+                                let field_name = &name.value;
+                                let field_value = self.generate_expression_js(value);
+                                format!("{}: {}", field_name, field_value)
+                            }
+                            ObjectProperty::Spread(expr) => {
+                                let spread_value = self.generate_expression_js(expr);
+                                format!("...{}", spread_value)
+                            }
+                        }
+                    })
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("new {}({})", struct_name, field_values)
+                format!("{{ {} }}", properties)
             }
             Expression::ObjectLiteral(obj_lit) => {
                 // Generate JavaScript object literal: { key: value, ...spread, ... }
@@ -1959,6 +1976,32 @@ impl JSEmitter {
             }
             Expression::Match(match_expr) => {
                 self.generate_match_expression_js(match_expr)
+            }
+            Expression::IfLet(if_let_expr) => {
+                // Generate JavaScript for if-let expression: if let pattern = value { then_expr } else { else_expr }
+                // This desugars to a match expression with a single arm plus a wildcard arm
+                use crate::ast::{MatchExpression, MatchArm};
+
+                let then_arm = MatchArm {
+                    patterns: vec![*if_let_expr.pattern.clone()],
+                    body: if_let_expr.then_expr.clone(),
+                };
+
+                let else_arm = MatchArm {
+                    patterns: vec![crate::ast::Pattern::Wildcard],
+                    body: if let Some(else_expr) = &if_let_expr.else_expr {
+                        else_expr.clone()
+                    } else {
+                        Box::new(crate::ast::Expression::UnitLiteral)
+                    },
+                };
+
+                let synthetic_match = MatchExpression {
+                    scrutinee: if_let_expr.value.clone(),
+                    arms: vec![then_arm, else_arm],
+                };
+
+                self.generate_match_expression_js(&synthetic_match)
             }
             Expression::IfExpression(if_expr) => {
                 // Generate JavaScript for if/else expressions

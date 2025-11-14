@@ -1,8 +1,12 @@
 # CSS Syntax Guide - Jounce
 
-**Version**: 0.1.0 (Phase 7.5 Sprint 1)
-**Status**: ✅ FINALIZED
-**Last Updated**: 2025-10-23
+**Version**: v0.8.3 "Enhanced Language Features"
+**Last Updated**: November 7, 2025
+**Status**: ✅ Production Ready (580/580 tests passing)
+
+> **Style System Guide**: See [STYLE_SYSTEM_USER_GUIDE.md](./STYLE_SYSTEM_USER_GUIDE.md) for complete v0.8.3 styling guide
+> **Quick Start**: See [README.md](../../README.md) for installation
+> **Technical Reference**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for language specification
 
 ---
 
@@ -25,7 +29,7 @@ Jounce provides native CSS integration through the `css!` macro, enabling compon
 
 The primary way to write CSS in Jounce is the `css!` macro:
 
-```raven
+```jounce
 let styles = css! {
     .button {
         background: blue;
@@ -40,7 +44,7 @@ let styles = css! {
 
 Styles are accessed as properties on the style object:
 
-```raven
+```jounce
 <button class={styles.button}>
     Click Me
 </button>
@@ -48,7 +52,7 @@ Styles are accessed as properties on the style object:
 
 ### Complete Example
 
-```raven
+```jounce
 @client
 fn Button(props: ButtonProps) -> JSX {
     let styles = css! {
@@ -87,7 +91,7 @@ fn Button(props: ButtonProps) -> JSX {
 All CSS classes are automatically scoped to prevent naming conflicts:
 
 **Input** (Button component):
-```raven
+```jounce
 let styles = css! {
     .button {
         background: blue;
@@ -110,7 +114,7 @@ let styles = css! {
 
 ### Why Scoping?
 
-```raven
+```jounce
 // Two components can use .button without conflicts!
 
 // components/PrimaryButton.jnc
@@ -134,7 +138,7 @@ let styles = css! {
 
 ### Class Selectors (Primary)
 
-```raven
+```jounce
 let styles = css! {
     .button { /* styles */ }
     .icon { /* styles */ }
@@ -149,7 +153,7 @@ let styles = css! {
 
 ### Pseudo-classes
 
-```raven
+```jounce
 let styles = css! {
     .button {
         background: blue;
@@ -175,7 +179,7 @@ let styles = css! {
 
 ### Pseudo-elements
 
-```raven
+```jounce
 let styles = css! {
     .button::before {
         content: "→";
@@ -191,7 +195,7 @@ let styles = css! {
 
 ### Compound Selectors
 
-```raven
+```jounce
 let styles = css! {
     .button.primary {
         background: blue;
@@ -213,7 +217,7 @@ let styles = css! {
 
 ### Color Values
 
-```raven
+```jounce
 let styles = css! {
     .element {
         color: red;                           // Named colors
@@ -226,7 +230,7 @@ let styles = css! {
 
 ### Length Values
 
-```raven
+```jounce
 let styles = css! {
     .element {
         width: 100px;          // Pixels
@@ -241,7 +245,7 @@ let styles = css! {
 
 ### Keyword Values
 
-```raven
+```jounce
 let styles = css! {
     .element {
         display: flex;
@@ -255,7 +259,7 @@ let styles = css! {
 
 ### Function Values
 
-```raven
+```jounce
 let styles = css! {
     .element {
         transform: rotate(45deg);
@@ -272,7 +276,7 @@ let styles = css! {
 
 ### Flexbox
 
-```raven
+```jounce
 let styles = css! {
     .container {
         display: flex;
@@ -291,7 +295,7 @@ let styles = css! {
 
 ### Grid
 
-```raven
+```jounce
 let styles = css! {
     .grid {
         display: grid;
@@ -307,7 +311,7 @@ let styles = css! {
 
 ### Positioning
 
-```raven
+```jounce
 let styles = css! {
     .relative {
         position: relative;
@@ -338,7 +342,7 @@ let styles = css! {
 
 ## Typography
 
-```raven
+```jounce
 let styles = css! {
     .text {
         font-family: "Inter", sans-serif;
@@ -358,7 +362,7 @@ let styles = css! {
 
 ## Spacing
 
-```raven
+```jounce
 let styles = css! {
     .box {
         /* Margin */
@@ -381,7 +385,7 @@ let styles = css! {
 
 ## Borders
 
-```raven
+```jounce
 let styles = css! {
     .bordered {
         border: 1px solid #e5e7eb;
@@ -397,7 +401,7 @@ let styles = css! {
 
 ## Backgrounds
 
-```raven
+```jounce
 let styles = css! {
     .background {
         background-color: #f3f4f6;
@@ -421,7 +425,7 @@ let styles = css! {
 
 ## Shadows
 
-```raven
+```jounce
 let styles = css! {
     .shadowed {
         /* Box shadows */
@@ -438,7 +442,7 @@ let styles = css! {
 
 ## Transitions
 
-```raven
+```jounce
 let styles = css! {
     .animated {
         background: blue;
@@ -473,7 +477,7 @@ let styles = css! {
 
 Inline styles will be supported in Sprint 2 for truly dynamic values:
 
-```raven
+```jounce
 // Coming in Sprint 2!
 <div style={css! {
     background: {props.color};  // Dynamic value from props
@@ -486,7 +490,7 @@ Inline styles will be supported in Sprint 2 for truly dynamic values:
 
 ### 1. Keep Styles Close to Components
 
-```raven
+```jounce
 @client
 fn Button(props: ButtonProps) -> JSX {
     // Define styles inside the component
@@ -500,7 +504,7 @@ fn Button(props: ButtonProps) -> JSX {
 
 ### 2. Use Descriptive Class Names
 
-```raven
+```jounce
 // Good
 let styles = css! {
     .primary-button { /* ... */ }
@@ -518,7 +522,7 @@ let styles = css! {
 
 ### 3. Group Related Styles
 
-```raven
+```jounce
 let styles = css! {
     /* Base button */
     .button {
@@ -540,7 +544,7 @@ let styles = css! {
 
 ### 4. Prefer Classes Over Element Selectors
 
-```raven
+```jounce
 // Good - Explicit and scoped
 let styles = css! {
     .title { font-size: 24px; }

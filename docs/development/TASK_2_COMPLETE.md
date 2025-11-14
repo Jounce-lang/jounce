@@ -1,5 +1,7 @@
 # Task 2 Complete: Fix HTTP Tests & Validate Runtime
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-21
 **Task**: Fix HTTP test failures & validate runtime completeness
 **Status**: ✅ **COMPLETE**

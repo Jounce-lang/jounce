@@ -1,8 +1,10 @@
 # JSX AST Guide for Parser Developers
-
-**Date**: 2025-10-21 (Day 6)
+**Version**: v0.8.3
+**Last Updated**: November 7, 2025
 **Status**: JSX AST Complete and Documented
 
+
+> **Canonical Reference**: If this document conflicts with JOUNCE_SPEC.md, the spec wins. Current spec: v0.8.3 (2025-11-07).
 ---
 
 ## Overview
@@ -96,7 +98,7 @@ JsxOpeningTag {
     self_closing: false,
 }
 
-// <Button onClick={handler} />
+// <Button onclick={handler} />
 JsxOpeningTag {
     name: Identifier { value: "Button" },
     attributes: [
@@ -197,8 +199,8 @@ JsxAttribute {
 
 #### Event Handlers
 ```jsx
-onClick={handleClick}
-onClick={() => console.log("clicked")}
+onclick={handleClick}
+onclick={() => console.log("clicked")}
 
 // AST:
 JsxAttribute {

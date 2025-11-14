@@ -1,4 +1,7 @@
 # Day 2 Progress Report
+
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-20
 **Phase**: 1.2 - Code Quality Sweep
 **Status**: ✅ COMPLETE

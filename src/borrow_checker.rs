@@ -348,9 +348,16 @@ impl BorrowChecker {
                 Ok(ResolvedType::Tuple(element_types))
             }
             Expression::StructLiteral(struct_lit) => {
-                // Check all field values
-                for (_field_name, field_value) in &struct_lit.fields {
-                    self.check_expression(field_value)?;
+                // Check all field values and spreads
+                for prop in &struct_lit.fields {
+                    match prop {
+                        ObjectProperty::Field(_, field_value) => {
+                            self.check_expression(field_value)?;
+                        }
+                        ObjectProperty::Spread(expr) => {
+                            self.check_expression(expr)?;
+                        }
+                    }
                 }
                 // For now, return Unknown type
                 Ok(ResolvedType::Unknown)
@@ -407,6 +414,31 @@ impl BorrowChecker {
 
                 // For now, return Unknown type
                 Ok(ResolvedType::Unknown)
+            }
+            Expression::IfLet(if_let_expr) => {
+                // Check the value expression
+                self.check_expression(&if_let_expr.value)?;
+
+                // Enter a new scope for the then branch with pattern bindings
+                self.symbols.enter_scope();
+
+                // Register all variables bound by the pattern
+                for ident in if_let_expr.pattern.bound_identifiers() {
+                    self.symbols.define(ident.value.clone(), ResolvedType::Unknown);
+                }
+
+                // Check the then expression with pattern variables in scope
+                let then_type = self.check_expression(&if_let_expr.then_expr)?;
+
+                // Exit the then branch scope
+                self.symbols.exit_scope();
+
+                // Check the else expression if present
+                if let Some(else_expr) = &if_let_expr.else_expr {
+                    self.check_expression(else_expr)?;
+                }
+
+                Ok(then_type)
             }
             Expression::IndexAccess(index_expr) => {
                 // Check the array expression

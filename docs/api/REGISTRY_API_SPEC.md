@@ -1,5 +1,7 @@
 # Jounce Package Registry API Specification
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Version**: 1.0.0
 **Date**: October 17, 2025
 **Status**: Draft

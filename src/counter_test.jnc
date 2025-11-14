@@ -15,7 +15,7 @@
 component Counter() {
     return <div>
         <h1>Counter: <span id="count">0</span></h1>
-        <button onClick={(e) => count.value + 1}>+</button>
+        <button onclick={(e) => count.value + 1}>+</button>
     </div>;
 }
 

@@ -59,7 +59,7 @@ component AdminPanel() {
     <div class="admin-panel">
         <h1>Admin Panel</h1>
 
-        <button onClick={load_users}>
+        <button onclick={load_users}>
             Load Users
         </button>
 

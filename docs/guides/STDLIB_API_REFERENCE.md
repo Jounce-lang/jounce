@@ -1,11 +1,18 @@
 # Jounce Standard Library API Reference
 
-**Version**: 0.1.0
-**Last Updated**: 2025-10-21
+**Version**: v0.8.3 "Enhanced Language Features"
+**Last Updated**: November 7, 2025
+**Status**: ✅ Production Ready (580/580 tests passing)
 **Total Modules**: 16
 **Total Functions**: 200+
 
 Complete API reference for all Jounce standard library modules.
+
+> **Quick Start**: See [README.md](../../README.md) for installation
+> **Tutorials**: See [LEARN_JOUNCE.md](./LEARN_JOUNCE.md) for practical examples
+> **Technical Reference**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for language specification
+
+**Note**: This is a comprehensive API reference. For practical usage examples, see [LEARN_JOUNCE.md](./LEARN_JOUNCE.md).
 
 ---
 
@@ -34,71 +41,70 @@ Complete API reference for all Jounce standard library modules.
 
 **Module**: `Math::`
 **Size**: 661 lines
-**Tests**: 30 passing
 **Import**: Auto-imported (global namespace)
 
 ### Constants
 
 #### `Math::PI`
-```raven
+```jounce
 const PI: f64 = 3.141592653589793
 ```
 The mathematical constant π (pi).
 
 **Example**:
-```raven
+```jounce
 let circumference = 2.0 * Math::PI * radius;
 ```
 
 #### `Math::E`
-```raven
+```jounce
 const E: f64 = 2.718281828459045
 ```
 Euler's number (base of natural logarithm).
 
 **Example**:
-```raven
+```jounce
 let growth = Math::E * rate;
 ```
 
 #### `Math::TAU`
-```raven
+```jounce
 const TAU: f64 = 6.283185307179586
 ```
 The mathematical constant τ (tau), equal to 2π.
 
 #### `Math::SQRT_2`
-```raven
+```jounce
 const SQRT_2: f64 = 1.4142135623730951
 ```
 Square root of 2.
 
 #### `Math::FRAC_1_SQRT_2`
-```raven
+```jounce
 const FRAC_1_SQRT_2: f64 = 0.7071067811865476
 ```
 1 divided by the square root of 2.
 
 #### `Math::FRAC_PI_2`
-```raven
+```jounce
 const FRAC_PI_2: f64 = 1.5707963267948966
 ```
 π divided by 2 (90 degrees in radians).
 
 #### `Math::FRAC_PI_4`
-```raven
+```jounce
 const FRAC_PI_4: f64 = 0.7853981633974483
 ```
 π divided by 4 (45 degrees in radians).
 
 #### `Math::LN_2`
-```raven
+```jounce
 const LN_2: f64 = 0.6931471805599453
 ```
 Natural logarithm of 2.
 
 #### `Math::LN_10`
-```raven
+```jounce
 const LN_10: f64 = 2.302585092994046
 ```
 Natural logarithm of 10.
@@ -116,7 +122,7 @@ Returns the absolute value of a number.
 **Returns**: Absolute value (always non-negative)
 
 **Example**:
-```raven
+```jounce
 let positive = Math::abs(-42.5);  // 42.5
 ```
 
@@ -130,7 +136,7 @@ Returns the smaller of two numbers.
 **Returns**: The minimum value
 
 **Example**:
-```raven
+```jounce
 let smallest = Math::min(10.5, 20.3);  // 10.5
 ```
 
@@ -144,7 +150,7 @@ Returns the larger of two numbers.
 **Returns**: The maximum value
 
 **Example**:
-```raven
+```jounce
 let largest = Math::max(10.5, 20.3);  // 20.3
 ```
 
@@ -159,7 +165,7 @@ Constrains a value to a range.
 **Returns**: Value clamped to [min, max]
 
 **Example**:
-```raven
+```jounce
 let clamped = Math::clamp(150.0, 0.0, 100.0);  // 100.0
 let clamped2 = Math::clamp(-10.0, 0.0, 100.0); // 0.0
 ```
@@ -173,7 +179,7 @@ Returns the sign of a number (-1, 0, or 1).
 **Returns**: -1.0 if negative, 0.0 if zero, 1.0 if positive
 
 **Example**:
-```raven
+```jounce
 let s1 = Math::sign(42.0);   // 1.0
 let s2 = Math::sign(-42.0);  // -1.0
 let s3 = Math::sign(0.0);    // 0.0
@@ -193,7 +199,7 @@ Raises a number to a power.
 **Returns**: base^exponent
 
 **Example**:
-```raven
+```jounce
 let result = Math::pow(2.0, 8.0);  // 256.0
 ```
 
@@ -206,7 +212,7 @@ Returns the square root of a number.
 **Returns**: √x
 
 **Example**:
-```raven
+```jounce
 let root = Math::sqrt(16.0);  // 4.0
 ```
 
@@ -219,7 +225,7 @@ Returns the cube root of a number.
 **Returns**: ∛x
 
 **Example**:
-```raven
+```jounce
 let root = Math::cbrt(27.0);  // 3.0
 ```
 
@@ -232,7 +238,7 @@ Returns the square of a number (convenience function).
 **Returns**: x²
 
 **Example**:
-```raven
+```jounce
 let sq = Math::square(5.0);  // 25.0
 ```
 
@@ -245,7 +251,7 @@ Returns the cube of a number (convenience function).
 **Returns**: x³
 
 **Example**:
-```raven
+```jounce
 let cb = Math::cube(3.0);  // 27.0
 ```
 
@@ -258,7 +264,7 @@ Returns e raised to the power of x.
 **Returns**: e^x
 
 **Example**:
-```raven
+```jounce
 let result = Math::exp(2.0);  // ~7.389
 ```
 
@@ -271,7 +277,7 @@ Returns 2 raised to the power of x.
 **Returns**: 2^x
 
 **Example**:
-```raven
+```jounce
 let result = Math::exp2(3.0);  // 8.0
 ```
 
@@ -288,7 +294,7 @@ Returns the natural logarithm (base e).
 **Returns**: ln(x)
 
 **Example**:
-```raven
+```jounce
 let result = Math::ln(Math::E);  // 1.0
 ```
 
@@ -301,7 +307,7 @@ Returns the base-2 logarithm.
 **Returns**: log₂(x)
 
 **Example**:
-```raven
+```jounce
 let result = Math::log2(8.0);  // 3.0
 ```
 
@@ -314,7 +320,7 @@ Returns the base-10 logarithm.
 **Returns**: log₁₀(x)
 
 **Example**:
-```raven
+```jounce
 let result = Math::log10(100.0);  // 2.0
 ```
 
@@ -328,7 +334,7 @@ Returns the logarithm with custom base.
 **Returns**: log_base(x)
 
 **Example**:
-```raven
+```jounce
 let result = Math::log(32.0, 2.0);  // 5.0
 ```
 
@@ -345,7 +351,7 @@ Rounds to the nearest integer.
 **Returns**: Nearest integer (0.5 rounds up)
 
 **Example**:
-```raven
+```jounce
 let r1 = Math::round(3.7);  // 4.0
 let r2 = Math::round(3.2);  // 3.0
 let r3 = Math::round(3.5);  // 4.0
@@ -360,7 +366,7 @@ Rounds down to the nearest integer.
 **Returns**: Largest integer ≤ x
 
 **Example**:
-```raven
+```jounce
 let f = Math::floor(3.7);  // 3.0
 ```
 
@@ -373,7 +379,7 @@ Rounds up to the nearest integer.
 **Returns**: Smallest integer ≥ x
 
 **Example**:
-```raven
+```jounce
 let c = Math::ceil(3.2);  // 4.0
 ```
 
@@ -386,7 +392,7 @@ Removes the decimal part.
 **Returns**: Integer part only
 
 **Example**:
-```raven
+```jounce
 let t1 = Math::trunc(3.7);   // 3.0
 let t2 = Math::trunc(-3.7);  // -3.0
 ```
@@ -400,7 +406,7 @@ Returns the fractional part.
 **Returns**: Decimal part only
 
 **Example**:
-```raven
+```jounce
 let f = Math::fract(3.7);  // 0.7
 ```
 
@@ -417,7 +423,7 @@ Returns the sine of an angle (in radians).
 **Returns**: sin(x)
 
 **Example**:
-```raven
+```jounce
 let s = Math::sin(Math::PI / 2.0);  // 1.0
 ```
 
@@ -430,7 +436,7 @@ Returns the cosine of an angle (in radians).
 **Returns**: cos(x)
 
 **Example**:
-```raven
+```jounce
 let c = Math::cos(0.0);  // 1.0
 ```
 
@@ -443,7 +449,7 @@ Returns the tangent of an angle (in radians).
 **Returns**: tan(x)
 
 **Example**:
-```raven
+```jounce
 let t = Math::tan(Math::PI / 4.0);  // ~1.0
 ```
 
@@ -456,7 +462,7 @@ Returns the arcsine (inverse sine) in radians.
 **Returns**: Angle in radians
 
 **Example**:
-```raven
+```jounce
 let angle = Math::asin(0.5);  // ~0.524 (30°)
 ```
 
@@ -469,7 +475,7 @@ Returns the arccosine (inverse cosine) in radians.
 **Returns**: Angle in radians
 
 **Example**:
-```raven
+```jounce
 let angle = Math::acos(0.5);  // ~1.047 (60°)
 ```
 
@@ -482,7 +488,7 @@ Returns the arctangent (inverse tangent) in radians.
 **Returns**: Angle in radians
 
 **Example**:
-```raven
+```jounce
 let angle = Math::atan(1.0);  // ~0.785 (45°)
 ```
 
@@ -496,7 +502,7 @@ Returns the angle from the x-axis to point (x, y).
 **Returns**: Angle in radians (-π to π)
 
 **Example**:
-```raven
+```jounce
 let angle = Math::atan2(1.0, 1.0);  // ~0.785 (45°)
 ```
 
@@ -509,7 +515,7 @@ Returns the hyperbolic sine.
 **Returns**: sinh(x)
 
 **Example**:
-```raven
+```jounce
 let h = Math::sinh(1.0);  // ~1.175
 ```
 
@@ -522,7 +528,7 @@ Returns the hyperbolic cosine.
 **Returns**: cosh(x)
 
 **Example**:
-```raven
+```jounce
 let h = Math::cosh(1.0);  // ~1.543
 ```
 
@@ -535,7 +541,7 @@ Returns the hyperbolic tangent.
 **Returns**: tanh(x)
 
 **Example**:
-```raven
+```jounce
 let h = Math::tanh(1.0);  // ~0.762
 ```
 
@@ -548,7 +554,7 @@ Converts degrees to radians.
 **Returns**: Angle in radians
 
 **Example**:
-```raven
+```jounce
 let rad = Math::radians(90.0);  // ~1.571 (π/2)
 ```
 
@@ -561,7 +567,7 @@ Converts radians to degrees.
 **Returns**: Angle in degrees
 
 **Example**:
-```raven
+```jounce
 let deg = Math::degrees(Math::PI);  // 180.0
 ```
 
@@ -575,7 +581,7 @@ Returns a random number between 0 (inclusive) and 1 (exclusive).
 **Returns**: Random f64 in [0, 1)
 
 **Example**:
-```raven
+```jounce
 let r = Math::random();  // e.g., 0.742
 ```
 
@@ -589,7 +595,7 @@ Returns a random number in a range.
 **Returns**: Random f64 in [min, max)
 
 **Example**:
-```raven
+```jounce
 let r = Math::random_range(10.0, 20.0);  // e.g., 15.3
 ```
 
@@ -603,7 +609,7 @@ Returns a random integer in a range.
 **Returns**: Random i32 in [min, max]
 
 **Example**:
-```raven
+```jounce
 let dice = Math::random_int(1, 6);  // 1, 2, 3, 4, 5, or 6
 ```
 
@@ -620,7 +626,7 @@ Checks if a number is NaN (Not a Number).
 **Returns**: true if NaN, false otherwise
 
 **Example**:
-```raven
+```jounce
 let nan = 0.0 / 0.0;
 if Math::is_nan(nan) {
     println!("Invalid calculation");
@@ -636,7 +642,7 @@ Checks if a number is infinite.
 **Returns**: true if ±∞, false otherwise
 
 **Example**:
-```raven
+```jounce
 let inf = 1.0 / 0.0;
 if Math::is_infinite(inf) {
     println!("Overflow");
@@ -652,7 +658,7 @@ Checks if a number is finite.
 **Returns**: true if finite, false if NaN or ±∞
 
 **Example**:
-```raven
+```jounce
 if Math::is_finite(user_input) {
     // Safe to use
 }
@@ -683,7 +689,7 @@ Creates a new signal with an initial value.
 **Returns**: New Signal instance
 
 **Example**:
-```raven
+```jounce
 let count = Signal::new(0);
 let name = Signal::new("Alice");
 let items = Signal::new(vec![1, 2, 3]);
@@ -695,7 +701,7 @@ Gets the current value and tracks the dependency.
 **Returns**: Current value (cloned)
 
 **Example**:
-```raven
+```jounce
 let count = Signal::new(10);
 let current = count.get();  // 10
 ```
@@ -707,7 +713,7 @@ Sets a new value and notifies all dependents.
 - `value` - New value to set
 
 **Example**:
-```raven
+```jounce
 let count = Signal::new(0);
 count.set(5);  // Triggers all dependent computed values and effects
 ```
@@ -730,7 +736,7 @@ Creates a new computed value.
 **Returns**: New Computed instance
 
 **Example**:
-```raven
+```jounce
 let count = Signal::new(10);
 let doubled = Computed::new(|| {
     return count.get() * 2;
@@ -747,7 +753,7 @@ Gets the current computed value and tracks the dependency.
 **Returns**: Computed value (cached, only recomputes if dependencies changed)
 
 **Example**:
-```raven
+```jounce
 let first = Signal::new("John");
 let last = Signal::new("Doe");
 
@@ -771,7 +777,7 @@ Creates an effect that runs immediately and on dependency changes.
 - Function to run (must call .get() on signals/computed values)
 
 **Example**:
-```raven
+```jounce
 let count = Signal::new(0);
 
 create_effect(|| {
@@ -805,7 +811,7 @@ Creates a new reactive vector.
 **Returns**: Empty reactive vector
 
 **Example**:
-```raven
+```jounce
 let items = ReactiveVec::new();
 ```
 
@@ -816,7 +822,7 @@ Adds an item and triggers reactivity.
 - `item` - Item to add
 
 **Example**:
-```raven
+```jounce
 let items = ReactiveVec::new();
 items.push("Apple");
 items.push("Banana");
@@ -831,7 +837,7 @@ Removes an item at index and triggers reactivity.
 **Returns**: Removed item
 
 **Example**:
-```raven
+```jounce
 let items = ReactiveVec::new();
 items.push("A");
 items.push("B");
@@ -842,7 +848,7 @@ let removed = items.remove(0);  // Removes "A"
 Removes all items and triggers reactivity.
 
 **Example**:
-```raven
+```jounce
 items.clear();
 ```
 
@@ -852,7 +858,7 @@ Returns the number of items (tracks dependency).
 **Returns**: Number of elements
 
 **Example**:
-```raven
+```jounce
 let count = Computed::new(|| items.len());
 ```
 
@@ -860,7 +866,7 @@ let count = Computed::new(|| items.len());
 Manually trigger reactivity (after direct mutation).
 
 **Example**:
-```raven
+```jounce
 let first = &mut items[0];
 first.quantity = 2;
 items.notify();  // Trigger dependents
@@ -888,7 +894,7 @@ Creates a GET request.
 **Returns**: Request builder
 
 **Example**:
-```raven
+```jounce
 @server
 async fn fetch_users() {
     let response = HttpRequest::get("https://api.example.com/users")
@@ -906,7 +912,7 @@ Creates a POST request.
 **Returns**: Request builder
 
 **Example**:
-```raven
+```jounce
 @server
 async fn create_user(user: User) {
     let response = HttpRequest::post("https://api.example.com/users")
@@ -942,7 +948,7 @@ Adds a header to the request.
 **Returns**: Request builder (chainable)
 
 **Example**:
-```raven
+```jounce
 let response = HttpRequest::get(url)
     .header("Authorization", "Bearer TOKEN")
     .header("Accept", "application/json")
@@ -960,7 +966,7 @@ Adds a query parameter.
 **Returns**: Request builder (chainable)
 
 **Example**:
-```raven
+```jounce
 let response = HttpRequest::get("https://api.example.com/search")
     .query("q", "Jounce")
     .query("limit", "10")
@@ -978,7 +984,7 @@ Sets JSON body and Content-Type header.
 **Returns**: Request builder (chainable)
 
 **Example**:
-```raven
+```jounce
 let user = json!({
     "name": "Alice",
     "email": "alice@example.com"
@@ -1000,7 +1006,7 @@ Adds form data field.
 **Returns**: Request builder (chainable)
 
 **Example**:
-```raven
+```jounce
 let response = HttpRequest::post("/login")
     .form("username", "alice")
     .form("password", "secret")
@@ -1017,7 +1023,7 @@ Sets request timeout.
 **Returns**: Request builder (chainable)
 
 **Example**:
-```raven
+```jounce
 let response = HttpRequest::get(url)
     .timeout(5000)  // 5 seconds
     .send()
@@ -1030,7 +1036,7 @@ Sends the request (async).
 **Returns**: Future resolving to Result with response or error
 
 **Example**:
-```raven
+```jounce
 @server
 async fn fetch() {
     let response = HttpRequest::get(url).send().await;
@@ -1051,7 +1057,7 @@ Response from an HTTP request.
 HTTP status code.
 
 **Example**:
-```raven
+```jounce
 if resp.status == 200 {
     println!("Success!");
 }
@@ -1061,7 +1067,7 @@ if resp.status == 200 {
 Response body as string.
 
 **Example**:
-```raven
+```jounce
 println!("Body: {}", resp.body);
 ```
 
@@ -1071,7 +1077,7 @@ Checks if status is 2xx.
 **Returns**: true if successful
 
 **Example**:
-```raven
+```jounce
 if resp.is_ok() {
     // Process response
 }
@@ -1086,7 +1092,7 @@ Checks if status is 4xx.
 **Returns**: true if client error
 
 **Example**:
-```raven
+```jounce
 if resp.is_client_error() {
     println!("Bad request");
 }
@@ -1098,7 +1104,7 @@ Checks if status is 5xx.
 **Returns**: true if server error
 
 **Example**:
-```raven
+```jounce
 if resp.is_server_error() {
     println!("Server error");
 }
@@ -1110,7 +1116,7 @@ Parses body as JSON.
 **Returns**: Result with parsed JSON or error
 
 **Example**:
-```raven
+```jounce
 match resp.json() {
     Ok(data) => {
         let name = data["name"].as_str().unwrap();
@@ -1132,7 +1138,7 @@ Creates a new HTTP client.
 **Returns**: Client builder
 
 **Example**:
-```raven
+```jounce
 @server
 async fn api_example() {
     let client = HttpClient::new()
@@ -1167,7 +1173,7 @@ Creates GET request with base URL.
 **Returns**: Request builder
 
 **Example**:
-```raven
+```jounce
 let client = HttpClient::new()
     .with_base_url("https://api.example.com");
 
@@ -1197,7 +1203,7 @@ Quick GET request.
 **Returns**: Future with response
 
 **Example**:
-```raven
+```jounce
 @server
 async fn quick_fetch() {
     let resp = get("https://api.example.com/data").await;
@@ -1214,7 +1220,7 @@ Quick POST with JSON.
 **Returns**: Future with response
 
 **Example**:
-```raven
+```jounce
 @server
 async fn quick_post() {
     let data = json!({"key": "value"});
@@ -1231,7 +1237,7 @@ Synchronous GET request.
 **Returns**: Response or error (blocks until complete)
 
 **Example**:
-```raven
+```jounce
 @server
 fn sync_fetch() {
     let resp = get_blocking(url);
@@ -1262,7 +1268,7 @@ Hashes a password using bcrypt.
 **Returns**: Hashed password (safe to store)
 
 **Example**:
-```raven
+```jounce
 @server
 fn register(password: String) {
     let hashed = Auth::hash_password(&password);
@@ -1280,7 +1286,7 @@ Verifies a password against a hash.
 **Returns**: true if password matches
 
 **Example**:
-```raven
+```jounce
 @server
 fn login(email: String, password: String) -> bool {
     let user = db.get_user(&email);
@@ -1302,7 +1308,7 @@ Creates a JWT token.
 **Returns**: JWT token string
 
 **Example**:
-```raven
+```jounce
 @server
 fn create_session(user_id: String) -> String {
     let claims = json!({
@@ -1324,7 +1330,7 @@ Verifies and decodes a JWT token.
 **Returns**: Result with decoded claims or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn verify_session(token: String) -> Option<String> {
     match Auth::verify_jwt(&token, "SECRET_KEY") {
@@ -1347,7 +1353,7 @@ Generates a cryptographically secure session ID.
 **Returns**: Random session ID (32 characters)
 
 **Example**:
-```raven
+```jounce
 @server
 fn create_session() -> String {
     let session_id = Auth::generate_session_id();
@@ -1365,7 +1371,7 @@ Generates a random token.
 **Returns**: Random token
 
 **Example**:
-```raven
+```jounce
 let reset_token = Auth::generate_token(64);
 email.send_reset_link(user.email, reset_token);
 ```
@@ -1393,7 +1399,7 @@ Gets the first element.
 **Returns**: Some(element) or None if empty
 
 **Example**:
-```raven
+```jounce
 let items = vec![1, 2, 3];
 match Collections::first(&items) {
     Some(first) => println!("First: {}", first),
@@ -1407,7 +1413,7 @@ Gets the last element.
 **Returns**: Some(element) or None if empty
 
 **Example**:
-```raven
+```jounce
 let last = Collections::last(&items);
 ```
 
@@ -1421,7 +1427,7 @@ Finds first element matching predicate.
 **Returns**: Some(element) or None
 
 **Example**:
-```raven
+```jounce
 let numbers = vec![1, 2, 3, 4, 5];
 let even = Collections::find(&numbers, |n| n % 2 == 0);
 // Some(2)
@@ -1437,7 +1443,7 @@ Filters elements matching predicate.
 **Returns**: New vector with matching elements
 
 **Example**:
-```raven
+```jounce
 let numbers = vec![1, 2, 3, 4, 5];
 let evens = Collections::filter(&numbers, |n| n % 2 == 0);
 // [2, 4]
@@ -1457,7 +1463,7 @@ Transforms elements.
 **Returns**: New vector with transformed elements
 
 **Example**:
-```raven
+```jounce
 let numbers = vec![1, 2, 3];
 let doubled = Collections::map(&numbers, |n| n * 2);
 // [2, 4, 6]
@@ -1478,7 +1484,7 @@ Reduces to a single value.
 **Returns**: Final accumulated value
 
 **Example**:
-```raven
+```jounce
 let numbers = vec![1, 2, 3, 4];
 let sum = Collections::reduce(&numbers, 0, |acc, n| acc + n);
 // 10
@@ -1494,7 +1500,7 @@ Checks if any element matches.
 **Returns**: true if at least one element matches
 
 **Example**:
-```raven
+```jounce
 let numbers = vec![1, 2, 3];
 let has_even = Collections::any(&numbers, |n| n % 2 == 0);
 // true
@@ -1510,7 +1516,7 @@ Checks if all elements match.
 **Returns**: true if all elements match
 
 **Example**:
-```raven
+```jounce
 let numbers = vec![2, 4, 6];
 let all_even = Collections::all(&numbers, |n| n % 2 == 0);
 // true
@@ -1525,7 +1531,7 @@ Reverses a vector.
 **Returns**: New reversed vector
 
 **Example**:
-```raven
+```jounce
 let numbers = vec![1, 2, 3];
 let reversed = Collections::reverse(&numbers);
 // [3, 2, 1]
@@ -1540,7 +1546,7 @@ Sorts a vector (ascending).
 **Returns**: New sorted vector
 
 **Example**:
-```raven
+```jounce
 let numbers = vec![3, 1, 4, 1, 5];
 let sorted = Collections::sort(&numbers);
 // [1, 1, 3, 4, 5]
@@ -1555,7 +1561,7 @@ Removes duplicates.
 **Returns**: New vector with unique elements
 
 **Example**:
-```raven
+```jounce
 let numbers = vec![1, 2, 2, 3, 1];
 let unique = Collections::unique(&numbers);
 // [1, 2, 3]
@@ -1571,7 +1577,7 @@ Splits into chunks.
 **Returns**: Vector of chunks
 
 **Example**:
-```raven
+```jounce
 let numbers = vec![1, 2, 3, 4, 5];
 let chunks = Collections::chunk(&numbers, 2);
 // [[1, 2], [3, 4], [5]]
@@ -1597,7 +1603,7 @@ Connects to a database.
 **Returns**: Result with connection or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn init_db() {
     let conn = Db::connect("postgres://localhost/mydb").unwrap();
@@ -1617,7 +1623,7 @@ Executes a SELECT query.
 **Returns**: Result with rows or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn get_users() -> Vec<User> {
     let rows = conn.query("SELECT * FROM users").unwrap();
@@ -1634,7 +1640,7 @@ Executes an INSERT/UPDATE/DELETE query.
 **Returns**: Result with affected rows or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn create_user(name: String, email: String) {
     let sql = format!("INSERT INTO users (name, email) VALUES ('{}', '{}')", name, email);
@@ -1655,7 +1661,7 @@ Prepares a parameterized query.
 **Returns**: Result with statement or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn get_user_by_id(id: i32) -> Option<User> {
     let stmt = conn.prepare("SELECT * FROM users WHERE id = $1").unwrap();
@@ -1682,7 +1688,7 @@ Begins a database transaction.
 **Returns**: Result with transaction or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn transfer_funds(from: i32, to: i32, amount: f64) {
     let txn = conn.begin_transaction().unwrap();
@@ -1722,7 +1728,7 @@ Reads file contents as string.
 **Returns**: Result with file contents or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn load_config() -> Config {
     let contents = Fs::read_file("config.json").unwrap();
@@ -1739,7 +1745,7 @@ Reads file contents as bytes.
 **Returns**: Result with bytes or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn load_image(path: String) -> Vec<u8> {
     return Fs::read_bytes(&path).unwrap();
@@ -1760,7 +1766,7 @@ Writes string to file (overwrites).
 **Returns**: Result with success or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn save_log(message: String) {
     Fs::write_file("app.log", &message).unwrap();
@@ -1786,7 +1792,7 @@ Appends to file.
 **Returns**: Result with success or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn log(message: String) {
     let line = format!("{}: {}\n", Time::now(), message);
@@ -1807,7 +1813,7 @@ Lists directory contents.
 **Returns**: Result with filenames or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn list_uploads() -> Vec<String> {
     return Fs::read_dir("uploads/").unwrap();
@@ -1823,7 +1829,7 @@ Creates a directory.
 **Returns**: Result with success or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn init_storage() {
     Fs::create_dir("uploads/images/").unwrap();
@@ -1859,7 +1865,7 @@ Checks if file or directory exists.
 **Returns**: true if exists
 
 **Example**:
-```raven
+```jounce
 @server
 fn load_or_default(path: String) -> Config {
     if Fs::exists(&path) {
@@ -1879,7 +1885,7 @@ Deletes a file.
 **Returns**: Result with success or error
 
 **Example**:
-```raven
+```jounce
 @server
 fn delete_upload(filename: String) {
     let path = format!("uploads/{}", filename);
@@ -1925,7 +1931,7 @@ Parses JSON string.
 **Returns**: Result with parsed value or error
 
 **Example**:
-```raven
+```jounce
 let json_str = "{\"name\":\"Alice\",\"age\":25}";
 match JSON::parse(json_str) {
     Ok(data) => {
@@ -1949,7 +1955,7 @@ Converts value to JSON string.
 **Returns**: JSON string
 
 **Example**:
-```raven
+```jounce
 let user = json!({
     "name": "Alice",
     "age": 25
@@ -1969,7 +1975,7 @@ Converts to formatted JSON string.
 **Returns**: Formatted JSON string with indentation
 
 **Example**:
-```raven
+```jounce
 let pretty = JSON::stringify_pretty(&user);
 println!("{}", pretty);
 // {
@@ -1988,7 +1994,7 @@ Creates a JSON value using JSON literal syntax.
 **Returns**: Value object
 
 **Example**:
-```raven
+```jounce
 let data = json!({
     "string": "hello",
     "number": 42,
@@ -2009,7 +2015,7 @@ let data = json!({
 Accesses object property or array element.
 
 **Example**:
-```raven
+```jounce
 let data = json!({"name": "Alice", "items": [1, 2, 3]});
 let name = data["name"];
 let first_item = data["items"][0];
@@ -2021,7 +2027,7 @@ Converts to string if possible.
 **Returns**: Some(string) or None
 
 **Example**:
-```raven
+```jounce
 let name = data["name"].as_str().unwrap();
 ```
 
@@ -2031,7 +2037,7 @@ Converts to integer if possible.
 **Returns**: Some(number) or None
 
 **Example**:
-```raven
+```jounce
 let age = data["age"].as_i64().unwrap() as i32;
 ```
 
@@ -2070,7 +2076,7 @@ Converts to uppercase.
 **Returns**: Uppercase string
 
 **Example**:
-```raven
+```jounce
 let upper = String::to_uppercase("hello");  // "HELLO"
 ```
 
@@ -2083,7 +2089,7 @@ Converts to lowercase.
 **Returns**: Lowercase string
 
 **Example**:
-```raven
+```jounce
 let lower = String::to_lowercase("HELLO");  // "hello"
 ```
 
@@ -2100,7 +2106,7 @@ Removes whitespace from both ends.
 **Returns**: Trimmed string
 
 **Example**:
-```raven
+```jounce
 let trimmed = String::trim("  hello  ");  // "hello"
 ```
 
@@ -2134,7 +2140,7 @@ Splits string by delimiter.
 **Returns**: Vector of parts
 
 **Example**:
-```raven
+```jounce
 let parts = String::split("a,b,c", ",");
 // ["a", "b", "c"]
 ```
@@ -2149,7 +2155,7 @@ Joins strings with separator.
 **Returns**: Joined string
 
 **Example**:
-```raven
+```jounce
 let parts = vec!["a", "b", "c"];
 let joined = String::join(&parts, ", ");
 // "a, b, c"
@@ -2169,7 +2175,7 @@ Checks if string contains substring.
 **Returns**: true if found
 
 **Example**:
-```raven
+```jounce
 let has_at = String::contains("alice@example.com", "@");
 // true
 ```
@@ -2184,7 +2190,7 @@ Checks if string starts with prefix.
 **Returns**: true if starts with prefix
 
 **Example**:
-```raven
+```jounce
 let is_https = String::starts_with(url, "https://");
 ```
 
@@ -2198,7 +2204,7 @@ Checks if string ends with suffix.
 **Returns**: true if ends with suffix
 
 **Example**:
-```raven
+```jounce
 let is_js = String::ends_with(filename, ".js");
 ```
 
@@ -2212,7 +2218,7 @@ Finds first occurrence index.
 **Returns**: Some(index) or None
 
 **Example**:
-```raven
+```jounce
 match String::index_of("hello world", "world") {
     Some(idx) => println!("Found at {}", idx),  // 6
     None => println!("Not found"),
@@ -2234,7 +2240,7 @@ Replaces all occurrences.
 **Returns**: String with replacements
 
 **Example**:
-```raven
+```jounce
 let result = String::replace("hello world", "world", "Raven");
 // "hello Raven"
 ```
@@ -2263,7 +2269,7 @@ Gets character at index.
 **Returns**: Some(char) or None
 
 **Example**:
-```raven
+```jounce
 let first = String::char_at("hello", 0);  // Some('h')
 ```
 
@@ -2276,7 +2282,7 @@ Gets string length.
 **Returns**: Number of characters
 
 **Example**:
-```raven
+```jounce
 let len = String::length("hello");  // 5
 ```
 
@@ -2297,7 +2303,7 @@ Gets current Unix timestamp (seconds).
 **Returns**: Seconds since Unix epoch
 
 **Example**:
-```raven
+```jounce
 let timestamp = Time::now();
 println!("Current time: {}", timestamp);
 ```
@@ -2308,7 +2314,7 @@ Gets current Unix timestamp (milliseconds).
 **Returns**: Milliseconds since Unix epoch
 
 **Example**:
-```raven
+```jounce
 let ms = Time::now_millis();
 ```
 
@@ -2326,7 +2332,7 @@ Formats timestamp as string.
 **Returns**: Formatted date/time string
 
 **Example**:
-```raven
+```jounce
 let timestamp = Time::now();
 let formatted = Time::format(timestamp, "%Y-%m-%d %H:%M:%S");
 // "2025-10-21 14:30:00"
@@ -2342,7 +2348,7 @@ Parses date string to timestamp.
 **Returns**: Result with timestamp or error
 
 **Example**:
-```raven
+```jounce
 let timestamp = Time::parse("2025-10-21", "%Y-%m-%d").unwrap();
 ```
 
@@ -2357,7 +2363,7 @@ Sleeps for specified milliseconds (blocking).
 - `ms` - Milliseconds to sleep
 
 **Example**:
-```raven
+```jounce
 Time::sleep(1000);  // Sleep 1 second
 ```
 
@@ -2370,7 +2376,7 @@ Sleeps asynchronously (non-blocking).
 **Returns**: Future that resolves after delay
 
 **Example**:
-```raven
+```jounce
 @server
 async fn delayed_action() {
     Time::sleep_async(1000).await;
@@ -2398,7 +2404,7 @@ Computes SHA-256 hash.
 **Returns**: Hex-encoded hash
 
 **Example**:
-```raven
+```jounce
 @server
 fn hash_file(contents: String) -> String {
     return Crypto::sha256(&contents);
@@ -2414,7 +2420,7 @@ Computes MD5 hash (insecure, use for non-security purposes).
 **Returns**: Hex-encoded hash
 
 **Example**:
-```raven
+```jounce
 let checksum = Crypto::md5(&file_contents);
 ```
 
@@ -2431,7 +2437,7 @@ Encodes bytes as base64.
 **Returns**: Base64 string
 
 **Example**:
-```raven
+```jounce
 let bytes = vec![72, 101, 108, 108, 111];
 let encoded = Crypto::base64_encode(&bytes);
 // "SGVsbG8="
@@ -2446,7 +2452,7 @@ Decodes base64 string.
 **Returns**: Result with bytes or error
 
 **Example**:
-```raven
+```jounce
 let bytes = Crypto::base64_decode("SGVsbG8=").unwrap();
 ```
 
@@ -2479,7 +2485,7 @@ Generates cryptographically secure random bytes.
 **Returns**: Random bytes
 
 **Example**:
-```raven
+```jounce
 @server
 fn generate_key() -> Vec<u8> {
     return Crypto::random_bytes(32);  // 256-bit key
@@ -2492,7 +2498,7 @@ Generates a UUID v4.
 **Returns**: UUID string
 
 **Example**:
-```raven
+```jounce
 let id = Crypto::uuid();
 // "550e8400-e29b-41d4-a716-446655440000"
 ```
@@ -2514,7 +2520,7 @@ Creates a new router instance.
 **Returns**: Router
 
 **Example**:
-```raven
+```jounce
 @client
 fn init_app() {
     let router = Router::new();
@@ -2532,7 +2538,7 @@ Registers a route handler.
 - `handler` - Function to call when route matches
 
 **Example**:
-```raven
+```jounce
 router.add_route("/users/:id", show_user);
 ```
 
@@ -2540,7 +2546,7 @@ router.add_route("/users/:id", show_user);
 Starts the router (begins listening for navigation).
 
 **Example**:
-```raven
+```jounce
 router.start();
 ```
 
@@ -2555,7 +2561,7 @@ Programmatically navigates to a path.
 - `path` - Path to navigate to
 
 **Example**:
-```raven
+```jounce
 @client
 fn go_to_profile() {
     Router::navigate("/profile");
@@ -2566,7 +2572,7 @@ fn go_to_profile() {
 Navigates back in history.
 
 **Example**:
-```raven
+```jounce
 @client
 fn handle_back_click() {
     Router::back();
@@ -2589,7 +2595,7 @@ Gets route parameter value.
 **Returns**: Some(value) or None
 
 **Example**:
-```raven
+```jounce
 @client
 fn show_user() {
     match Router::get_param("id") {
@@ -2608,7 +2614,7 @@ Gets query parameter value.
 **Returns**: Some(value) or None
 
 **Example**:
-```raven
+```jounce
 // URL: /search?q=raven&limit=10
 let query = Router::get_query("q");  // Some("raven")
 let limit = Router::get_query("limit");  // Some("10")
@@ -2634,7 +2640,7 @@ Validates email format.
 **Returns**: true if valid
 
 **Example**:
-```raven
+```jounce
 @client
 fn check_email(email: String) -> bool {
     if !Forms::validate_email(&email) {
@@ -2662,7 +2668,7 @@ Checks if value is non-empty.
 **Returns**: true if not empty
 
 **Example**:
-```raven
+```jounce
 if !Forms::validate_required(&username) {
     errors.push("Username is required");
 }
@@ -2678,7 +2684,7 @@ Checks minimum length.
 **Returns**: true if long enough
 
 **Example**:
-```raven
+```jounce
 if !Forms::validate_min_length(&password, 8) {
     errors.push("Password must be at least 8 characters");
 }
@@ -2703,7 +2709,7 @@ Validates against regex pattern.
 **Returns**: true if matches
 
 **Example**:
-```raven
+```jounce
 // Validate phone number
 if !Forms::validate_pattern(&phone, r"^\d{3}-\d{3}-\d{4}$") {
     errors.push("Invalid phone format");
@@ -2723,7 +2729,7 @@ Gets all form field values.
 **Returns**: Map of field names to values
 
 **Example**:
-```raven
+```jounce
 @client
 fn handle_submit() {
     let data = Forms::get_form_data("login-form");
@@ -2740,7 +2746,7 @@ Sets form field value.
 - `value` - Value to set
 
 **Example**:
-```raven
+```jounce
 @client
 fn prefill_form() {
     Forms::set_field_value("email", "user@example.com");
@@ -2754,7 +2760,7 @@ Clears all form fields.
 - `form_id` - Form element ID
 
 **Example**:
-```raven
+```jounce
 @client
 fn reset_form() {
     Forms::clear_form("contact-form");
@@ -2781,7 +2787,7 @@ Connects to WebSocket server.
 **Returns**: Result with WebSocket connection or error
 
 **Example**:
-```raven
+```jounce
 @client
 fn init_websocket() {
     match WebSocket::connect("wss://api.example.com/ws") {
@@ -2805,7 +2811,7 @@ Sets message handler.
 - `handler` - Function called with each message
 
 **Example**:
-```raven
+```jounce
 @client
 fn handle_message(msg: String) {
     println!("Received: {}", msg);
@@ -2823,7 +2829,7 @@ Sends a text message.
 - `message` - Message to send
 
 **Example**:
-```raven
+```jounce
 @client
 fn send_chat_message(text: String) {
     let msg = json!({
@@ -2841,7 +2847,7 @@ Sends JSON data (convenience).
 - `data` - JSON value
 
 **Example**:
-```raven
+```jounce
 let data = json!({"event": "ping"});
 ws.send_json(&data);
 ```
@@ -2857,7 +2863,7 @@ Sets connection opened handler.
 - `handler` - Function called when connection opens
 
 **Example**:
-```raven
+```jounce
 ws.on_open(|| {
     println!("WebSocket connected");
     send_auth_token();
@@ -2871,7 +2877,7 @@ Sets connection closed handler.
 - `handler` - Function called when connection closes
 
 **Example**:
-```raven
+```jounce
 ws.on_close(|| {
     println!("WebSocket disconnected");
     attempt_reconnect();
@@ -2885,7 +2891,7 @@ Sets error handler.
 - `handler` - Function called with error message
 
 **Example**:
-```raven
+```jounce
 ws.on_error(|err| {
     println!("WebSocket error: {}", err);
 });
@@ -2895,7 +2901,7 @@ ws.on_error(|err| {
 Closes the WebSocket connection.
 
 **Example**:
-```raven
+```jounce
 @client
 fn disconnect() {
     ws.close();
@@ -2921,7 +2927,7 @@ Stores a value in localStorage.
 - `value` - Value to store
 
 **Example**:
-```raven
+```jounce
 @client
 fn save_preferences(theme: String) {
     Storage::set("theme", &theme);
@@ -2937,7 +2943,7 @@ Retrieves a value from localStorage.
 **Returns**: Some(value) or None
 
 **Example**:
-```raven
+```jounce
 @client
 fn load_theme() -> String {
     match Storage::get("theme") {
@@ -2954,7 +2960,7 @@ Removes a value from localStorage.
 - `key` - Storage key
 
 **Example**:
-```raven
+```jounce
 @client
 fn logout() {
     Storage::remove("auth_token");
@@ -2965,7 +2971,7 @@ fn logout() {
 Clears all localStorage data.
 
 **Example**:
-```raven
+```jounce
 @client
 fn reset_app() {
     Storage::clear();
@@ -2984,7 +2990,7 @@ Stores in sessionStorage (cleared on tab close).
 - `value` - Value to store
 
 **Example**:
-```raven
+```jounce
 @client
 fn save_temp_data(data: String) {
     Storage::session_set("temp", &data);
@@ -3020,7 +3026,7 @@ Stores JSON value in localStorage.
 - `value` - JSON value
 
 **Example**:
-```raven
+```jounce
 @client
 fn save_cart(items: Vec<CartItem>) {
     let data = json!({"items": items, "updated": Time::now()});
@@ -3037,7 +3043,7 @@ Retrieves and parses JSON from localStorage.
 **Returns**: Some(parsed JSON) or None
 
 **Example**:
-```raven
+```jounce
 @client
 fn load_cart() -> Vec<CartItem> {
     match Storage::get_json("cart") {
@@ -3066,7 +3072,7 @@ Initializes i18n with translations.
 - `translations` - Translation dictionary
 
 **Example**:
-```raven
+```jounce
 @client
 fn init_i18n() {
     let translations = json!({
@@ -3093,7 +3099,7 @@ Translates a key to current locale.
 **Returns**: Translated string
 
 **Example**:
-```raven
+```jounce
 @client
 fn render_greeting() {
     let welcome = I18n::t("welcome");
@@ -3111,7 +3117,7 @@ Translates with parameter substitution.
 **Returns**: Translated string with substituted parameters
 
 **Example**:
-```raven
+```jounce
 // Translation: "greeting": "Hello, {name}!"
 let mut params = HashMap::new();
 params.insert("name", "Alice");
@@ -3130,7 +3136,7 @@ Changes current locale.
 - `locale` - Locale code
 
 **Example**:
-```raven
+```jounce
 @client
 fn switch_to_spanish() {
     I18n::set_locale("es");
@@ -3144,7 +3150,7 @@ Gets current locale.
 **Returns**: Current locale code
 
 **Example**:
-```raven
+```jounce
 @client
 fn get_current_language() -> String {
     return I18n::get_locale();
@@ -3165,7 +3171,7 @@ Handles plural forms.
 **Returns**: Appropriate plural form
 
 **Example**:
-```raven
+```jounce
 // Translations:
 // "items.one": "1 item"
 // "items.other": "{count} items"
@@ -3180,7 +3186,7 @@ let text2 = I18n::plural("items", 5);   // "5 items"
 
 ### Error Handling
 
-```raven
+```jounce
 // Pattern 1: Early return
 fn process_user(id: i32) -> Result<User, String> {
     let user = db.get_user(id);
@@ -3202,7 +3208,7 @@ fn load_config() -> Config {
 
 ### Reactive State Management
 
-```raven
+```jounce
 // Counter with derived state
 let count = Signal::new(0);
 let doubled = Computed::new(|| count.get() * 2);
@@ -3219,7 +3225,7 @@ count.set(5);
 
 ### HTTP API Client
 
-```raven
+```jounce
 @server
 struct ApiClient {
     base_url: String,
@@ -3248,7 +3254,7 @@ impl ApiClient {
 
 ### Form Validation
 
-```raven
+```jounce
 @client
 fn validate_form(data: FormData) -> Vec<String> {
     let mut errors = vec![];
@@ -3285,7 +3291,7 @@ fn validate_form(data: FormData) -> Vec<String> {
 
 ### Type Conversions
 
-```raven
+```jounce
 // String to number
 let num = "42".parse::<i32>().unwrap();
 let flt = "3.14".parse::<f64>().unwrap();
@@ -3306,4 +3312,4 @@ let age = data["age"].as_i64().unwrap() as i32;
 For examples and tutorials, see:
 - `examples/stdlib/` - Complete working examples
 - `GETTING_STARTED.md` - Getting started guide
-- `CLAUDE.md` - Development guide
+- `CONTRIBUTING.md` - Development guide

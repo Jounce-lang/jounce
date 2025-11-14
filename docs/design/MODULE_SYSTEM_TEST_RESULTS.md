@@ -1,5 +1,7 @@
 # Module System Test Results (Task 3)
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: October 24, 2025
 **Phase**: Phase 11 - Module System Testing
 **Goal**: Test multi-file scenarios and document errors
@@ -437,7 +439,7 @@ pub fn resolve_module_path(
 
 ## Next Steps (Immediate)
 
-1. **Update CLAUDE.md** with revised plan
+1. **Update project documentation** with revised plan
 2. **Start Task 6** (cross-file imports)
    - Begin with parser changes
    - Test incrementally

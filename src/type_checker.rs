@@ -766,10 +766,17 @@ impl TypeChecker {
                 let array_type = self.infer_expression(&index_expr.array)?;
                 let index_type = self.infer_expression(&index_expr.index)?;
 
-                // Index must be an integer
-                if index_type != Type::Int && index_type != Type::Any {
+                // Only accept integer types for indexing
+                // Type::Any is allowed for flexibility with untyped code
+                let is_valid_index = matches!(
+                    index_type,
+                    Type::Int | Type::Any
+                );
+
+                if !is_valid_index {
                     return Err(CompileError::Generic(format!(
-                        "Array index must be an integer, got {}",
+                        "error[E430]: Array index must be an integer, got '{}'\n\
+                         help: Cast non-integer values to i32, or use range loops which automatically type variables as integers",
                         index_type
                     )));
                 }
@@ -877,6 +884,21 @@ impl TypeChecker {
                 // Infer types of both branches
                 let then_type = self.infer_expression(&if_expr.then_expr)?;
                 if let Some(else_expr) = &if_expr.else_expr {
+                    let else_type = self.infer_expression(else_expr)?;
+                    // Try to unify both branch types
+                    self.unify(&then_type, &else_type)?;
+                }
+
+                Ok(then_type)
+            }
+
+            Expression::IfLet(if_let_expr) => {
+                // Infer the type of the value expression
+                self.infer_expression(&if_let_expr.value)?;
+
+                // Infer types of both branches
+                let then_type = self.infer_expression(&if_let_expr.then_expr)?;
+                if let Some(else_expr) = &if_let_expr.else_expr {
                     let else_type = self.infer_expression(else_expr)?;
                     // Try to unify both branch types
                     self.unify(&then_type, &else_type)?;

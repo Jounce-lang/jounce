@@ -1,6 +1,13 @@
 # Jounce Package Manager - Complete Guide
 
-The Jounce package manager (`raven pkg`) provides a complete solution for managing dependencies, packages, and builds in your Jounce projects.
+**Version**: v0.8.3
+**Last Updated**: November 7, 2025
+**Status**: ✅ Production Ready (Package Registry Server Complete)
+
+The Jounce package manager (`jnc pkg`) provides a complete solution for managing dependencies, packages, and builds in your Jounce projects.
+
+> **Quick Start**: See [README.md](../../README.md) for installation and basic usage
+> **Technical Details**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for package system specification
 
 ---
 
@@ -22,7 +29,7 @@ The Jounce package manager (`raven pkg`) provides a complete solution for managi
 Create a new `jounce.toml` manifest in your project:
 
 ```bash
-raven pkg init
+jnc pkg init
 ```
 
 This creates a `jounce.toml` file with package metadata:
@@ -52,15 +59,15 @@ keywords = []
 Install all dependencies from `jounce.toml`:
 
 ```bash
-raven pkg install
+jnc pkg install
 ```
 
 **Output:**
 ```
 📦 Resolving dependencies...
 📥 Installing 5 packages...
-  📥 Installing raven-store @ 1.0.0
-  📥 Downloading raven-store v1.0.0
+  📥 Installing jounce-store @ 1.0.0
+  📥 Downloading jounce-store v1.0.0
   ...
 ✅ All dependencies installed!
 ```
@@ -69,16 +76,16 @@ raven pkg install
 - ✅ Transitive dependency resolution
 - ✅ Circular dependency detection
 - ✅ Dependency deduplication
-- ✅ Lock file generation (`raven.lock`)
+- ✅ Lock file generation (`jounce.lock`)
 
 ### Adding Dependencies
 
 Add a new dependency to your project:
 
 ```bash
-raven pkg add raven-store
-raven pkg add raven-http --version "^0.1.0"
-raven pkg add test-pkg --dev  # Add to dev-dependencies
+jnc pkg add jounce-store
+jnc pkg add jounce-http --version "^0.1.0"
+jnc pkg add test-pkg --dev  # Add to dev-dependencies
 ```
 
 ### Removing Dependencies
@@ -86,7 +93,7 @@ raven pkg add test-pkg --dev  # Add to dev-dependencies
 Remove a dependency:
 
 ```bash
-raven pkg remove raven-store
+jnc pkg remove jounce-store
 ```
 
 ### Updating Dependencies
@@ -94,7 +101,7 @@ raven pkg remove raven-store
 Update all dependencies to latest compatible versions:
 
 ```bash
-raven pkg update
+jnc pkg update
 ```
 
 This removes the lock file and re-resolves all dependencies to find the newest compatible versions.
@@ -108,19 +115,19 @@ This removes the lock file and re-resolves all dependencies to find the newest c
 Visualize your complete dependency graph:
 
 ```bash
-raven pkg tree
+jnc pkg tree
 ```
 
 **Output:**
 ```
 full-stack-demo v0.1.0
-├── raven-forms v1.0.0
-│   └── raven-store v1.0.0
-├── raven-http v0.1.0
-├── raven-i18n v1.0.0
-│   └── raven-store v1.0.0
-├── raven-router v0.1.0
-└── raven-store v1.0.0
+├── jounce-forms v1.0.0
+│   └── jounce-store v1.0.0
+├── jounce-http v0.1.0
+├── jounce-i18n v1.0.0
+│   └── jounce-store v1.0.0
+├── jounce-router v0.1.0
+└── jounce-store v1.0.0
 ```
 
 **Features:**
@@ -133,7 +140,7 @@ full-stack-demo v0.1.0
 Check if any dependencies have newer versions:
 
 ```bash
-raven pkg outdated
+jnc pkg outdated
 ```
 
 **Output:**
@@ -143,7 +150,7 @@ Checking for outdated dependencies...
 📦 some-package
    Current: 1.0.0 | Latest: 2.0.0 | Wanted: ^1.0.0
 
-💡 Run 'raven pkg update' to update to latest compatible versions
+💡 Run 'jnc pkg update' to update to latest compatible versions
 ```
 
 ### Listing Installed Packages
@@ -151,20 +158,20 @@ Checking for outdated dependencies...
 View all installed packages:
 
 ```bash
-raven pkg list
+jnc pkg list
 ```
 
 **Output:**
 ```
 Installed packages:
 
-📦 raven-store @ 1.0.0
-📦 raven-i18n @ 1.0.0
-   Dependencies: raven-store
-📦 raven-forms @ 1.0.0
-   Dependencies: raven-store
-📦 raven-http @ 0.1.0
-📦 raven-router @ 0.1.0
+📦 jounce-store @ 1.0.0
+📦 jounce-i18n @ 1.0.0
+   Dependencies: jounce-store
+📦 jounce-forms @ 1.0.0
+   Dependencies: jounce-store
+📦 jounce-http @ 0.1.0
+📦 jounce-router @ 0.1.0
 
 ✅ Total: 5 packages
 ```
@@ -174,14 +181,14 @@ Installed packages:
 Get detailed information about a package:
 
 ```bash
-raven pkg info raven-store
+jnc pkg info jounce-store
 ```
 
 **Output:**
 ```
 Fetching package information...
 
-📦 raven-store
+📦 jounce-store
    Advanced state management library for Jounce applications
 
 Latest version: 1.0.0
@@ -192,7 +199,7 @@ Available versions:
 Statistics:
    Total downloads: 156
    Downloads (last month): 42
-   Repository: https://github.com/aloha-shirts/raven-store
+   Repository: https://github.com/jounce/jounce-store
 
 Keywords: state, reactive, store, signals
 
@@ -215,7 +222,7 @@ Build artifacts are cached in:
 ### Viewing Cache Statistics
 
 ```bash
-raven pkg cache
+jnc pkg cache
 ```
 
 **Output:**
@@ -226,15 +233,15 @@ Location: /Users/you/.jnc/cache
 Cached packages: 3
 
 Cached builds:
-  📦 raven-store@1.0.0 (compiled 2h ago)
-  📦 raven-http@0.1.0 (compiled 5m ago)
-  📦 raven-forms@1.0.0 (compiled 1d ago)
+  📦 jounce-store@1.0.0 (compiled 2h ago)
+  📦 jounce-http@0.1.0 (compiled 5m ago)
+  📦 jounce-forms@1.0.0 (compiled 1d ago)
 ```
 
 ### Clearing the Cache
 
 ```bash
-raven pkg clean
+jnc pkg clean
 ```
 
 **Output:**
@@ -253,24 +260,26 @@ raven pkg clean
 
 ## Registry Integration
 
+**New in v0.8.3**: Full package registry server with authentication, JWT tokens, and rate limiting!
+
 ### Searching for Packages
 
 Search the registry for packages:
 
 ```bash
-raven pkg search http
+jnc pkg search http
 ```
 
 **Output:**
 ```
 Found 2 packages:
 
-📦 raven-http @ 0.1.0
+📦 jounce-http @ 0.1.0
    HTTP client and server for Jounce
    Keywords: http, client, server, api
    Downloads: 203 | Score: 8.50
 
-📦 raven-api @ 1.2.0
+📦 jounce-api @ 1.2.0
    REST API utilities
    Keywords: api, rest, http
    Downloads: 89 | Score: 7.20
@@ -281,19 +290,25 @@ Found 2 packages:
 First, register an account:
 
 ```bash
-raven pkg register
+jnc pkg register
 ```
+
+**v0.8.3 Features**:
+- Secure password hashing with bcrypt
+- JWT-based authentication
+- Email validation
+- Rate limiting protection
 
 Then login:
 
 ```bash
-raven pkg login
+jnc pkg login
 ```
 
 Finally, publish your package:
 
 ```bash
-raven pkg publish
+jnc pkg publish
 ```
 
 **Requirements:**
@@ -301,6 +316,15 @@ raven pkg publish
 - Unique package name
 - Valid semantic version
 - Source files in `src/` directory
+
+**Registry Features (v0.8.3)**:
+- ✅ User registration & authentication
+- ✅ Package publishing & versioning
+- ✅ Download statistics tracking
+- ✅ Search with keyword matching
+- ✅ Rate limiting (100 req/15min)
+- ✅ SQLite database backend
+- ✅ JWT token authentication
 
 ---
 
@@ -310,36 +334,36 @@ raven pkg publish
 
 | Command | Description |
 |---------|-------------|
-| `raven pkg init` | Initialize new package manifest |
-| `raven pkg install` | Install all dependencies |
-| `raven pkg add <name>` | Add a dependency |
-| `raven pkg remove <name>` | Remove a dependency |
-| `raven pkg update` | Update dependencies to latest versions |
+| `jnc pkg init` | Initialize new package manifest |
+| `jnc pkg install` | Install all dependencies |
+| `jnc pkg add <name>` | Add a dependency |
+| `jnc pkg remove <name>` | Remove a dependency |
+| `jnc pkg update` | Update dependencies to latest versions |
 
 ### Developer Tools
 
 | Command | Description |
 |---------|-------------|
-| `raven pkg tree` | Display dependency tree |
-| `raven pkg outdated` | Check for outdated dependencies |
-| `raven pkg list` | List installed packages |
-| `raven pkg info <name>` | Show package details |
+| `jnc pkg tree` | Display dependency tree |
+| `jnc pkg outdated` | Check for outdated dependencies |
+| `jnc pkg list` | List installed packages |
+| `jnc pkg info <name>` | Show package details |
 
 ### Registry
 
 | Command | Description |
 |---------|-------------|
-| `raven pkg search <query>` | Search for packages |
-| `raven pkg register` | Register new account |
-| `raven pkg login` | Login to registry |
-| `raven pkg publish` | Publish package |
+| `jnc pkg search <query>` | Search for packages |
+| `jnc pkg register` | Register new account |
+| `jnc pkg login` | Login to registry |
+| `jnc pkg publish` | Publish package |
 
 ### Build Cache
 
 | Command | Description |
 |---------|-------------|
-| `raven pkg cache` | Show cache statistics |
-| `raven pkg clean` | Clear build cache |
+| `jnc pkg cache` | Show cache statistics |
+| `jnc pkg clean` | Clear build cache |
 
 ---
 
@@ -350,24 +374,24 @@ A typical Jounce project with dependencies:
 ```
 my-project/
 ├── jounce.toml          # Package manifest
-├── raven.lock          # Dependency lock file
+├── jounce.lock          # Dependency lock file
 ├── src/
-│   └── main.jnc      # Source code
-├── raven_packages/     # Downloaded dependencies
-│   ├── raven-store/
-│   ├── raven-http/
-│   └── raven-forms/
-└── dist/               # Compiled output
+│   └── main.jnc         # Source code
+├── jounce_modules/      # Downloaded dependencies
+│   ├── jounce-store/
+│   ├── jounce-http/
+│   └── jounce-forms/
+└── dist/                # Compiled output
 ```
 
 Global cache location:
 
 ```
 ~/.jnc/
-├── credentials.json    # Registry authentication
-└── cache/              # Build cache
-    ├── index.json      # Cache metadata
-    └── builds/         # Compiled artifacts
+├── credentials.json     # Registry authentication (JWT tokens)
+└── cache/               # Build cache
+    ├── index.json       # Cache metadata
+    └── builds/          # Compiled artifacts
 ```
 
 ---
@@ -381,10 +405,10 @@ The package manager automatically resolves and installs transitive dependencies:
 ```toml
 # Your jounce.toml
 [dependencies]
-raven-i18n = "^1.0.0"
+jounce-i18n = "^1.0.0"
 ```
 
-If `raven-i18n` depends on `raven-store`, both will be installed automatically.
+If `jounce-i18n` depends on `jounce-store`, both will be installed automatically.
 
 ### Circular Dependency Detection
 
@@ -403,7 +427,7 @@ Version specifiers follow semver:
 - `~1.0.0` - Patch level (>=1.0.0, <1.1.0)
 - `>=1.0.0` - Greater than or equal
 
-### Lock File (`raven.lock`)
+### Lock File (`jounce.lock`)
 
 The lock file ensures reproducible builds:
 
@@ -411,22 +435,22 @@ The lock file ensures reproducible builds:
 version = "1"
 
 [[packages]]
-name = "raven-store"
+name = "jounce-store"
 version = "1.0.0"
 dependencies = []
 
 [packages.source]
 type = "Registry"
-url = "https://packages.jounce.dev/raven-store/1.0.0"
+url = "https://packages.jounce.dev/jounce-store/1.0.0"
 
 [[packages]]
-name = "raven-i18n"
+name = "jounce-i18n"
 version = "1.0.0"
-dependencies = ["raven-store"]
+dependencies = ["jounce-store"]
 
 [packages.source]
 type = "Registry"
-url = "https://packages.jounce.dev/raven-i18n/1.0.0"
+url = "https://packages.jounce.dev/jounce-i18n/1.0.0"
 ```
 
 ---
@@ -438,7 +462,7 @@ url = "https://packages.jounce.dev/raven-i18n/1.0.0"
 Use `^` for libraries (allows minor updates):
 ```toml
 [dependencies]
-raven-store = "^1.0.0"  # Allows 1.x.x
+jounce-store = "^1.0.0"  # Allows 1.x.x
 ```
 
 Use exact versions for critical dependencies:
@@ -452,20 +476,20 @@ core-lib = "2.5.0"  # Exact version
 Regularly check for outdated dependencies:
 
 ```bash
-raven pkg outdated
-raven pkg update
+jnc pkg outdated
+jnc pkg update
 ```
 
 ### 3. Use Lock Files
 
-Always commit `raven.lock` to version control for reproducible builds.
+Always commit `jounce.lock` to version control for reproducible builds.
 
 ### 4. Clean Cache Periodically
 
 Clear old build artifacts:
 
 ```bash
-raven pkg clean
+jnc pkg clean
 ```
 
 ### 5. Minimal Dependencies
@@ -473,7 +497,7 @@ raven pkg clean
 Only add dependencies you actually need. Check with:
 
 ```bash
-raven pkg tree  # See what you're really pulling in
+jnc pkg tree  # See what you're really pulling in
 ```
 
 ---
@@ -483,10 +507,10 @@ raven pkg tree  # See what you're really pulling in
 ### Lock File Not Found
 
 ```
-❌ raven.lock not found. Run 'raven pkg install' first.
+❌ jounce.lock not found. Run 'jnc pkg install' first.
 ```
 
-**Solution**: Run `raven pkg install` to create the lock file.
+**Solution**: Run `jnc pkg install` to create the lock file.
 
 ### Circular Dependency
 
@@ -504,7 +528,7 @@ raven pkg tree  # See what you're really pulling in
 
 **Solution**:
 - Check the package name spelling
-- Search the registry: `raven pkg search unknown`
+- Search the registry: `jnc pkg search unknown`
 - Verify the package exists in the registry
 
 ### No Compatible Version
@@ -514,9 +538,20 @@ raven pkg tree  # See what you're really pulling in
 ```
 
 **Solution**:
-- Check available versions: `raven pkg info package`
+- Check available versions: `jnc pkg info package`
 - Adjust version requirement in `jounce.toml`
-- Update dependencies: `raven pkg update`
+- Update dependencies: `jnc pkg update`
+
+### Authentication Failed
+
+```
+❌ Authentication failed. Please login.
+```
+
+**Solution**:
+```bash
+jnc pkg login
+```
 
 ---
 
@@ -538,38 +573,49 @@ The package manager performs several operations in parallel:
 
 ---
 
-## Comparison with Other Package Managers
+## Available Packages (v0.8.3)
 
-| Feature | Jounce | npm | Cargo | pip |
-|---------|-----------|-----|-------|-----|
-| Transitive deps | ✅ | ✅ | ✅ | ✅ |
-| Lock file | ✅ | ✅ | ✅ | ❌ |
-| Dependency tree | ✅ | ✅ | ✅ | ❌ |
-| Build cache | ✅ | ✅ | ✅ | ❌ |
-| Outdated check | ✅ | ✅ | ✅ | ✅ |
-| Package info | ✅ | ✅ | ✅ | ❌ |
+Browse the full package ecosystem at the registry. Popular packages include:
+
+**UI & Components**:
+- `jounce-ui` - Component library
+- `jounce-theme` - Theming system
+- `jounce-animate` - Animation utilities
+
+**Backend**:
+- `jounce-db` - Database adapters
+- `jounce-auth` - Authentication
+- `jounce-cache` - Caching
+
+**Utilities**:
+- `jounce-router` - Client routing
+- `jounce-http` - HTTP client
+- `jounce-forms` - Form handling
+
+See [README.md § Package Ecosystem](../../README.md#package-ecosystem) for complete list.
 
 ---
 
-## Future Roadmap
+## What's Next?
+
+- **Getting Started**: See [README.md](../../README.md) for installation
+- **Tutorials**: See [LEARN_JOUNCE.md](../guides/LEARN_JOUNCE.md) for practical examples
+- **Technical Reference**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for complete specification
+
+---
+
+## Future Roadmap (v0.9.0+)
 
 - [ ] Workspace support (monorepos)
 - [ ] Private registry support
 - [ ] Package aliasing
 - [ ] Patch dependencies
 - [ ] Dependency overrides
-- [ ] Audit for security vulnerabilities
+- [ ] Security vulnerability audit
 - [ ] Performance benchmarks
 
 ---
 
-## Getting Help
-
-- **Documentation**: https://docs.jounce.dev/package-manager
-- **Registry**: https://packages.jounce.dev
-- **Issues**: https://github.com/jounce/jounce/issues
-- **Discord**: https://discord.gg/jounce
-
----
-
-**Happy coding with Jounce! 🚀**
+**Version**: v0.8.3 "Enhanced Language Features"
+**Status**: ✅ Production Ready (580/580 tests passing)
+**Registry**: ✅ Complete with authentication, JWT, rate limiting

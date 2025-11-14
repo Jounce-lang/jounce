@@ -120,6 +120,11 @@ impl ReactiveAnalyzer {
                 Self::is_reactive(&if_expr.condition)
             }
 
+            // If-let expressions: if let pattern = value.value { ... }
+            Expression::IfLet(if_let_expr) => {
+                Self::is_reactive(&if_let_expr.value)
+            }
+
             // Template literals: check if any expressions are reactive
             Expression::TemplateLiteral(template) => {
                 template.parts.iter().any(|part| {
@@ -145,7 +150,10 @@ impl ReactiveAnalyzer {
                 tuple.elements.iter().any(|elem| Self::is_reactive(elem))
             }
             Expression::StructLiteral(struct_lit) => {
-                struct_lit.fields.iter().any(|(_, value)| Self::is_reactive(value))
+                struct_lit.fields.iter().any(|prop| match prop {
+                    ObjectProperty::Field(_, value) => Self::is_reactive(value),
+                    ObjectProperty::Spread(expr) => Self::is_reactive(expr),
+                })
             }
             Expression::ArrayRepeat(repeat) => {
                 Self::is_reactive(&repeat.value) || Self::is_reactive(&repeat.count)

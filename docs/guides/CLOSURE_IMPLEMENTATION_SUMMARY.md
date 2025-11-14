@@ -1,5 +1,7 @@
 # Closure Implementation Summary
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 ## Overview
 Successfully implemented closure support for the Jounce compiler, including capture analysis, environment allocation, and code generation for WebAssembly.
 

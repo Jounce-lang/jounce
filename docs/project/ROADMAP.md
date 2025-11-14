@@ -1,18 +1,18 @@
 # Jounce Development Roadmap
 
-**Current Version**: v0.8.2 "Runtime Safety Nets"
+**Current Version**: v0.8.3 "Enhanced Language Features"
 **Target Version**: v1.0.0 "Language Lock & Stable Release"
-**Last Updated**: November 5, 2025
+**Last Updated**: November 7, 2025
 **Versioning System**: See [VERSIONING.md](../guides/VERSIONING.md)
 
 ---
 
-## 📍 Current Status (v0.8.2)
+## 📍 Current Status (v0.8.3)
 
 **Production Ready!** ✅
 - **Tests**: 580/580 passing (100%)
 - **Bugs**: 0 critical issues
-- **Safety**: 3-layer defense-in-depth protection complete
+- **Features**: Import aliasing, advanced styles, pub keyword, if-let, package registry
 - **Packages**: 35/100 complete (35%)
 - **Status**: Ready for public launch
 

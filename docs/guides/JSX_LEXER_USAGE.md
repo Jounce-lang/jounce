@@ -1,5 +1,7 @@
 # JSX Lexer Usage Guide for Parser Developers
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-21 (Day 5)
 **Status**: JSX Lexer Complete and Tested
 

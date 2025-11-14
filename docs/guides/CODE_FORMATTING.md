@@ -1,8 +1,16 @@
 # Jounce Code Formatting Guide
 
+**Version**: v0.8.3 "Enhanced Language Features"
+**Last Updated**: November 7, 2025
+**Status**: ✅ Production Ready (580/580 tests passing)
+
+> **Quick Start**: See [README.md](../../README.md) for installation
+> **Canonical Reference**: If this document conflicts with JOUNCE_SPEC.md, the spec wins. Current spec: v0.8.3 (2025-11-07).
+> **Technical Reference**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for language specification
+
 ## Overview
 
-Jounce includes a built-in code formatter that enforces consistent, opinionated code style across your entire codebase. The formatter is available through both the CLI (`raven fmt`) and LSP (Language Server Protocol) for seamless editor integration.
+Jounce includes a built-in code formatter that enforces consistent, opinionated code style across your entire codebase. The formatter is available through both the CLI (`jnc fmt`) and LSP (Language Server Protocol) for seamless editor integration.
 
 ## Table of Contents
 
@@ -36,7 +44,7 @@ Jounce's formatter follows these core principles:
 - **4 spaces** per indentation level (no tabs)
 - Consistent indentation for all block structures (functions, structs, enums, etc.)
 
-```raven
+```jounce
 fn calculate(x: i32) {
     let result = x * 2;
     return result;
@@ -56,7 +64,7 @@ fn calculate(x: i32) {
 - **Colons**: Space after in type annotations (`x: i32`)
 - **Blocks**: Opening brace on same line as declaration
 
-```raven
+```jounce
 // Good
 let x: i32 = 1 + 2;
 fn add(a: i32, b: i32) -> i32 {
@@ -73,7 +81,7 @@ fn add(a:i32,b:i32)->i32{return a+b;}
 - Required at the end of statements
 - Not required for last expression in blocks (implicit return)
 
-```raven
+```jounce
 fn get_value() -> i32 {
     let x = 42;
     x  // No semicolon - implicit return
@@ -93,7 +101,7 @@ fn get_value() -> i32 {
 
 Elements with **no children** or **only text children** and **≤3 attributes** are formatted on a single line:
 
-```raven
+```jounce
 // Simple elements remain inline
 let button = <Button>Click Me</Button>;
 let input = <Input type="text" value={name} />;
@@ -104,7 +112,7 @@ let link = <a href="/home">Home</a>;
 
 Elements with **nested JSX children** or **>3 attributes** are formatted on multiple lines:
 
-```raven
+```jounce
 // Nested JSX elements → multi-line
 let elem = <div>
     <Header />
@@ -130,7 +138,7 @@ let component = <Component
 3. **Attributes** (when multi-line): Indented 4 spaces from opening `<`
 4. **Expressions**: Standard indentation within `{}`
 
-```raven
+```jounce
 let app = <div class="container">
     <Header title="My App" />
     <Content>
@@ -145,14 +153,14 @@ let app = <div class="container">
 ### JSX Attributes
 
 - **String literals**: No braces (`class="container"`)
-- **Expressions**: Use braces (`onClick={handler}`)
+- **Expressions**: Use braces (`onclick={handler}`)
 - **Boolean shorthand**: No value (`disabled` instead of `disabled={true}`)
 
-```raven
+```jounce
 // Formatted JSX attributes
 <Button
     class="primary"
-    onClick={handleClick}
+    onclick={handleClick}
     disabled
     data-id={userId}
 />
@@ -166,16 +174,16 @@ let app = <div class="container">
 
 ```bash
 # Format and print to stdout (doesn't modify file)
-raven fmt file.jnc
+jnc fmt file.jnc
 
 # Format and write changes to file
-raven fmt --write file.jnc
+jnc fmt --write file.jnc
 
 # Format multiple files
-raven fmt --write src/**/*.jnc
+jnc fmt --write src/**/*.jnc
 
 # Check if files are formatted (useful for CI)
-raven fmt --check src/
+jnc fmt --check src/
 ```
 
 ### Command Options
@@ -190,15 +198,15 @@ raven fmt --check src/
 
 ```bash
 # Format a single file and save
-raven fmt --write app.jnc
+jnc fmt --write app.jnc
 
 # Format all .jnc files in a directory
-raven fmt --write src/**/*.jnc
+jnc fmt --write src/**/*.jnc
 
 # Check formatting in CI
-raven fmt --check src/
+jnc fmt --check src/
 if [ $? -ne 0 ]; then
-  echo "Files are not formatted! Run: raven fmt --write src/"
+  echo "Files are not formatted! Run: jnc fmt --write src/"
   exit 1
 fi
 ```
@@ -267,10 +275,10 @@ jobs:
 
       - name: Check Formatting
         run: |
-          raven fmt --check src/
+          jnc fmt --check src/
           if [ $? -ne 0 ]; then
             echo "❌ Code is not formatted correctly"
-            echo "Run: raven fmt --write src/"
+            echo "Run: jnc fmt --write src/"
             exit 1
           fi
           echo "✅ All files are properly formatted"
@@ -287,7 +295,7 @@ FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.jnc$')
 
 if [ -n "$FILES" ]; then
   echo "Formatting .jnc files..."
-  raven fmt --write $FILES
+  jnc fmt --write $FILES
   git add $FILES
 fi
 ```
@@ -325,12 +333,12 @@ Configuration files (`.jncfmt.toml`) are planned for future releases to allow cu
 ### Before and After: Function Formatting
 
 **Before:**
-```raven
+```jounce
 fn calculate(x:i32,y:i32)->i32{let result=x+y;return result;}
 ```
 
 **After:**
-```raven
+```jounce
 fn calculate(x: i32, y: i32) -> i32 {
     let result = x + y;
     return result;
@@ -340,12 +348,12 @@ fn calculate(x: i32, y: i32) -> i32 {
 ### Before and After: Struct Formatting
 
 **Before:**
-```raven
+```jounce
 struct User{name:String,email:String,age:i32}
 ```
 
 **After:**
-```raven
+```jounce
 struct User {
     name: String,
     email: String,
@@ -356,12 +364,12 @@ struct User {
 ### Before and After: Match Expression
 
 **Before:**
-```raven
+```jounce
 let result=match status{Status::Active=>"active",Status::Inactive=>"inactive",_=>"unknown"};
 ```
 
 **After:**
-```raven
+```jounce
 let result = match status {
     Status::Active => "active",
     Status::Inactive => "inactive",
@@ -372,12 +380,12 @@ let result = match status {
 ### Before and After: JSX Formatting
 
 **Before:**
-```raven
+```jounce
 let app=<div><Header title="App"/><Content>{items.map(|item|<Item key={item.id} data={item}/>)}</Content><Footer/></div>;
 ```
 
 **After:**
-```raven
+```jounce
 let app = <div>
     <Header title="App" />
     <Content>
@@ -390,17 +398,17 @@ let app = <div>
 ### Before and After: Complex JSX with Many Attributes
 
 **Before:**
-```raven
-let form=<Input type="text" placeholder="Enter name" value={name} onChange={handleChange} required disabled={!isActive}/>;
+```jounce
+let form=<Input type="text" placeholder="Enter name" value={name} onchange={handleChange} required disabled={!isActive}/>;
 ```
 
 **After:**
-```raven
+```jounce
 let form = <Input
     type="text"
     placeholder="Enter name"
     value={name}
-    onChange={handleChange}
+    onchange={handleChange}
     required
     disabled={!isActive}
 />;

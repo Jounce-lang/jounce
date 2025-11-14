@@ -1,1297 +1,531 @@
 # Jounce Syntax Limitations
 
-**Version**: v0.8.2
-**Last Updated**: November 5, 2025
-
-## Overview
-
-Jounce uses Rust-inspired syntax rather than JavaScript syntax for certain features. This document describes what Jounce does **NOT** support and what syntax to use instead.
-
-**NEW in v0.8.2**: Comprehensive runtime safety with 3-layer defense-in-depth protection! See [Common Gotchas & Runtime Safety](#common-gotchas--runtime-safety) section below.
+**Version**: v0.8.3
+**Last Updated**: November 7, 2025
+**Status**: Authoritative Reference
 
 ---
 
-## 1. For Loops - Rust Style Only
+## Purpose
 
-### ❌ NOT Supported: JavaScript-style `for (let x in array)`
+This document catalogs all syntax limitations and unsupported features in Jounce. Referenced from [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) and [LEARN_JOUNCE.md](LEARN_JOUNCE.md).
 
-```javascript
-// ❌ JavaScript syntax - NOT SUPPORTED
-for (let x in array) {
-    console.log(x);
+**When in doubt**: Check [JOUNCE_SPEC.md § Limitations](../../JOUNCE_SPEC.md#limitations) for authoritative behavior.
+
+---
+
+## Syntax Limitations
+
+### 1. No JavaScript-Style For Loops
+
+**NOT SUPPORTED**:
+```jounce
+// ❌ C-style for loops
+for (let i = 0; i < 10; i++) {
+    console.log(i);
 }
 ```
 
-### ✅ Supported: Rust-style `for x in array`
-
+**USE INSTEAD**:
 ```jounce
-// ✅ Jounce syntax - iterate over array
+// ✅ Rust-style range iteration
+for i in 0..10 {
+    console.log(i);
+}
+
+// ✅ Array iteration
 for item in items {
     console.log(item);
 }
-
-// ✅ Jounce syntax - iterate over range (exclusive)
-for i in 0..5 {
-    console.log(i);  // 0, 1, 2, 3, 4
-}
-
-// ✅ Jounce syntax - iterate over range (inclusive)
-for i in 0..=5 {
-    console.log(i);  // 0, 1, 2, 3, 4, 5
-}
 ```
 
-**Generated JavaScript**:
-```javascript
-// for item in items
-for (const item of items) {
-    console.log(item);
-}
-
-// for i in 0..5
-for (let i = 0; i < 5; i++) {
-    console.log(i);
-}
-
-// for i in 0..=5
-for (let i = 0; i <= 5; i++) {
-    console.log(i);
-}
-```
+**Why**: Jounce uses Rust-style syntax for iteration.
 
 ---
 
-## 2. Await - Prefix Only
+### 2. No Async/Await Syntax
 
-### ❌ NOT Supported: Rust-style `.await` postfix
-
-```rust
-// ❌ Rust syntax - NOT SUPPORTED
-let response = fetch("https://api.example.com").await;
-```
-
-### ✅ Supported: JavaScript-style `await expr` (prefix)
-
+**NOT SUPPORTED**:
 ```jounce
-// ✅ Jounce syntax - prefix await
-async fn fetchData() {
-    let response = await fetch("https://api.example.com/data");
-    let json = await response.json();
-    return json;
+// ❌ Prefix await (JavaScript-style)
+let data = await fetch("https://api.example.com");
+
+// ❌ Postfix await (Rust-style)
+let data = fetch("https://api.example.com").await;
+```
+
+**USE INSTEAD**:
+```jounce
+// ✅ Server functions return Result<T, E>
+@server
+fn fetchData() -> Result<Data, string> {
+    // Async handled internally by runtime
+    return http.get("https://api.example.com/data");
+}
+
+// Client calls look synchronous via RPC
+let result = fetchData();
+match result {
+    Ok(data) => console.log(data),
+    Err(e) => console.log("Error: " + e),
 }
 ```
 
-**Generated JavaScript**:
-```javascript
-async function fetchData() {
-    let response = await fetch("https://api.example.com/data");
-    let json = await response.json();
-    return json;
-}
-```
+**Why**: Jounce abstracts async via RPC. Server functions handle async internally; client gets synchronous-looking Result.
 
-**Note**: Jounce uses JavaScript-style prefix `await` rather than Rust-style postfix `.await` for better interoperability with JavaScript async/await patterns.
+**See**: [JOUNCE_SPEC.md § RPC Contract](../../JOUNCE_SPEC.md#rpc-contract)
 
 ---
 
-## 3. Module Imports - Local Files Only
+### 3. No Template String Literals
 
-### ❌ NOT Supported: Package imports like `use jounce::*`
-
-```rust
-// ❌ Package imports - NOT SUPPORTED
-use jounce::forms::{Input, Button};
-use std::collections::HashMap;
+**NOT SUPPORTED**:
+```jounce
+// ❌ Template literals with ${}
+let msg = `Hello ${name}!`;
+let url = `https://api.example.com/${id}`;
 ```
 
-### ✅ Supported: Local file imports with `./` prefix
-
+**USE INSTEAD**:
 ```jounce
-// ✅ Import specific items from local file
-use ./components::{Button, Card};
-
-// ✅ Import all exports from local file
-use ./utils::*;
-
-// ✅ Import from parent directory
-use ../lib/helpers::{formatText};
-
-// ✅ Import from nested path
-use ./modules/api/client::{fetchData};
+// ✅ String concatenation with +
+let msg = "Hello " + name + "!";
+let url = "https://api.example.com/" + id.to_string();
 ```
 
-**How it works**:
-1. Jounce loads the referenced `.jnc` file
-2. Extracts the requested exports (functions, components, structs, etc.)
-3. Inlines them into the current module's compiled output
-4. No runtime JavaScript imports are generated (compile-time resolution)
+**Why**: Parser doesn't support template literal syntax.
 
-**Example**:
+---
 
-`utils.jnc`:
+### 4. No Default Function Parameters
+
+**NOT SUPPORTED**:
 ```jounce
-fn formatText(text: String) -> String {
-    return text.trim();
+// ❌ Default parameter values
+component Card(props: { title: string = "Default" }) {
+    ...
 }
 
-fn calculateTotal(items: Vec<i32>) -> i32 {
-    let mut total = 0;
-    for item in items {
-        total = total + item;
+fn greet(name: string = "World") {
+    return "Hello " + name;
+}
+```
+
+**USE INSTEAD**:
+```jounce
+// ✅ Manual defaults with || operator
+component Card(props: { title: string }) {
+    let title = props.title || "Default";
+    ...
+}
+
+fn greet(name: string) -> string {
+    let actualName = if name.len() > 0 { name } else { "World" };
+    return "Hello " + actualName;
+}
+```
+
+**Why**: Not yet implemented in parser.
+
+---
+
+### 5. No Implicit Returns
+
+**NOT SUPPORTED**:
+```jounce
+// ❌ Expression-based return (Rust-style)
+fn add(a: i32, b: i32) -> i32 {
+    a + b  // Missing return keyword
+}
+
+fn getName() -> string {
+    "Alice"  // Missing return
+}
+```
+
+**USE INSTEAD**:
+```jounce
+// ✅ Explicit return statements
+fn add(a: i32, b: i32) -> i32 {
+    return a + b;
+}
+
+fn getName() -> string {
+    return "Alice";
+}
+```
+
+**Why**: Parser requires explicit `return` keyword for all return values.
+
+---
+
+### 6. No Destructuring in Function Parameters
+
+**NOT SUPPORTED**:
+```jounce
+// ❌ Parameter destructuring
+fn process({ name, age }: User) {
+    console.log(name);
+}
+
+fn handleClick({ x, y }: Point) {
+    console.log(x + y);
+}
+```
+
+**USE INSTEAD**:
+```jounce
+// ✅ Manual property access
+fn process(user: User) {
+    let name = user.name;
+    let age = user.age;
+    console.log(name);
+}
+
+fn handleClick(point: Point) {
+    let x = point.x;
+    let y = point.y;
+    console.log(x + y);
+}
+```
+
+**Why**: Destructuring only supported in match expressions, not function params.
+
+---
+
+### 7. No Variadic Functions
+
+**NOT SUPPORTED**:
+```jounce
+// ❌ Rest parameters / variadic args
+fn sum(...numbers: i32[]) -> i32 {
+    ...
+}
+
+fn log(level: string, ...messages: string[]) {
+    ...
+}
+```
+
+**USE INSTEAD**:
+```jounce
+// ✅ Explicit Vec parameter
+fn sum(numbers: Vec<i32>) -> i32 {
+    let total = 0;
+    for n in numbers {
+        total += n;
     }
     return total;
 }
+
+// Call with vec! macro
+let result = sum(vec![1, 2, 3, 4, 5]);
 ```
 
-`main.jnc`:
-```jounce
-use ./utils::{formatText, calculateTotal};
-
-component App() {
-    let items = signal([1, 2, 3, 4, 5]);
-    let text = formatText("  Hello World  ");
-    let total = calculateTotal(items.value);
-
-    <div>
-        <p>{text}</p>
-        <p>Total: {total}</p>
-    </div>
-}
-```
+**Why**: Not supported by type system.
 
 ---
 
-## 4. Database ORM - Not Available as User Library
+### 8. No Optional Chaining
 
-### ❌ NOT Supported: `use jounce::db::*`
-
+**NOT SUPPORTED**:
 ```jounce
-// ❌ Database ORM - NOT SUPPORTED
-use jounce::db::*;
-use jounce::db::{Database, Query, Model};
+// ❌ Optional chaining operator
+let name = user?.profile?.name;
+let length = data?.items?.length;
 ```
 
-**Why it looks real but isn't**:
-- Files exist at `src/stdlib/db.rs` in the compiler codebase
-- BUT these are **Rust compiler internals**, not user-facing libraries!
-- They're used by the compiler for type checking and code analysis
-- No runtime database library is generated
-
-### ✅ Workaround: Use Node.js Libraries in Server Functions
-
+**USE INSTEAD**:
 ```jounce
-// Define your data types
-struct User {
-    id: i64,
-    email: String,
-    name: String,
-}
-
-// Use Node.js libraries inside server functions
-server fn getUsers() -> Result<Vec<User>, String> {
-    // Inside the generated server.js, you can manually add:
-    // const { Pool } = require('pg');
-    // const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    // const result = await pool.query('SELECT * FROM users');
-    // return { variant: 'Ok', data: result.rows };
-
-    // For now, return mock data or implement after compilation
-    return Ok([]);
-}
-
-// Client calls server function via auto-generated RPC
-component App() {
-    let users = signal([]);
-
-    async fn loadUsers() {
-        let result = await getUsers();
-        users.value = result.unwrap_or([]);
+// ✅ Explicit Option handling with if-let
+let name = if let Some(u) = user {
+    if let Some(p) = u.profile {
+        p.name
+    } else {
+        "Unknown"
     }
-
-    onMount(() => {
-        loadUsers();
-    });
-
-    <div>
-        <h1>Users: {users.value.len()}</h1>
-    </div>
-}
-```
-
-**Status**: ❌ **NOT IMPLEMENTED** - Use Node.js database libraries (pg, mysql2, mongodb) directly in generated server.js
-
----
-
-## 5. Auth Module - Not Available as User Library
-
-### ❌ NOT Supported: `use jounce::auth::*`
-
-```jounce
-// ❌ Auth module - NOT SUPPORTED
-use jounce::auth::*;
-use jounce::auth::{hash_password, verify_password, generate_token};
-```
-
-**Same issue as database module**:
-- Files exist at `src/stdlib/auth.rs` but are compiler internals only
-- No runtime authentication library is available
-
-### ✅ Workaround: Use Node.js Auth Libraries in Server Functions
-
-```jounce
-struct LoginRequest {
-    email: String,
-    password: String,
-}
-
-struct LoginResponse {
-    token: String,
-    user: User,
-}
-
-server fn login(req: LoginRequest) -> Result<LoginResponse, String> {
-    // Inside generated server.js, manually add:
-    // const bcrypt = require('bcrypt');
-    // const jwt = require('jsonwebtoken');
-    //
-    // // Verify password
-    // const user = await db.query('SELECT * FROM users WHERE email = $1', [req.email]);
-    // const valid = await bcrypt.compare(req.password, user.password_hash);
-    // if (!valid) return { variant: 'Err', data: 'Invalid credentials' };
-    //
-    // // Generate JWT
-    // const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    // return { variant: 'Ok', data: { token, user } };
-
-    // For now, return mock response
-    return Err("Not implemented - add bcrypt/jwt to server.js");
-}
-```
-
-**Status**: ❌ **NOT IMPLEMENTED** - Use Node.js libraries (bcrypt, jsonwebtoken, passport) in generated server.js
-
----
-
-## 6. Annotations - Limited Support
-
-### ❌ NOT Supported: Security Annotations
-
-```jounce
-// ❌ These annotations PARSE but DON'T GENERATE CODE
-@auth(role="admin")
-server fn deleteUser(id: i64) -> Result<(), String> {
-    // No middleware is generated!
-    // No token validation happens!
-    // No role checking happens!
-    return Ok(());
-}
-
-@validate(schema="UserSchema")
-@rate_limit(requests=10, window="1m")
-server fn createUser(data: User) -> Result<User, String> {
-    // These annotations are parsed into AST but ignored
-    return Ok(data);
-}
-```
-
-**What happens**:
-- ✅ Parser successfully extracts annotations from code
-- ✅ Annotations are stored in the AST
-- ❌ No middleware is generated in server.js
-- ❌ No security checks are performed
-- ❌ Feature is planned but not implemented (Phase 17)
-
-### ✅ Supported: `@persist` Annotation
-
-```jounce
-// ✅ This annotation WORKS!
-component App() {
-    @persist("localStorage")
-    let theme = signal("dark");
-
-    // Automatically saves to localStorage on changes
-    // Automatically loads from localStorage on mount
-}
-```
-
-**Generated JavaScript**:
-```javascript
-let theme = signal("dark");
-
-// Load from localStorage
-const __stored_theme = localStorage.getItem('theme');
-if (__stored_theme !== null) {
-    theme.value = JSON.parse(__stored_theme);
-}
-
-// Save to localStorage on changes
-effect(() => {
-    localStorage.setItem('theme', JSON.stringify(theme.value));
-});
-```
-
-**Status**:
-- ❌ **@auth, @validate, @rate_limit** - Parse but don't work
-- ✅ **@persist("localStorage")** - Fully functional
-- ⏳ **Security annotations** - Planned for Phase 17
-
----
-
-## 7. Type Checker Issue - Result Methods in If Statements
-
-### ❌ NOT Supported: `result.is_ok()` in if conditions
-
-```jounce
-server fn getUserData() -> Result<User, String> {
-    // ...
-}
-
-component App() {
-    async fn loadUser() {
-        let result = await getUserData();
-
-        // ❌ TYPE ERROR: "If condition must be bool or integer, got 'unknown'"
-        if (result.is_ok()) {
-            let user = result.unwrap();
-            console.log(user);
-        }
-    }
-}
-```
-
-**Root cause**:
-- Result type exists and works ✅
-- `.is_ok()` and `.is_err()` methods exist and return boolean ✅
-- BUT type checker doesn't recognize the return type ❌
-- This is a known bug in the type checking system
-
-### ✅ Workarounds
-
-**Option 1: Use `unwrap_or` (recommended)**
-```jounce
-let result = await getUserData();
-let user = result.unwrap_or(defaultUser);
-// Works - no if statement needed
-```
-
-**Option 2: Use try-catch with `unwrap`**
-```jounce
-try {
-    let user = result.unwrap();
-    console.log(user);
-} catch (e) {
-    console.log("Error:", e);
-}
-```
-
-**Option 3: Check variant directly (advanced)**
-```jounce
-// Access the internal variant field
-if (result.variant == "Ok") {
-    let user = result.data;
-    console.log(user);
-}
-```
-
-**Status**: ❌ **TYPE CHECKER BUG** - Known issue, workarounds available
-
----
-
-## Complete Example
-
-Here's a complete example demonstrating the supported syntax features:
-
-```jounce
-// Local file imports (compile-time resolution)
-use ./utils::{formatText};
-use ./components::{Button, Card};
-
-component App() {
-    let items = signal([1, 2, 3]);
-    let data = signal("");
-
-    // Rust-style for-in loops
-    fn processItems() {
-        for item in items.value {
-            console.log(item);
-        }
-
-        for i in 0..items.value.len() {
-            console.log(i);
-        }
-    }
-
-    // Prefix await (JavaScript style)
-    async fn fetchData() {
-        let response = await fetch("https://api.example.com/data");
-        let json = await response.json();
-        data.value = formatText(json.message);
-    }
-
-    <div>
-        <h1>Jounce Syntax Demo</h1>
-        <Button onClick={processItems}>Process Items</Button>
-        <Button onClick={fetchData}>Fetch Data</Button>
-        <Card title="Results">
-            <p>Data: {data.value}</p>
-        </Card>
-    </div>
-}
-```
-
----
-
-## Summary
-
-| Feature | ❌ NOT Supported | ✅ Supported | Workaround |
-|---------|-----------------|-------------|------------|
-| **For loops** | `for (let x in array)` | `for x in array` | N/A |
-| **Await** | `expr.await` | `await expr` | N/A |
-| **Imports** | `use jounce::*` | `use ./local-file` | N/A |
-| **Database** | `use jounce::db::*` | N/A | Use Node.js pg/mysql2 in server fn |
-| **Auth** | `use jounce::auth::*` | N/A | Use bcrypt/jwt in server fn |
-| **Annotations** | `@auth`, `@validate`, `@rate_limit` | `@persist("localStorage")` | Manual middleware in server.js |
-| **Result checks** | `if (result.is_ok())` | `result.unwrap_or(default)` | Use unwrap_or or variant check |
-
----
-
-## Detailed Explanation of Each Limitation
-
-### 1. For Loops - `for (let x in array)` vs `for x in array`
-
-**Why we need this documented**:
-- JavaScript developers instinctively use `for (let x in array)` syntax
-- This causes immediate parse errors with cryptic messages
-- LLMs trained on JavaScript will generate wrong syntax
-
-**What is impacted**:
-- All array iteration code
-- Range-based loops (0..10)
-- Any loop that doesn't use `.map()` or `.filter()`
-
-**How Jounce works now**:
-```jounce
-// Current syntax (Rust-style)
-for item in items {
-    console.log(item);
-}
-
-for i in 0..5 {
-    console.log(i);
-}
-```
-
-**Generated JavaScript**:
-```javascript
-for (const item of items) {
-    console.log(item);
-}
-
-for (let i = 0; i < 5; i++) {
-    console.log(i);
-}
-```
-
-**Why it works this way**:
-- Jounce is Rust-inspired and uses Rust's cleaner loop syntax
-- Generates JavaScript `for...of` loops (not `for...in` which iterates keys)
-- Range syntax `0..5` is more readable than `for (let i = 0; i < 5; i++)`
-
-**If JavaScript-style were supported**:
-- Would need to parse `for (let x in array)` and `for (let x of array)`
-- Adds complexity distinguishing between `in` (keys) and `of` (values)
-- Current Rust syntax is clearer and less error-prone
-
----
-
-### 2. Await - `expr.await` vs `await expr`
-
-**Why we need this documented**:
-- Rust developers expect postfix `.await` syntax
-- This is a deliberate design choice that differs from Rust
-
-**What is impacted**:
-- All async/await code
-- Server function calls
-- Any Promise-based operations
-
-**How Jounce works now**:
-```jounce
-// Current syntax (JavaScript-style prefix)
-async fn fetchData() {
-    let response = await fetch(url);
-    let json = await response.json();
-    return json;
-}
-```
-
-**Why it works this way**:
-- Jounce generates JavaScript code that runs in Node.js/browser
-- JavaScript async/await uses prefix `await` keyword
-- No transpilation needed - direct 1:1 mapping to JS
-
-**If Rust-style were supported**:
-```jounce
-// Would need to support Rust syntax
-let response = fetch(url).await;  // ❌ Not supported
-let json = response.json().await;  // ❌ Not supported
-```
-
-**Trade-off**:
-- Chose JavaScript familiarity over Rust consistency
-- Web developers already know `await expr`
-- Generates cleaner, more readable JavaScript output
-
----
-
-### 3. Module Imports - `use jounce::*` vs `use ./local-file`
-
-**Why we need this documented**:
-- Rust/Go/Python developers expect package imports (`use jounce::db`)
-- This is the #1 source of confusion for new users
-- Files exist in codebase making it look like packages work
-
-**What is impacted**:
-- All module imports
-- Cannot import from "packages" or "namespaces"
-- Must use relative file paths only
-
-**How Jounce works now**:
-```jounce
-// Current: Local file imports only
-use ./components::{Button, Card};
-use ./utils::{formatText, calculateTotal};
-use ../lib/api::{fetchUsers};
-```
-
-**What happens at compile time**:
-1. Jounce reads the local `.jnc` file
-2. Extracts exported functions/components/types
-3. **Inlines them directly into compiled output**
-4. No JavaScript `import` statements generated
-5. Everything is bundled into single `client.js`/`server.js`
-
-**If package imports were supported**:
-```jounce
-// Would work with package registry
-use jounce::db::{Database, Query};
-use jounce::auth::{hash_password, verify};
-use std::collections::{HashMap, Vec};
-```
-
-**What would change**:
-1. Package registry server (like npm/crates.io)
-2. Package resolver in compiler
-3. Dependency management (`jounce.toml` or similar)
-4. Versioning and semver support
-5. Actual runtime imports instead of inlining
-
-**Why it doesn't work now**:
-- No package registry exists yet
-- No package resolution infrastructure
-- Compile-time inlining is simpler for MVP
-- Planned for future releases
-
----
-
-### 4. Database ORM - `use jounce::db::*`
-
-**Why we need this documented**:
-- Files `src/stdlib/db.rs` exist in codebase
-- LLMs see these files and think database module is available
-- **CRITICAL**: These are compiler internals, not user libraries!
-
-**What is impacted**:
-- All database operations
-- Type-safe query building
-- Database migrations
-- Connection pooling
-- Transaction management
-
-**How Jounce works now (WITHOUT database ORM)**:
-```jounce
-struct User {
-    id: i64,
-    email: String,
-    name: String,
-}
-
-// Server function with manual Node.js library usage
-server fn getUsers() -> Result<Vec<User>, String> {
-    // Generated function body is empty
-    // Developer must manually edit dist/server.js:
-    return Ok([]);  // Returns empty array
-}
-```
-
-**Manual workaround after compilation**:
-Edit `dist/server.js` directly:
-```javascript
-// Inside the generated server function
-export async function getUsers() {
-    const { Pool } = require('pg');
-    const pool = new Pool({
-        connectionString: process.env.DATABASE_URL
-    });
-
-    try {
-        const result = await pool.query('SELECT * FROM users');
-        return { variant: 'Ok', data: result.rows };
-    } catch (error) {
-        return { variant: 'Err', data: error.message };
-    }
-}
-```
-
-**How it WOULD work with database ORM**:
-```jounce
-use jounce::db::{Database, Query};
-
-struct User {
-    id: i64,
-    email: String,
-    name: String,
-}
-
-server fn getUsers() -> Result<Vec<User>, String> {
-    let db = Database::connect(env!("DATABASE_URL"))?;
-
-    // Type-safe query builder
-    let users = db.query::<User>()
-        .select_all()
-        .where_("active", true)
-        .order_by("created_at", "DESC")
-        .limit(100)
-        .execute()
-        .await?;
-
-    return Ok(users);
-}
-```
-
-**What would be generated**:
-```javascript
-import { Database } from './runtime/db.js';
-
-export async function getUsers() {
-    const db = await Database.connect(process.env.DATABASE_URL);
-    const users = await db.query('User')
-        .selectAll()
-        .where('active', true)
-        .orderBy('created_at', 'DESC')
-        .limit(100)
-        .execute();
-    return { variant: 'Ok', data: users };
-}
-```
-
-**Why it doesn't exist**:
-- `src/stdlib/db.rs` is Rust code for **compiler type checking only**
-- Used to validate types and relationships in source code
-- No runtime JavaScript library is generated
-- Would require building an entire ORM (like Prisma, TypeORM)
-- Planned for Phase 17+ but significant work required
-
----
-
-### 5. Auth Module - `use jounce::auth::*`
-
-**Why we need this documented**:
-- Files `src/stdlib/auth.rs` exist (compiler internals)
-- Authentication is critical for production apps
-- No built-in solution leads to manual implementation
-
-**What is impacted**:
-- User authentication (login/signup)
-- Password hashing (bcrypt)
-- JWT token generation and validation
-- Session management
-- Role-based access control
-- OAuth/social login
-
-**How Jounce works now (WITHOUT auth module)**:
-```jounce
-struct LoginRequest {
-    email: String,
-    password: String,
-}
-
-server fn login(req: LoginRequest) -> Result<String, String> {
-    // Empty function - must manually implement
-    return Err("Not implemented");
-}
-```
-
-**Manual workaround after compilation**:
-Edit `dist/server.js`:
-```javascript
-export async function login({ email, password }) {
-    const bcrypt = require('bcrypt');
-    const jwt = require('jsonwebtoken');
-    const { Pool } = require('pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-    // Query user
-    const result = await pool.query(
-        'SELECT * FROM users WHERE email = $1',
-        [email]
-    );
-
-    if (result.rows.length === 0) {
-        return { variant: 'Err', data: 'User not found' };
-    }
-
-    const user = result.rows[0];
-
-    // Verify password
-    const validPassword = await bcrypt.compare(password, user.password_hash);
-    if (!validPassword) {
-        return { variant: 'Err', data: 'Invalid password' };
-    }
-
-    // Generate JWT
-    const token = jwt.sign(
-        { userId: user.id, email: user.email },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' }
-    );
-
-    return { variant: 'Ok', data: token };
-}
-```
-
-**How it WOULD work with auth module**:
-```jounce
-use jounce::auth::{hash_password, verify_password, generate_token};
-use jounce::db::{Database};
-
-struct User {
-    id: i64,
-    email: String,
-    password_hash: String,
-}
-
-server fn signup(email: String, password: String) -> Result<User, String> {
-    let db = Database::connect(env!("DATABASE_URL"))?;
-
-    // Built-in password hashing
-    let hash = hash_password(password)?;
-
-    // Create user with automatic validation
-    let user = db.create::<User>({
-        email: email,
-        password_hash: hash,
-    }).await?;
-
-    return Ok(user);
-}
-
-server fn login(email: String, password: String) -> Result<String, String> {
-    let db = Database::connect(env!("DATABASE_URL"))?;
-
-    // Find user
-    let user = db.query::<User>()
-        .where_("email", email)
-        .first()
-        .await?;
-
-    // Built-in password verification
-    if !verify_password(password, user.password_hash)? {
-        return Err("Invalid password");
-    }
-
-    // Built-in JWT generation
-    let token = generate_token(user.id, "7d")?;
-
-    return Ok(token);
-}
-```
-
-**What would be generated**:
-```javascript
-import { hashPassword, verifyPassword, generateToken } from './runtime/auth.js';
-import { Database } from './runtime/db.js';
-
-export async function signup(email, password) {
-    const db = await Database.connect(process.env.DATABASE_URL);
-    const hash = await hashPassword(password);
-    const user = await db.create('User', { email, password_hash: hash });
-    return { variant: 'Ok', data: user };
-}
-
-export async function login(email, password) {
-    const db = await Database.connect(process.env.DATABASE_URL);
-    const user = await db.query('User').where('email', email).first();
-
-    const valid = await verifyPassword(password, user.password_hash);
-    if (!valid) {
-        return { variant: 'Err', data: 'Invalid password' };
-    }
-
-    const token = await generateToken(user.id, '7d');
-    return { variant: 'Ok', data: token };
-}
-```
-
-**Why it doesn't exist**:
-- Same issue as database - `src/stdlib/auth.rs` is compiler-only code
-- Building secure auth library requires extensive work
-- Must handle bcrypt, JWT, sessions, OAuth, etc.
-- Planned but requires database module first
-
----
-
-### 6. Annotations - `@auth`, `@validate`, `@rate_limit`
-
-**Why we need this documented**:
-- Annotations parse successfully (look like they work!)
-- But they generate **zero code** in output
-- This is extremely confusing - silent failures
-
-**What is impacted**:
-- Security middleware (@auth)
-- Input validation (@validate)
-- Rate limiting (@rate_limit)
-- Any custom middleware/decorators
-
-**How Jounce works now (WITHOUT annotation middleware)**:
-```jounce
-@auth(role="admin")
-server fn deleteUser(id: i64) -> Result<(), String> {
-    // ❌ NO SECURITY CHECKS HAPPEN!
-    // Anyone can call this function
-    // No token validation
-    // No role checking
-    return Ok(());
-}
-```
-
-**What gets generated**:
-```javascript
-// Annotation is completely ignored
-export async function deleteUser(id) {
-    return { variant: 'Ok', data: undefined };
-}
-
-// Server RPC handler - NO MIDDLEWARE
-server.rpc('deleteUser', async (params) => {
-    const [id] = params;
-    return await module.exports.deleteUser(id);
-});
-```
-
-**Manual workaround**:
-Edit `dist/server.js` to add middleware:
-```javascript
-// Add middleware function
-function authMiddleware(role) {
-    return async (req, res, next) => {
-        const token = req.headers.authorization?.replace('Bearer ', '');
-
-        if (!token) {
-            return res.status(401).json({ error: 'No token provided' });
-        }
-
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-            if (role && decoded.role !== role) {
-                return res.status(403).json({ error: 'Insufficient permissions' });
-            }
-
-            req.user = decoded;
-            next();
-        } catch (error) {
-            return res.status(401).json({ error: 'Invalid token' });
-        }
-    };
-}
-
-// Manually apply middleware to route
-server.rpc('deleteUser', authMiddleware('admin'), async (params) => {
-    const [id] = params;
-    return await module.exports.deleteUser(id);
-});
-```
-
-**How it WOULD work with annotation middleware**:
-```jounce
-@auth(role="admin")
-@rate_limit(requests=10, window="1m")
-@validate(schema="UserIdSchema")
-server fn deleteUser(id: i64) -> Result<(), String> {
-    // Annotations automatically generate middleware
-    // 1. Validate JWT token
-    // 2. Check user has "admin" role
-    // 3. Rate limit to 10 requests per minute
-    // 4. Validate id against schema
-    // Only then does function execute
-
-    return Ok(());
-}
-```
-
-**What would be generated**:
-```javascript
-// Runtime security library auto-imported
-import { authCheck, rateLimit, validate } from './runtime/security.js';
-
-// Middleware automatically applied
-server.rpc('deleteUser',
-    authCheck({ role: 'admin' }),
-    rateLimit({ requests: 10, window: '1m' }),
-    validate({ schema: 'UserIdSchema' }),
-    async (params) => {
-        const [id] = params;
-        return await module.exports.deleteUser(id);
-    }
-);
-```
-
-**Why it doesn't work**:
-- Parser extracts annotations into AST ✅
-- But `js_emitter.rs` doesn't generate middleware code ❌
-- Requires:
-  1. `runtime/security.js` library with auth/validation functions
-  2. Middleware generation in emitter
-  3. Integration with RPC handler system
-- Planned for Phase 17 but significant work
-
-**Exception - @persist DOES work**:
-```jounce
-@persist("localStorage")
-let theme = signal("dark");
-```
-
-This generates:
-```javascript
-let theme = signal("dark");
-
-const __stored_theme = localStorage.getItem('theme');
-if (__stored_theme !== null) {
-    theme.value = JSON.parse(__stored_theme);
-}
-
-effect(() => {
-    localStorage.setItem('theme', JSON.stringify(theme.value));
-});
-```
-
-Only `@persist` generates code because it was implemented in Phase 16.
-
----
-
-### 7. Type Checker Bug - `result.is_ok()` in if statements
-
-**Why we need this documented**:
-- Result<T, E> type works perfectly everywhere else
-- But `.is_ok()` in if statements causes cryptic type errors
-- This is a BUG, not a design choice
-
-**What is impacted**:
-- All Result type conditional logic
-- Error handling patterns
-- Branching based on success/failure
-
-**How Jounce works now (WITH the bug)**:
-```jounce
-server fn getUserData() -> Result<User, String> {
-    // Returns Result<User, String>
-}
-
-component App() {
-    async fn loadUser() {
-        let result = await getUserData();
-
-        // ❌ TYPE ERROR: "If condition must be bool or integer, got 'unknown'"
-        if (result.is_ok()) {
-            let user = result.unwrap();
-            console.log(user);
-        }
-    }
-}
-```
-
-**What happens at runtime**:
-1. `result` is a JavaScript object: `{ variant: 'Ok', data: user }`
-2. `result.is_ok()` is defined in runtime and returns `true` or `false`
-3. BUT type checker in `src/type_checker.rs` doesn't recognize the return type
-4. Type checker thinks `.is_ok()` returns `unknown` type
-5. If condition rejects `unknown` type (only accepts bool/int)
-
-**Current workarounds**:
-
-**Option 1: Use unwrap_or (recommended)**
-```jounce
-let result = await getUserData();
-let user = result.unwrap_or(defaultUser);
-// No if statement needed
-```
-
-**Option 2: Try-catch**
-```jounce
-try {
-    let user = result.unwrap();  // Throws if Err
-    console.log(user);
-} catch (e) {
-    console.log("Error:", e);
-}
-```
-
-**Option 3: Check variant directly**
-```jounce
-// Bypass type checker by checking internal field
-if (result.variant == "Ok") {
-    let user = result.data;
-    console.log(user);
-}
-```
-
-**How it SHOULD work (after bug fix)**:
-```jounce
-let result = await getUserData();
-
-// Should work - .is_ok() returns boolean
-if (result.is_ok()) {
-    let user = result.unwrap();
-    console.log(user);
 } else {
-    console.log("Error:", result.unwrap_err());
+    "Unknown"
+};
+
+// ✅ Or use match
+let length = match data {
+    Some(d) => match d.items {
+        Some(items) => items.len(),
+        None => 0,
+    },
+    None => 0,
+};
+```
+
+**Why**: Jounce uses explicit Option<T> handling, not JavaScript-style optional chaining.
+
+---
+
+### 9. Limited Decorators/Annotations
+
+**SUPPORTED**:
+- `@server` - Server-only functions
+- `@client` - Client-only functions (rarely needed)
+- `@persist` - Persistent signals
+
+**NOT SUPPORTED** (parsed but no codegen):
+```jounce
+// ❌ These are parsed but ignored
+@memoize
+fn expensive() { ... }
+
+@deprecated
+fn oldFunction() { ... }
+
+@security("admin")
+fn adminOnly() { ... }
+```
+
+**See**: [JOUNCE_SPEC.md § Supported Annotations](../../JOUNCE_SPEC.md#supported-annotations)
+
+---
+
+### 10. No Signal Reassignment
+
+**NOT SUPPORTED**:
+```jounce
+// ❌ Reassigning signal variable
+let count = signal<i32>(0);
+count = signal<i32>(5);  // Type error!
+```
+
+**USE INSTEAD**:
+```jounce
+// ✅ Update signal value
+let count = signal<i32>(0);
+count.value = 5;  // Correct!
+```
+
+**Why**: Signals are immutable references; only their `.value` can be updated.
+
+---
+
+## Event Handler Conventions
+
+### React-Style vs DOM-Style
+
+**NOT SUPPORTED**:
+```jounce
+// ❌ React-style camelCase events
+<button onClick={() => handleClick()}>
+<input onChange={(e) => handleChange(e)}>
+<form onSubmit={handleSubmit}>
+```
+
+**USE INSTEAD**:
+```jounce
+// ✅ Lowercase DOM-style events
+<button onclick={() => handleClick()}>
+<input onchange={(e) => handleChange(e)}>
+<form onsubmit={handleSubmit}>
+```
+
+**All event handlers must be lowercase**:
+- `onclick`, `ondblclick`
+- `onchange`, `oninput`
+- `onsubmit`, `onreset`
+- `onkeydown`, `onkeyup`, `onkeypress`
+- `onmousedown`, `onmouseup`, `onmousemove`, `onmouseover`, `onmouseout`
+- `onfocus`, `onblur`
+
+**Why**: Jounce follows DOM standard naming, not React conventions.
+
+**See**: [JOUNCE_SPEC.md § JSX](../../JOUNCE_SPEC.md#8-jsx)
+
+---
+
+## Additional Unsupported Features
+
+### No Nullish Coalescing
+```jounce
+// ❌ NOT SUPPORTED
+let value = data ?? defaultValue;
+
+// ✅ USE INSTEAD
+let value = if let Some(d) = data { d } else { defaultValue };
+```
+
+### No Spread in Objects
+```jounce
+// ❌ NOT SUPPORTED (in object literals)
+let obj = { ...baseObj, newField: value };
+
+// ✅ USE INSTEAD
+// Manually copy fields or use constructor
+```
+
+Note: Spread syntax (`...`) IS supported in `vec![]` macro:
+```jounce
+// ✅ SUPPORTED in arrays
+let combined = vec![...array1, ...array2];
+```
+
+### No Arrow Functions in Type Positions
+```jounce
+// ❌ NOT SUPPORTED
+type Handler = (event: Event) => void;
+
+// ✅ USE INSTEAD
+// Use fn() type
+let handler: fn() = || { ... };
+```
+
+---
+
+## Migration from JavaScript/React
+
+Common gotchas when coming from JavaScript/React:
+
+| JavaScript/React | Jounce | Why |
+|------------------|--------|-----|
+| `onClick={...}` | `onclick={...}` | DOM-style events |
+| `await fetch()` | `@server fn + Result` | No await syntax |
+| `` `Hello ${name}` `` | `"Hello " + name` | No templates |
+| `for (;;)` | `for i in 0..10` | Rust-style loops |
+| `a + b` (implicit) | `return a + b` | Explicit return |
+| `user?.name` | `if let Some(u) = user { u.name }` | Explicit Option |
+| `...rest` params | `params: Vec<T>` | No variadic |
+| `const x = y ?? z` | `if let Some(y) = y { y } else { z }` | No nullish |
+
+---
+
+## Error Codes
+
+### E_STY_001: Unsupported or Malformed Nested Style Rule
+
+**Error Message**:
+```
+error[E_STY_001]: unsupported or malformed nested style rule
+  help: Jounce currently supports one level of selector nesting inside `style <Component> { ... }`
+  note: See docs/guides/SYNTAX_LIMITATIONS.md for current CSS syntax
+```
+
+**What it means**: You've attempted to use CSS nesting syntax that isn't currently supported.
+
+**Supported CSS Nesting**:
+```jounce
+style Button {
+    .container {
+        padding: 20px;
+    }
+
+    button {
+        padding: 10px 20px;
+        background: #f0f0f0;
+
+        // ✅ SUPPORTED: One level of nesting with &
+        &:hover {
+            background: #007bff;
+        }
+
+        &:active {
+            background: #0056b3;
+        }
+
+        &.disabled {
+            opacity: 0.5;
+        }
+    }
 }
+```
 
-// Alternative - .is_err() should also work
-if (result.is_err()) {
-    console.log("Failed");
-    return;
+**Not Supported**:
+```jounce
+style Button {
+    button {
+        &:hover {
+            // ❌ NOT SUPPORTED: Two levels deep
+            &:active {
+                background: red;
+            }
+        }
+    }
 }
 ```
 
-**What needs to be fixed**:
-In `src/type_checker.rs`:
-1. Recognize Result<T, E> type
-2. Add `.is_ok()` method signature that returns `bool`
-3. Add `.is_err()` method signature that returns `bool`
-4. Type check method calls on Result instances
-5. Return correct boolean type for if condition checking
-
-**Why this is a bug**:
-- Result type is fully implemented ✅
-- `.is_ok()` and `.is_err()` exist in runtime ✅
-- They return correct boolean values ✅
-- Only the type checker has incomplete knowledge ❌
-
-This will be fixed in a future session - it's a type system issue, not a language design issue.
+**Current Limits**:
+- **One level of nesting**: `button { &:hover { ... } }` ✅
+- **No deep nesting**: `button { &:hover { &:active { ... } } }` ❌
+- **Supported selectors**: `&:hover`, `&:active`, `&:focus`, `&.class`
 
 ---
 
-## Summary: Why This Table Matters
+### E_STY_002: Media Query Must Appear at Top Level
 
-**For LLMs**:
-- Prevents generating broken code
-- Shows exact workarounds to use
-- Explains what "looks like it should work" but doesn't
-
-**For Developers**:
-- Saves hours of debugging mysterious errors
-- Shows production-ready workarounds
-- Sets correct expectations about current capabilities
-
-**For Jounce Project**:
-- Documents technical debt clearly
-- Shows roadmap (what's coming)
-- Explains architectural decisions
-
----
-
-## Common Gotchas & Runtime Safety
-
-**NEW in v0.8.2**: Comprehensive 3-layer defense-in-depth protection! 🛡️
-
-Jounce now provides multiple layers of protection against common programming mistakes that compile successfully but break at runtime.
-
-### Defense Layers
-
-1. **Type Checker (Phase 1)**: Compile-time errors prevent dangerous code
-2. **Static Analyzer (Phase 2)**: Non-blocking warnings guide developers
-3. **Runtime Safety (Phase 3)**: Dev-mode checks catch remaining issues
-
----
-
-### ⚠️ Gotcha #1: Forgetting `.value` on Signals
-
-**❌ Wrong** (compiles but breaks reactivity):
-```jounce
-let count = signal(0);
-count = count + 1;  // Overwrites signal object!
+**Error Message**:
+```
+error[E_STY_002]: @media rules must appear at the top level of a style block
+  help: Move @media outside of nested selectors
+  note: @media rules cannot be nested inside element or class selectors
 ```
 
-**✅ Correct**:
+**What it means**: You've placed an `@media` query inside a nested selector, which is not supported.
+
+**Supported Media Query Placement**:
 ```jounce
-let count = signal(0);
-count.value = count.value + 1;  // Updates signal value
-```
+style Panel {
+    .container {
+        padding: 20px;
+    }
 
-**Protection**:
-- **Type Checker**: Compile error when reassigning signal variables
-- **Runtime**: Signal objects are frozen with `Object.freeze()` - throws TypeError on reassignment
-
----
-
-### ⚠️ Gotcha #2: Side Effects in `computed()`
-
-**❌ Wrong** (throws error in dev mode):
-```jounce
-let doubled = computed(() => {
-    console.log("Computing...");  // Side effect!
-    return count.value * 2;
-});
-```
-
-**✅ Correct**:
-```jounce
-// Use effect() for side effects
-effect(() => {
-    console.log("Count changed:", count.value);
-});
-
-// Keep computed() pure
-let doubled = computed(() => count.value * 2);
-```
-
-**Protection**:
-- **Runtime**: Dev-mode instrumentation detects console, fetch, storage mutations
-- **Error Message**: Helpful message with correct pattern example
-
----
-
-### ⚠️ Gotcha #3: `await` Inside JSX
-
-**❌ Wrong** (compile error):
-```jounce
-<div>{await fetchData()}</div>
-```
-
-**✅ Correct**:
-```jounce
-component DataDisplay() {
-    let data = signal(null);
-
-    onMount(async () => {
-        data.value = await fetchData();
-    });
-
-    <div>{data.value}</div>
+    // ✅ SUPPORTED: @media at top level
+    @media (max-width: 600px) {
+        .container {
+            padding: 10px;
+        }
+    }
 }
 ```
 
-**Protection**:
-- **Type Checker**: Compile error with helpful message
-- **Suggestion**: Use onMount() + signals pattern
-
----
-
-### ⚠️ Gotcha #4: `.length()` vs `.length`
-
-**❌ Wrong** (compile error):
+**Not Supported**:
 ```jounce
-let size = items.value.length();  // .length is a property!
-```
+style Panel {
+    .container {
+        padding: 20px;
 
-**✅ Correct**:
-```jounce
-let size = items.value.length;  // No parentheses
-```
-
-**Protection**:
-- **Type Checker**: Detects method call on `.length` property
-- **Error Message**: "Use '.length' without parentheses"
-
----
-
-### ⚠️ Gotcha #5: Signal Shadowing
-
-**⚠️ Warning** (non-blocking):
-```jounce
-let count = signal(0);
-
-fn inner() {
-    let count = 5;  // Shadows the signal!
+        // ❌ NOT SUPPORTED: @media nested inside selector
+        @media (max-width: 600px) {
+            padding: 10px;
+        }
+    }
 }
 ```
 
-**✅ Better**:
-```jounce
-let count = signal(0);
+**Current Limits**:
+- **Top-level only**: `@media` must be direct child of `style` block ✅
+- **No nesting in selectors**: Cannot nest `@media` inside `.class` or `element` ❌
+- **No nested media**: Cannot nest `@media` inside `@media` ❌
 
-fn inner() {
-    let innerCount = 5;  // Different name
+**Fix**:
+Move `@media` to the top level and repeat selectors inside:
+```jounce
+style Panel {
+    .container {
+        padding: 20px;
+    }
+
+    @media (max-width: 600px) {
+        .container {
+            padding: 10px;
+        }
+    }
 }
 ```
 
-**Protection**:
-- **Static Analyzer**: Warning when variables shadow signals
-- **Suggestion**: Rename inner variable
+---
+
+## See Also
+
+- **[JOUNCE_SPEC.md](../../JOUNCE_SPEC.md)** - Complete language specification
+- **[LEARN_JOUNCE.md § Common Mistakes](LEARN_JOUNCE.md#common-mistakes)** - Tutorial gotchas
+- **[ERROR_MESSAGES.md](ERROR_MESSAGES.md)** - Understanding error codes
 
 ---
 
-### ⚠️ Gotcha #6: Missing Cleanup in `onMount()`
-
-**⚠️ Warning** (non-blocking):
-```jounce
-onMount(() => {
-    setInterval(() => {
-        count.value += 1;
-    }, 1000);
-    // No cleanup! Memory leak!
-});
-```
-
-**✅ Correct**:
-```jounce
-onMount(() => {
-    let timer = setInterval(() => {
-        count.value += 1;
-    }, 1000);
-
-    return () => clearInterval(timer);  // Cleanup!
-});
-```
-
-**Protection**:
-- **Static Analyzer**: Warns when setInterval/setTimeout lack cleanup
-- **Suggestion**: Return cleanup function
-
----
-
-### See More
-
-For complete documentation of all 9 protected gotchas, see:
-- **[GOTCHA_FIXES.md](../project/GOTCHA_FIXES.md)** - Full implementation details
-- **[CHANGELOG.md](../../CHANGELOG.md)** - v0.8.2 release notes
-
----
-
-## Why These Limitations?
-
-### Syntax Choices
-
-1. **For loops**: Rust-style syntax is cleaner and more intuitive for iterating over collections and ranges.
-
-2. **Await**: While Jounce is Rust-inspired, JavaScript's prefix `await` is already familiar to web developers and works seamlessly with async/await patterns.
-
-3. **Imports**: Jounce currently uses compile-time module resolution for local files only. Package management and registry integration are planned for future releases.
-
-### Not Yet Implemented
-
-4. **Database ORM**: The compiler has internal database types for analysis, but no runtime library is available yet. Use Node.js database libraries directly in server functions.
-
-5. **Auth Module**: Similar to database - compiler has internal types but no runtime library. Use Node.js auth libraries (bcrypt, jsonwebtoken) in server functions.
-
-6. **Security Annotations**: The parser recognizes `@auth`, `@validate`, etc., but middleware generation is not implemented (Phase 17 feature). Only `@persist` annotation works currently.
-
-7. **Result Type Checking**: This is a known bug in the type checker where `.is_ok()` and `.is_err()` return types aren't properly recognized in if conditions. Use `unwrap_or()` or check `result.variant` directly as workarounds.
-
----
-
-**Last Updated**: November 5, 2025
-**Jounce Version**: v0.8.2
+**Last Updated**: November 7, 2025 (v0.8.3)

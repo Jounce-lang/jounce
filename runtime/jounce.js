@@ -95,7 +95,7 @@ class JounceRuntime {
      */
     renderPlaceholder(componentName) {
         const container = document.createElement('div');
-        container.className = 'raven-component';
+        container.className = 'jounce-component';
         container.innerHTML = `
             <div class="container">
                 <p>Count: <span id="count">0</span></p>

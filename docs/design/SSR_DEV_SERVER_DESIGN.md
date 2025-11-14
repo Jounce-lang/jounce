@@ -1,5 +1,7 @@
 # SSR Dev Server & Production Build Design
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Status**: Design document for Tasks 3 & 4 (deferred)
 **Created**: 2025-10-24
 **Tasks 1-2**: ✅ Complete (JSX conversion & hydration)

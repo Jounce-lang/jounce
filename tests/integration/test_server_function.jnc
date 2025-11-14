@@ -28,12 +28,12 @@ component GreetingApp() {
         <h1>Server Function Test</h1>
 
         <div>
-            <button onClick={fetchGreeting}>Call greet() server function</button>
+            <button onclick={fetchGreeting}>Call greet() server function</button>
             <p>Response: {message.value}</p>
         </div>
 
         <div>
-            <button onClick={calculateSum}>Call add() server function</button>
+            <button onclick={calculateSum}>Call add() server function</button>
             <p>Sum: {sum.value}</p>
         </div>
     </div>

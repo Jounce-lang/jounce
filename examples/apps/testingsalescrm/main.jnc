@@ -1,0 +1,64 @@
+component Dashboard() {
+    let closingRate = signal(75);  // Example: 75%
+    let closedWon = signal(50000);  // Example: $50,000
+    let dealsInPipeline = signal(20);  // Example: 20 deals
+    let dealsLost = signal(5);  // Example: 5 deals
+
+    // In a real app, you could fetch data in an effect, e.g.:
+    // effect(async () => {
+    //     let data = await fetch('/api/metrics').json();
+    //     closingRate.value = data.closingRate;
+    //     // etc.
+    // });
+
+    return <div class="Dashboard">
+        <div class="MetricBox">
+            <h2 class="MetricTitle">Closing Rate</h2>
+            <p class="MetricValue">{closingRate.value}</p>
+        </div>
+        <div class="MetricBox">
+            <h2 class="MetricTitle">Closed-Won Dollars</h2>
+            <p class="MetricValue">{closedWon.value}</p>
+        </div>
+        <div class="MetricBox">
+            <h2 class="MetricTitle">Deals in Pipeline</h2>
+            <p class="MetricValue">{dealsInPipeline.value}</p>
+        </div>
+        <div class="MetricBox">
+            <h2 class="MetricTitle">Deals Lost</h2>
+            <p class="MetricValue">{dealsLost.value}</p>
+        </div>
+    </div>;
+}
+
+style Dashboard {
+    background-color: #f8fafc;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 32px;
+}
+
+style MetricBox {
+    background-color: white;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+style MetricTitle {
+    font-size: 1.25rem;
+    margin-bottom: 8px;
+    color: #4b5563;
+}
+
+style MetricValue {
+    font-size: 2.25rem;
+    font-weight: bold;
+    color: #1f2937;
+}
+
+fn main() {
+    console.log("Sales CRM Dashboard - Starting...");
+}

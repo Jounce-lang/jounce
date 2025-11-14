@@ -2,8 +2,8 @@
 // Tests: If expressions in JSX, ternary operators, conditional rendering
 
 component App() {
-    let show = createSignal(true);
-    let count = createSignal(0);
+    let show = signal(true);
+    let count = signal(0);
 
     fn toggle() {
         show.set(!show.value);
@@ -16,8 +16,8 @@ component App() {
     <div class="app">
         <h1>Conditional JSX Test</h1>
 
-        <button onClick={toggle}>Toggle</button>
-        <button onClick={increment}>Increment</button>
+        <button onclick={toggle}>Toggle</button>
+        <button onclick={increment}>Increment</button>
 
         <p>Count: {count.value}</p>
 

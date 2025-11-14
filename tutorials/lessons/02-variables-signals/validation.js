@@ -5,12 +5,12 @@
 export function validate(code) {
   const cleanCode = code.replace(/\/\/.*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
 
-  // Check for createSignal
-  const hasCreateSignal = cleanCode.includes('createSignal');
+  // Check for signal
+  const hasCreateSignal = cleanCode.includes('signal');
 
   // Check that they changed "World" to something else
   const stillHasWorld = cleanCode.includes('"World"') || cleanCode.includes("'World'");
-  const hasCustomName = !stillHasWorld && /createSignal\s*\(\s*["'](.+)["']\s*\)/.test(cleanCode);
+  const hasCustomName = !stillHasWorld && /signal\s*\(\s*["'](.+)["']\s*\)/.test(cleanCode);
 
   // Check for .value usage in JSX
   const hasValueAccess = cleanCode.includes('.value');
@@ -23,7 +23,7 @@ export function validate(code) {
   let feedback = '';
 
   if (!hasCreateSignal) {
-    feedback = '💡 Hint: Use createSignal() to create a reactive variable';
+    feedback = '💡 Hint: Use signal() to create a reactive variable';
   } else if (stillHasWorld) {
     feedback = '💡 Hint: Change "World" to your actual name';
   } else if (!hasValueAccess) {
@@ -36,7 +36,7 @@ export function validate(code) {
     passed: passed,
     feedback: feedback,
     hints: [
-      'Create a signal: let name = createSignal("YourName")',
+      'Create a signal: let name = signal("YourName")',
       'Access the value in JSX: {name.value}',
       'Change "World" to your own name'
     ]
@@ -46,7 +46,7 @@ export function validate(code) {
 export function test(code) {
   try {
     // Extract the signal value
-    const match = code.match(/createSignal\s*\(\s*["'](.+)["']\s*\)/);
+    const match = code.match(/signal\s*\(\s*["'](.+)["']\s*\)/);
     const signalValue = match ? match[1] : null;
 
     return {

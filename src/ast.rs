@@ -36,8 +36,14 @@ pub enum Statement {
 #[derive(Debug, Clone)]
 pub struct UseStatement {
     pub path: Vec<Identifier>,
-    pub imports: Vec<Identifier>,
+    pub imports: Vec<ImportItem>,
     pub is_glob: bool,  // true for `use foo::*;` (import all)
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportItem {
+    pub name: Identifier,           // Original name in the imported module
+    pub alias: Option<Identifier>,  // Optional alias: `Item as Alias`
 }
 
 #[derive(Debug, Clone)]
@@ -52,6 +58,7 @@ pub struct LetStatement {
 #[derive(Debug, Clone)]
 pub struct ConstDeclaration {
     pub name: Identifier,
+    pub is_public: bool,  // Whether const is exported with `pub` keyword
     pub type_annotation: Option<TypeExpression>,
     pub value: Expression,
 }
@@ -109,6 +116,7 @@ pub struct MacroInvocation {
 #[derive(Debug, Clone)]
 pub struct StructDefinition {
     pub name: Identifier,
+    pub is_public: bool,  // Whether struct is exported with `pub` keyword
     pub lifetime_params: Vec<Lifetime>,  // Lifetime parameters like <'a, 'b>
     pub type_params: Vec<TypeParam>,  // Generic type parameters like <T>, <T: Display>
     pub fields: Vec<(Identifier, TypeExpression)>,
@@ -118,6 +126,7 @@ pub struct StructDefinition {
 #[derive(Debug, Clone)]
 pub struct EnumDefinition {
     pub name: Identifier,
+    pub is_public: bool,  // Whether enum is exported with `pub` keyword
     pub lifetime_params: Vec<Lifetime>,  // Lifetime parameters like <'a, 'b>
     pub type_params: Vec<TypeParam>,  // Generic type parameters like <T>, <T: Display>
     pub variants: Vec<EnumVariant>,
@@ -133,6 +142,7 @@ pub struct EnumVariant {
 #[derive(Debug, Clone)]
 pub struct FunctionDefinition {
     pub name: Identifier,
+    pub is_public: bool,  // Whether function is exported with `pub` keyword
     pub lifetime_params: Vec<Lifetime>,  // Lifetime parameters like <'a, 'b>
     pub type_params: Vec<TypeParam>,  // Generic type parameters like <T>, <T: Display>
     pub parameters: Vec<FunctionParameter>,
@@ -278,6 +288,7 @@ pub struct StyleBlock {
     pub raw_css: Option<String>,       // Raw CSS content for global blocks
     pub properties: Vec<StyleProperty>,
     pub nested: Vec<NestedSelector>,
+    pub keyframes: Vec<Keyframes>,    // @keyframes blocks
 }
 
 // Theme block: theme DarkMode { primary: #1a1a1a; text: #ffffff; }
@@ -307,6 +318,20 @@ pub struct ThemeProperty {
     pub value: String,          // CSS value (color, size, etc.)
 }
 
+// @keyframes block: @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+#[derive(Debug, Clone)]
+pub struct Keyframes {
+    pub name: String,                    // Animation name (e.g., "fadeIn")
+    pub frames: Vec<Keyframe>,           // Individual keyframe rules
+}
+
+// Individual keyframe: from { opacity: 0; } or 50% { opacity: 0.5; }
+#[derive(Debug, Clone)]
+pub struct Keyframe {
+    pub selector: String,                // "from", "to", "0%", "50%", "100%"
+    pub properties: Vec<StyleProperty>,  // CSS declarations
+}
+
 // Style value: can be a literal or a theme reference
 #[derive(Debug, Clone)]
 pub enum StyleValue {
@@ -315,17 +340,31 @@ pub enum StyleValue {
 }
 
 // Nested selector: &:hover { background: red; } or &.active { ... }
+// Can also contain nested selectors: button { &:hover { ... } }
 #[derive(Debug, Clone)]
 pub struct NestedSelector {
     pub selector: SelectorType,
     pub properties: Vec<StyleProperty>,
+    pub nested: Vec<NestedSelector>,
 }
 
 // Selector type for nested styles
 #[derive(Debug, Clone)]
 pub enum SelectorType {
-    PseudoClass(String),  // :hover, :focus, :active, :disabled
-    Class(String),        // .active, .disabled
+    // Modifier selectors (use & syntax: &:hover, &.active, &::before)
+    PseudoClass(String),   // :hover, :focus, :active, :disabled
+    PseudoElement(String), // ::before, ::after
+    Class(String),         // .active, .disabled
+
+    // Nested selectors (full CSS selector support)
+    Element(String),      // button, h2, div, p
+    NestedClass(String),  // .counter, .buttons (descendant class)
+    ChildElement(String), // > button (direct child element)
+    ChildClass(String),   // > .item (direct child class)
+    Selector(String),     // Any arbitrary CSS selector for complex cases
+
+    // Media query: @media (max-width: 600px) { ... }
+    Media(String),        // Media query condition: "(max-width: 600px)"
 }
 
 #[derive(Debug, Clone)]
@@ -353,6 +392,7 @@ pub enum Expression {
     IndexAccess(IndexExpression),
     Match(MatchExpression),
     IfExpression(IfExpression),  // if cond { then } else { else } as an expression
+    IfLet(IfLetExpression),      // if let pattern = value { then } else { else }
     JsxElement(JsxElement),
     FunctionCall(FunctionCall),
     MacroCall(MacroCall),  // macro!(...) as an expression (vec!, println!, etc.)
@@ -503,7 +543,7 @@ pub struct TupleLiteral {
 #[derive(Debug, Clone)]
 pub struct StructLiteral {
     pub name: Identifier,
-    pub fields: Vec<(Identifier, Expression)>,
+    pub fields: Vec<ObjectProperty>,  // Support both fields and spreads
 }
 
 #[derive(Debug, Clone)]
@@ -550,6 +590,14 @@ pub struct MatchArm {
 #[derive(Debug, Clone)]
 pub struct IfExpression {
     pub condition: Box<Expression>,
+    pub then_expr: Box<Expression>,
+    pub else_expr: Option<Box<Expression>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct IfLetExpression {
+    pub pattern: Box<Pattern>,
+    pub value: Box<Expression>,
     pub then_expr: Box<Expression>,
     pub else_expr: Option<Box<Expression>>,
 }

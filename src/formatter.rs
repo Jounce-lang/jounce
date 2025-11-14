@@ -119,11 +119,15 @@ impl Formatter {
         // Format imports if any
         if !use_stmt.imports.is_empty() {
             self.write("::{");
-            for (i, import) in use_stmt.imports.iter().enumerate() {
+            for (i, import_item) in use_stmt.imports.iter().enumerate() {
                 if i > 0 {
                     self.write(", ");
                 }
-                self.write(&import.value);
+                self.write(&import_item.name.value);
+                if let Some(alias) = &import_item.alias {
+                    self.write(" as ");
+                    self.write(&alias.value);
+                }
             }
             self.write("}");
         }
@@ -761,6 +765,7 @@ impl Formatter {
             Expression::IndexAccess(index) => self.format_index_access(index),
             Expression::Match(match_expr) => self.format_match_expression(match_expr),
             Expression::IfExpression(if_expr) => self.format_if_expression(if_expr),
+            Expression::IfLet(if_let_expr) => self.format_if_let_expression(if_let_expr),
             Expression::JsxElement(jsx) => self.format_jsx_element(jsx),
             Expression::FunctionCall(call) => self.format_function_call(call),
             Expression::MacroCall(macro_call) => self.format_macro_call(macro_call),
@@ -862,13 +867,21 @@ impl Formatter {
 
         if !struct_lit.fields.is_empty() {
             self.write(" ");
-            for (i, (name, value)) in struct_lit.fields.iter().enumerate() {
+            for (i, prop) in struct_lit.fields.iter().enumerate() {
                 if i > 0 {
                     self.write(", ");
                 }
-                self.write(&name.value);
-                self.write(": ");
-                self.format_expression(value);
+                match prop {
+                    ObjectProperty::Field(name, value) => {
+                        self.write(&name.value);
+                        self.write(": ");
+                        self.format_expression(value);
+                    }
+                    ObjectProperty::Spread(expr) => {
+                        self.write("...");
+                        self.format_expression(expr);
+                    }
+                }
             }
             self.write(" ");
         }
@@ -974,6 +987,22 @@ impl Formatter {
         self.write(" }");
 
         if let Some(else_expr) = &if_expr.else_expr {
+            self.write(" else { ");
+            self.format_expression(else_expr);
+            self.write(" }");
+        }
+    }
+
+    fn format_if_let_expression(&mut self, if_let_expr: &IfLetExpression) {
+        self.write("if let ");
+        self.format_pattern(&if_let_expr.pattern);
+        self.write(" = ");
+        self.format_expression(&if_let_expr.value);
+        self.write(" { ");
+        self.format_expression(&if_let_expr.then_expr);
+        self.write(" }");
+
+        if let Some(else_expr) = &if_let_expr.else_expr {
             self.write(" else { ");
             self.format_expression(else_expr);
             self.write(" }");
@@ -1602,6 +1631,7 @@ mod tests {
                 is_server: false,
                 is_client: false,
                 is_async: false,
+                is_public: false,
                 annotations: vec![],
                 body: BlockStatement {
                     statements: vec![Statement::Return(ReturnStatement {
@@ -1654,6 +1684,7 @@ mod tests {
                     ),
                 ],
                 derives: vec![],
+                is_public: false,
             })],
         };
 
@@ -1689,6 +1720,7 @@ mod tests {
                     },
                 ],
                 derives: vec![],
+                is_public: false,
             })],
         };
 
@@ -2063,6 +2095,7 @@ mod tests {
                     value: "f64".to_string(),
                 })),
                 value: Expression::FloatLiteral("3.14".to_string()),
+                is_public: false,
             })],
         };
 
@@ -2080,11 +2113,17 @@ mod tests {
                     value: "raven_store".to_string(),
                 }],
                 imports: vec![
-                    Identifier {
-                        value: "Signal".to_string(),
+                    ImportItem {
+                        name: Identifier {
+                            value: "Signal".to_string(),
+                        },
+                        alias: None,
                     },
-                    Identifier {
-                        value: "Computed".to_string(),
+                    ImportItem {
+                        name: Identifier {
+                            value: "Computed".to_string(),
+                        },
+                        alias: None,
                     },
                 ],
                 is_glob: false,
@@ -2166,13 +2205,13 @@ mod tests {
                         value: "Point".to_string(),
                     },
                     fields: vec![
-                        (
+                        ObjectProperty::Field(
                             Identifier {
                                 value: "x".to_string(),
                             },
                             Expression::IntegerLiteral(10),
                         ),
-                        (
+                        ObjectProperty::Field(
                             Identifier {
                                 value: "y".to_string(),
                             },
@@ -2202,6 +2241,7 @@ mod tests {
                 is_server: false,
                 is_client: false,
                 is_async: true,
+                is_public: false,
                 annotations: vec![],
                 body: BlockStatement {
                     statements: vec![Statement::Return(ReturnStatement {

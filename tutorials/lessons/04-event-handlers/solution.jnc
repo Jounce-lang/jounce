@@ -2,14 +2,14 @@
 // Make your UI interactive by responding to user actions
 
 component App() {
-    let count = createSignal(0);
+    let count = signal(0);
 
     <div class="container p-8">
         <h1 class="text-4xl font-bold mb-4">Count: {count.value}</h1>
 
         <button
             class="btn btn-primary btn-lg"
-            onClick={() => count.set(count.value + 1)}
+            onclick={() => count.set(count.value + 1)}
         >
             Increment
         </button>

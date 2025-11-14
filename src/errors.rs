@@ -13,6 +13,13 @@ pub enum CompileError {
         location: SourceLocation,
         suggestion: Option<String>,
     },
+    /// Style-specific parsing errors
+    StyleError {
+        message: String,
+        line: usize,
+        column: usize,
+        code: String,
+    },
 }
 
 impl CompileError {
@@ -57,6 +64,18 @@ impl CompileError {
                 }
                 diag
             }
+            CompileError::StyleError { message, line, column, code } => {
+                Diagnostic::error(message.clone())
+                    .with_code(code)
+                    .at(SourceLocation {
+                        file: file.to_string(),
+                        line: *line,
+                        column: *column,
+                        length: 1,
+                    })
+                    .with_suggestion("Jounce currently supports one level of selector nesting inside `style <Component> { ... }`".to_string())
+                    .with_note("See docs/guides/SYNTAX_LIMITATIONS.md for current CSS syntax".to_string())
+            }
         }
     }
 }
@@ -71,6 +90,9 @@ impl fmt::Display for CompileError {
             CompileError::BorrowError(msg) => write!(f, "Borrow Error: {}", msg),
             CompileError::Generic(msg) => write!(f, "Error: {}", msg),
             CompileError::WithLocation { message, .. } => write!(f, "Error: {}", message),
+            CompileError::StyleError { message, line, column, code } => {
+                write!(f, "Style Error [{}:{}] [{}]: {}", line, column, code, message)
+            }
         }
     }
 }

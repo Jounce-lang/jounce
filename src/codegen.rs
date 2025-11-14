@@ -240,6 +240,13 @@ impl CodeGenerator {
                     self.extract_css_from_expression(else_expr, component_name)?;
                 }
             }
+            Expression::IfLet(if_let_expr) => {
+                self.extract_css_from_expression(&if_let_expr.value, component_name)?;
+                self.extract_css_from_expression(&if_let_expr.then_expr, component_name)?;
+                if let Some(else_expr) = &if_let_expr.else_expr {
+                    self.extract_css_from_expression(else_expr, component_name)?;
+                }
+            }
             Expression::Match(match_expr) => {
                 for arm in &match_expr.arms {
                     self.extract_css_from_expression(&arm.body, component_name)?;
@@ -1299,28 +1306,35 @@ impl CodeGenerator {
                 self.allocate_struct(layout.total_size, f);
 
                 // For each field in the struct literal, store the value at the correct offset
-                for (field_name, field_value) in &struct_lit.fields {
-                    // Get the field offset from the layout
-                    let offset = layout.get_field_offset(&field_name.value)
-                        .ok_or_else(|| CompileError::Generic(format!(
-                            "Codegen: Struct '{}' has no field '{}'",
-                            struct_lit.name.value,
-                            field_name.value
-                        )))?;
+                for prop in &struct_lit.fields {
+                    // Handle field properties (spreads not supported in WASM)
+                    if let ObjectProperty::Field(field_name, field_value) = prop {
+                        // Get the field offset from the layout
+                        let offset = layout.get_field_offset(&field_name.value)
+                            .ok_or_else(|| CompileError::Generic(format!(
+                                "Codegen: Struct '{}' has no field '{}'",
+                                struct_lit.name.value,
+                                field_name.value
+                            )))?;
 
-                    // Push the base pointer + offset
-                    f.instruction(&Instruction::I32Const(struct_ptr as i32));
+                        // Push the base pointer + offset
+                        f.instruction(&Instruction::I32Const(struct_ptr as i32));
 
-                    // Generate code for the field value
-                    self.generate_expression(field_value, f)?;
+                        // Generate code for the field value
+                        self.generate_expression(field_value, f)?;
 
-                    // Store the value at (base_ptr + offset)
-                    // For now, assume all fields are i32 (we'll need to check type later)
-                    f.instruction(&Instruction::I32Store(wasm_encoder::MemArg {
-                        offset: offset as u64,
-                        align: 2,  // 4-byte alignment for i32
-                        memory_index: 0,
-                    }));
+                        // Store the value at (base_ptr + offset)
+                        // For now, assume all fields are i32 (we'll need to check type later)
+                        f.instruction(&Instruction::I32Store(wasm_encoder::MemArg {
+                            offset: offset as u64,
+                            align: 2,  // 4-byte alignment for i32
+                            memory_index: 0,
+                        }));
+                    } else {
+                        // Spreads are not supported in WASM (best-effort compilation)
+                        // Skip spreads in WASM mode
+                        continue;
+                    }
                 }
 
                 // The struct pointer is already on the stack from allocate_struct
@@ -1576,6 +1590,41 @@ impl CodeGenerator {
 
                 // End if block
                 f.instruction(&Instruction::End);
+            }
+            Expression::IfLet(if_let_expr) => {
+                // Generate code for if-let expression: if let pattern = value { then_expr } else { else_expr }
+                // This desugars to a match expression with a single arm plus a wildcard arm
+                // match value {
+                //     pattern => then_expr,
+                //     _ => else_expr (or unit if none)
+                // }
+
+                // Generate the value expression and store it (like match scrutinee)
+                self.generate_expression(&if_let_expr.value, f)?;
+
+                // For simple if-let with literal/wildcard patterns, generate nested if/else
+                // This is similar to how we handle match expressions
+
+                // Create a synthetic match expression with two arms
+                use crate::ast::MatchArm;
+
+                let then_arm = MatchArm {
+                    patterns: vec![*if_let_expr.pattern.clone()],
+                    body: if_let_expr.then_expr.clone(),
+                };
+
+                let else_arm = MatchArm {
+                    patterns: vec![crate::ast::Pattern::Wildcard],
+                    body: if let Some(else_expr) = &if_let_expr.else_expr {
+                        else_expr.clone()
+                    } else {
+                        Box::new(crate::ast::Expression::UnitLiteral)
+                    },
+                };
+
+                // Generate match arms (value is already on stack)
+                let arms = vec![then_arm, else_arm];
+                self.generate_match_arms(&arms, f)?;
             }
             Expression::Block(block) => {
                 // Generate code for all statements in the block
@@ -2172,8 +2221,15 @@ impl CodeGenerator {
                 self.collect_lambdas_from_expression(&array_repeat.count);
             }
             Expression::StructLiteral(struct_lit) => {
-                for (_, field_value) in &struct_lit.fields {
-                    self.collect_lambdas_from_expression(field_value);
+                for prop in &struct_lit.fields {
+                    match prop {
+                        ObjectProperty::Field(_, field_value) => {
+                            self.collect_lambdas_from_expression(field_value);
+                        }
+                        ObjectProperty::Spread(expr) => {
+                            self.collect_lambdas_from_expression(expr);
+                        }
+                    }
                 }
             }
             Expression::ObjectLiteral(obj_lit) => {
@@ -2222,6 +2278,13 @@ impl CodeGenerator {
                 self.collect_lambdas_from_expression(&if_expr.condition);
                 self.collect_lambdas_from_expression(&if_expr.then_expr);
                 if let Some(else_expr) = &if_expr.else_expr {
+                    self.collect_lambdas_from_expression(else_expr);
+                }
+            }
+            Expression::IfLet(if_let_expr) => {
+                self.collect_lambdas_from_expression(&if_let_expr.value);
+                self.collect_lambdas_from_expression(&if_let_expr.then_expr);
+                if let Some(else_expr) = &if_let_expr.else_expr {
                     self.collect_lambdas_from_expression(else_expr);
                 }
             }
@@ -2373,8 +2436,15 @@ impl CodeGenerator {
                 self.collect_variable_references(&array_repeat.count, vars);
             }
             Expression::StructLiteral(struct_lit) => {
-                for (_, field_value) in &struct_lit.fields {
-                    self.collect_variable_references(field_value, vars);
+                for prop in &struct_lit.fields {
+                    match prop {
+                        ObjectProperty::Field(_, field_value) => {
+                            self.collect_variable_references(field_value, vars);
+                        }
+                        ObjectProperty::Spread(expr) => {
+                            self.collect_variable_references(expr, vars);
+                        }
+                    }
                 }
             }
             Expression::ObjectLiteral(obj_lit) => {
@@ -2423,6 +2493,13 @@ impl CodeGenerator {
                 self.collect_variable_references(&if_expr.condition, vars);
                 self.collect_variable_references(&if_expr.then_expr, vars);
                 if let Some(else_expr) = &if_expr.else_expr {
+                    self.collect_variable_references(else_expr, vars);
+                }
+            }
+            Expression::IfLet(if_let_expr) => {
+                self.collect_variable_references(&if_let_expr.value, vars);
+                self.collect_variable_references(&if_let_expr.then_expr, vars);
+                if let Some(else_expr) = &if_let_expr.else_expr {
                     self.collect_variable_references(else_expr, vars);
                 }
             }
@@ -2568,7 +2645,11 @@ impl CodeGenerator {
             self.css_output.push_str(&format!(".{} {{\n", class_name));
 
             for prop in &style.properties {
-                let value = self.resolve_style_value(&prop.value);
+                let mut value = self.resolve_style_value(&prop.value);
+                // Rewrite animation properties to use scoped keyframe names
+                if prop.name == "animation" || prop.name == "animation-name" {
+                    value = self.rewrite_animation_value(&value, &class_name, &style.keyframes);
+                }
                 self.css_output.push_str(&format!("  {}: {};\n", prop.name, value));
             }
 
@@ -2577,28 +2658,240 @@ impl CodeGenerator {
 
         // Generate nested selectors
         for nested in &style.nested {
+            // Handle @media queries specially
+            if let SelectorType::Media(condition) = &nested.selector {
+                // Start @media block
+                self.css_output.push_str(&format!("@media {} {{\n", condition));
+
+                // Generate all rules inside the media query with proper scoping
+                for media_nested in &nested.nested {
+                    let media_selector = match &media_nested.selector {
+                        // Modifier selectors (use & syntax)
+                        SelectorType::PseudoClass(pseudo) => {
+                            format!(".{}:{}", class_name, pseudo)
+                        }
+                        SelectorType::PseudoElement(pseudo_elem) => {
+                            format!(".{}::{}", class_name, pseudo_elem)
+                        }
+                        SelectorType::Class(cls) => {
+                            format!(".{}.{}", class_name, cls)
+                        }
+
+                        // Descendant selectors (nested rules)
+                        SelectorType::Element(element) => {
+                            format!(".{} {}", class_name, element)
+                        }
+                        SelectorType::NestedClass(cls) => {
+                            format!(".{} .{}", class_name, cls)
+                        }
+
+                        // Child selectors (direct children)
+                        SelectorType::ChildElement(element) => {
+                            format!(".{} > {}", class_name, element)
+                        }
+                        SelectorType::ChildClass(cls) => {
+                            format!(".{} > .{}", class_name, cls)
+                        }
+
+                        // Arbitrary selector (for complex cases)
+                        SelectorType::Selector(selector) => {
+                            format!(".{} {}", class_name, selector)
+                        }
+
+                        // Nested media queries not supported
+                        SelectorType::Media(_) => {
+                            continue; // Skip nested @media (not standard CSS)
+                        }
+                    };
+
+                    if !media_nested.properties.is_empty() {
+                        self.css_output.push_str(&format!("  {} {{\n", media_selector));
+
+                        for prop in &media_nested.properties {
+                            let mut value = self.resolve_style_value(&prop.value);
+                            // Rewrite animation properties to use scoped keyframe names
+                            if prop.name == "animation" || prop.name == "animation-name" {
+                                value = self.rewrite_animation_value(&value, &class_name, &style.keyframes);
+                            }
+                            self.css_output.push_str(&format!("    {}: {};\n", prop.name, value));
+                        }
+
+                        self.css_output.push_str("  }\n\n");
+                    }
+                }
+
+                // Close @media block
+                self.css_output.push_str("}\n\n");
+                continue; // Skip normal processing for media queries
+            }
+
             let nested_selector = match &nested.selector {
+                // Modifier selectors (use & syntax)
                 SelectorType::PseudoClass(pseudo) => {
+                    // &:hover -> .Counter_hash:hover
                     format!(".{}:{}", class_name, pseudo)
                 }
+                SelectorType::PseudoElement(pseudo_elem) => {
+                    // &::before -> .Counter_hash::before
+                    format!(".{}::{}", class_name, pseudo_elem)
+                }
                 SelectorType::Class(cls) => {
+                    // &.active -> .Counter_hash.active
                     format!(".{}.{}", class_name, cls)
                 }
+
+                // Descendant selectors (nested rules)
+                SelectorType::Element(element) => {
+                    // button { ... } -> .Counter_hash button { ... }
+                    format!(".{} {}", class_name, element)
+                }
+                SelectorType::NestedClass(cls) => {
+                    // .counter { ... } -> .Counter_hash .counter { ... }
+                    format!(".{} .{}", class_name, cls)
+                }
+
+                // Child selectors (direct children)
+                SelectorType::ChildElement(element) => {
+                    // > button { ... } -> .Counter_hash > button { ... }
+                    format!(".{} > {}", class_name, element)
+                }
+                SelectorType::ChildClass(cls) => {
+                    // > .item { ... } -> .Counter_hash > .item { ... }
+                    format!(".{} > .{}", class_name, cls)
+                }
+
+                // Arbitrary selector (for complex cases)
+                SelectorType::Selector(selector) => {
+                    // Custom selector: scope it with parent
+                    format!(".{} {}", class_name, selector)
+                }
+
+                // Media already handled above
+                SelectorType::Media(_) => continue,
             };
 
             if !nested.properties.is_empty() {
                 self.css_output.push_str(&format!("{} {{\n", nested_selector));
 
                 for prop in &nested.properties {
-                    let value = self.resolve_style_value(&prop.value);
+                    let mut value = self.resolve_style_value(&prop.value);
+                    // Rewrite animation properties to use scoped keyframe names
+                    if prop.name == "animation" || prop.name == "animation-name" {
+                        value = self.rewrite_animation_value(&value, &class_name, &style.keyframes);
+                    }
                     self.css_output.push_str(&format!("  {}: {};\n", prop.name, value));
                 }
 
                 self.css_output.push_str("}\n\n");
             }
+
+            // Generate nested selectors within this selector (e.g., button { &:hover { ... } })
+            for inner_nested in &nested.nested {
+                let inner_selector = match &inner_nested.selector {
+                    SelectorType::PseudoClass(pseudo) => {
+                        // &:hover inside button -> .Counter_hash button:hover
+                        format!("{}:{}", nested_selector, pseudo)
+                    }
+                    SelectorType::PseudoElement(pseudo_elem) => {
+                        // &::before inside button -> .Counter_hash button::before
+                        format!("{}::{}", nested_selector, pseudo_elem)
+                    }
+                    SelectorType::Class(cls) => {
+                        // &.active inside button -> .Counter_hash button.active
+                        format!("{}.{}", nested_selector, cls)
+                    }
+                    SelectorType::Element(element) => {
+                        // element inside element (not common but supported)
+                        format!("{} {}", nested_selector, element)
+                    }
+                    SelectorType::NestedClass(cls) => {
+                        format!("{} .{}", nested_selector, cls)
+                    }
+                    SelectorType::ChildElement(element) => {
+                        format!("{} > {}", nested_selector, element)
+                    }
+                    SelectorType::ChildClass(cls) => {
+                        format!("{} > .{}", nested_selector, cls)
+                    }
+                    SelectorType::Selector(selector) => {
+                        format!("{} {}", nested_selector, selector)
+                    }
+                    // Media queries should not be nested inside regular selectors
+                    SelectorType::Media(_) => continue,
+                };
+
+                if !inner_nested.properties.is_empty() {
+                    self.css_output.push_str(&format!("{} {{\n", inner_selector));
+
+                    for prop in &inner_nested.properties {
+                        let mut value = self.resolve_style_value(&prop.value);
+                        // Rewrite animation properties to use scoped keyframe names
+                        if prop.name == "animation" || prop.name == "animation-name" {
+                            value = self.rewrite_animation_value(&value, &class_name, &style.keyframes);
+                        }
+                        self.css_output.push_str(&format!("  {}: {};\n", prop.name, value));
+                    }
+
+                    self.css_output.push_str("}\n\n");
+                }
+            }
+        }
+
+        // Generate scoped @keyframes
+        for keyframes in &style.keyframes {
+            let scoped_animation_name = format!("jnc-{}-{}", class_name, keyframes.name);
+
+            self.css_output.push_str(&format!("@keyframes {} {{\n", scoped_animation_name));
+
+            for frame in &keyframes.frames {
+                self.css_output.push_str(&format!("  {} {{\n", frame.selector));
+
+                for prop in &frame.properties {
+                    let value = self.resolve_style_value(&prop.value);
+                    self.css_output.push_str(&format!("    {}: {};\n", prop.name, value));
+                }
+
+                self.css_output.push_str("  }\n");
+            }
+
+            self.css_output.push_str("}\n\n");
         }
 
         Ok(())
+    }
+
+    /// Rewrite animation property values to use scoped keyframe names
+    /// "slideIn" -> "jnc-Button_a1b2c3-slideIn"
+    /// "slideIn 1s ease-in" -> "jnc-Button_a1b2c3-slideIn 1s ease-in"
+    /// "fadeIn 1s, slideIn 2s" -> "jnc-Button_a1b2c3-fadeIn 1s, jnc-Button_a1b2c3-slideIn 2s"
+    fn rewrite_animation_value(&self, value: &str, class_name: &str, keyframes: &[Keyframes]) -> String {
+        // Handle multiple animations separated by commas
+        let animations: Vec<&str> = value.split(',').collect();
+        let mut rewritten = Vec::new();
+
+        for animation in animations {
+            let animation = animation.trim();
+            let mut matched = false;
+
+            // Check if this animation starts with any of our keyframe names
+            for kf in keyframes {
+                // Match if the animation is exactly the keyframe name or starts with it followed by space
+                if animation == kf.name || animation.starts_with(&format!("{} ", kf.name)) {
+                    let scoped_name = format!("jnc-{}-{}", class_name, kf.name);
+                    // Replace the animation name with the scoped version
+                    rewritten.push(animation.replacen(&kf.name, &scoped_name, 1));
+                    matched = true;
+                    break;
+                }
+            }
+
+            if !matched {
+                // If no matching keyframe, keep original value (might be a global animation)
+                rewritten.push(animation.to_string());
+            }
+        }
+
+        rewritten.join(", ")
     }
 
     /// Generate a scoped class name with hash

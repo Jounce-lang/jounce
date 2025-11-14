@@ -1,3 +1,5 @@
+// Jounce Example – Verified v0.8.x
+
 // Dashboard Template
 // Build a beautiful admin dashboard!
 
@@ -35,19 +37,19 @@ component App() {
         <div class="container mx-auto px-8">
             <div class="flex gap-4 mb-8">
                 <button
-                    onClick={() => setTab("overview")}
+                    onclick={() => setTab("overview")}
                     class={selectedTab.value == "overview" ? "btn btn-primary" : "btn btn-outline"}
                 >
                     Overview
                 </button>
                 <button
-                    onClick={() => setTab("analytics")}
+                    onclick={() => setTab("analytics")}
                     class={selectedTab.value == "analytics" ? "btn btn-primary" : "btn btn-outline"}
                 >
                     Analytics
                 </button>
                 <button
-                    onClick={() => setTab("reports")}
+                    onclick={() => setTab("reports")}
                     class={selectedTab.value == "reports" ? "btn btn-primary" : "btn btn-outline"}
                 >
                     Reports

@@ -273,7 +273,7 @@ fn api_create_product(data: ProductData) -> Product {
 
 fn calculate_total(items: Array<OrderItem>) -> f64 {
     let total = 0.0;
-    for (let item in items) {
+    for item in items {
         total = total + (item.price * item.quantity);
     }
     return total;

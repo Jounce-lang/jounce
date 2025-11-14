@@ -1,30 +1,46 @@
 # Module System Guide
 
+**Version**: v0.8.3
+**Last Updated**: November 7, 2025
+
 Jounce supports multi-file projects with a simple and intuitive module system. You can split your code into multiple files and import functions, structs, enums, and other definitions across files.
+
+> **Technical Reference**: See [JOUNCE_SPEC.md § Module System](../../JOUNCE_SPEC.md) for complete grammar and execution rules.
+
+---
 
 ## Table of Contents
 
-- [Basic Usage](#basic-usage)
+- [Quick Start](#quick-start)
 - [Import Syntax](#import-syntax)
+- [Import Aliasing (New in v0.8.3)](#import-aliasing-new-in-v083)
+- [Visibility Control](#visibility-control)
 - [Module Resolution](#module-resolution)
 - [Best Practices](#best-practices)
 - [Examples](#examples)
 - [Troubleshooting](#troubleshooting)
 
-## Basic Usage
+---
+
+## Quick Start
 
 ### Creating a Module
 
-Any `.jnc` file is automatically a module. All top-level definitions (functions, structs, enums, constants) are available for import by other files.
+Any `.jnc` file is automatically a module. Use the `pub` keyword to export definitions.
 
 **math.jnc**:
 ```jounce
-fn add(a: i64, b: i64) -> i64 {
+pub fn add(a: i32, b: i32) -> i32 {
     return a + b;
 }
 
-fn multiply(a: i64, b: i64) -> i64 {
+pub fn multiply(a: i32, b: i32) -> i32 {
     return a * b;
+}
+
+// Private function (not exported)
+fn internal_helper() -> i32 {
+    return 42;
 }
 ```
 
@@ -41,6 +57,8 @@ fn main() {
     console.log(result.to_string());
 }
 ```
+
+---
 
 ## Import Syntax
 
@@ -60,23 +78,129 @@ use ./models/user;
 use ../lib/helpers;
 ```
 
-### Package Imports
-
-You can also import from installed packages:
-
-```jounce
-use jounce_http::HttpClient;
-use jounce_router::Router;
-```
-
 ### Selective Imports
 
-Import specific items from a module (coming soon):
+Import specific items from a module:
 
 ```jounce
-// This syntax is planned but not yet implemented
 use ./math::{add, multiply};
+use ./types::{User, Post, Comment};
+
+fn main() {
+    let sum = add(5, 3);  // Direct access
+}
 ```
+
+### Wildcard Imports
+
+Import all public items (use sparingly):
+
+```jounce
+use ./math::*;
+
+fn main() {
+    let result = add(10, 20);
+}
+```
+
+---
+
+## Import Aliasing (New in v0.8.3)
+
+Rename imports to avoid naming conflicts:
+
+### Basic Aliasing
+
+```jounce
+use ./widgets::{Button as WidgetButton};
+use ./ui::{Button as UIButton};
+
+component App() {
+    return <div>
+        <WidgetButton label="Click me" />
+        <UIButton variant="primary" />
+    </div>;
+}
+```
+
+### Multiple Aliases
+
+```jounce
+use ./types::{
+    User as UserType,
+    Post as PostType,
+    Comment as CommentType
+};
+
+fn process_user(u: UserType) -> PostType {
+    // ...
+}
+```
+
+### Aliasing with Namespaces
+
+```jounce
+use ./auth as AuthModule;
+use ./database as DB;
+
+fn main() {
+    AuthModule::login("user", "pass");
+    DB::connect("localhost");
+}
+```
+
+---
+
+## Visibility Control
+
+### Public Items (v0.8.3+)
+
+Use the `pub` keyword to export definitions:
+
+```jounce
+// Public - available to importers
+pub fn public_function() -> i32 {
+    return 42;
+}
+
+pub struct User {
+    pub name: string,
+    pub email: string,
+}
+
+// Private - only within this module
+fn private_helper() -> i32 {
+    return 10;
+}
+```
+
+### Module Exports
+
+Only `pub` items can be imported:
+
+**utils.jnc**:
+```jounce
+pub fn format_date(timestamp: i64) -> string {
+    return "2025-11-07";
+}
+
+fn internal_parse(raw: string) -> i64 {
+    // Private - cannot be imported
+    return 0;
+}
+```
+
+**main.jnc**:
+```jounce
+use ./utils::{format_date};
+
+fn main() {
+    format_date(12345);  // ✅ Works
+    // internal_parse("test");  // ❌ Error: not exported
+}
+```
+
+---
 
 ## Module Resolution
 
@@ -84,24 +208,27 @@ use ./math::{add, multiply};
 
 When you write `use ./math`, Jounce looks for:
 1. `./math.jnc` in the current directory
-2. If not found, returns an error
+2. If not found, returns error "Module not found"
 
 When you write `use jounce_http::HttpClient`, Jounce searches:
-1. Local `test_modules/` directory
-2. Installed packages
-3. Custom module paths (if configured)
+1. Local packages in `jounce_modules/`
+2. Registry packages (if installed via `jnc pkg add`)
 
 ### File Extensions
 
-Always use `.jnc` extensions for Jounce files, but omit the extension in import statements:
+Always use `.jnc` extensions for source files, but **omit** the extension in import statements:
 
 ```jounce
-// ✓ Correct
+// ✅ Correct
 use ./math;
+use ./models/user;
 
-// ✗ Incorrect
+// ❌ Incorrect
 use ./math.jnc;
+use ./models/user.jnc;
 ```
+
+---
 
 ## Best Practices
 
@@ -124,19 +251,35 @@ my-app/
     └── formatting.jnc
 ```
 
-### 2. Shared Types File
+### 2. Use Import Aliasing for Conflicts
+
+When two modules export the same name:
+
+```jounce
+use ./widgets::{Button as WidgetButton};
+use ./components::{Button as CompButton};
+
+component App() {
+    return <div>
+        <WidgetButton />
+        <CompButton />
+    </div>;
+}
+```
+
+### 3. Shared Types File
 
 Create a `types.jnc` file for shared structs and enums:
 
 **types.jnc**:
 ```jounce
-struct User {
-    id: i64,
-    name: String,
-    email: String,
+pub struct User {
+    id: i32,
+    name: string,
+    email: string,
 }
 
-enum Role {
+pub enum Role {
     Admin,
     User,
     Guest,
@@ -145,9 +288,9 @@ enum Role {
 
 **auth.jnc**:
 ```jounce
-use ./types;
+use ./types::{User, Role};
 
-fn create_user(name: String, email: String) -> User {
+pub fn create_user(name: string, email: string) -> User {
     return User {
         id: generate_id(),
         name: name,
@@ -156,38 +299,12 @@ fn create_user(name: String, email: String) -> User {
 }
 ```
 
-### 3. Utility Functions
-
-Group related utility functions in separate files:
-
-**utils/validation.jnc**:
-```jounce
-fn is_valid_email(email: String) -> bool {
-    return email.contains("@");
-}
-
-fn is_valid_password(password: String) -> bool {
-    return password.length() >= 8;
-}
-```
-
-**utils/formatting.jnc**:
-```jounce
-fn format_date(timestamp: i64) -> String {
-    // Implementation
-}
-
-fn format_currency(amount: f64) -> String {
-    // Implementation
-}
-```
-
 ### 4. Avoid Circular Dependencies
 
 Don't create circular imports:
 
 ```jounce
-// ✗ AVOID THIS
+// ❌ AVOID THIS
 
 // a.jnc
 use ./b;
@@ -199,10 +316,10 @@ use ./a;  // Circular dependency!
 Instead, extract shared code to a third file:
 
 ```jounce
-// ✓ BETTER
+// ✅ BETTER
 
 // shared.jnc
-struct SharedData { /* ... */ }
+pub struct SharedData { /* ... */ }
 
 // a.jnc
 use ./shared;
@@ -211,32 +328,50 @@ use ./shared;
 use ./shared;
 ```
 
+### 5. Export Only What's Needed
+
+Keep implementation details private:
+
+```jounce
+// Public API
+pub fn calculate_total(items: Vec<Item>) -> f64 {
+    return items.map(item_price).sum();
+}
+
+// Private helper
+fn item_price(item: Item) -> f64 {
+    return item.price * item.quantity;
+}
+```
+
+---
+
 ## Examples
 
 ### Example 1: Simple Calculator
 
 **calculator/math.jnc**:
 ```jounce
-fn add(a: i64, b: i64) -> i64 {
+pub fn add(a: i32, b: i32) -> i32 {
     return a + b;
 }
 
-fn subtract(a: i64, b: i64) -> i64 {
+pub fn subtract(a: i32, b: i32) -> i32 {
     return a - b;
 }
 
-fn multiply(a: i64, b: i64) -> i64 {
+pub fn multiply(a: i32, b: i32) -> i32 {
     return a * b;
 }
 
-fn divide(a: i64, b: i64) -> i64 {
+pub fn divide(a: i32, b: i32) -> i32 {
     return a / b;
 }
 ```
 
 **calculator/main.jnc**:
 ```jounce
-use ./math;
+use ./math::{add, subtract, multiply, divide};
 
 fn main() {
     console.log("10 + 5 = " + add(10, 5).to_string());
@@ -246,34 +381,32 @@ fn main() {
 }
 ```
 
-### Example 2: Todo App (Multi-File)
-
-See the complete example in `examples/todo-app-multi-file/`.
+### Example 2: Multi-Module Todo App
 
 **Project Structure**:
 ```
-todo-app-multi-file/
+todo-app/
 ├── main.jnc       # Entry point
-├── types.jnc      # Shared types (Todo, Filter)
+├── types.jnc      # Shared types
 ├── utils.jnc      # Utility functions
 └── storage.jnc    # Storage layer
 ```
 
 **types.jnc**:
 ```jounce
-struct Todo {
-    id: i64,
-    title: String,
+pub struct Todo {
+    id: i32,
+    title: string,
     completed: bool,
 }
 
-enum Filter {
+pub enum Filter {
     All,
     Active,
     Completed,
 }
 
-fn create_todo(id: i64, title: String) -> Todo {
+pub fn create_todo(id: i32, title: string) -> Todo {
     return Todo {
         id: id,
         title: title,
@@ -284,45 +417,37 @@ fn create_todo(id: i64, title: String) -> Todo {
 
 **utils.jnc**:
 ```jounce
-fn format_count(count: i64) -> String {
+pub fn format_count(count: i32) -> string {
     if count == 1 {
         return "1 item";
     }
     return count.to_string() + " items";
 }
 
-fn validate_title(title: String) -> bool {
+pub fn validate_title(title: string) -> bool {
     return title.length() > 0;
 }
 ```
 
 **storage.jnc**:
 ```jounce
-use ./types;
+use ./types::{Todo, create_todo};
 
-fn get_sample_todo() -> Todo {
+pub fn get_sample_todo() -> Todo {
     return create_todo(1, "Sample task");
 }
 
-fn format_todo(todo: Todo) -> String {
+pub fn format_todo(todo: Todo) -> string {
     let status = if todo.completed { "[x]" } else { "[ ]" };
     return status + " " + todo.title;
-}
-
-fn mark_completed(todo: Todo) -> Todo {
-    return Todo {
-        id: todo.id,
-        title: todo.title,
-        completed: true,
-    };
 }
 ```
 
 **main.jnc**:
 ```jounce
-use ./types;
-use ./utils;
-use ./storage;
+use ./types::{create_todo};
+use ./utils::{format_count};
+use ./storage::{format_todo};
 
 fn main() {
     console.log("=== Todo App ===");
@@ -330,56 +455,31 @@ fn main() {
     let todo = create_todo(1, "Learn Jounce");
     console.log(format_todo(todo));
 
-    let completed = mark_completed(todo);
-    console.log(format_todo(completed));
-
     console.log(format_count(2));
 }
 ```
 
-### Example 3: Web App with Services
-
-**models/user.jnc**:
-```jounce
-struct User {
-    id: i64,
-    name: String,
-    email: String,
-}
-
-fn new_user(id: i64, name: String, email: String) -> User {
-    return User {
-        id: id,
-        name: name,
-        email: email,
-    };
-}
-```
-
-**services/auth.jnc**:
-```jounce
-use ../models/user;
-
-fn register(name: String, email: String) -> User {
-    let id = generate_id();
-    return new_user(id, name, email);
-}
-
-fn generate_id() -> i64 {
-    return 1; // Simplified
-}
-```
+### Example 3: Import Aliasing
 
 **main.jnc**:
 ```jounce
-use ./models/user;
-use ./services/auth;
+use ./widgets::{Button as WidgetButton, Card as WidgetCard};
+use ./ui::{Button as UIButton};
+use ./types::{User as UserType};
 
-fn main() {
-    let user = register("Alice", "alice@example.com");
-    console.log("Registered: " + user.name);
+component App() {
+    let user: UserType = get_current_user();
+
+    return <div>
+        <WidgetCard>
+            <WidgetButton label="Widget" />
+            <UIButton variant="primary" label="UI" />
+        </WidgetCard>
+    </div>;
 }
 ```
+
+---
 
 ## Troubleshooting
 
@@ -392,67 +492,48 @@ fn main() {
 2. Verify the file has a `.jnc` extension
 3. Make sure you're using the correct relative path (`./` or `../`)
 4. Check for typos in the module name
+5. Ensure you omitted the `.jnc` extension in the import
 
-### Error: "Expected Identifier, found Dot"
+### Error: "Item not exported"
 
-**Problem**: Old version of Jounce without relative path support.
+**Problem**: The function/struct you're importing isn't marked `pub`.
 
-**Solution**: Update to Jounce v0.3.1 or later.
+**Solution**: Add `pub` keyword to the definition:
+```jounce
+// In the module file
+pub fn my_function() { }  // Now exportable
+```
 
-### Error: "Function not found"
-
-**Problem**: The function you're calling isn't exported from the module.
-
-**Solutions**:
-1. Check the function is defined in the imported module
-2. Verify the function name spelling
-3. Make sure the function is not private (currently all functions are public)
-
-### Circular Dependencies
+### Error: "Circular dependency detected"
 
 **Problem**: Two modules import each other.
 
 **Solution**: Extract shared code to a third module that both can import.
 
-## Current Limitations
+### Name Conflicts
 
-### No Explicit Exports (Yet)
+**Problem**: Two modules export the same name.
 
-Currently, all top-level definitions in a file are automatically exported. Explicit export control with the `export` keyword is planned for a future release:
-
+**Solution**: Use import aliasing:
 ```jounce
-// Planned syntax (not yet implemented)
-export fn public_function() { }
-
-fn private_function() { }  // Not exported
+use ./moduleA::{Item as ItemA};
+use ./moduleB::{Item as ItemB};
 ```
-
-### No Selective Imports (Yet)
-
-You must import the entire module. Selective imports are planned:
-
-```jounce
-// Planned syntax (not yet implemented)
-use ./math::{add, multiply};
-```
-
-### No Re-exports (Yet)
-
-You cannot re-export imported items:
-
-```jounce
-// Planned syntax (not yet implemented)
-export use ./math::{add};
-```
-
-## Next Steps
-
-- Read the [Todo App Example](../../examples/todo-app-multi-file/README.md)
-- Learn about [Project Structure Best Practices](./PROJECT_STRUCTURE.md) (coming soon)
-- Explore [Package Management](./PACKAGE_MANAGER.md) (coming soon)
 
 ---
 
-**Last Updated**: Phase 11 - Module System Implementation
-**Status**: Local file imports fully functional
-**Version**: Jounce v0.3.1 (in development)
+## What's Next?
+
+- **Complete Tutorial**: See [LEARN_JOUNCE.md](./LEARN_JOUNCE.md) for practical examples
+- **Technical Details**: See [JOUNCE_SPEC.md § Module System](../../JOUNCE_SPEC.md) for complete grammar
+- **Package System**: See [PACKAGE_MANAGER_GUIDE.md](./PACKAGE_MANAGER_GUIDE.md) for using external packages
+
+---
+
+**Version**: v0.8.3 "Enhanced Language Features"
+**Status**: ✅ Production Ready (580/580 tests passing)
+**Features**: Relative imports, selective imports, import aliasing, `pub` keyword
+
+---
+
+**Maintained by: The Jounce Project**

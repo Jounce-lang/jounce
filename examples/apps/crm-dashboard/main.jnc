@@ -46,7 +46,7 @@ component DealCard(company: String, value: Number, status: String, onDelete: Fun
             Status: <span style="color: {getColor()}; font-weight: bold; text-transform: uppercase">{status}</span>
         </div>
 
-        <button onClick={onDelete} style="width: 100%; padding: 8px; background: #6b7280; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer">
+        <button onclick={onDelete} style="width: 100%; padding: 8px; background: #6b7280; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer">
             Delete
         </button>
     </div>
@@ -139,19 +139,19 @@ component App() {
                 <input
                     type="text"
                     value={newCompany.value}
-                    onInput={(e) => newCompany.value = e.target.value}
+                    oninput={(e) => newCompany.value = e.target.value}
                     placeholder="Company name"
                     style="flex: 1; min-width: 200px; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px"
                 />
                 <input
                     type="number"
                     value={newValue.value}
-                    onInput={(e) => newValue.value = Number(e.target.value)}
+                    oninput={(e) => newValue.value = Number(e.target.value)}
                     placeholder="Deal value"
                     style="flex: 1; min-width: 200px; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px"
                 />
                 <button
-                    onClick={addDeal}
+                    onclick={addDeal}
                     style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer"
                 >
                     Add Deal

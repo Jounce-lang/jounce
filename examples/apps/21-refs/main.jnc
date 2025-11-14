@@ -1,6 +1,6 @@
 // App 21: Testing if refs exist
 component App() {
-    let count = createSignal(0);
+    let count = signal(0);
 
     <div>
         <p>Count: {count.value}</p>

@@ -4,7 +4,7 @@
  * Fine-grained reactivity inspired by Solid.js
  * Provides Signal, Computed, Effect, and Batch primitives
  *
- * @version 0.4.0-alpha
+ * @version 0.8.3
  * @license MIT
  */
 
@@ -410,10 +410,9 @@ function untrack(fn) {
 function signal(initialValue) {
     const sig = new Signal(initialValue);
 
-    // PHASE 3 FIX #1: Freeze signal object to prevent reassignment
-    // This provides runtime protection against: signal = newValue (should be signal.value = newValue)
-    // Note: Only freezes the signal object itself, not the _value property setter
-    Object.freeze(sig);
+    // NOTE: Previously had Object.freeze(sig) here, but that prevents the value setter from working
+    // Frozen objects cannot have their properties modified, even through setters
+    // The freeze was intended to prevent `signal = newValue`, but it also breaks `signal.value = newValue`
 
     return sig;
 }

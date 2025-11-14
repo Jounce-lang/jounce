@@ -1,5 +1,7 @@
 # Double Colon (`::`) Operator Support
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 The `::` operator provides namespace resolution in Jounce, allowing you to call methods on objects using Rust-style syntax.
 
 ## Syntax

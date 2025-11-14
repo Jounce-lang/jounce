@@ -7,9 +7,9 @@ component PersistentCounter() {
     <div>
         <h1>Persistent Counter</h1>
         <p>Count: {count.value}</p>
-        <button onClick={() => count.value++}>Increment</button>
-        <button onClick={() => count.value--}>Decrement</button>
-        <button onClick={() => { count.value = 0; }}>Reset</button>
+        <button onclick={() => count.value++}>Increment</button>
+        <button onclick={() => count.value--}>Decrement</button>
+        <button onclick={() => { count.value = 0; }}>Reset</button>
         <p>Reload the page - your count will persist!</p>
     </div>
 }
@@ -33,10 +33,10 @@ component TodoList() {
         <input
             type="text"
             value={input.value}
-            onInput={(e) => { input.value = e.target.value; }}
+            oninput={(e) => { input.value = e.target.value; }}
             placeholder="Add todo..."
         />
-        <button onClick={addTodo}>Add</button>
+        <button onclick={addTodo}>Add</button>
     </div>
 }
 

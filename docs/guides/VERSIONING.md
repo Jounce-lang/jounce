@@ -1,7 +1,9 @@
 # Jounce Versioning & Release Management
 
-**Last Updated**: November 5, 2025
-**Current Version**: v0.8.2
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
+**Last Updated**: November 7, 2025
+**Current Version**: v0.8.3 "Enhanced Language Features"
 **System**: Semantic Versioning with Sprint-Based Development
 
 ---
@@ -402,9 +404,9 @@ git push origin v0.3.0-dev.20251101
 
 ### Current Status (November 2025)
 
-- **Current Version**: v0.8.1 "Developer Experience & Public Launch"
-- **Tests**: 635/635 passing (100%)
-- **Status**: Production ready, zero known bugs
+- **Current Version**: v0.8.3 "Enhanced Language Features"
+- **Tests**: 580/580 passing (100%)
+- **Status**: ✅ Production ready, zero known bugs
 
 ### Version Timeline
 
@@ -418,6 +420,8 @@ git push origin v0.3.0-dev.20251101
 | v0.7.0 | Oct 24, 2025 | Packages | 20 packages (queue, markdown) |
 | v0.8.0 | Oct 24, 2025 | Packages | 35 packages (milestone achieved!) |
 | v0.8.1 | Oct 31, 2025 | Developer UX | Public launch preparation |
+| v0.8.2 | Nov 5, 2025 | Runtime Safety | Runtime safety nets & production audit |
+| v0.8.3 | Nov 7, 2025 | Language Features | Import aliasing, explicit pub, docs cleanup |
 
 ### Next Milestones
 
@@ -552,6 +556,10 @@ git push origin dev
 
 ---
 
-**Last Updated**: November 1, 2025
-**Maintained by**: Jounce Core Team
+**Last Updated**: November 7, 2025
+
+---
+
+**Maintained by: The Jounce Project**
+
 **Questions?** See [CONTRIBUTING.md](CONTRIBUTING.md) or [open an issue](https://github.com/Jounce-lang/Jounce/issues)

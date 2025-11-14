@@ -1,4 +1,7 @@
 # Day 1 Progress Report
+
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-20
 **Phase**: 1.1 - Emergency Stabilization
 **Status**: ✅ MAJOR SUCCESS

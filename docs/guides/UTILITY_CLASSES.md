@@ -1,5 +1,7 @@
 # Jounce Utility Classes - User Guide
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Status**: ✅ Production Ready
 **Version**: Phase 7.5 Sprint 3
 **Updated**: 2025-10-23

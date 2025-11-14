@@ -4,6 +4,14 @@ use crate::lexer::Lexer;
 use crate::token::{Token, TokenKind};
 use std::collections::HashMap;
 
+// Maximum nesting depth for style selectors
+// Example: style Foo { .a { .b { .c { ... } } } }
+// Depth 0: top-level inside style block
+// Depth 1: .a
+// Depth 2: .b
+// Depth 3: .c (max)
+const STYLE_NESTING_MAX_DEPTH: usize = 3;
+
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 enum Precedence {
     Lowest,
@@ -122,14 +130,16 @@ impl<'a> Parser<'a> {
         let stmt = match self.current_token().kind {
             TokenKind::Use => self.parse_use_statement().map(Statement::Use),
             TokenKind::Pub => {
-                // Consume 'pub' and continue parsing the next item
-                self.next_token();
-                match self.current_token().kind {
+                // Don't consume 'pub' - let the parse functions handle it
+                // Peek at the next token to determine what to parse
+                let next_kind = self.peek_token().kind.clone();
+                match next_kind {
                     TokenKind::Struct => self.parse_struct_definition().map(Statement::Struct),
                     TokenKind::Enum => self.parse_enum_definition().map(Statement::Enum),
+                    TokenKind::Const => self.parse_const_declaration().map(Statement::Const),
                     TokenKind::Fn | TokenKind::Server | TokenKind::Client | TokenKind::Async => self.parse_function_definition().map(Statement::Function),
                     _ => Err(CompileError::ParserError {
-                        message: format!("Expected struct, enum, or fn after 'pub', found {:?}", self.current_token().kind),
+                        message: format!("Expected struct, enum, const, or fn after 'pub', found {:?}", next_kind),
                         line: self.current_token().line,
                         column: self.current_token().column,
                     })
@@ -176,7 +186,18 @@ impl<'a> Parser<'a> {
             TokenKind::Let => self.parse_let_statement(vec![]).map(Statement::Let),
             TokenKind::Const => self.parse_const_declaration().map(Statement::Const),
             TokenKind::Return => self.parse_return_statement().map(Statement::Return),
-            TokenKind::If => self.parse_if_statement().map(Statement::If),
+            TokenKind::If => {
+                // Check if this is if-let vs regular if
+                if self.peek_token().kind == TokenKind::Let {
+                    // Parse as if-let expression and wrap in expression statement
+                    self.next_token(); // consume 'if'
+                    let if_let_expr = self.parse_if_let_expression()?;
+                    Ok(Statement::Expression(if_let_expr))
+                } else {
+                    // Regular if statement
+                    self.parse_if_statement().map(Statement::If)
+                }
+            },
             TokenKind::While => self.parse_while_statement().map(Statement::While),
             TokenKind::Loop => self.parse_loop_statement().map(Statement::Loop),
             TokenKind::Break => {
@@ -320,11 +341,21 @@ impl<'a> Parser<'a> {
             path.push(self.parse_identifier()?);
         }
 
-        // Parse selective imports { A, B, C }
+        // Parse selective imports { A, B, C } or { A as AliasA, B as AliasB }
         let mut imports = Vec::new();
         if self.consume_if_matches(&TokenKind::LBrace) {
             while self.current_token().kind != TokenKind::RBrace {
-                imports.push(self.parse_identifier()?);
+                let name = self.parse_identifier()?;
+
+                // Check for alias: `Item as Alias`
+                let alias = if self.consume_if_matches(&TokenKind::As) {
+                    Some(self.parse_identifier()?)
+                } else {
+                    None
+                };
+
+                imports.push(ImportItem { name, alias });
+
                 if !self.consume_if_matches(&TokenKind::Comma) { break; }
             }
             self.expect_and_consume(&TokenKind::RBrace)?;
@@ -473,6 +504,9 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_struct_definition(&mut self) -> Result<StructDefinition, CompileError> {
+        // Check for pub keyword
+        let is_public = self.consume_if_matches(&TokenKind::Pub);
+
         self.expect_and_consume(&TokenKind::Struct)?;
         let name = self.parse_identifier()?;
         let type_params = self.parse_type_params()?;
@@ -489,10 +523,13 @@ impl<'a> Parser<'a> {
             if !self.consume_if_matches(&TokenKind::Comma) { break; }
         }
         self.expect_and_consume(&TokenKind::RBrace)?;
-        Ok(StructDefinition { name, lifetime_params: Vec::new(), type_params, fields, derives: Vec::new() })
+        Ok(StructDefinition { name, is_public, lifetime_params: Vec::new(), type_params, fields, derives: Vec::new() })
     }
 
     fn parse_enum_definition(&mut self) -> Result<EnumDefinition, CompileError> {
+        // Check for pub keyword
+        let is_public = self.consume_if_matches(&TokenKind::Pub);
+
         self.expect_and_consume(&TokenKind::Enum)?;
         let name = self.parse_identifier()?;
         let type_params = self.parse_type_params()?;
@@ -548,7 +585,7 @@ impl<'a> Parser<'a> {
         }
         self.expect_and_consume(&TokenKind::RBrace)?;
 
-        Ok(EnumDefinition { name, lifetime_params: Vec::new(), type_params, variants, derives: Vec::new() })
+        Ok(EnumDefinition { name, is_public, lifetime_params: Vec::new(), type_params, variants, derives: Vec::new() })
     }
 
     fn parse_impl_block(&mut self) -> Result<ImplBlock, CompileError> {
@@ -815,6 +852,9 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function_definition(&mut self) -> Result<FunctionDefinition, CompileError> {
+        // Check for pub keyword
+        let is_public = self.consume_if_matches(&TokenKind::Pub);
+
         // Parse security annotations (@auth, @secure, @validate, etc.)
         let annotations = self.parse_annotations()?;
 
@@ -905,6 +945,7 @@ impl<'a> Parser<'a> {
 
         Ok(FunctionDefinition {
             name,
+            is_public,
             lifetime_params: Vec::new(),
             type_params,
             parameters,
@@ -1063,6 +1104,9 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_const_declaration(&mut self) -> Result<ConstDeclaration, CompileError> {
+        // Check for pub keyword
+        let is_public = self.consume_if_matches(&TokenKind::Pub);
+
         self.expect_and_consume(&TokenKind::Const)?;
 
         // Parse constant name (must be an identifier)
@@ -1077,7 +1121,7 @@ impl<'a> Parser<'a> {
 
         self.expect_and_consume(&TokenKind::Assign)?;
         let value = self.parse_expression(Precedence::Lowest)?;
-        Ok(ConstDeclaration { name, type_annotation, value })
+        Ok(ConstDeclaration { name, is_public, type_annotation, value })
     }
 
     fn parse_let_pattern(&mut self) -> Result<Pattern, CompileError> {
@@ -1533,43 +1577,50 @@ impl<'a> Parser<'a> {
             TokenKind::LBracket => self.parse_array_literal()?,
             TokenKind::Match => self.parse_match_expression()?,
             TokenKind::If => {
-                // Parse if-expression: if cond { then_expr } else { else_expr }
+                // Parse if-expression or if-let expression
                 self.next_token(); // consume if
-                let condition = Box::new(self.parse_expression(Precedence::Lowest)?);
 
-                // Parse then block
-                self.expect_and_consume(&TokenKind::LBrace)?;
-                let mut then_statements = Vec::new();
-                while self.current_token().kind != TokenKind::RBrace {
-                    then_statements.push(self.parse_statement()?);
-                }
-                self.expect_and_consume(&TokenKind::RBrace)?;
-                let then_expr = Box::new(Expression::Block(BlockStatement { statements: then_statements }));
-
-                // Parse optional else block
-                let else_expr = if self.consume_if_matches(&TokenKind::Else) {
-                    if self.current_token().kind == TokenKind::If {
-                        // else if - parse as nested if-expression
-                        Some(Box::new(self.parse_prefix()?))
-                    } else {
-                        // else block
-                        self.expect_and_consume(&TokenKind::LBrace)?;
-                        let mut else_statements = Vec::new();
-                        while self.current_token().kind != TokenKind::RBrace {
-                            else_statements.push(self.parse_statement()?);
-                        }
-                        self.expect_and_consume(&TokenKind::RBrace)?;
-                        Some(Box::new(Expression::Block(BlockStatement { statements: else_statements })))
-                    }
+                // Check for if-let: if let pattern = value { }
+                if self.current_token().kind == TokenKind::Let {
+                    self.parse_if_let_expression()?
                 } else {
-                    None
-                };
+                    // Regular if-expression: if cond { then_expr } else { else_expr }
+                    let condition = Box::new(self.parse_expression(Precedence::Lowest)?);
 
-                Expression::IfExpression(IfExpression {
-                    condition,
-                    then_expr,
-                    else_expr,
-                })
+                    // Parse then block
+                    self.expect_and_consume(&TokenKind::LBrace)?;
+                    let mut then_statements = Vec::new();
+                    while self.current_token().kind != TokenKind::RBrace {
+                        then_statements.push(self.parse_statement()?);
+                    }
+                    self.expect_and_consume(&TokenKind::RBrace)?;
+                    let then_expr = Box::new(Expression::Block(BlockStatement { statements: then_statements }));
+
+                    // Parse optional else block
+                    let else_expr = if self.consume_if_matches(&TokenKind::Else) {
+                        if self.current_token().kind == TokenKind::If {
+                            // else if - parse as nested if-expression
+                            Some(Box::new(self.parse_prefix()?))
+                        } else {
+                            // else block
+                            self.expect_and_consume(&TokenKind::LBrace)?;
+                            let mut else_statements = Vec::new();
+                            while self.current_token().kind != TokenKind::RBrace {
+                                else_statements.push(self.parse_statement()?);
+                            }
+                            self.expect_and_consume(&TokenKind::RBrace)?;
+                            Some(Box::new(Expression::Block(BlockStatement { statements: else_statements })))
+                        }
+                    } else {
+                        None
+                    };
+
+                    Expression::IfExpression(IfExpression {
+                        condition,
+                        then_expr,
+                        else_expr,
+                    })
+                }
             },
             TokenKind::LBrace | TokenKind::JsxOpenBrace => {
                 // Differentiate between object literal and block expression
@@ -2215,20 +2266,28 @@ impl<'a> Parser<'a> {
             return Ok(Expression::StructLiteral(StructLiteral { name, fields }));
         }
 
-        // Parse comma-separated field: value pairs
+        // Parse comma-separated properties (fields or spreads)
         while self.current_token().kind != TokenKind::RBrace {
-            let field_name = self.parse_identifier()?;
-
-            // Check for field shorthand: if followed by comma or }, use field_name as both key and value
-            if self.current_token().kind == TokenKind::Comma || self.current_token().kind == TokenKind::RBrace {
-                // Field shorthand: `username,` is equivalent to `username: username,`
-                let field_value = Expression::Identifier(field_name.clone());
-                fields.push((field_name, field_value));
+            // Check for spread syntax: ...expr
+            if self.current_token().kind == TokenKind::DotDotDot {
+                self.next_token();  // Consume ...
+                let spread_expr = self.parse_expression(Precedence::Lowest)?;
+                fields.push(ObjectProperty::Spread(spread_expr));
             } else {
-                // Regular field: value syntax
-                self.expect_and_consume(&TokenKind::Colon)?;
-                let field_value = self.parse_expression(Precedence::Lowest)?;
-                fields.push((field_name, field_value));
+                // Parse field name
+                let field_name = self.parse_identifier()?;
+
+                // Check for field shorthand: if followed by comma or }, use field_name as both key and value
+                if self.current_token().kind == TokenKind::Comma || self.current_token().kind == TokenKind::RBrace {
+                    // Field shorthand: `username,` is equivalent to `username: username,`
+                    let field_value = Expression::Identifier(field_name.clone());
+                    fields.push(ObjectProperty::Field(field_name, field_value));
+                } else {
+                    // Regular field: value syntax
+                    self.expect_and_consume(&TokenKind::Colon)?;
+                    let field_value = self.parse_expression(Precedence::Lowest)?;
+                    fields.push(ObjectProperty::Field(field_name, field_value));
+                }
             }
 
             if !self.consume_if_matches(&TokenKind::Comma) {
@@ -2404,6 +2463,55 @@ impl<'a> Parser<'a> {
         self.expect_and_consume(&TokenKind::RBrace)?;
 
         Ok(Expression::Match(MatchExpression { scrutinee, arms }))
+    }
+
+    fn parse_if_let_expression(&mut self) -> Result<Expression, CompileError> {
+        // Current token should be 'let'
+        self.expect_and_consume(&TokenKind::Let)?;
+
+        // Parse the pattern
+        let pattern = self.parse_pattern()?;
+
+        // Expect '=' between pattern and value
+        self.expect_and_consume(&TokenKind::Assign)?;
+
+        // Parse the value being matched
+        let value = Box::new(self.parse_expression(Precedence::Lowest)?);
+
+        // Parse then block
+        self.expect_and_consume(&TokenKind::LBrace)?;
+        let mut then_statements = Vec::new();
+        while self.current_token().kind != TokenKind::RBrace {
+            then_statements.push(self.parse_statement()?);
+        }
+        self.expect_and_consume(&TokenKind::RBrace)?;
+        let then_expr = Box::new(Expression::Block(BlockStatement { statements: then_statements }));
+
+        // Parse optional else block
+        let else_expr = if self.consume_if_matches(&TokenKind::Else) {
+            if self.current_token().kind == TokenKind::If {
+                // else if - parse as nested if-expression
+                Some(Box::new(self.parse_prefix()?))
+            } else {
+                // else block
+                self.expect_and_consume(&TokenKind::LBrace)?;
+                let mut else_statements = Vec::new();
+                while self.current_token().kind != TokenKind::RBrace {
+                    else_statements.push(self.parse_statement()?);
+                }
+                self.expect_and_consume(&TokenKind::RBrace)?;
+                Some(Box::new(Expression::Block(BlockStatement { statements: else_statements })))
+            }
+        } else {
+            None
+        };
+
+        Ok(Expression::IfLet(IfLetExpression {
+            pattern: Box::new(pattern),
+            value,
+            then_expr,
+            else_expr,
+        }))
     }
 
     fn parse_pattern(&mut self) -> Result<Pattern, CompileError> {
@@ -3103,6 +3211,7 @@ impl<'a> Parser<'a> {
         // Current token should be {, peek token tells us what's inside
         match self.peek_token().kind {
             TokenKind::RBrace => true,  // Empty struct literal: Name {}
+            TokenKind::DotDotDot => true,  // Spread in struct literal: Name { ...obj }
             TokenKind::Identifier => {
                 // Need to look ahead 2 tokens to distinguish struct literal from block
                 // Clone the lexer to peek ahead without affecting the real one
@@ -4140,6 +4249,266 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a style block:
+    /// Helper to create style-specific error with E_STY_001 code
+    fn style_error(&self, message: &str) -> CompileError {
+        CompileError::StyleError {
+            message: message.to_string(),
+            line: self.current_token().line,
+            column: self.current_token().column,
+            code: "E_STY_001".to_string(),
+        }
+    }
+
+    /// Parse nested selectors with depth tracking to enforce STYLE_NESTING_MAX_DEPTH
+    /// Depth 0 = top level inside style block
+    /// Depth 1 = first level of nesting (.child, &:hover)
+    /// Depth 2 = second level of nesting
+    /// Depth 3 = third level (max)
+    fn parse_nested_selector_contents(
+        &mut self,
+        depth: usize,
+    ) -> Result<(Vec<StyleProperty>, Vec<NestedSelector>), CompileError> {
+        let mut properties = Vec::new();
+        let mut nested = Vec::new();
+
+        while self.current_token().kind != TokenKind::RBrace
+            && self.current_token().kind != TokenKind::Eof
+        {
+            // Check for @ rules
+            if self.current_token().kind == TokenKind::At {
+                if depth > 0 {
+                    // @media/@keyframes nested inside selectors is not allowed (E_STY_002)
+                    return Err(self.style_error(
+                        "@media rules must appear at the top level of a style block [E_STY_002]",
+                    ));
+                } else {
+                    // At depth 0, @ rules should be handled by the caller, so return early
+                    break;
+                }
+            }
+
+            // Check for nested selectors
+            if self.current_token().kind == TokenKind::Ampersand
+                || self.current_token().kind == TokenKind::Dot
+                || self.current_token().kind == TokenKind::RAngle
+            {
+                // Check depth limit BEFORE parsing the nested selector
+                if depth >= STYLE_NESTING_MAX_DEPTH {
+                    return Err(self.style_error(&format!(
+                        "Style nesting depth exceeds maximum of {} [E_STY_005]",
+                        STYLE_NESTING_MAX_DEPTH
+                    )));
+                }
+
+                // Parse the nested selector
+                if self.current_token().kind == TokenKind::Ampersand {
+                    // &:hover, &::before, &.active
+                    self.next_token(); // consume &
+
+                    let selector = if self.current_token().kind == TokenKind::DoubleColon {
+                        // Pseudo-element: &::before, &::after
+                        self.next_token(); // consume ::
+                        if let TokenKind::Identifier = self.current_token().kind {
+                            let pseudo_elem = self.current_token().lexeme.clone();
+                            self.next_token();
+                            SelectorType::PseudoElement(pseudo_elem)
+                        } else {
+                            return Err(self
+                                .style_error("Expected pseudo-element name after '::' in style block"));
+                        }
+                    } else if self.current_token().kind == TokenKind::Colon {
+                        // Pseudo-class: &:hover, &:focus
+                        self.next_token(); // consume :
+                        if let TokenKind::Identifier = self.current_token().kind {
+                            let pseudo = self.current_token().lexeme.clone();
+                            self.next_token();
+                            SelectorType::PseudoClass(pseudo)
+                        } else {
+                            return Err(
+                                self.style_error("Expected pseudo-class name after ':' in style block")
+                            );
+                        }
+                    } else if self.current_token().kind == TokenKind::Dot {
+                        // Class: &.active
+                        self.next_token(); // consume .
+                        if let TokenKind::Identifier = self.current_token().kind {
+                            let class_name = self.current_token().lexeme.clone();
+                            self.next_token();
+                            SelectorType::Class(class_name)
+                        } else {
+                            return Err(
+                                self.style_error("Expected class name after '.' in style block")
+                            );
+                        }
+                    } else {
+                        return Err(self.style_error(&format!(
+                            "Expected ':', '::' or '.' after '&' in style block, got {:?}",
+                            self.current_token().kind
+                        )));
+                    };
+
+                    // Recursively parse nested block
+                    self.expect_and_consume(&TokenKind::LBrace)?;
+                    let (nested_properties, nested_nested) =
+                        self.parse_nested_selector_contents(depth + 1)?;
+                    self.expect_and_consume(&TokenKind::RBrace)?;
+
+                    nested.push(NestedSelector {
+                        selector,
+                        properties: nested_properties,
+                        nested: nested_nested,
+                    });
+                } else if self.current_token().kind == TokenKind::Dot {
+                    // .class selector
+                    self.next_token(); // consume .
+                    if let TokenKind::Identifier = self.current_token().kind {
+                        let class_name = self.current_token().lexeme.clone();
+                        self.next_token();
+
+                        // Check for descendant selectors
+                        let mut selector_str = format!(".{}", class_name);
+                        while self.current_token().kind == TokenKind::Identifier
+                            || self.current_token().kind == TokenKind::Dot
+                        {
+                            if self.current_token().kind == TokenKind::Dot {
+                                self.next_token();
+                                if self.current_token().kind == TokenKind::Identifier {
+                                    selector_str
+                                        .push_str(&format!(" .{}", self.current_token().lexeme));
+                                    self.next_token();
+                                }
+                            } else {
+                                selector_str.push_str(&format!(" {}", self.current_token().lexeme));
+                                self.next_token();
+                            }
+                        }
+
+                        self.expect_and_consume(&TokenKind::LBrace)?;
+                        let (nested_properties, nested_nested) =
+                            self.parse_nested_selector_contents(depth + 1)?;
+                        self.expect_and_consume(&TokenKind::RBrace)?;
+
+                        let selector_type = if selector_str.contains(' ') {
+                            SelectorType::Selector(selector_str)
+                        } else {
+                            SelectorType::NestedClass(class_name)
+                        };
+
+                        nested.push(NestedSelector {
+                            selector: selector_type,
+                            properties: nested_properties,
+                            nested: nested_nested,
+                        });
+                    } else {
+                        return Err(
+                            self.style_error("Expected class name after '.' in nested selector")
+                        );
+                    }
+                } else if self.current_token().kind == TokenKind::RAngle {
+                    // > child selector
+                    self.next_token(); // consume >
+
+                    let selector = if self.current_token().kind == TokenKind::Dot {
+                        // Child class: > .item
+                        self.next_token(); // consume .
+                        if let TokenKind::Identifier = self.current_token().kind {
+                            let class_name = self.current_token().lexeme.clone();
+                            self.next_token();
+                            SelectorType::ChildClass(class_name)
+                        } else {
+                            return Err(
+                                self.style_error("Expected class name after '.' in child selector")
+                            );
+                        }
+                    } else if let TokenKind::Identifier = self.current_token().kind {
+                        // Child element: > button
+                        let element_name = self.current_token().lexeme.clone();
+                        self.next_token();
+                        SelectorType::ChildElement(element_name)
+                    } else {
+                        return Err(self
+                            .style_error("Expected element or class name after '>' in child selector"));
+                    };
+
+                    self.expect_and_consume(&TokenKind::LBrace)?;
+                    let (nested_properties, nested_nested) =
+                        self.parse_nested_selector_contents(depth + 1)?;
+                    self.expect_and_consume(&TokenKind::RBrace)?;
+
+                    nested.push(NestedSelector {
+                        selector,
+                        properties: nested_properties,
+                        nested: nested_nested,
+                    });
+                }
+            } else if let TokenKind::Identifier = self.current_token().kind {
+                // Could be a property or an element selector - look ahead to decide
+                let next_token_kind = self.peek_token().kind.clone();
+                let is_selector = next_token_kind == TokenKind::LBrace
+                    || next_token_kind == TokenKind::Identifier
+                    || next_token_kind == TokenKind::Dot;
+
+                if is_selector && next_token_kind != TokenKind::Colon {
+                    // Check depth limit for element selectors too
+                    if depth >= STYLE_NESTING_MAX_DEPTH {
+                        return Err(self.style_error(&format!(
+                            "Style nesting depth exceeds maximum of {} [E_STY_005]",
+                            STYLE_NESTING_MAX_DEPTH
+                        )));
+                    }
+
+                    // Element selector
+                    let element = self.current_token().lexeme.clone();
+                    self.next_token();
+
+                    // Check for descendant selectors
+                    let mut selector_str = element.clone();
+                    while self.current_token().kind == TokenKind::Identifier
+                        || self.current_token().kind == TokenKind::Dot
+                    {
+                        if self.current_token().kind == TokenKind::Dot {
+                            self.next_token();
+                            if self.current_token().kind == TokenKind::Identifier {
+                                selector_str.push_str(&format!(" .{}", self.current_token().lexeme));
+                                self.next_token();
+                            }
+                        } else {
+                            selector_str.push_str(&format!(" {}", self.current_token().lexeme));
+                            self.next_token();
+                        }
+                    }
+
+                    self.expect_and_consume(&TokenKind::LBrace)?;
+                    let (nested_properties, nested_nested) =
+                        self.parse_nested_selector_contents(depth + 1)?;
+                    self.expect_and_consume(&TokenKind::RBrace)?;
+
+                    let selector_type = if selector_str.contains(' ') {
+                        SelectorType::Selector(selector_str)
+                    } else {
+                        SelectorType::Element(element)
+                    };
+
+                    nested.push(NestedSelector {
+                        selector: selector_type,
+                        properties: nested_properties,
+                        nested: nested_nested,
+                    });
+                } else {
+                    // Regular property
+                    let prop = self.parse_style_property()?;
+                    properties.push(prop);
+                }
+            } else {
+                // Try to parse as a property
+                let prop = self.parse_style_property()?;
+                properties.push(prop);
+            }
+        }
+
+        Ok((properties, nested))
+    }
+
     /// - Global CSS: style { .btn { color: red; } }
     /// - Component: style Button { background: blue; &:hover { ... } }
     fn parse_style_block(&mut self) -> Result<StyleBlock, CompileError> {
@@ -4230,6 +4599,7 @@ impl<'a> Parser<'a> {
                 raw_css: Some(raw_css.trim().to_string()),
                 properties: Vec::new(),
                 nested: Vec::new(),
+                keyframes: Vec::new(),
             });
         }
 
@@ -4239,63 +4609,166 @@ impl<'a> Parser<'a> {
 
         let mut properties = Vec::new();
         let mut nested = Vec::new();
+        let mut keyframes = Vec::new();
 
         while self.current_token().kind != TokenKind::RBrace && self.current_token().kind != TokenKind::Eof {
-            // Check if this is a nested selector (&:hover, &.active)
-            if self.current_token().kind == TokenKind::Ampersand {
-                self.next_token(); // consume &
+            // Check for @media queries and @keyframes (handle these first before other content)
+            if self.current_token().kind == TokenKind::At {
+                self.next_token(); // consume @
 
-                let selector = if self.current_token().kind == TokenKind::Colon {
-                    // Pseudo-class: &:hover
-                    self.next_token(); // consume :
-                    if let TokenKind::Identifier = self.current_token().kind {
-                        let pseudo = self.current_token().lexeme.clone();
-                        self.next_token();
-                        SelectorType::PseudoClass(pseudo)
-                    } else {
-                        return Err(CompileError::Generic(
-                            "Expected pseudo-class name after ':' in style block".to_string()
+                let at_rule = self.current_token().lexeme.clone();
+
+                // Handle @keyframes
+                if at_rule == "keyframes" {
+                    self.next_token(); // consume 'keyframes'
+
+                    // Parse animation name
+                    if self.current_token().kind != TokenKind::Identifier {
+                        return Err(self.style_error(
+                            "Expected animation name after '@keyframes'"
                         ));
                     }
-                } else if self.current_token().kind == TokenKind::Dot {
-                    // Class: &.active
-                    self.next_token(); // consume .
-                    if let TokenKind::Identifier = self.current_token().kind {
-                        let class_name = self.current_token().lexeme.clone();
-                        self.next_token();
-                        SelectorType::Class(class_name)
-                    } else {
-                        return Err(CompileError::Generic(
-                            "Expected class name after '.' in style block".to_string()
-                        ));
+                    let animation_name = self.current_token().lexeme.clone();
+                    self.next_token();
+
+                    self.expect_and_consume(&TokenKind::LBrace)?;
+
+                    // Parse keyframe rules
+                    let mut frames = Vec::new();
+
+                    while self.current_token().kind != TokenKind::RBrace && self.current_token().kind != TokenKind::Eof {
+                        // Parse frame selector: "from", "to", or "<number>%"
+                        let frame_selector = if self.current_token().lexeme == "from" {
+                            self.current_token().lexeme.clone()
+                        } else if self.current_token().lexeme == "to" {
+                            self.current_token().lexeme.clone()
+                        } else if self.current_token().kind == TokenKind::Identifier && self.current_token().lexeme.ends_with('%') {
+                            // The lexer treats "50%" as a single Identifier token
+                            let selector = self.current_token().lexeme.clone();
+
+                            // Validate that it's a valid percentage (0-100%)
+                            if let Some(num_str) = selector.strip_suffix('%') {
+                                match num_str.parse::<i32>() {
+                                    Ok(num) if num >= 0 && num <= 100 => {
+                                        selector
+                                    }
+                                    Ok(num) if num < 0 => {
+                                        return Err(self.style_error(
+                                            &format!("Keyframe percentage must be between 0% and 100%, got {}% [E_STY_004]", num)
+                                        ));
+                                    }
+                                    Ok(num) => {
+                                        return Err(self.style_error(
+                                            &format!("Keyframe percentage must be between 0% and 100%, got {}% [E_STY_004]", num)
+                                        ));
+                                    }
+                                    Err(_) => {
+                                        return Err(self.style_error(
+                                            &format!("Invalid keyframe percentage '{}' [E_STY_004]", selector)
+                                        ));
+                                    }
+                                }
+                            } else {
+                                return Err(self.style_error(
+                                    "Expected 'from', 'to', or '<number>%' in @keyframes block [E_STY_004]"
+                                ));
+                            }
+                        } else {
+                            return Err(self.style_error(
+                                "Expected 'from', 'to', or '<number>%' in @keyframes block [E_STY_004]"
+                            ));
+                        };
+                        self.next_token(); // consume selector
+
+                        self.expect_and_consume(&TokenKind::LBrace)?;
+
+                        // Parse properties for this keyframe
+                        let mut frame_properties = Vec::new();
+                        while self.current_token().kind != TokenKind::RBrace && self.current_token().kind != TokenKind::Eof {
+                            let prop = self.parse_style_property()?;
+                            frame_properties.push(prop);
+                        }
+
+                        self.expect_and_consume(&TokenKind::RBrace)?;
+
+                        frames.push(Keyframe {
+                            selector: frame_selector,
+                            properties: frame_properties,
+                        });
                     }
-                } else {
-                    return Err(CompileError::Generic(format!(
-                        "Expected ':' or '.' after '&' in style block, got {:?}",
-                        self.current_token().kind
-                    )));
-                };
 
-                // Parse nested block { property: value; }
-                self.expect_and_consume(&TokenKind::LBrace)?;
-                let mut nested_properties = Vec::new();
+                    self.expect_and_consume(&TokenKind::RBrace)?;
 
-                while self.current_token().kind != TokenKind::RBrace && self.current_token().kind != TokenKind::Eof {
-                    let prop = self.parse_style_property()?;
-                    nested_properties.push(prop);
+                    keyframes.push(Keyframes {
+                        name: animation_name,
+                        frames,
+                    });
+
+                    continue;
                 }
+
+                // Handle @media
+                if at_rule != "media" {
+                    return Err(self.style_error(
+                        &format!("Expected 'media' or 'keyframes' after '@' in style block, got '{}'", at_rule)
+                    ));
+                }
+                self.next_token(); // consume 'media'
+
+                // Parse media query condition: (max-width: 600px)
+                let mut condition = String::new();
+
+                // Consume everything until we hit the opening brace
+                while self.current_token().kind != TokenKind::LBrace && self.current_token().kind != TokenKind::Eof {
+                    // Handle parentheses specially to preserve them
+                    match self.current_token().kind {
+                        TokenKind::LParen => condition.push('('),
+                        TokenKind::RParen => condition.push(')'),
+                        TokenKind::Colon => condition.push(':'),
+                        TokenKind::Comma => condition.push(','),
+                        _ => {
+                            if !condition.is_empty() && !condition.ends_with('(') && !condition.ends_with(' ') {
+                                condition.push(' ');
+                            }
+                            condition.push_str(&self.current_token().lexeme);
+                        }
+                    }
+                    self.next_token();
+                }
+
+                let condition = condition.trim().to_string();
+
+                if condition.is_empty() {
+                    return Err(self.style_error(
+                        "Expected media query condition after '@media'"
+                    ));
+                }
+
+                self.expect_and_consume(&TokenKind::LBrace)?;
+
+                // Parse nested rules inside media query using the helper (depth 0 for @media content)
+                // @media itself doesn't count as depth, so we start at 0 inside it
+                let (_, media_nested) = self.parse_nested_selector_contents(0)?;
 
                 self.expect_and_consume(&TokenKind::RBrace)?;
 
+                // Add the media query as a nested selector
                 nested.push(NestedSelector {
-                    selector,
-                    properties: nested_properties,
+                    selector: SelectorType::Media(condition),
+                    properties: Vec::new(),  // Media queries don't have direct properties
+                    nested: media_nested,
                 });
-            } else {
-                // Regular property
-                let prop = self.parse_style_property()?;
-                properties.push(prop);
+                continue;
             }
+
+            // Parse remaining style block content (properties and nested selectors) with depth tracking
+            // Use the helper function to handle all non-@ content with proper depth tracking
+            let (parsed_props, parsed_nested) = self.parse_nested_selector_contents(0)?;
+            properties.extend(parsed_props);
+            nested.extend(parsed_nested);
+
+            // The helper returns early if it hits an @ rule, so continue the loop to handle it
+            // If it hit the closing brace, the while condition will fail and we'll exit
         }
 
         self.expect_and_consume(&TokenKind::RBrace)?;
@@ -4305,6 +4778,7 @@ impl<'a> Parser<'a> {
             raw_css: None,
             properties,
             nested,
+            keyframes,
         })
     }
 
@@ -4339,8 +4813,8 @@ impl<'a> Parser<'a> {
                 self.next_token();
                 name
             } else {
-                return Err(CompileError::Generic(
-                    "Expected theme name after 'theme.'".to_string()
+                return Err(self.style_error(
+                    "Expected theme name after 'theme.'"
                 ));
             };
 
@@ -4352,8 +4826,8 @@ impl<'a> Parser<'a> {
                 self.next_token();
                 name
             } else {
-                return Err(CompileError::Generic(
-                    "Expected property name after 'theme.Name.'".to_string()
+                return Err(self.style_error(
+                    "Expected property name after 'theme.Name.'"
                 ));
             };
 

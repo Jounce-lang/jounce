@@ -39,9 +39,9 @@
 component Counter() {
     return <div>
         <h1>Counter: <span id="count">0</span></h1>
-        <button onClick={() => { console.log("+ clicked"); count.value = count.value + 1; console.log("count is now", count.value); }}>+</button>
-        <button onClick={() => { console.log("- clicked"); count.value = count.value - 1; console.log("count is now", count.value); }}>-</button>
-        <button onClick={() => { console.log("Reset clicked"); count.value = 0; console.log("count is now", count.value); }}>Reset</button>
+        <button onclick={() => { console.log("+ clicked"); count.value = count.value + 1; console.log("count is now", count.value); }}>+</button>
+        <button onclick={() => { console.log("- clicked"); count.value = count.value - 1; console.log("count is now", count.value); }}>-</button>
+        <button onclick={() => { console.log("Reset clicked"); count.value = 0; console.log("count is now", count.value); }}>Reset</button>
     </div>;
 }
 

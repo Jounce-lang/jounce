@@ -1,0 +1,25 @@
+// Simple Counter App in Jounce
+// Features: component, signal, event handling, style
+
+component App() {
+    // Reactive state
+    let count = signal<i32>(0);
+
+    // Increment function
+    fn increment() {
+        count.value = count.value + 1;
+    }
+
+    // Reset function
+    fn reset() {
+        count.value = 0;
+    }
+
+    // Return UI
+    return <div class="container">
+        <h1>Hello Jounce!</h1>
+        <p>Count: {count.value}</p>
+        <button onclick={increment}>Increment</button>
+        <button onclick={reset}>Reset</button>
+    </div>;
+}

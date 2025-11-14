@@ -1,8 +1,11 @@
 # Server-Side Rendering (SSR) Status
 
-**Date**: 2025-10-24
-**Version**: 0.2.0
+**Version**: v0.8.3 "Enhanced Language Features"
+**Last Updated**: November 7, 2025
 **Status**: ✅ **Implemented** but 🚧 **Not Integrated** into compiler
+
+> **Quick Start**: See [README.md](../../README.md) for installation
+> **Technical Reference**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for language specification
 
 ---
 

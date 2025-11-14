@@ -2,15 +2,15 @@
 // Build interactive forms with two-way binding
 
 component App() {
-    let name = createSignal("");
-    let email = createSignal("");
+    let name = signal("");
+    let email = signal("");
 
     let handleSubmit = () => {
         console.log("Name:", name.value);
         console.log("Email:", email.value);
     };
 
-    <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="container p-8 max-w-md">
+    <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="container p-8 max-w-md">
         <h1 class="text-3xl font-bold mb-6">Sign Up Form</h1>
 
         <input
@@ -18,7 +18,7 @@ component App() {
             placeholder="Your Name"
             class="w-full mb-4 p-3 border rounded"
             value={name.value}
-            onInput={(e) => name.set(e.target.value)}
+            oninput={(e) => name.set(e.target.value)}
         />
 
         <!-- TODO: Add email input (copy pattern from name input) -->

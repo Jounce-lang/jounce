@@ -2,7 +2,7 @@
 // Congratulations - you've completed the Jounce tutorial!
 
 component App() {
-    let deployed = createSignal(false);
+    let deployed = signal(false);
 
     <div class="container mx-auto p-8 text-center">
         <h1 class="text-5xl font-bold mb-6">
@@ -41,7 +41,7 @@ component App() {
             </div>
         ) : (
             <button
-                onClick={() => deployed.set(true)}
+                onclick={() => deployed.set(true)}
                 class="btn btn-primary btn-lg text-2xl px-12 py-4"
             >
                 Deploy to Production 🚀

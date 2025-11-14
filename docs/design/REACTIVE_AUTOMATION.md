@@ -1,5 +1,7 @@
 # Reactive Automation Design
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Feature**: Automatic generation of reactive setup code
 **Status**: Design phase
 **Target**: v0.9.0

@@ -1,970 +1,1123 @@
-# Learn Jounce - Complete Language Guide
+# Learn Jounce - Become Productive Fast
 
-**Last Updated**: November 5, 2025
-**Version**: v0.8.2 "Runtime Safety Nets"
-**Target Audience**: LLMs, AI assistants, and developers learning Jounce
-**Prerequisite Knowledge**: Basic understanding of JavaScript/TypeScript and Rust
+> **Note**: This is a teaching guide. If anything here conflicts with [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md), follow JOUNCE_SPEC.md.
 
----
+**Summary**: Build full-stack reactive web apps in minutes, not hours.
 
-## Table of Contents
+**Last Updated**: November 7, 2025
+**Version**: v0.8.3 "Enhanced Language Features"
+**For**: Developers who want to ship fast
+**Time to First App**: < 10 minutes
 
-1. [What is Jounce?](#what-is-jounce)
-2. [Core Syntax](#core-syntax)
-3. [Components](#components)
-4. [Reactivity System](#reactivity-system)
-5. [JSX and UI](#jsx-and-ui)
-6. [Styling](#styling)
-7. [Functions and Logic](#functions-and-logic)
-8. [Module System](#module-system)
-9. [What Works vs What Doesn't](#what-works-vs-what-doesnt)
-10. [Complete Examples](#complete-examples)
+> **Note**: For technical specifications, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md)
 
 ---
 
-## What is Jounce?
+## Philosophy
 
-Jounce is a **single-file, full-stack web framework** that compiles `.jnc` files into optimized server and client JavaScript.
+**Learn by Building**. This guide teaches Jounce by building 5 progressively complex apps:
 
-**Key Principle**: Write **ONE `.jnc` file** → Get a complete web application
+1. **Counter** (5 mins) - Reactivity basics
+2. **Todo List** (15 mins) - State management
+3. **Contact Form** (15 mins) - Validation and server functions
+4. **Dashboard** (20 mins) - Components and composition
+5. **Blog** (30 mins) - Full-stack CRUD app
+
+By the end, you'll be shipping production apps.
+
+---
+
+## Prerequisites
+
+- Basic understanding of JavaScript/TypeScript
+- Familiarity with React or similar frameworks (helpful but not required)
+- Node.js v16+ installed
+- Text editor (VSCode recommended)
+
+---
+
+## Output Directory Structure (v0.8.x+)
+
+Starting in v0.8.x, each compiled app goes to its own subdirectory to prevent conflicts:
 
 ```bash
-jnc compile app.jnc
-# Generates: server.js, client.js, styles.css, index.html
+examples/apps/my-app/main.jnc  →  dist/my-app/
+my-project/src/app.jnc         →  dist/src/
+counter.jnc                    →  dist/app/  (fallback)
 ```
 
-**Language Design**:
-- Syntax: Rust-inspired with JavaScript interop
-- Paradigm: Component-based with fine-grained reactivity
-- Type hints: Optional (Rust-style)
-- Output: JavaScript (Node.js + Browser)
-
----
-
-## Core Syntax
-
-### 1. Variables
-
-```jounce
-// Immutable by default
-let name = "Alice";
-let age = 30;
-
-// Mutable variables
-let mut count = 0;
-count = count + 1;
-
-// Constants
-const MAX_ITEMS = 100;
-```
-
-### 2. Types (Optional)
-
-```jounce
-let name: String = "Alice";
-let age: i32 = 30;
-let items: Vec<String> = ["a", "b", "c"];
-let user: User = User { name: "Alice", age: 30 };
-```
-
-### 3. Functions
-
-```jounce
-// Function definition
-fn add(a: i32, b: i32) -> i32 {
-    return a + b;
-}
-
-// Arrow functions (inside components)
-let multiply = (a, b) => a * b;
-
-// Async functions
-async fn fetchData() {
-    let response = await fetch("/api/data");
-    return await response.json();
-}
-```
-
-### 4. Control Flow
-
-```jounce
-// If statements
-if count > 10 {
-    console.log("Large");
-} else if count > 5 {
-    console.log("Medium");
-} else {
-    console.log("Small");
-}
-
-// Ternary expressions
-let status = age >= 18 ? "Adult" : "Minor";
-
-// While loops
-while count < 10 {
-    count = count + 1;
-}
-
-// For loops (RUST STYLE - NOT JavaScript!)
-for item in items {
-    console.log(item);
-}
-
-for i in 0..10 {
-    console.log(i);  // 0 to 9
-}
-
-for i in 0..=10 {
-    console.log(i);  // 0 to 10 (inclusive)
-}
-```
-
-**⚠️ IMPORTANT**: Jounce uses **Rust-style for loops**, NOT JavaScript's `for (let x in array)`.
-
----
-
-## Components
-
-Components are the building blocks of Jounce applications.
-
-### Basic Component
-
-```jounce
-component HelloWorld() {
-    <div>
-        <h1>Hello, World!</h1>
-    </div>
-}
-```
-
-### Component with Props
-
-```jounce
-component Greeting(name: String, age: i32) {
-    <div>
-        <h1>Hello, {name}!</h1>
-        <p>You are {age} years old.</p>
-    </div>
-}
-
-// Usage
-<Greeting name="Alice" age={30} />
-```
-
-### Component with Return Type
-
-```jounce
-component Card(title: String, subtitle: String) -> JSX {
-    <div class="card">
-        <h2>{title}</h2>
-        <p>{subtitle}</p>
-    </div>
-}
+This means when you compile, you'll run:
+```bash
+jnc compile my-app/main.jnc
+cd dist/my-app && node server.js
 ```
 
 ---
 
-## Reactivity System
+## How This Relates to the Spec
 
-Jounce uses **fine-grained reactivity** with signals, computed values, and effects.
+This guide teaches Jounce through practical examples. For authoritative language behavior, see:
 
-### 1. Signals (Reactive State)
+- **[JOUNCE_SPEC.md](../../JOUNCE_SPEC.md)** - Complete language specification (canonical reference)
+- **[docs/README.md](../README.md)** - Full documentation hierarchy
+
+**When in doubt**: The spec wins. This guide focuses on common patterns and may simplify complex details for learning. Always check the spec for edge cases and precise behavior.
+
+---
+
+## LLM AUTHORING RULES (v0.8.x)
+
+When generating Jounce code, follow these rules:
+
+- ✅ Use `signal(...)` (not `createSignal(...)`)
+- ✅ Use lowercase DOM events: `onclick`, `oninput`, `onchange` (not `onClick`, `onInput`, `onChange`)
+- ✅ Components must `return <...>;` (explicit JSX return required)
+- ✅ Use Rust-style loops: `for i in 0..list.length() { ... }` (not JavaScript `for (let i = 0; i < list.length(); i++)`)
+- ✅ No `await` inside JSX (async operations must be outside JSX expressions)
+- ✅ Style: `@media` queries only at top-level in style blocks (not nested inside selectors)
+
+---
+
+## Setup (2 Minutes)
+
+```bash
+# Clone and build
+git clone https://github.com/Jounce-lang/jounce-pre-production.git
+cd jounce-pre-production
+cargo build --release
+
+# Add to PATH
+export PATH="$PWD/target/release:$PATH"
+
+# Verify installation
+jnc --version  # Should show v0.8.3
+```
+
+---
+
+## Tutorial 1: Counter (5 Minutes)
+
+### Goal
+Build a reactive counter that updates the UI automatically.
+
+### What You'll Learn
+- Components
+- Signals (reactive state)
+- Event handlers
+- Basic styling
+
+### Build It
+
+Create `counter.jnc`:
 
 ```jounce
 component Counter() {
-    let count = signal(0);  // Create reactive signal
+    // Reactive state
+    let count = signal<i32>(0);
 
-    let increment = () => {
-        count.value = count.value + 1;  // Update via .value
-    };
-
-    <div>
-        <p>Count: {count.value}</p>  // Read via .value
-        <button onClick={increment}>Increment</button>
-    </div>
-}
-```
-
-**Key Points**:
-- Use `signal(initialValue)` to create reactive state
-- Read with `.value`
-- Write with `.value = newValue`
-- UI automatically updates when `.value` is accessed in JSX
-
-### 2. Computed Values
-
-```jounce
-component TodoApp() {
-    let todos = signal([
-        { text: "Buy milk", done: false },
-        { text: "Walk dog", done: true }
-    ]);
-
-    let remaining = computed(() => {
-        return todos.value.filter((t) => !t.done).length();
-    });
-
-    <div>
-        <p>Remaining: {remaining.value}</p>
-        <p>Total: {todos.value.length()}</p>
-    </div>
-}
-```
-
-**Key Points**:
-- Use `computed(() => ...)` for derived state
-- Automatically re-runs when dependencies change
-- Cached - only recomputes when needed
-
-### 3. Effects (Side Effects)
-
-```jounce
-component Logger() {
-    let count = signal(0);
-
-    effect(() => {
-        console.log("Count changed:", count.value);
-    });
-
-    // Effect runs whenever count.value changes
-}
-```
-
-### 4. Persistent Signals (Local Storage)
-
-```jounce
-component App() {
-    @persist("localStorage")
-    let theme = signal("dark");
-
-    // Automatically saves to localStorage on changes
-    // Automatically loads from localStorage on mount
-}
-```
-
-### 5. Lifecycle Hooks
-
-```jounce
-component MyComponent() {
-    onMount(() => {
-        console.log("Component mounted");
-        return () => {
-            console.log("Component unmounting");
-        };
-    });
-
-    onDestroy(() => {
-        console.log("Component destroyed");
-    });
-}
-```
-
-### 6. Runtime Safety (NEW in v0.8.2!) 🛡️
-
-Jounce provides **3 layers of defense-in-depth protection** against common gotchas:
-
-#### Layer 1: Type Checker (Compile-Time Errors)
-
-```jounce
-let count = signal(0);
-count = 5;  // ❌ COMPILE ERROR: Cannot reassign signal variable
-```
-
-```jounce
-let size = items.length();  // ❌ COMPILE ERROR: .length is a property
-```
-
-```jounce
-<div>{await fetchData()}</div>  // ❌ COMPILE ERROR: await not allowed in JSX
-```
-
-#### Layer 2: Static Analyzer (Warnings)
-
-```jounce
-let count = signal(0);
-
-fn inner() {
-    let count = 5;  // ⚠️ WARNING: Shadows signal 'count'
-}
-```
-
-```jounce
-onMount(() => {
-    setInterval(() => {
-        count.value += 1;
-    }, 1000);
-    // ⚠️ WARNING: Missing cleanup function
-});
-```
-
-#### Layer 3: Runtime Safety (Dev Mode)
-
-```jounce
-// Frozen signals prevent accidental reassignment
-let count = signal(0);
-count = 5;  // TypeError at runtime (if type checker missed it)
-```
-
-```jounce
-// Dev-mode side effect detection
-let doubled = computed(() => {
-    console.log("Computing...");  // ❌ ERROR in dev mode!
-    return count.value * 2;
-});
-```
-
-**Key Principle**: `computed()` must be pure - no logging, network requests, or storage mutations.
-
-**Correct Pattern**:
-```jounce
-// Use effect() for side effects
-effect(() => {
-    console.log("Count:", count.value);
-});
-
-// Keep computed() pure
-let doubled = computed(() => count.value * 2);
-```
-
----
-
-## JSX and UI
-
-Jounce supports full JSX syntax for building UIs.
-
-### 1. Basic JSX
-
-```jounce
-<div>
-    <h1>Title</h1>
-    <p>Paragraph text</p>
-</div>
-```
-
-### 2. Interpolation
-
-```jounce
-let name = "Alice";
-let age = 30;
-
-<div>
-    <p>Name: {name}</p>
-    <p>Age: {age}</p>
-    <p>Sum: {10 + 20}</p>
-</div>
-```
-
-### 3. Conditional Rendering
-
-```jounce
-let isLoggedIn = signal(false);
-
-<div>
-    {isLoggedIn.value ? (
-        <p>Welcome back!</p>
-    ) : (
-        <p>Please log in</p>
-    )}
-</div>
-```
-
-### 4. List Rendering
-
-```jounce
-let items = signal(["Apple", "Banana", "Cherry"]);
-
-<ul>
-    {items.value.map((item) => {
-        <li>{item}</li>
-    })}
-</ul>
-```
-
-**With index**:
-```jounce
-<ul>
-    {items.value.map((item, idx) => {
-        <li>{idx}: {item}</li>
-    })}
-</ul>
-```
-
-### 5. Event Handlers
-
-```jounce
-let count = signal(0);
-
-let handleClick = () => {
-    count.value = count.value + 1;
-};
-
-let handleInput = (e) => {
-    console.log(e.target.value);
-};
-
-<div>
-    <button onClick={handleClick}>Click Me</button>
-    <input onInput={handleInput} />
-</div>
-```
-
-### 6. String Interpolation in Attributes
-
-```jounce
-let active = signal(true);
-let size = signal("large");
-
-<button class="btn {active.value ? 'active' : ''} {size.value}">
-    Click Me
-</button>
-
-// Generates reactive class updates
-```
-
-### 7. Self-Closing Tags
-
-```jounce
-<img src="photo.jpg" alt="Photo" />
-<input type="text" placeholder="Enter name" />
-<br />
-```
-
----
-
-## Styling
-
-Jounce provides component-scoped styles with automatic scoping.
-
-### 1. Component Styles
-
-```jounce
-component Card() {
-    <div class="card">
-        <h2>Title</h2>
-    </div>
-}
-
-style Card {
-    .card {
-        padding: 20px;
-        border-radius: 8px;
-        background-color: white;
-    }
-
-    h2 {
-        color: #333;
-        font-size: 24px;
-    }
-}
-```
-
-**Key Points**:
-- Styles are automatically scoped to the component
-- No CSS-in-JS runtime overhead
-- Compiled to pure CSS with hash-based class names
-
-### 2. Pseudo-Classes
-
-```jounce
-style Button {
-    .btn:hover {
-        background-color: #0056b3;
-    }
-
-    .btn:active {
-        transform: scale(0.95);
-    }
-
-    .btn:disabled {
-        opacity: 0.5;
-    }
-}
-```
-
-### 3. Themes
-
-```jounce
-theme Light {
-    primary: #007bff;
-    secondary: #6c757d;
-    background: #ffffff;
-    text: #212529;
-}
-
-theme Dark {
-    primary: #0d6efd;
-    secondary: #6c757d;
-    background: #212529;
-    text: #ffffff;
-}
-
-component ThemedButton() {
-    <button class="btn">Click Me</button>
-}
-
-style ThemedButton {
-    .btn {
-        background-color: var(--primary);
-        color: var(--text);
-    }
-}
-```
-
----
-
-## Functions and Logic
-
-### 1. Function Definitions
-
-```jounce
-// Inside components
-component App() {
-    fn processData(items: Vec<String>) -> String {
-        let mut result = "";
-        for item in items {
-            result = result + item + ", ";
-        }
-        return result;
-    }
-
-    let data = processData(["a", "b", "c"]);
-    <p>{data}</p>
-}
-```
-
-### 2. Arrow Functions
-
-```jounce
-let add = (a, b) => a + b;
-let greet = (name) => {
-    return "Hello, " + name;
-};
-```
-
-### 3. Async/Await
-
-```jounce
-async fn fetchUser(id: i32) {
-    let response = await fetch("/api/users/" + id);
-    let user = await response.json();
-    return user;
-}
-```
-
-**⚠️ IMPORTANT**: Jounce uses **prefix `await`**, NOT Rust's postfix `.await`.
-
----
-
-## Module System
-
-Jounce supports **local file imports only** (no package registry yet).
-
-### 1. Importing from Local Files
-
-```jounce
-// Import specific items
-use ./components::{Button, Card, Input};
-
-// Import all exports
-use ./utils::*;
-
-// Import from parent directory
-use ../lib/helpers::{formatText};
-
-// Import from nested path
-use ./modules/api/client::{fetchData};
-```
-
-### 2. Exporting (Automatic)
-
-All top-level items are automatically exported:
-
-```jounce
-// components.jnc
-component Button(text: String) {
-    <button>{text}</button>
-}
-
-component Card(title: String) {
-    <div class="card">
-        <h3>{title}</h3>
-    </div>
-}
-
-// Both Button and Card are automatically exported
-```
-
-**⚠️ IMPORTANT**: Jounce does NOT support package imports like `use jounce::*` yet.
-
----
-
-## What Works vs What Doesn't
-
-### ✅ What Works
-
-**Syntax**:
-- ✅ Rust-style for loops: `for x in array`
-- ✅ Prefix await: `await fetch(url)`
-- ✅ Local file imports: `use ./file::{Item}`
-- ✅ Optional type annotations: `let x: i32 = 5`
-- ✅ Mutable variables: `let mut x = 0`
-- ✅ Arrow functions: `(x) => x + 1`
-
-**Reactivity**:
-- ✅ Signals with `.value` access
-- ✅ Computed values with automatic tracking
-- ✅ Effects for side effects
-- ✅ Persistent signals (localStorage)
-- ✅ Lifecycle hooks (onMount, onDestroy)
-
-**JSX**:
-- ✅ Components with props
-- ✅ Conditional rendering (ternary)
-- ✅ List rendering with `.map()`
-- ✅ Event handlers (onClick, onInput, etc.)
-- ✅ String interpolation in attributes
-- ✅ Self-closing tags
-- ✅ JSX in lambda expressions
-- ✅ JSX in function returns
-
-**Styling**:
-- ✅ Component-scoped styles
-- ✅ Pseudo-classes (:hover, :active, etc.)
-- ✅ Theme system with CSS variables
-- ✅ Nested selectors
-
-### ❌ What Doesn't Work
-
-**Syntax Limitations**:
-- ❌ JavaScript for loops: `for (let x in array)` - Use `for x in array`
-- ❌ Rust-style postfix await: `expr.await` - Use `await expr`
-- ❌ Package imports: `use jounce::*` - Use `use ./local-file`
-- ❌ Classes (OOP) - Use structs and impl blocks
-- ❌ `this` keyword - Components are functions
-
-**Module System Limitations**:
-- ❌ `use jounce::db::*;` - Database ORM doesn't exist as user library (only Rust compiler internals)
-- ❌ `use jounce::auth::*;` - Auth module doesn't exist as user library
-- ⚠️ Workaround: Use Node.js libraries (pg, mysql2, bcrypt, jsonwebtoken) inside `server fn` blocks
-
-**Type System Issues**:
-- ❌ `result.is_ok()` in if statements - Type checker doesn't recognize boolean return
-  ```jounce
-  // ❌ Doesn't work
-  if (result.is_ok()) {
-      let value = result.unwrap();
-  }
-
-  // ✅ Use instead
-  let value = result.unwrap_or(defaultValue);
-  ```
-
-**Annotations**:
-- ❌ `@auth`, `@validate`, `@rate_limit` - Annotations parse but don't generate middleware yet
-  ```jounce
-  @auth  // ❌ Parses but does nothing
-  server fn getData() -> Result<String, String> {
-      return Ok("data");
-  }
-  ```
-- ✅ `@persist("localStorage")` - Only this annotation works (for signals)
-
-**Not Yet Implemented**:
-- ⏳ Security middleware generation (Phase 17)
-- ⏳ Package registry and remote imports
-- ⏳ WebAssembly compilation (in progress)
-- ⏳ Hot module replacement (HMR)
-- ⏳ Server-side rendering (SSR)
-
----
-
-## Complete Examples
-
-### Example 1: Counter App
-
-```jounce
-component Counter() {
-    let count = signal(0);
-
-    let increment = () => {
-        count.value = count.value + 1;
-    };
-
-    let decrement = () => {
-        count.value = count.value - 1;
-    };
-
-    let reset = () => {
-        count.value = 0;
-    };
-
-    <div class="counter">
+    return <div>
         <h1>Count: {count.value}</h1>
-        <div class="buttons">
-            <button onClick={decrement}>-</button>
-            <button onClick={reset}>Reset</button>
-            <button onClick={increment}>+</button>
-        </div>
-    </div>
+        <button onclick={() => count.value++}>+1</button>
+        <button onclick={() => count.value--}>-1</button>
+        <button onclick={() => count.value = 0}>Reset</button>
+    </div>;
 }
 
 style Counter {
-    .counter {
-        text-align: center;
-        padding: 40px;
-    }
+    padding: 40px;
+    text-align: center;
+    font-family: Arial, sans-serif;
 
-    .buttons {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
+    h1 {
+        font-size: 48px;
+        margin: 20px 0;
+        color: #333;
     }
 
     button {
-        padding: 10px 20px;
         font-size: 18px;
+        padding: 10px 20px;
+        margin: 5px;
         cursor: pointer;
+        border: 2px solid #007bff;
+        background: white;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+
+    button:hover {
+        background: #007bff;
+        color: white;
     }
 }
 ```
 
-### Example 2: Todo App
+### Run It
+
+```bash
+jnc compile counter.jnc
+cd dist && node server.js
+# Open http://localhost:3000
+```
+
+### Key Concepts
+
+**Signals** create reactive state:
+```jounce
+let count = signal<i32>(0);
+```
+
+**Reading** `.value` gets the current value:
+```jounce
+<h1>Count: {count.value}</h1>
+```
+
+**Writing** `.value` triggers UI updates:
+```jounce
+count.value++  // UI updates automatically!
+```
+
+**Scoped Styles** only apply to this component:
+```jounce
+style Counter {
+    button { ... }  // Only affects buttons in Counter
+}
+```
+
+### Next Steps
+Try adding a "Double" button that multiplies the count by 2.
+
+---
+
+## Tutorial 2: Todo List (15 Minutes)
+
+### Goal
+Build a todo app with add/delete/toggle functionality.
+
+### What You'll Learn
+- Arrays and iteration
+- Computed values
+- Filtering and mapping
+- Conditional rendering
+
+### Build It
+
+Create `todo.jnc`:
 
 ```jounce
-component TodoApp() {
-    let todos = signal([
-        { id: 1, text: "Buy milk", done: false },
-        { id: 2, text: "Walk dog", done: false }
-    ]);
-    let newTodo = signal("");
-    let nextId = signal(3);
+struct Todo {
+    id: i32,
+    text: string,
+    completed: bool,
+}
 
+component TodoApp() {
+    let todos = signal<Vec<Todo>>(vec![]);
+    let input = signal<string>("");
+    let filter = signal<string>("all");
+
+    // Computed: filtered todos
+    let filteredTodos = computed<Vec<Todo>>(() => {
+        let allTodos = todos.value;
+        let currentFilter = filter.value;
+
+        if currentFilter == "active" {
+            return allTodos.filter((t) => !t.completed);
+        } else if currentFilter == "completed" {
+            return allTodos.filter((t) => t.completed);
+        }
+        return allTodos;
+    });
+
+    // Add todo
     let addTodo = () => {
-        if (newTodo.value.length() > 0) {
-            let todo = {
-                id: nextId.value,
-                text: newTodo.value,
-                done: false
+        let text = input.value.trim();
+        if text.len() > 0 {
+            let newTodo = Todo {
+                id: todos.value.len() as i32,
+                text: text,
+                completed: false,
             };
-            todos.value = [...todos.value, todo];
-            newTodo.value = "";
-            nextId.value = nextId.value + 1;
+            todos.value = vec![...todos.value, newTodo];
+            input.value = "";
         }
     };
 
-    let toggleTodo = (id) => {
-        todos.value = todos.value.map((todo) => {
-            if (todo.id == id) {
-                return { ...todo, done: !todo.done };
+    // Toggle todo
+    let toggleTodo = (id: i32) => {
+        todos.value = todos.value.map((t) => {
+            if t.id == id {
+                return Todo { ...t, completed: !t.completed };
             }
-            return todo;
+            return t;
         });
     };
 
-    let remaining = computed(() => {
-        return todos.value.filter((t) => !t.done).length();
-    });
+    // Delete todo
+    let deleteTodo = (id: i32) => {
+        todos.value = todos.value.filter((t) => t.id != id);
+    };
 
-    <div class="todo-app">
-        <h1>Todo List</h1>
-        <p>Remaining: {remaining.value} / {todos.value.length()}</p>
+    return <div>
+        <h1>My Todos</h1>
 
-        <div class="input-row">
+        <div class="input-container">
             <input
                 type="text"
-                value={newTodo.value}
-                onInput={(e) => newTodo.value = e.target.value}
-                placeholder="Add todo..."
+                value={input.value}
+                oninput={(e) => input.value = e.target.value}
+                onkeypress={(e) => {
+                    if e.key == "Enter" {
+                        addTodo();
+                    }
+                }}
+                placeholder="What needs to be done?"
             />
-            <button onClick={addTodo}>Add</button>
+            <button onclick={addTodo}>Add</button>
         </div>
 
-        <ul class="todo-list">
-            {todos.value.map((todo) => {
-                <li class="{todo.done ? 'done' : ''}">
+        <div class="filters">
+            <button
+                class={filter.value == "all" ? "active" : ""}
+                onclick={() => filter.value = "all"}
+            >
+                All
+            </button>
+            <button
+                class={filter.value == "active" ? "active" : ""}
+                onclick={() => filter.value = "active"}
+            >
+                Active
+            </button>
+            <button
+                class={filter.value == "completed" ? "active" : ""}
+                onclick={() => filter.value = "completed"}
+            >
+                Completed
+            </button>
+        </div>
+
+        <ul>
+            {filteredTodos.value.map((todo) =>
+                <li class={todo.completed ? "completed" : ""}>
                     <input
                         type="checkbox"
-                        checked={todo.done}
-                        onChange={() => toggleTodo(todo.id)}
+                        checked={todo.completed}
+                        onchange={() => toggleTodo(todo.id)}
                     />
                     <span>{todo.text}</span>
+                    <button class="delete" onclick={() => deleteTodo(todo.id)}>
+                        ×
+                    </button>
                 </li>
-            })}
+            )}
         </ul>
-    </div>
+    </div>;
 }
 
 style TodoApp {
-    .todo-app {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px;
+
+    h1 {
+        text-align: center;
+        color: #2c3e50;
     }
 
-    .input-row {
+    .input-container {
+        display: flex;
+        margin-bottom: 20px;
+
+        input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px 0 0 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+        }
+    }
+
+    .filters {
         display: flex;
         gap: 10px;
         margin-bottom: 20px;
+
+        button {
+            padding: 5px 15px;
+            border: 2px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
     }
 
-    .input-row input {
-        flex: 1;
-        padding: 10px;
-        font-size: 16px;
-    }
-
-    .todo-list {
+    ul {
         list-style: none;
         padding: 0;
-    }
 
-    .todo-list li {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-    }
+        li {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
 
-    .todo-list li.done span {
-        text-decoration: line-through;
-        opacity: 0.5;
+            span {
+                flex: 1;
+                margin-left: 10px;
+            }
+
+            .delete {
+                color: #e74c3c;
+                border: none;
+                background: none;
+                font-size: 24px;
+                cursor: pointer;
+            }
+        }
+
+        li.completed span {
+            text-decoration: line-through;
+            color: #999;
+        }
     }
 }
 ```
 
-### Example 3: Fetch Data
+### Run It
+
+```bash
+jnc compile todo.jnc
+cd dist && node server.js
+```
+
+### Key Concepts
+
+**Computed values** automatically update when dependencies change:
+```jounce
+let filteredTodos = computed<Vec<Todo>>(() => {
+    return todos.value.filter((t) => !t.completed);
+});
+```
+
+**Array operations** work like JavaScript:
+```jounce
+// Map
+todos.value.map((t) => ...)
+
+// Filter
+todos.value.filter((t) => ...)
+
+// Spread
+vec![...todos.value, newTodo]
+```
+
+**Conditional classes**:
+```jounce
+<li class={todo.completed ? "completed" : ""}>
+```
+
+### Next Steps
+Add a "Clear Completed" button and a counter showing how many todos are left.
+
+---
+
+## Tutorial 3: Contact Form with Server (15 Minutes)
+
+### Goal
+Build a form that validates input and sends data to the server.
+
+### What You'll Learn
+- Server functions (`@server`)
+- Automatic RPC
+- Form validation
+- Error handling
+
+### Build It
+
+Create `contact.jnc`:
 
 ```jounce
-component UserProfile(userId: i32) {
-    let user = signal(null);
-    let loading = signal(true);
-    let error = signal("");
-
-    async fn fetchUser() {
-        loading.value = true;
-        error.value = "";
-
-        let response = await fetch("/api/users/" + userId);
-
-        if (response.ok) {
-            let data = await response.json();
-            user.value = data;
-        } else {
-            error.value = "Failed to load user";
-        }
-
-        loading.value = false;
-    }
-
-    onMount(() => {
-        fetchUser();
-    });
-
-    <div class="profile">
-        {loading.value ? (
-            <p>Loading...</p>
-        ) : error.value.length() > 0 ? (
-            <p class="error">{error.value}</p>
-        ) : user.value != null ? (
-            <div>
-                <h2>{user.value.name}</h2>
-                <p>Email: {user.value.email}</p>
-                <p>Age: {user.value.age}</p>
-            </div>
-        ) : (
-            <p>No user found</p>
-        )}
-    </div>
+struct FormData {
+    name: string,
+    email: string,
+    message: string,
 }
 
-style UserProfile {
-    .profile {
-        padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
+@server
+fn submitContact(data: FormData) -> Result<string, string> {
+    // Validate on server
+    if data.name.len() < 2 {
+        return Err("Name must be at least 2 characters");
+    }
+
+    if !data.email.contains("@") {
+        return Err("Invalid email address");
+    }
+
+    if data.message.len() < 10 {
+        return Err("Message must be at least 10 characters");
+    }
+
+    // In real app: save to database
+    console.log("Received contact from: " + data.name);
+
+    return Ok("Thanks for contacting us!");
+}
+
+component ContactForm() {
+    let name = signal<string>("");
+    let email = signal<string>("");
+    let message = signal<string>("");
+    let status = signal<string>("");
+    let error = signal<string>("");
+    let submitting = signal<bool>(false);
+
+    let handleSubmit = () => {
+        submitting.value = true;
+        error.value = "";
+        status.value = "";
+
+        let data = FormData {
+            name: name.value,
+            email: email.value,
+            message: message.value,
+        };
+
+        // Automatic RPC to server
+        let result = submitContact(data);
+
+        if let Ok(msg) = result {
+            status.value = msg;
+            name.value = "";
+            email.value = "";
+            message.value = "";
+        } else if let Err(err) = result {
+            error.value = err;
+        }
+
+        submitting.value = false;
+    };
+
+    return <div>
+        <h1>Contact Us</h1>
+
+        <form onsubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+        }}>
+            <div class="field">
+                <label>Name</label>
+                <input
+                    type="text"
+                    value={name.value}
+                    oninput={(e) => name.value = e.target.value}
+                    placeholder="Your name"
+                    required
+                />
+            </div>
+
+            <div class="field">
+                <label>Email</label>
+                <input
+                    type="email"
+                    value={email.value}
+                    oninput={(e) => email.value = e.target.value}
+                    placeholder="you@example.com"
+                    required
+                />
+            </div>
+
+            <div class="field">
+                <label>Message</label>
+                <textarea
+                    value={message.value}
+                    oninput={(e) => message.value = e.target.value}
+                    placeholder="Your message..."
+                    rows="5"
+                    required
+                ></textarea>
+            </div>
+
+            {error.value.len() > 0 ? (
+                <div class="error">{error.value}</div>
+            ) : null}
+
+            {status.value.len() > 0 ? (
+                <div class="success">{status.value}</div>
+            ) : null}
+
+            <button
+                type="submit"
+                disabled={submitting.value}
+            >
+                {submitting.value ? "Sending..." : "Send Message"}
+            </button>
+        </form>
+    </div>;
+}
+
+style ContactForm {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 20px;
+
+    h1 {
+        text-align: center;
+        color: #2c3e50;
+    }
+
+    .field {
+        margin-bottom: 20px;
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
     }
 
     .error {
-        color: red;
+        padding: 10px;
+        background: #fee;
+        border: 1px solid #fcc;
+        color: #c00;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+
+    .success {
+        padding: 10px;
+        background: #efe;
+        border: 1px solid #cfc;
+        color: #060;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        font-size: 18px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    button:hover:not(:disabled) {
+        background: #0056b3;
+    }
+
+    button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+```
+
+### Run It
+
+```bash
+jnc compile contact.jnc
+cd dist && node server.js
+```
+
+### Key Concepts
+
+**Server functions** run on the backend:
+```jounce
+@server
+fn submitContact(data: FormData) -> Result<string, string> {
+    // This code runs on the server!
+    console.log("Server received: " + data.name);
+    return Ok("Success!");
+}
+```
+
+**Automatic RPC** from client to server:
+```jounce
+// This looks like a normal function call...
+let result = submitContact(data);
+
+// But it's actually an HTTP request to the server!
+```
+
+**Pattern matching with if-let** (v0.8.3):
+```jounce
+if let Ok(msg) = result {
+    status.value = msg;
+} else if let Err(err) = result {
+    error.value = err;
+}
+```
+
+**Ternary for conditional rendering**:
+```jounce
+{error.value.len() > 0 ? (
+    <div class="error">{error.value}</div>
+) : null}
+```
+
+### Next Steps
+Add client-side validation that shows errors as you type, before submitting.
+
+---
+
+## Common Patterns
+
+### Pattern 1: Loading States
+
+```jounce
+let loading = signal<bool>(false);
+let data = signal<Vec<Item>>(vec![]);
+
+let fetchData = () => {
+    loading.value = true;
+    let result = fetchItems();  // @server function
+    data.value = result;
+    loading.value = false;
+};
+
+return <div>
+    {loading.value ? (
+        <div>Loading...</div>
+    ) : (
+        <ul>{data.value.map((item) => <li>{item.name}</li>)}</ul>
+    )}
+</div>;
+```
+
+### Pattern 2: Debounced Input
+
+```jounce
+let searchTerm = signal<string>("");
+let timer = signal<i32>(0);
+
+let handleSearch = (value: string) => {
+    clearTimeout(timer.value);
+    timer.value = setTimeout(() => {
+        performSearch(value);
+    }, 300);
+};
+
+<input
+    value={searchTerm.value}
+    oninput={(e) => {
+        searchTerm.value = e.target.value;
+        handleSearch(e.target.value);
+    }}
+/>
+```
+
+### Pattern 3: Reusable Components
+
+```jounce
+// Button.jnc
+component Button(props: {
+    label: string,
+    onclick: fn(),
+    variant: string,
+}) {
+    return <button
+        class={"btn btn-" + props.variant}
+        onclick={props.onclick}
+    >
+        {props.label}
+    </button>;
+}
+
+style Button {
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .btn-primary { background: #007bff; color: white; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-success { background: #28a745; color: white; }
+}
+
+// Use it
+<Button
+    label="Click Me"
+    onclick={() => console.log("Clicked")}
+    variant="primary"
+/>
+```
+
+### Pattern 4: Modal Dialog
+
+```jounce
+component Modal(props: { isOpen: bool, onclose: fn(), title: string }) {
+    if !props.isOpen {
+        return null;
+    }
+
+    return <div class="modal-backdrop" onclick={props.onclose}>
+        <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+            <div class="modal-header">
+                <h2>{props.title}</h2>
+                <button class="close" onclick={props.onclose}>×</button>
+            </div>
+            <div class="modal-body">
+                {props.children}
+            </div>
+        </div>
+    </div>;
+}
+
+style Modal {
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid #eee;
+
+        h2 { margin: 0; }
+
+        .close {
+            background: none;
+            border: none;
+            font-size: 32px;
+            cursor: pointer;
+            color: #999;
+        }
+    }
+
+    .modal-body {
+        padding: 20px;
     }
 }
 ```
 
 ---
 
-## Quick Reference
+## Best Practices
 
-### Create Signal
+### 1. Component Organization
+
 ```jounce
-let count = signal(0);
+// ✅ Good: Small, focused components
+component UserCard(props: { user: User }) {
+    return <div>
+        <h3>{props.user.name}</h3>
+        <p>{props.user.email}</p>
+    </div>;
+}
+
+// ❌ Bad: Giant component doing everything
+component App() {
+    // 500 lines of code...
+}
 ```
 
-### Read Signal
+### 2. Signal Naming
+
 ```jounce
-count.value
+// ✅ Good: Clear names
+let isLoading = signal<bool>(false);
+let userCount = signal<i32>(0);
+let selectedItem = signal<Option<Item>>(None);
+
+// ❌ Bad: Vague names
+let data = signal<bool>(false);
+let x = signal<i32>(0);
 ```
 
-### Write Signal
-```jounce
-count.value = 10;
-```
+### 3. Computed vs Effects
 
-### Computed Value
 ```jounce
-let doubled = computed(() => count.value * 2);
-```
+// ✅ Good: Use computed for derived values
+let filteredItems = computed<Vec<Item>>(() => {
+    return items.value.filter((i) => i.active);
+});
 
-### Effect
-```jounce
+// ❌ Bad: Don't use effects for derived values
 effect(() => {
-    console.log(count.value);
+    filteredItems.value = items.value.filter((i) => i.active);
+});
+
+// ✅ Good: Use effects for side effects
+effect(() => {
+    console.log("Count changed: " + count.value.to_string());
+    saveToLocalStorage("count", count.value);
 });
 ```
 
-### Component
+### 4. Type Safety
+
 ```jounce
-component MyComponent(prop: Type) {
-    <div>{prop}</div>
+// ✅ Good: Use strong types
+struct User {
+    id: i32,
+    name: string,
+    email: string,
+}
+
+let users = signal<Vec<User>>(vec![]);
+
+// ❌ Bad: Weak types lead to bugs
+let users = signal<Vec<any>>(vec![]);
+```
+
+---
+
+## Troubleshooting
+
+### Common Errors
+
+#### Error: "Expected `;` after expression"
+
+**Problem**: Forgot semicolon
+```jounce
+// ❌ Wrong
+let count = signal<i32>(0)  // Missing ;
+
+// ✅ Correct
+let count = signal<i32>(0);
+```
+
+#### Error: "Cannot call server function from server context"
+
+**Problem**: Trying to call `@server` function from another `@server` function
+```jounce
+// ❌ Wrong
+@server
+fn getUser() {
+    return fetchFromDB();  // Can't call @server from @server
+}
+
+// ✅ Correct: Extract shared logic
+fn fetchFromDB() {
+    return database.query(...);
+}
+
+@server
+fn getUser() {
+    return fetchFromDB();  // Regular function call
 }
 ```
 
-### Event Handler
-```jounce
-<button onClick={handleClick}>Click</button>
-```
+#### Error: "Signal reassignment is not allowed"
 
-### Conditional
+**Problem**: Trying to reassign the signal itself
 ```jounce
-{condition ? <div>Yes</div> : <div>No</div>}
-```
+// ❌ Wrong
+let count = signal<i32>(0);
+count = signal<i32>(5);  // Can't reassign signal
 
-### List
-```jounce
-{items.value.map((item) => <li>{item}</li>)}
-```
-
-### Async Function
-```jounce
-async fn fetch() {
-    let data = await fetch(url);
-}
-```
-
-### Import
-```jounce
-use ./module::{Item1, Item2};
+// ✅ Correct: Update the value
+let count = signal<i32>(0);
+count.value = 5;  // Update signal's value
 ```
 
 ---
 
 ## Next Steps
 
-1. **Try the examples** - Copy and compile them with `jnc compile app.jnc`
-2. **Read SYNTAX_LIMITATIONS.md** - Understand what doesn't work
-3. **Check tutorial starters** - See real examples in `templates/tutorial-starters/`
-4. **Experiment** - Build your own components and apps
+### Explore Examples
+
+Check out [examples/](../../examples/) for 35+ working apps:
+
+- **Real Apps**: Blog, Dashboard, E-commerce, Chat
+- **UI Patterns**: Modals, Tabs, Dropdowns, Tooltips
+- **Advanced**: Authentication, Database, WebSockets
+
+### Read the Spec
+
+For complete technical details, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md):
+
+- Full grammar reference
+- All CLI commands
+- Execution model
+- Limitations
+- Implemented vs planned features
+
+### Join the Community
+
+- **GitHub Issues**: Report bugs or request features
+- **Discussions**: Ask questions and share projects
+- **Examples**: Contribute your own apps
 
 ---
 
-**For Development/Maintenance**: See `CLAUDE.md` for compiler internals and development workflow.
+## Common Mistakes
+
+New Jounce developers often trip on these syntax differences from JavaScript/React:
+
+### 1. ❌ React-Style Event Handlers
+```jounce
+// ❌ WRONG - React-style camelCase
+<button onClick={() => ...}>
+
+// ✅ CORRECT - Lowercase DOM-style
+<button onclick={() => ...}>
+```
+
+All event handlers must be lowercase: `onclick`, `onchange`, `oninput`, `onsubmit`, etc.
+
+### 2. ❌ Async/Await Syntax
+```jounce
+// ❌ WRONG - No await in Jounce
+let data = await fetchData();
+
+// ✅ CORRECT - Use Result<T, E> with @server functions
+@server
+fn fetchData() -> Result<Data, string> { ... }
+
+let result = fetchData();  // Returns Result immediately via RPC
+match result {
+    Ok(data) => ...,
+    Err(e) => ...,
+}
+```
+
+### 3. ❌ Template String Literals
+```jounce
+// ❌ WRONG - No ${} template strings
+let msg = `Hello ${name}`;
+
+// ✅ CORRECT - String concatenation
+let msg = "Hello " + name;
+```
+
+### 4. ❌ JavaScript-Style For Loops
+```jounce
+// ❌ WRONG - No C-style for loops
+for (let i = 0; i < 10; i++) { ... }
+
+// ✅ CORRECT - Rust-style ranges
+for i in 0..10 { ... }
+```
+
+### 5. ❌ Missing Return Keyword
+```jounce
+// ❌ WRONG - Implicit returns not supported
+fn add(a: i32, b: i32) -> i32 {
+    a + b
+}
+
+// ✅ CORRECT - Explicit return
+fn add(a: i32, b: i32) -> i32 {
+    return a + b;
+}
+```
+
+### 6. ❌ Signal Reassignment
+```jounce
+// ❌ WRONG - Can't reassign the signal itself
+let count = signal<i32>(0);
+count = signal<i32>(5);  // Error!
+
+// ✅ CORRECT - Update the value
+count.value = 5;
+```
+
+For complete limitations, see [JOUNCE_SPEC.md § Limitations](../../JOUNCE_SPEC.md#limitations).
+
+---
+
+## Quick Reference Card
+
+### Reactivity
+```jounce
+let x = signal<i32>(0);           // Mutable state
+let y = computed<i32>(() => ...); // Derived value
+effect(() => { ... });             // Side effect
+batch(() => { ... });              // Batch updates
+```
+
+### Components
+```jounce
+component Name() { ... }                    // No props
+component Name(props: { x: i32 }) { ... }   // With props
+component Name() -> JSX { ... }             // Return type
+```
+
+### Server Functions
+```jounce
+@server
+fn name() { ... }  // Runs on server, callable from client
+```
+
+### Imports
+```jounce
+use ./module::{Item};              // Import item
+use ./module::{Item as Alias};     // Import with alias (v0.8.3+)
+use ./module::*;                   // Import all
+```
+
+### Styling
+```jounce
+style Component { ... }            // Component styles
+theme { --var: value; }             // Global theme
+```
+
+### Patterns
+```jounce
+match value { ... }                 // Pattern matching
+if let Some(x) = opt { ... }        // if-let (v0.8.3+)
+```
+
+---
+
+**Ready to build? Start with [Tutorial 1: Counter](#tutorial-1-counter-5-minutes)!**
+
+
+Maintained by: **The Jounce Project**

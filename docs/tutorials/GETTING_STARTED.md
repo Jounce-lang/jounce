@@ -1,922 +1,233 @@
 # Getting Started with Jounce
 
-> ✅ **Production Ready**: Jounce language core is 100% complete! All core features working with 417 passing tests. See README.md for full status.
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
 
-Welcome to Jounce! This guide will help you get up and running with the full-stack reactive programming language that compiles to WebAssembly.
+**Version**: v0.8.3
+**Status**: ✅ Production Ready (580/580 tests passing)
+**Updated**: November 7, 2025
 
-**What works**: Everything! JSX, deeply nested if/else, functions (including recursive), async/await, generics, traits, pattern matching, for loops, and more. Zero known limitations.
+---
 
-## Table of Contents
+## Quick Navigation
 
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Basic Syntax](#basic-syntax)
-- [Core Concepts](#core-concepts)
-- [Building Your First App](#building-your-first-app)
-- [Development Workflow](#development-workflow)
-- [Deployment](#deployment)
-- [Next Steps](#next-steps)
+Jounce has three primary documentation resources:
 
-## Installation
+### 1. **Quick Start** → [README.md](../../README.md)
+**"Hey, here's Jounce. Install it, look at this counter."**
 
-### Prerequisites
+- 2-minute installation
+- Your first app (counter example)
+- What makes Jounce different
+- Quick links to everything
 
-- Rust 1.70+ (for building the compiler)
-- Node.js 18+ (for development server)
-- A modern web browser
+**Start here if**: You're brand new to Jounce
 
-### Install from Source
+---
+
+### 2. **Learn to be Productive** → [LEARN_JOUNCE.md](../guides/LEARN_JOUNCE.md)
+**"Here's how to be productive with Jounce."**
+
+- Tutorial 1: Counter (5 minutes)
+- Tutorial 2: Todo App (15 minutes)
+- Tutorial 3: Form Validation (20 minutes)
+- Tutorial 4: Full-Stack App (30 minutes)
+- Practical recipes and patterns
+
+**Start here if**: You want hands-on tutorials
+
+---
+
+### 3. **Technical Reference** → [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md)
+**"This is the truth about how Jounce works."**
+
+- Complete grammar and constructs
+- Execution model (server vs client)
+- CLI command reference
+- Language limitations
+- Implemented vs planned features
+
+**Start here if**: You need technical details or answers to "does Jounce support X?"
+
+---
+
+## Installation (2 Minutes)
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/jounce.git
-cd jounce
+git clone https://github.com/Jounce-lang/jounce-pre-production.git
+cd jounce-pre-production
 
 # Build the compiler
 cargo build --release
 
-# Add to PATH (optional)
-export PATH="$PATH:$(pwd)/target/release"
+# Add to PATH
+export PATH="$PWD/target/release:$PATH"
 ```
 
-### Verify Installation
-
+**Verify installation:**
 ```bash
-raven --version
-# Jounce Compiler v3.0
+jnc --version
+# jounce 0.8.3
 ```
 
-## Quick Start
+---
 
-Let's create your first Jounce application in 5 minutes!
+## Your First App (5 Minutes)
 
-### 1. Create a New Project
+Create `counter.jnc`:
 
-```bash
-# Initialize a new project
-raven pkg init my-app
-cd my-app
-```
-
-This creates:
-```
-my-app/
-├── jounce.toml       # Package manifest
-├── src/
-│   └── main.jnc   # Entry point
-└── dist/            # Output directory
-```
-
-### 2. Write Your First Component
-
-Edit `src/main.jnc`:
-
-```rust
-import { Signal } from "raven-reactive"
-
+```jounce
 component Counter() {
-    let count = Signal::new(0);
+    let count = signal<i32>(0);
 
-    <div class="counter">
-        <h1>"Counter: " {count.get()}</h1>
-        <button onclick={() => count.set(count.get() + 1)}>
-            "Increment"
-        </button>
-        <button onclick={() => count.set(count.get() - 1)}>
-            "Decrement"
-        </button>
-    </div>
+    return <div>
+        <h1>Count: {count.value}</h1>
+        <button onclick={() => count.value++}>+1</button>
+    </div>;
 }
 
-fn main() {
-    mount(Counter(), "#app");
+style Counter {
+    padding: 40px;
+    text-align: center;
+
+    button {
+        font-size: 20px;
+        padding: 10px 20px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #007bff;
+        color: white;
+    }
 }
 ```
 
-### 3. Compile and Run
-
+**Compile and run:**
 ```bash
-# Compile to WebAssembly
-raven compile src/main.jnc --output dist/app.wasm
-
-# Start development server with Hot Module Replacement
-raven dev
-
+jnc compile counter.jnc
+cd dist && node server.js
 # Open http://localhost:3000
 ```
 
-Your counter app is now running! Try changing the code - the browser updates automatically thanks to HMR.
+---
 
-## Basic Syntax
+## What's Next?
 
-### Variables and Types
+### Follow the Tutorials
 
-Jounce has full Hindley-Milner type inference:
+Work through the practical tutorials in [LEARN_JOUNCE.md](../guides/LEARN_JOUNCE.md):
 
-```rust
-// Type inference
-let x = 42;              // i32
-let name = "Alice";      // String
-let items = [1, 2, 3];   // Vec<i32>
+1. **Counter** (5 min) - Reactivity basics
+2. **Todo App** (15 min) - State management
+3. **Form Validation** (20 min) - Real-time validation
+4. **Full-Stack App** (30 min) - Server functions and RPC
 
-// Explicit types
-let age: i32 = 30;
-let balance: f64 = 100.50;
+### Explore Examples
 
-// Mutable variables
-let mut counter = 0;
-counter = counter + 1;
+Browse [35+ working examples](../../examples/) organized by category:
+
+- **Apps** - Full applications (todo, dashboard, admin panel)
+- **Components** - Reusable UI components
+- **Features** - Specific feature demonstrations
+- **Patterns** - Common development patterns
+
+### Read the Spec
+
+When you need technical details, check [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for:
+
+- Exact syntax rules
+- What's implemented vs planned
+- Language limitations
+- CLI command reference
+
+---
+
+## Key Concepts
+
+### Reactivity
+
+```jounce
+let count = signal<i32>(0);              // Mutable state
+let doubled = computed<i32>(() => count.value * 2);  // Derived
+effect(() => console.log(count.value.to_string()));  // Side effect
 ```
 
-### Functions
+### Components
 
-```rust
-// Simple function
-fn add(x: i32, y: i32) -> i32 {
-    return x + y;
-}
-
-// Type inference in parameters
-fn greet(name: String) -> String {
-    return "Hello, " + name + "!";
-}
-
-// Multiple return values
-fn divide(a: i32, b: i32) -> Result<i32, String> {
-    if b == 0 {
-        return Err("Division by zero");
-    }
-    return Ok(a / b);
-}
-```
-
-### Closures
-
-```rust
-// Closure syntax
-let add_one = |x| x + 1;
-let result = add_one(5);  // 6
-
-// Multi-line closures
-let process = |items| {
-    let filtered = items.filter(|x| x > 0);
-    return filtered.map(|x| x * 2);
-};
-```
-
-### Structs and Enums
-
-```rust
-// Struct definition
-struct User {
-    name: String,
-    age: i32,
-    email: String,
-}
-
-// Creating instances
-let user = User {
-    name: "Alice",
-    age: 30,
-    email: "alice@example.com",
-};
-
-// Enum with variants
-enum Status {
-    Active,
-    Inactive,
-    Pending { since: String },
-}
-
-// Pattern matching
-fn check_status(status: Status) -> String {
-    match status {
-        Status::Active => "User is active",
-        Status::Inactive => "User is inactive",
-        Status::Pending { since } => "Pending since " + since,
-    }
+```jounce
+component Button(props: { label: string, onClick: fn() }) {
+    return <button onclick={props.onClick}>
+        {props.label}
+    </button>;
 }
 ```
 
-## Core Concepts
+### Server Functions
 
-### 1. Reactive State Management
-
-Jounce's reactivity system is built on Signals:
-
-```rust
-import { Signal, Computed, Effect } from "raven-reactive"
-
-// Signal: reactive primitive
-let count = Signal::new(0);
-count.get();           // Read value
-count.set(10);         // Update value
-count.update(|n| n + 1);  // Transform value
-
-// Computed: derived state
-let doubled = Computed::new(|| count.get() * 2);
-
-// Effect: side effects
-Effect::new(|| {
-    println!("Count is now: {}", count.get());
-});
-```
-
-### 2. Components
-
-Components are the building blocks of your UI:
-
-```rust
-// Props via function parameters
-component Button(label: String, onclick: fn()) {
-    <button onclick={onclick} class="btn">
-        {label}
-    </button>
+```jounce
+@server
+fn getUsers() -> Vec<User> {
+    return database.query("SELECT * FROM users");
 }
 
-// Using components
-component App() {
-    let count = Signal::new(0);
-
-    <div>
-        <Button
-            label="Click me"
-            onclick={() => count.set(count.get() + 1)}
-        />
-        <p>"Clicked: " {count.get()} " times"</p>
-    </div>
-}
-```
-
-### 3. Event Handling
-
-```rust
-component EventDemo() {
-    let text = Signal::new("");
-
-    <div>
-        <input
-            value={text.get()}
-            oninput={(e) => text.set(e.target.value)}
-        />
-        <button onclick={() => text.set("")}>
-            "Clear"
-        </button>
-        <p>"You typed: " {text.get()}</p>
-    </div>
-}
-```
-
-### 4. Server Functions
-
-Write backend code alongside your frontend:
-
-```rust
-// Server-only function
-#[server]
-fn fetch_users() -> Vec<User> {
-    // This runs on the server
-    db::query("SELECT * FROM users").fetch_all()
-}
-
-// Call from client
 component UserList() {
-    let users = Resource::new(fetch_users);
-
-    <div>
-        {users.map(|user| {
-            <div>{user.name}</div>
-        })}
-    </div>
+    let users = getUsers();  // Automatic RPC!
+    return <div>...</div>;
 }
 ```
 
-### 5. Forms and Validation
-
-```rust
-import { Form, Field, Validators } from "raven-forms"
-
-component LoginForm() {
-    let form = Form::new();
-
-    let email = Field::new("")
-        .add_validator(Validators::required())
-        .add_validator(Validators::email());
-
-    let password = Field::new("")
-        .add_validator(Validators::required())
-        .add_validator(Validators::min_length(8));
-
-    form.add_field("email", email);
-    form.add_field("password", password);
-
-    <form onsubmit={() => handle_submit(form)}>
-        <input
-            value={email.value.get()}
-            oninput={(e) => email.set_value(e.target.value)}
-        />
-        {email.error.get().map(|err| <span class="error">{err}</span>)}
-
-        <input
-            type="password"
-            value={password.value.get()}
-            oninput={(e) => password.set_value(e.target.value)}
-        />
-
-        <button disabled={!form.is_valid()}>
-            "Login"
-        </button>
-    </form>
-}
-```
-
-## Building Your First App
-
-Let's build a complete Todo application!
-
-### Step 1: Define Data Structures
-
-```rust
-// src/models.jnc
-struct Todo {
-    id: i32,
-    text: String,
-    completed: bool,
-}
-
-enum Filter {
-    All,
-    Active,
-    Completed,
-}
-```
-
-### Step 2: Create the Todo Component
-
-```rust
-// src/components/todo_item.jnc
-import { Signal } from "raven-reactive"
-
-component TodoItem(todo: Todo, on_toggle: fn(i32), on_delete: fn(i32)) {
-    <div class={if todo.completed { "todo completed" } else { "todo" }}>
-        <input
-            type="checkbox"
-            checked={todo.completed}
-            onchange={() => on_toggle(todo.id)}
-        />
-        <span>{todo.text}</span>
-        <button onclick={() => on_delete(todo.id)}>
-            "Delete"
-        </button>
-    </div>
-}
-```
-
-### Step 3: Create the Main App
-
-```rust
-// src/main.jnc
-import { Signal, Computed } from "raven-reactive"
-import { TodoItem } from "./components/todo_item"
-
-component TodoApp() {
-    let todos = Signal::new(Vec<Todo>::new());
-    let filter = Signal::new(Filter::All);
-    let input = Signal::new("");
-    let next_id = Signal::new(1);
-
-    // Computed filtered todos
-    let filtered_todos = Computed::new(|| {
-        let all = todos.get();
-        match filter.get() {
-            Filter::All => all,
-            Filter::Active => all.filter(|t| !t.completed),
-            Filter::Completed => all.filter(|t| t.completed),
-        }
-    });
-
-    // Add todo
-    let add_todo = || {
-        if input.get().trim() != "" {
-            let new_todo = Todo {
-                id: next_id.get(),
-                text: input.get(),
-                completed: false,
-            };
-            todos.update(|list| list.push(new_todo));
-            next_id.update(|id| id + 1);
-            input.set("");
-        }
-    };
-
-    // Toggle completion
-    let toggle = |id| {
-        todos.update(|list| {
-            for todo in list.iter_mut() {
-                if todo.id == id {
-                    todo.completed = !todo.completed;
-                }
-            }
-        });
-    };
-
-    // Delete todo
-    let delete = |id| {
-        todos.update(|list| list.retain(|t| t.id != id));
-    };
-
-    <div class="todo-app">
-        <h1>"Jounce Todo"</h1>
-
-        <div class="input-section">
-            <input
-                value={input.get()}
-                oninput={(e) => input.set(e.target.value)}
-                onkeypress={(e) => if e.key == "Enter" { add_todo() }}
-                placeholder="What needs to be done?"
-            />
-            <button onclick={add_todo}>"Add"</button>
-        </div>
-
-        <div class="filters">
-            <button onclick={() => filter.set(Filter::All)}>
-                "All"
-            </button>
-            <button onclick={() => filter.set(Filter::Active)}>
-                "Active"
-            </button>
-            <button onclick={() => filter.set(Filter::Completed)}>
-                "Completed"
-            </button>
-        </div>
-
-        <div class="todo-list">
-            {filtered_todos.get().map(|todo| {
-                <TodoItem
-                    todo={todo}
-                    on_toggle={toggle}
-                    on_delete={delete}
-                />
-            })}
-        </div>
-
-        <div class="footer">
-            {todos.get().filter(|t| !t.completed).len()} " items left"
-        </div>
-    </div>
-}
-
-fn main() {
-    mount(TodoApp(), "#app");
-}
-```
-
-### Step 4: Add Styling
-
-Create `public/style.css`:
-
-```css
-.todo-app {
-    max-width: 600px;
-    margin: 50px auto;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-.input-section {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.input-section input {
-    flex: 1;
-    padding: 12px;
-    font-size: 16px;
-    border: 2px solid #e0e0e0;
-    border-radius: 4px;
-}
-
-.input-section button {
-    padding: 12px 24px;
-    background: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.filters {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.filters button {
-    padding: 8px 16px;
-    background: #f0f0f0;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.todo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.todo.completed span {
-    text-decoration: line-through;
-    color: #888;
-}
-
-.footer {
-    margin-top: 20px;
-    color: #888;
-    font-size: 14px;
-}
-```
-
-### Step 5: Compile and Run
-
-```bash
-# Compile with optimizations
-raven compile src/main.jnc --output dist/app.wasm --optimize
-
-# Start dev server
-raven dev
-
-# Open http://localhost:3000
-```
-
-## Development Workflow
-
-### Hot Module Replacement (HMR)
-
-Jounce includes built-in HMR for instant feedback:
-
-```bash
-# Start HMR server (default: localhost:3000, WS: 3001)
-raven dev
-
-# Customize ports
-raven dev --port 8080 --ws-port 8081
-```
-
-Changes to `.jnc` files automatically reload in the browser without losing state!
-
-### Package Management
-
-```bash
-# Initialize package
-raven pkg init
-
-# Add dependencies
-raven pkg add raven-ui
-raven pkg add raven-router
-
-# Install all dependencies
-raven pkg install
-
-# Update dependencies
-raven pkg update
-
-# Remove dependency
-raven pkg remove raven-ui
-
-# Show dependency tree
-raven pkg tree
-
-# Check for outdated packages
-raven pkg outdated
-```
-
-### Using Community Packages
-
-```toml
-# jounce.toml
-[package]
-name = "my-app"
-version = "0.1.0"
-
-[dependencies]
-raven-ui = "0.1.0"
-raven-router = "0.1.0"
-raven-forms = "0.1.0"
-raven-http = "0.1.0"
-```
-
-```rust
-// Import from packages
-import { Button, Card, Modal } from "raven-ui"
-import { Router, Route } from "raven-router"
-import { Form, Field } from "raven-forms"
-import { HttpClient } from "raven-http"
-```
-
-### Testing
-
-```bash
-# Run tests
-cargo test
-
-# Run specific test
-cargo test test_counter
-
-# Run with output
-cargo test -- --nocapture
-```
-
-Write tests alongside your code:
-
-```rust
-#[test]
-fn test_add() {
-    assert_eq!(add(2, 3), 5);
-}
-
-#[test]
-fn test_signal_updates() {
-    let count = Signal::new(0);
-    count.set(10);
-    assert_eq!(count.get(), 10);
-}
-```
-
-### Performance Profiling
-
-```bash
-# Run with profiling enabled
-raven compile src/main.jnc --profile
-
-# View profiler output
-cat profiler_output.json
-```
-
-### Generate Documentation
-
-```bash
-# Generate HTML docs
-raven doc src/main.jnc --output docs/
-
-# Open documentation
-open docs/index.html
-```
-
-## Deployment
-
-### Build for Production
-
-```bash
-# Full optimization build
-raven compile src/main.jnc \
-    --output dist/app.wasm \
-    --optimize \
-    --target client
-
-# Server build
-raven compile src/main.jnc \
-    --output dist/server.js \
-    --optimize \
-    --target server
-```
-
-### Deploy to Vercel
-
-1. Create `vercel.json`:
-
-```json
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "dist/**",
-      "use": "@vercel/static"
+### Scoped Styling
+
+```jounce
+style Card {
+    padding: 20px;
+    border: 1px solid #ddd;
+
+    &:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ]
 }
 ```
-
-2. Deploy:
-
-```bash
-npm install -g vercel
-vercel deploy
-```
-
-### Deploy to Netlify
-
-1. Create `netlify.toml`:
-
-```toml
-[build]
-  command = "raven compile src/main.jnc --output dist/app.wasm --optimize"
-  publish = "dist"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-```
-
-2. Deploy:
-
-```bash
-npm install -g netlify-cli
-netlify deploy --prod
-```
-
-### Deploy Server with Docker
-
-Create `Dockerfile`:
-
-```dockerfile
-FROM rust:1.70 as builder
-
-WORKDIR /app
-COPY . .
-RUN cargo build --release
-
-FROM node:18-slim
-
-WORKDIR /app
-COPY --from=builder /app/target/release/raven /usr/local/bin/
-COPY . .
-
-RUN raven compile src/main.jnc --output dist/server.js --target server
-
-EXPOSE 3000
-CMD ["node", "dist/server.js"]
-```
-
-Build and run:
-
-```bash
-docker build -t my-raven-app .
-docker run -p 3000:3000 my-raven-app
-```
-
-## New in Phase 1 (v0.2.0)
-
-Jounce v0.2.0 brings 100% language completeness with many powerful features:
-
-### Constants
-```rust
-const PI: f64 = 3.14159;
-const MAX_USERS: i32 = 100;
-
-fn calculate_area(radius: f64) -> f64 {
-    return PI * radius * radius;
-}
-```
-
-### Module Imports
-```rust
-// Named imports
-use math::{PI, E, sin, cos};
-
-// Wildcard imports
-use collections::*;
-
-// Namespaced access
-use math;
-let area = math::PI * radius * radius;
-```
-
-### Array Spread & Slicing
-```rust
-// Spread operator
-let arr1 = vec![1, 2, 3];
-let arr2 = vec![...arr1, 4, 5, 6];
-
-// Slice syntax
-let numbers = vec![1, 2, 3, 4, 5];
-let subset = numbers[1..3];      // [2, 3]
-let inclusive = numbers[1..=3];  // [2, 3, 4]
-```
-
-### Ternary Operator
-```rust
-let status = is_active ? "Active" : "Inactive";
-let value = condition ? { let x = 5; x + 1 } : 10;
-```
-
-### Advanced Type Features
-```rust
-// Type casting
-let x: f64 = 3.14;
-let y = x as i32;  // 3
-
-// Turbofish (explicit type parameters)
-let num = "42".parse::<i32>();
-
-// Function types
-fn accepts_callback(callback: fn(i32) -> i32) {
-    callback(42);
-}
-```
-
-### Method Chaining
-```rust
-let result = "  hello world  "
-    .trim()
-    .to_uppercase()
-    .replace(" ", "_");  // "HELLO_WORLD"
-```
-
-For complete details, see:
-- **[Phase 1 Complete Summary](docs/PHASE_1_COMPLETE.md)** - All 15 sprints documented
-- **[Stdlib API Reference](docs/guides/STDLIB_API_REFERENCE.md)** - 200+ functions
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history
 
 ---
 
-## Current Limitations (Phase 4 - In Progress)
+## Common Commands
 
-**Jounce is in active development**. The following features are currently broken and being fixed:
+```bash
+# Create new project
+jnc init my-app
 
-### ❌ Not Working (Being Fixed)
+# Compile .jnc file
+jnc compile main.jnc
 
-- **if/else expressions** - Borrow checker bug blocks else clauses
-  - ✅ Works: `if condition { code }`
-  - ❌ Broken: `if condition { code } else { code }`
+# Development mode (coming in v0.9.0)
+jnc dev main.jnc
 
-- **For loops with ranges** - Parser doesn't support range syntax
-  - ❌ Broken: `for i in 1..10 { }`
-  - ✅ Workaround: Use array iteration
+# Run tests (coming in v0.10.0)
+jnc test
 
-- **Recursive functions** - Borrow checker bug
-  - ❌ Broken: `fn factorial(n) { ... factorial(n-1) ... }`
+# Package management
+jnc pkg add jounce-ui
+jnc pkg install
+jnc pkg publish
+```
 
-- **Option and Result** - Depend on if/else (broken)
-  - ❌ Broken: `Option<T>`, `Result<T, E>`, `Some`, `None`, `Ok`, `Err`
-
-- **Match OR patterns** - Not implemented
-  - ❌ Broken: `match x { 1 | 2 | 3 => ... }`
-
-### ✅ What Works
-
-- Functions with parameters and return types
-- Arrays and array indexing
-- Arithmetic operations (+, -, *, /, %)
-- Boolean operations (&&, ||, ==, !=, <, >)
-- Simple if statements (without else)
-- println! with format strings
-- JSX (fully working!)
-- LSP features (editor support)
-
-### 🔧 Current Focus
-
-**Phase 4 Sprint 1** is fixing the critical borrow checker bug to enable:
-- if/else expressions
-- Recursive functions
-- Option and Result types
-- Error handling patterns
-
-See `CLAUDE.md` for detailed Phase 4 roadmap and `SPRINT3_FINDINGS.md` for technical analysis.
+See [JOUNCE_SPEC.md § CLI Commands](../../JOUNCE_SPEC.md#cli-commands) for complete reference.
 
 ---
 
-## Next Steps
+## Need Help?
 
-### Learn More
+- **Technical questions**: Check [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md)
+- **Learning tutorials**: Follow [LEARN_JOUNCE.md](../guides/LEARN_JOUNCE.md)
+- **Examples**: Browse [examples/](../../examples/)
+- **Bugs**: [GitHub Issues](https://github.com/Jounce-lang/jounce-pre-production/issues)
 
-- **[Language Reference](LANGUAGE_REFERENCE.md)** - Complete syntax guide
-- **[API Documentation](https://jounce.dev/docs)** - Standard library docs
-- **[Examples](examples/)** - Sample applications
-- **[Roadmap](ROADMAP_Q1_2026.md)** - Upcoming features
+---
 
-### Explore the Ecosystem
+**Ready to build?** Start with the [Quick Start in README.md](../../README.md) or dive into [tutorials in LEARN_JOUNCE.md](../guides/LEARN_JOUNCE.md)!
 
-- **raven-ui** - Production-ready UI components
-- **raven-router** - Client-side routing
-- **raven-forms** - Form handling and validation
-- **raven-http** - HTTP client and server
-- **raven-store** - Global state management
-- **raven-i18n** - Internationalization
+---
 
-### Join the Community
-
-- GitHub: https://github.com/yourusername/jounce
-- Discord: https://discord.gg/jounce
-- Twitter: @jounce_lang
-
-### Build Something Amazing
-
-Now that you know the basics, start building! Here are some project ideas:
-
-1. **Personal Blog** - Static site with markdown support
-2. **E-commerce Store** - Full-stack shop with cart and checkout
-3. **Real-time Chat** - WebSocket-based messaging app
-4. **Dashboard** - Data visualization with charts
-5. **Game** - Simple 2D game using Canvas API
-
-Happy coding with Jounce! 🦅
+**Maintained by: The Jounce Project**

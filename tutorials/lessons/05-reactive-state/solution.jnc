@@ -2,7 +2,7 @@
 // Learn how to create values that automatically update based on other values
 
 component App() {
-    let count = createSignal(0);
+    let count = signal(0);
     let doubled = computed(() => count.value * 2);
 
     <div class="container p-8">
@@ -11,7 +11,7 @@ component App() {
 
         <button
             class="btn btn-primary btn-lg"
-            onClick={() => count.set(count.value + 1)}
+            onclick={() => count.set(count.value + 1)}
         >
             Increment
         </button>

@@ -1,0 +1,24 @@
+{
+  "name": "jounce-registry",
+  "version": "1.0.0",
+  "description": "Jounce Package Registry Server",
+  "main": "registry-server.js",
+  "scripts": {
+    "start": "node registry-server.js",
+    "dev": "nodemon registry-server.js"
+  },
+  "keywords": ["jounce", "package-manager", "registry"],
+  "author": "Jounce Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1",
+    "express-rate-limit": "^7.1.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

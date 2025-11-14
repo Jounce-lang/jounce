@@ -1,5 +1,7 @@
 # Task 4 Complete: Standard Library Expansion
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-21
 **Task**: Create comprehensive stdlib documentation, examples, and tutorials
 **Status**: ✅ **COMPLETE** (with limitations noted)

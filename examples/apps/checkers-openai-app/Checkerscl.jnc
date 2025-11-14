@@ -1,0 +1,705 @@
+// Jounce Checkers - Single-file game with reactive UI and styled board
+// Status: v0.8.3 semantics (signals, computed, JSX, style, etc.)
+
+struct Piece {
+    id: i32,
+    row: i32,
+    col: i32,
+    color: string, // "red" or "black"
+    king: bool,
+}
+
+struct Move {
+    pieceId: i32,
+    fromRow: i32,
+    fromCol: i32,
+    toRow: i32,
+    toCol: i32,
+    isCapture: bool,
+    capturedId: Option<i32>,
+}
+
+// ---------- Pure helpers ----------
+
+fn boardSize() -> i32 {
+    return 8;
+}
+
+fn isInside(row: i32, col: i32) -> bool {
+    let size = boardSize();
+    return row >= 0 && row < size && col >= 0 && col < size;
+}
+
+fn isDarkSquare(row: i32, col: i32) -> bool {
+    // Dark squares are playable squares
+    return ((row + col) % 2) == 1;
+}
+
+// Get the first piece at a position, if any
+fn getPieceAt(pieces: Vec<Piece>, row: i32, col: i32) -> Option<Piece> {
+    let matches = pieces.filter((p) => p.row == row && p.col == col);
+    if matches.len() > 0 {
+        return Some(matches[0]);
+    }
+    return None;
+}
+
+fn isEmptySquare(pieces: Vec<Piece>, row: i32, col: i32) -> bool {
+    if !isInside(row, col) {
+        return false;
+    }
+    let existing = pieces.filter((p) => p.row == row && p.col == col);
+    return existing.len() == 0;
+}
+
+fn isEnemyAt(pieces: Vec<Piece>, row: i32, col: i32, color: string) -> Option<Piece> {
+    if !isInside(row, col) {
+        return None;
+    }
+    let candidates = pieces.filter((p) => p.row == row && p.col == col && p.color != color);
+    if candidates.len() > 0 {
+        return Some(candidates[0]);
+    }
+    return None;
+}
+
+fn createInitialPieces() -> Vec<Piece> {
+    let mut pieces = vec![];
+    let mut id = 0;
+
+    // Black pieces on rows 0,1,2 (top)
+    for row in 0..3 {
+        for col in 0..8 {
+            if isDarkSquare(row, col) {
+                let piece = Piece {
+                    id: id,
+                    row: row,
+                    col: col,
+                    color: "black",
+                    king: false,
+                };
+                pieces.push(piece);
+                id = id + 1;
+            }
+        }
+    }
+
+    // Red pieces on rows 5,6,7 (bottom)
+    for row in 5..8 {
+        for col in 0..8 {
+            if isDarkSquare(row, col) {
+                let piece = Piece {
+                    id: id,
+                    row: row,
+                    col: col,
+                    color: "red",
+                    king: false,
+                };
+                pieces.push(piece);
+                id = id + 1;
+            }
+        }
+    }
+
+    return pieces;
+}
+
+// Compute all legal moves (simple rules: diagonal moves and single jumps)
+fn getValidMoves(pieces: Vec<Piece>, pieceId: i32) -> Vec<Move> {
+    let mut moves = vec![];
+
+    let matches = pieces.filter((p) => p.id == pieceId);
+    if matches.len() == 0 {
+        return moves;
+    }
+    let piece = matches[0];
+
+    let row = piece.row;
+    let col = piece.col;
+
+    // Helper to maybe add a non-capture move
+    fn addStepMove(
+        moves: &mut Vec<Move>,
+        pieces: Vec<Piece>,
+        piece: Piece,
+        toRow: i32,
+        toCol: i32,
+    ) {
+        if isInside(toRow, toCol) && isEmptySquare(pieces, toRow, toCol) {
+            let mv = Move {
+                pieceId: piece.id,
+                fromRow: piece.row,
+                fromCol: piece.col,
+                toRow: toRow,
+                toCol: toCol,
+                isCapture: false,
+                capturedId: None,
+            };
+            moves.push(mv);
+        }
+    }
+
+    // Helper to maybe add a capture move
+    fn addCaptureMove(
+        moves: &mut Vec<Move>,
+        pieces: Vec<Piece>,
+        piece: Piece,
+        midRow: i32,
+        midCol: i32,
+        toRow: i32,
+        toCol: i32,
+    ) {
+        let enemyOpt = isEnemyAt(pieces, midRow, midCol, piece.color);
+        if let Some(enemy) = enemyOpt {
+            if isInside(toRow, toCol) && isEmptySquare(pieces, toRow, toCol) {
+                let mv = Move {
+                    pieceId: piece.id,
+                    fromRow: piece.row,
+                    fromCol: piece.col,
+                    toRow: toRow,
+                    toCol: toCol,
+                    isCapture: true,
+                    capturedId: Some(enemy.id),
+                };
+                moves.push(mv);
+            }
+        }
+    }
+
+    // For regular men, red moves "up" (toward row 0), black moves "down" (toward row 7).
+    // Kings can move both directions.
+    // Up-left:   (-1, -1)
+    // Up-right:  (-1, +1)
+    // Down-left: (+1, -1)
+    // Down-right:(+1, +1)
+
+    // Up moves
+    if piece.king || piece.color == "red" {
+        // Simple steps
+        addStepMove(&mut moves, pieces, piece, row - 1, col - 1);
+        addStepMove(&mut moves, pieces, piece, row - 1, col + 1);
+
+        // Jumps (captures)
+        addCaptureMove(&mut moves, pieces, piece, row - 1, col - 1, row - 2, col - 2);
+        addCaptureMove(&mut moves, pieces, piece, row - 1, col + 1, row - 2, col + 2);
+    }
+
+    // Down moves
+    if piece.king || piece.color == "black" {
+        // Simple steps
+        addStepMove(&mut moves, pieces, piece, row + 1, col - 1);
+        addStepMove(&mut moves, pieces, piece, row + 1, col + 1);
+
+        // Jumps (captures)
+        addCaptureMove(&mut moves, pieces, piece, row + 1, col - 1, row + 2, col - 2);
+        addCaptureMove(&mut moves, pieces, piece, row + 1, col + 1, row + 2, col + 2);
+    }
+
+    return moves;
+}
+
+// Apply a move: update piece position, remove captured piece, king if needed
+fn applyMove(pieces: Vec<Piece>, mv: Move) -> Vec<Piece> {
+    // Remove captured piece (if any)
+    let withoutCaptured = pieces.filter((p) => {
+        if let Some(capturedId) = mv.capturedId {
+            if p.id == capturedId {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    // Move the piece and maybe king it
+    let updated = withoutCaptured.map((p) => {
+        if p.id == mv.pieceId {
+            let mut kingStatus = p.king;
+            // King conditions
+            if !kingStatus {
+                if p.color == "red" && mv.toRow == 0 {
+                    kingStatus = true;
+                }
+                if p.color == "black" && mv.toRow == 7 {
+                    kingStatus = true;
+                }
+            }
+            return Piece {
+                id: p.id,
+                row: mv.toRow,
+                col: mv.toCol,
+                color: p.color,
+                king: kingStatus,
+            };
+        }
+        return p;
+    });
+
+    return updated;
+}
+
+// Check if one side has no pieces left
+fn countPiecesForColor(pieces: Vec<Piece>, color: string) -> i32 {
+    return pieces.filter((p) => p.color == color).len();
+}
+
+// ---------- UI Component ----------
+
+component App() {
+    let pieces = signal<Vec<Piece>>(createInitialPieces());
+    let currentPlayer = signal<string>("red"); // "red" starts
+    let selectedPieceId = signal<Option<i32>>(None);
+    let availableMoves = signal<Vec<Move>>(vec![]);
+    let statusMessage = signal<string>("Red goes first.");
+    let gameOver = signal<bool>(false);
+    let winner = signal<string>("");
+
+    let indices = vec![0, 1, 2, 3, 4, 5, 6, 7];
+
+    let resetGame = () => {
+        pieces.value = createInitialPieces();
+        currentPlayer.value = "red";
+        selectedPieceId.value = None;
+        availableMoves.value = vec![];
+        statusMessage.value = "Red goes first.";
+        gameOver.value = false;
+        winner.value = "";
+    };
+
+    let updateWinnerIfAny = () => {
+        let redCount = countPiecesForColor(pieces.value, "red");
+        let blackCount = countPiecesForColor(pieces.value, "black");
+
+        if redCount == 0 {
+            gameOver.value = true;
+            winner.value = "Black";
+            statusMessage.value = "Game over – Black wins!";
+        } else if blackCount == 0 {
+            gameOver.value = true;
+            winner.value = "Red";
+            statusMessage.value = "Game over – Red wins!";
+        }
+    };
+
+    let handleSquareClick = (row: i32, col: i32) => {
+        if gameOver.value {
+            return;
+        }
+
+        if !isDarkSquare(row, col) {
+            // Only allow interaction on dark squares
+            return;
+        }
+
+        let allPieces = pieces.value;
+        let movesForSelection = availableMoves.value;
+
+        // 1. If this square is a legal move target for the currently selected piece,
+        // apply that move.
+        let targetMoves = movesForSelection.filter((m) => m.toRow == row && m.toCol == col);
+        if targetMoves.len() > 0 {
+            let mv = targetMoves[0];
+            pieces.value = applyMove(allPieces, mv);
+            selectedPieceId.value = None;
+            availableMoves.value = vec![];
+
+            // Switch turns
+            if currentPlayer.value == "red" {
+                currentPlayer.value = "black";
+                statusMessage.value = "Black's turn.";
+            } else {
+                currentPlayer.value = "red";
+                statusMessage.value = "Red's turn.";
+            }
+
+            updateWinnerIfAny();
+            return;
+        }
+
+        // 2. Otherwise, treat this as a selection attempt.
+        let clickedPieces = allPieces.filter((p) => p.row == row && p.col == col);
+        if clickedPieces.len() == 0 {
+            // Clicked empty square: clear selection
+            selectedPieceId.value = None;
+            availableMoves.value = vec![];
+            return;
+        }
+
+        let clickedPiece = clickedPieces[0];
+        if clickedPiece.color != currentPlayer.value {
+            // Can't select opponent piece
+            selectedPieceId.value = None;
+            availableMoves.value = vec![];
+            return;
+        }
+
+        // Select this piece and compute its moves
+        selectedPieceId.value = Some(clickedPiece.id);
+        availableMoves.value = getValidMoves(pieces.value, clickedPiece.id);
+
+        if availableMoves.value.len() == 0 {
+            statusMessage.value = "No moves for that piece.";
+        } else {
+            statusMessage.value = (currentPlayer.value == "red"
+                ? "Red"
+                : "Black") + " – pick a highlighted square.";
+        }
+    };
+
+    return <div class="app-root">
+        <h1>Jounce Checkers</h1>
+
+        <div class="hud">
+            <div class="player-indicator">
+                <span class="label">Current Player:</span>
+                <span class={"badge " + currentPlayer.value}>
+                    {currentPlayer.value == "red" ? "Red" : "Black"}
+                </span>
+            </div>
+            <div class="status">
+                {statusMessage.value}
+            </div>
+            <button class="reset-button" onclick={resetGame}>
+                New Game
+            </button>
+        </div>
+
+        {gameOver.value ? (
+            <div class="game-over">
+                <div class="banner">
+                    🎉 {winner.value} wins! 🎉
+                </div>
+            </div>
+        ) : null}
+
+        <div class="board-wrapper">
+            <div class="board">
+                {indices.map((row) => {
+                    return <div class="board-row">
+                        {indices.map((col) => {
+                            let dark = isDarkSquare(row, col);
+                            let squareClass = "square " + (dark ? "dark" : "light");
+
+                            // Check if any piece is on this square
+                            let cellPieces = pieces.value.filter((p) => p.row == row && p.col == col);
+                            let hasPiece = cellPieces.len() > 0;
+
+                            // Is this selected?
+                            let isSelected = false;
+                            if let Some(selId) = selectedPieceId.value {
+                                if hasPiece && cellPieces[0].id == selId {
+                                    isSelected = true;
+                                }
+                            }
+
+                            if isSelected {
+                                squareClass = squareClass + " selected";
+                            }
+
+                            // Is this a legal move target?
+                            let moveTargets = availableMoves.value.filter((m) => m.toRow == row && m.toCol == col);
+                            if moveTargets.len() > 0 {
+                                squareClass = squareClass + " highlight";
+                            }
+
+                            return <div
+                                class={squareClass}
+                                onclick={() => handleSquareClick(row, col)}
+                            >
+                                {hasPiece ? (
+                                    <div class={
+                                        "piece " +
+                                        cellPieces[0].color +
+                                        (cellPieces[0].king ? " king" : "")
+                                    }>
+                                        {cellPieces[0].king ? "★" : ""}
+                                    </div>
+                                ) : null}
+                            </div>;
+                        })}
+                    </div>;
+                })}
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <span class="legend-color legend-red"></span>
+                <span>Red pieces</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color legend-black"></span>
+                <span>Black pieces</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-swatch highlight-swatch"></span>
+                <span>Highlighted = legal move</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-swatch selected-swatch"></span>
+                <span>Glow = selected piece</span>
+            </div>
+        </div>
+    </div>;
+}
+
+// ---------- Styling: cool visuals for the board / pieces ----------
+
+style App {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    padding: 32px;
+    background: radial-gradient(circle at top, #1b2735 0%, #090a0f 55%, #000000 100%);
+    color: #f7f7f7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    h1 {
+        font-size: 40px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+        text-shadow: 0 0 8px rgba(0,0,0,0.7);
+    }
+
+    .hud {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .player-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .player-indicator .label {
+        font-size: 14px;
+        opacity: 0.8;
+    }
+
+    .player-indicator .badge {
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-weight: bold;
+        font-size: 14px;
+        box-shadow: 0 0 12px rgba(0,0,0,0.4);
+        background: #222;
+    }
+
+    .player-indicator .badge.red {
+        background: radial-gradient(circle, #ff4b5c 0%, #b31217 60%);
+    }
+
+    .player-indicator .badge.black {
+        background: radial-gradient(circle, #d9d9d9 0%, #444 60%);
+        color: #111;
+    }
+
+    .status {
+        min-width: 220px;
+        text-align: center;
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    .reset-button {
+        padding: 8px 16px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+        color: #111;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    .reset-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 22px rgba(0,0,0,0.5);
+    }
+
+    .reset-button:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+
+    .game-over {
+        margin-bottom: 16px;
+    }
+
+    .game-over .banner {
+        padding: 10px 18px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #ffe259, #ffa751);
+        color: #222;
+        font-weight: 700;
+        text-shadow: 0 0 4px rgba(255,255,255,0.5);
+        box-shadow: 0 0 18px rgba(0,0,0,0.6);
+    }
+
+    .board-wrapper {
+        padding: 18px;
+        border-radius: 24px;
+        background: radial-gradient(circle at top left, rgba(255,255,255,0.15), rgba(0,0,0,0.8));
+        box-shadow:
+            0 22px 60px rgba(0,0,0,0.8),
+            inset 0 0 18px rgba(255,255,255,0.08);
+    }
+
+    .board {
+        display: grid;
+        grid-template-rows: repeat(8, 1fr);
+        gap: 0;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 2px solid rgba(255,255,255,0.1);
+    }
+
+    .board-row {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+    }
+
+    .square {
+        width: 70px;
+        height: 70px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, background 0.12s ease-out;
+    }
+
+    .square.light {
+        background: linear-gradient(135deg, #f3f4f6, #d1d5db);
+    }
+
+    .square.dark {
+        background: linear-gradient(135deg, #111827, #1f2933);
+    }
+
+    .square.highlight.dark {
+        background: radial-gradient(circle, #22c55e 0%, #065f46 70%);
+        box-shadow: 0 0 18px rgba(34,197,94,0.7) inset;
+    }
+
+    .square.selected.dark {
+        box-shadow:
+            0 0 0 3px rgba(250,204,21,0.8) inset,
+            0 0 22px rgba(250,204,21,0.8);
+    }
+
+    .square:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+    }
+
+    .piece {
+        width: 52px;
+        height: 52px;
+        border-radius: 999px;
+        box-shadow:
+            0 6px 12px rgba(0,0,0,0.7),
+            inset 0 0 4px rgba(255,255,255,0.4);
+        border: 3px solid rgba(255,255,255,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 700;
+        text-shadow: 0 0 6px rgba(0,0,0,0.8);
+        transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+    }
+
+    .piece.red {
+        background: radial-gradient(circle at 30% 30%, #f97373 0%, #b91c1c 55%, #450a0a 100%);
+    }
+
+    .piece.black {
+        background: radial-gradient(circle at 30% 30%, #e5e7eb 0%, #4b5563 55%, #020617 100%);
+        color: #111827;
+    }
+
+    .piece.king {
+        box-shadow:
+            0 0 0 3px rgba(250,204,21,0.9),
+            0 0 16px rgba(250,204,21,0.9),
+            0 6px 16px rgba(0,0,0,0.8);
+    }
+
+    .legend {
+        margin-top: 20px;
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+        font-size: 13px;
+        opacity: 0.9;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        display: inline-block;
+        box-shadow: 0 0 6px rgba(0,0,0,0.6);
+    }
+
+    .legend-red {
+        background: radial-gradient(circle, #f97373 0%, #b91c1c 60%);
+    }
+
+    .legend-black {
+        background: radial-gradient(circle, #e5e7eb 0%, #4b5563 60%);
+    }
+
+    .legend-swatch {
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .highlight-swatch {
+        background: radial-gradient(circle, #22c55e 0%, #065f46 70%);
+    }
+
+    .selected-swatch {
+        background: #facc15;
+        box-shadow: 0 0 10px rgba(250,204,21,0.9);
+    }
+
+    @media (max-width: 600px) {
+        .square {
+            width: 44px;
+            height: 44px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .piece {
+            width: 34px;
+            height: 34px;
+            font-size: 18px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .board-wrapper {
+            padding: 12px;
+        }
+    }
+}

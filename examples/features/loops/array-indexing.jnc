@@ -1,0 +1,18 @@
+// Jounce Example – Verified v0.8.x
+
+// Array indexing with loop variables example
+
+component Test() {
+    let items = signal([1, 2, 3]);
+
+    for i in 0..items.value.len() {
+        let x = items.value[i];
+        console.log(x);
+    }
+
+    return <div>Array indexing test</div>;
+}
+
+fn main() {
+    console.log("Array indexing with loop variables works!");
+}

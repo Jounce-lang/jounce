@@ -1,9 +1,10 @@
 # Jounce Style System Design Specification
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Version**: 1.0
 **Phase**: 13
 **Target Release**: v0.5.0
-**Author**: Claude (AI Assistant)
 **Date**: October 24, 2025
 
 ---

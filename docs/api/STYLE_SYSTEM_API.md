@@ -1,5 +1,7 @@
 # Style System API Reference
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Version**: Phase 13 (v0.5.0)
 **Last Updated**: October 24, 2025
 

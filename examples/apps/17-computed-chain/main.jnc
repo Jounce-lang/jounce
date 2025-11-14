@@ -1,9 +1,9 @@
 // App 17: Chained Computed Values
 component App() {
-    let width = createSignal(10);
-    let height = createSignal(20);
-    let area = createComputed(() => width.value * height.value);
-    let perimeter = createComputed(() => 2 * (width.value + height.value));
+    let width = signal(10);
+    let height = signal(20);
+    let area = computed(() => width.value * height.value);
+    let perimeter = computed(() => 2 * (width.value + height.value));
 
     <div>
         <p>Area: {area.value}</p>

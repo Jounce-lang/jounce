@@ -1,6 +1,6 @@
 // App 22: SVG elements
 component App() {
-    let size = createSignal(100);
+    let size = signal(100);
 
     <svg width={size.value} height={size.value} viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="40" fill="red" />

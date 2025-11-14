@@ -1,7 +1,9 @@
+// Jounce Example – Verified v0.8.x
+
 // Counter App - Demonstrates Jounce Reactivity
 //
 // NOTE: This example demonstrates reactivity patterns.
-// Reactivity is JavaScript/client-side only in Jounce v0.4.0.
+// Reactivity is JavaScript/client-side only in Jounce.
 //
 // This example shows:
 // - Creating reactive signals

@@ -1,5 +1,7 @@
 # LSP Features Guide
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 ## Overview
 
 Jounce's Language Server Protocol (LSP) implementation provides intelligent IDE features for enhanced developer experience. The LSP server offers context-aware completions, hover information, and real-time diagnostics.

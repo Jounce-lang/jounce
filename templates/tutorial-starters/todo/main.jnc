@@ -1,3 +1,5 @@
+// Jounce Example – Verified v0.8.x
+
 // Todo App Template
 // Build a full-featured todo list!
 
@@ -51,8 +53,8 @@ component App() {
                 <input
                     type="text"
                     value={newTodo.value}
-                    onInput={handleNewTodoInput}
-                    onKeyPress={(e) => {
+                    oninput={handleNewTodoInput}
+                    onkeypress={(e) => {
                         if (e.key == "Enter") {
                             addTodo();
                         }
@@ -61,7 +63,7 @@ component App() {
                     class="flex-1 p-3 border border-gray-300 rounded"
                 />
                 <button
-                    onClick={addTodo}
+                    onclick={addTodo}
                     class="btn btn-primary"
                 >
                     Add
@@ -81,14 +83,14 @@ component App() {
                             <input
                                 type="checkbox"
                                 checked={todo.completed}
-                                onChange={() => toggleTodo(todo.id)}
+                                onchange={() => toggleTodo(todo.id)}
                                 class="w-5 h-5"
                             />
                             <span class={todo.completed ? "flex-1 line-through text-gray-500" : "flex-1"}>
                                 {todo.text}
                             </span>
                             <button
-                                onClick={() => deleteTodo(todo.id)}
+                                onclick={() => deleteTodo(todo.id)}
                                 class="btn btn-sm btn-danger"
                             >
                                 Delete

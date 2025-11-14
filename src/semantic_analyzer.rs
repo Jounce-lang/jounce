@@ -233,7 +233,7 @@ impl SemanticAnalyzer {
             TypeExpression::Named(ident) => {
                 match ident.value.as_str() {
                     "i32" => ResolvedType::Integer,
-                    "f64" => ResolvedType::Float,
+                    "f32" | "f64" => ResolvedType::Float,
                     "bool" => ResolvedType::Bool,
                     "string" => ResolvedType::String,
                     _ => {
@@ -510,10 +510,34 @@ impl SemanticAnalyzer {
             }
         }
 
+        // IMPORTANT: Define the loop variable in the symbol table
+        // For range loops (for i in 0..len), the variable is always an integer
+        // For array loops (for item in arr), the variable type matches the array element type
+        let loop_var_type = match &stmt.iterator {
+            Expression::Range(_) => ResolvedType::Integer, // Range loops always have integer indices
+            Expression::Identifier(_) | Expression::FieldAccess(_) | Expression::FunctionCall(_) => {
+                // For array iteration, extract the element type
+                match &iterator_type {
+                    ResolvedType::Array(elem_type) => *elem_type.clone(),
+                    _ => ResolvedType::Unknown,
+                }
+            }
+            _ => ResolvedType::Unknown,
+        };
+
+        // Enter a new scope for the loop body
+        self.symbols.enter_scope();
+
+        // Define the loop variable
+        self.symbols.define(stmt.variable.value.clone(), loop_var_type);
+
         // Analyze body statements
         for s in &stmt.body.statements {
             self.analyze_statement(s)?;
         }
+
+        // Exit the loop scope
+        self.symbols.exit_scope();
 
         Ok(ResolvedType::Unit)
     }
@@ -534,9 +558,9 @@ impl SemanticAnalyzer {
                 self.import_symbol(&name, &export)?;
             }
         } else {
-            // Selective imports (use module::{A, B, C})
+            // Selective imports (use module::{A, B, C}) or (use module::{A as AliasA})
             let import_names: Vec<String> = use_stmt.imports.iter()
-                .map(|ident| ident.value.clone())
+                .map(|import_item| import_item.name.value.clone())
                 .collect();
 
             let exports = self.module_loader.get_exports(&module_path, &import_names)
@@ -783,6 +807,11 @@ impl SemanticAnalyzer {
                 self.expression_uses_lifecycle_resource(&if_expr.then_expr) ||
                 if_expr.else_expr.as_ref().map_or(false, |e| self.expression_uses_lifecycle_resource(e))
             }
+            Expression::IfLet(if_let_expr) => {
+                self.expression_uses_lifecycle_resource(&if_let_expr.value) ||
+                self.expression_uses_lifecycle_resource(&if_let_expr.then_expr) ||
+                if_let_expr.else_expr.as_ref().map_or(false, |e| self.expression_uses_lifecycle_resource(e))
+            }
             _ => false,
         }
     }
@@ -948,23 +977,33 @@ impl SemanticAnalyzer {
                     )));
                 }
 
-                // Analyze all field values and check types
-                for (field_name, field_value) in &struct_lit.fields {
-                    let _value_type =
-                        self.analyze_expression_with_expected(field_value, None)?;
+                // Analyze all field values and spreads, and check types
+                for prop in &struct_lit.fields {
+                    match prop {
+                        ObjectProperty::Field(field_name, field_value) => {
+                            let _value_type =
+                                self.analyze_expression_with_expected(field_value, None)?;
 
-                    // Look up expected field type
-                    if let Some(_expected_type) =
-                        self.structs.get_field_type(&struct_lit.name.value, &field_name.value)
-                    {
-                        // TODO: Add type compatibility checking here
-                        // For now, just accept any type
-                    } else {
-                        return Err(CompileError::Generic(format!(
-                            "Struct '{}' has no field named '{}'",
-                            struct_lit.name.value,
-                            field_name.value
-                        )));
+                            // Look up expected field type
+                            if let Some(_expected_type) =
+                                self.structs.get_field_type(&struct_lit.name.value, &field_name.value)
+                            {
+                                // TODO: Add type compatibility checking here
+                                // For now, just accept any type
+                            } else {
+                                return Err(CompileError::Generic(format!(
+                                    "Struct '{}' has no field named '{}'",
+                                    struct_lit.name.value,
+                                    field_name.value
+                                )));
+                            }
+                        }
+                        ObjectProperty::Spread(expr) => {
+                            // Analyze the spread expression
+                            // For spreads, we expect the expression to be of the same struct type
+                            let _spread_type = self.analyze_expression_with_expected(expr, None)?;
+                            // TODO: Verify that the spread type matches the struct type
+                        }
                     }
                 }
 
@@ -1017,12 +1056,21 @@ impl SemanticAnalyzer {
                 let array_type =
                     self.analyze_expression_with_expected(&index_expr.array, None)?;
 
-                // Analyze the index expression (should be integer)
+                // Analyze the index expression (must be integer type)
                 let index_type =
                     self.analyze_expression_with_expected(&index_expr.index, None)?;
-                if index_type != ResolvedType::Integer && index_type != ResolvedType::Unknown {
+
+                // Only accept integer types for array indexing
+                // Unknown is allowed for flexibility with untyped code
+                let is_valid_index = matches!(
+                    index_type,
+                    ResolvedType::Integer | ResolvedType::Unknown
+                );
+
+                if !is_valid_index {
                     return Err(CompileError::Generic(format!(
-                        "Array index must be an integer, got '{}'",
+                        "error[E430]: Array index must be an integer, got '{}'\n\
+                         help: Cast non-integer values to i32, or use range loops which automatically type variables as integers",
                         index_type
                     )));
                 }
@@ -1179,6 +1227,30 @@ impl SemanticAnalyzer {
                     if !self.types_compatible(&then_type, &else_type) {
                         return Err(CompileError::Generic(format!(
                             "If expression branches have incompatible types: then '{}', else '{}'",
+                            then_type,
+                            else_type
+                        )));
+                    }
+                }
+
+                Ok(then_type)
+            }
+            Expression::IfLet(if_let_expr) => {
+                // Analyze the value expression
+                self.analyze_expression_with_expected(&if_let_expr.value, None)?;
+
+                // Analyze then expression
+                let then_type =
+                    self.analyze_expression_with_expected(&if_let_expr.then_expr, None)?;
+
+                // Analyze else expression if present
+                if let Some(else_expr) = &if_let_expr.else_expr {
+                    let else_type =
+                        self.analyze_expression_with_expected(else_expr, None)?;
+                    // Check type compatibility
+                    if !self.types_compatible(&then_type, &else_type) {
+                        return Err(CompileError::Generic(format!(
+                            "If-let expression branches have incompatible types: then '{}', else '{}'",
                             then_type,
                             else_type
                         )));

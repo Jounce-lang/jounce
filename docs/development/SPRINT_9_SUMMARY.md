@@ -1,5 +1,7 @@
 # Sprint 9: Real-World App Compilation Blockers
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-21
 **Duration**: ~3 hours
 **Status**: 2/3 issues completed ✅

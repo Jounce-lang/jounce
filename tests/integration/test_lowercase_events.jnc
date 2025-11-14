@@ -1,0 +1,21 @@
+// Test lowercase event handlers (onclick, oninput, onchange)
+component InputBox() {
+    let value = signal<string>("");
+    
+    fn handleInput() {
+        value.value = "changed";
+    }
+    
+    fn handleClick() {
+        value.value = "clicked";
+    }
+    
+    fn handleChange() {
+        value.value = "modified";
+    }
+    
+    return <div>
+        <input value={value.value} oninput={handleInput} onchange={handleChange} />
+        <button onclick={handleClick}>Click</button>
+    </div>;
+}

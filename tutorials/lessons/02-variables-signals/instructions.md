@@ -9,13 +9,13 @@ Learn about reactive state with signals - the foundation of Jounce's reactivity 
 
 ## 📝 Instructions
 
-1. **Find the line**: `let name = createSignal("World");`
+1. **Find the line**: `let name = signal("World");`
 2. **Change "World"** to your actual name (keep the quotes!)
 3. **Save and run** to see the UI update automatically
 
 ## 💡 What You'll Learn
 
-- How to create signals with `createSignal()`
+- How to create signals with `signal()`
 - How to access signal values with `.value`
 - How reactivity works (UI updates automatically!)
 - The difference between regular variables and signals
@@ -36,7 +36,7 @@ Welcome to reactive programming!
 A **signal** is a reactive variable that tracks its value and notifies the UI when it changes.
 
 ```jounce
-let count = createSignal(0);    // Create a signal
+let count = signal(0);    // Create a signal
 console.log(count.value);        // Read the value → 0
 count.set(5);                    // Update the value
 console.log(count.value);        // Read again → 5
@@ -52,7 +52,7 @@ name = "Bob";  // UI doesn't update!
 
 **Signal** (reactive):
 ```jounce
-let name = createSignal("Alice");
+let name = signal("Alice");
 name.set("Bob");  // UI updates automatically! ✨
 ```
 
@@ -60,7 +60,7 @@ name.set("Bob");  // UI updates automatically! ✨
 
 ### Creating a Signal
 ```jounce
-let mySignal = createSignal(initialValue);
+let mySignal = signal(initialValue);
 ```
 
 ### Reading a Signal
@@ -79,7 +79,7 @@ After completing this lesson, experiment by:
 
 1. **Adding another signal**:
 ```jounce
-let age = createSignal(25);
+let age = signal(25);
 ```
 
 2. **Using it in the UI**:
@@ -89,9 +89,9 @@ let age = createSignal(25);
 
 3. **Trying different data types**:
 ```jounce
-let count = createSignal(0);        // Number
-let name = createSignal("Alice");   // String
-let active = createSignal(true);    // Boolean
+let count = signal(0);        // Number
+let name = signal("Alice");   // String
+let active = signal(true);    // Boolean
 ```
 
 ## ❓ Troubleshooting
@@ -99,8 +99,8 @@ let active = createSignal(true);    // Boolean
 **UI doesn't update**
 → Make sure you're using `.value` to access the signal: `{name.value}`
 
-**Error: createSignal is not defined**
-→ Check your spelling - it's `createSignal` (camelCase)
+**Error: signal is not defined**
+→ Check your spelling - it's `signal` (lowercase)
 
 **Value is [object Object]**
 → You forgot `.value` - use `{name.value}` not just `{name}`
@@ -110,7 +110,7 @@ let active = createSignal(true);    // Boolean
 Can you add a second signal for your city and display it too?
 
 ```jounce
-let city = createSignal("New York");
+let city = signal("New York");
 
 <p>From: {city.value}</p>
 ```

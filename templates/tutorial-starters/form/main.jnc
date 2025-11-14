@@ -1,3 +1,5 @@
+// Jounce Example – Verified v0.8.x
+
 // Form Validation Template
 // Learn form handling and validation in Jounce!
 
@@ -34,7 +36,7 @@ component App() {
             Sign Up Form
         </h1>
 
-        <form onSubmit={handleSubmit} class="bg-white p-8 rounded-lg shadow">
+        <form onsubmit={handleSubmit} class="bg-white p-8 rounded-lg shadow">
             <div class="mb-6">
                 <label class="block text-sm font-bold mb-2">
                     Name
@@ -42,7 +44,7 @@ component App() {
                 <input
                     type="text"
                     value={name.value}
-                    onInput={handleNameInput}
+                    oninput={handleNameInput}
                     class="w-full p-3 border border-gray-300 rounded"
                     placeholder="John Doe"
                 />
@@ -55,7 +57,7 @@ component App() {
                 <input
                     type="email"
                     value={email.value}
-                    onInput={handleEmailInput}
+                    oninput={handleEmailInput}
                     class="w-full p-3 border border-gray-300 rounded"
                     placeholder="john@example.com"
                 />
@@ -70,7 +72,7 @@ component App() {
 
             <button
                 type="button"
-                onClick={reset}
+                onclick={reset}
                 class="btn btn-outline w-full mt-2"
             >
                 Reset

@@ -191,10 +191,11 @@ window.__JOUNCE_DEBUG__ = true;
 
 ## 🔗 Resources
 
-- [Reactivity Guide](../docs/REACTIVITY.md)
-- [SSR Guide](../docs/SSR.md)
-- [Client-Side Routing](../docs/ROUTING.md)
+- [Reactivity User Guide](../docs/guides/REACTIVITY_USER_GUIDE.md)
+- [Reactivity API Reference](../docs/api/REACTIVITY_API.md)
+- [SSR Status](../docs/guides/SSR_STATUS.md)
+- [Complete Specification](../JOUNCE_SPEC.md)
 
 ---
 
-**Last Updated**: October 31, 2025 (v0.8.1)
+**Last Updated**: November 7, 2025 (v0.8.3)

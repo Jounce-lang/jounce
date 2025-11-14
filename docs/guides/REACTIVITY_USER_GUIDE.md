@@ -1,10 +1,14 @@
-# Jounce v0.4.0 Reactive - User Guide
+# Jounce Reactivity - User Guide
 
-**Version**: v0.4.0 "Reactive"
-**Release Date**: October 2025
-**Status**: Stable
+**Version**: v0.8.3 "Enhanced Language Features"
+**Last Updated**: November 7, 2025
+**Status**: ✅ Production Ready (580/580 tests passing)
 
-Welcome to Jounce v0.4.0, featuring a complete fine-grained reactivity system inspired by Solid.js. This guide will teach you how to build reactive applications with automatic state management, computed values, and effects.
+Welcome to Jounce's complete fine-grained reactivity system inspired by Solid.js. This guide will teach you how to build reactive applications with automatic state management, computed values, and effects.
+
+> **Quick Start**: See [README.md](../../README.md) for installation
+> **Tutorials**: See [LEARN_JOUNCE.md](./LEARN_JOUNCE.md) for practical examples
+> **Technical Details**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for reactivity specification
 
 ---
 
@@ -25,7 +29,7 @@ Welcome to Jounce v0.4.0, featuring a complete fine-grained reactivity system in
 
 ## Introduction to Reactivity
 
-Reactivity in Jounce v0.4.0 allows you to build dynamic applications where the UI automatically stays in sync with your data. When data changes, all dependent computations and UI updates happen automatically.
+Reactivity in Jounce allows you to build dynamic applications where the UI automatically stays in sync with your data. When data changes, all dependent computations and UI updates happen automatically.
 
 ### Why Reactivity?
 
@@ -39,7 +43,7 @@ count = 5;
 doubled = count * 2;
 ```
 
-**With Reactivity (v0.4.0):**
+**With Reactivity:**
 ```jounce
 let count = signal(0);
 let doubled = computed(() => count.value * 2);
@@ -60,7 +64,7 @@ count.value = 5;
 
 ## Core Concepts
 
-Jounce v0.4.0 reactivity is built on four primitives:
+Jounce reactivity is built on four primitives:
 
 1. **Signals**: Mutable reactive state
 2. **Computed**: Derived state that auto-updates
@@ -594,31 +598,32 @@ let result = computed(() => {
 
 ## What's Next?
 
-- **API Reference**: Complete API documentation for all reactive primitives
-- **Migration Guide**: How to adopt reactivity in existing Jounce apps
-- **Examples**: See `examples/` directory for complete applications
-- **Advanced Patterns**: Complex reactivity patterns and architectures
+- **Practical Tutorials**: See [LEARN_JOUNCE.md](./LEARN_JOUNCE.md) for step-by-step examples
+- **API Reference**: See [REACTIVITY_API.md](../api/REACTIVITY_API.md) for complete API documentation
+- **Technical Spec**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for reactivity implementation details
+- **Quick Start**: See [README.md](../../README.md) for installation and getting started
 
 ---
 
 ## Version Information
 
-**Jounce v0.4.0 "Reactive"**
-Released: October 2025
+**Jounce v0.8.3 "Enhanced Language Features"**
+Released: November 7, 2025
 
-**Reactivity Features**:
+**Reactivity System** (Stable since v0.4.0):
 - ✅ Signals for mutable state
 - ✅ Computed values with automatic updates
 - ✅ Effects for side effects
 - ✅ Batching for performance
 - ✅ Automatic dependency tracking
-- ✅ 29/29 runtime tests passing
-- ✅ 22/22 integration tests passing
+- ✅ Fine-grained reactive updates
+- ✅ Production Ready (580/580 tests passing)
 
-**See Also**:
-- [API Reference](../api/REACTIVITY_API.md)
-- [Migration Guide](REACTIVITY_MIGRATION.md)
-- [Design Specification](../design/REACTIVITY_SYSTEM.md)
-- [Counter Example](../../examples/counter-app/)
-- [Todo Example](../../examples/todo-app-reactive/)
-- [Form Validation Example](../../examples/form-validation/)
+**Related Guides**:
+- [LEARN_JOUNCE.md](./LEARN_JOUNCE.md) - Practical tutorials
+- [REACTIVITY_API.md](../api/REACTIVITY_API.md) - API reference
+- [README.md](../../README.md) - Quick start guide
+
+---
+
+**Maintained by: The Jounce Project**

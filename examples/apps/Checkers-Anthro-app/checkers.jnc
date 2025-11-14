@@ -1,0 +1,661 @@
+// Checkers Game - A complete implementation with cool graphics
+
+struct Position {
+    row: i32,
+    col: i32,
+}
+
+struct Piece {
+    row: i32,
+    col: i32,
+    player: i32,  // 1 = red, 2 = black
+    isKing: bool,
+}
+
+struct Move {
+    fromRow: i32,
+    fromCol: i32,
+    toRow: i32,
+    toCol: i32,
+    capturedRow: i32,
+    capturedCol: i32,
+}
+
+component CheckersGame() {
+    // Game state
+    let pieces = signal<Vec<Piece>>(initializePieces());
+    let selectedPiece = signal<Option<Position>>(None);
+    let validMoves = signal<Vec<Move>>(vec![]);
+    let currentPlayer = signal<i32>(1);  // 1 = red, 2 = black
+    let gameOver = signal<bool>(false);
+    let winner = signal<i32>(0);
+    let mustCapture = signal<bool>(false);
+    
+    // Initialize the board with pieces
+    fn initializePieces() -> Vec<Piece> {
+        let mut pieces = vec![];
+        
+        // Black pieces (top)
+        for row in 0..3 {
+            for col in 0..8 {
+                if (row + col) % 2 == 1 {
+                    pieces = vec![...pieces, Piece {
+                        row: row,
+                        col: col,
+                        player: 2,
+                        isKing: false,
+                    }];
+                }
+            }
+        }
+        
+        // Red pieces (bottom)
+        for row in 5..8 {
+            for col in 0..8 {
+                if (row + col) % 2 == 1 {
+                    pieces = vec![...pieces, Piece {
+                        row: row,
+                        col: col,
+                        player: 1,
+                        isKing: false,
+                    }];
+                }
+            }
+        }
+        
+        return pieces;
+    }
+    
+    // Get piece at position
+    fn getPieceAt(row: i32, col: i32) -> Option<Piece> {
+        let allPieces = pieces.value;
+        for i in 0..allPieces.length() {
+            let piece = allPieces[i];
+            if piece.row == row && piece.col == col {
+                return Some(piece);
+            }
+        }
+        return None;
+    }
+    
+    // Check if position is valid
+    fn isValidPos(row: i32, col: i32) -> bool {
+        return row >= 0 && row < 8 && col >= 0 && col < 8;
+    }
+    
+    // Calculate valid moves for a piece
+    fn calculateValidMoves(piece: Piece) -> Vec<Move> {
+        let mut moves = vec![];
+        let directions = vec![-1, 1];
+        
+        // Check all diagonal directions
+        for i in 0..directions.length() {
+            let dRow = directions[i];
+            for j in 0..directions.length() {
+                let dCol = directions[j];
+                
+                // Regular pieces can only move forward (or kings can move both ways)
+                if !piece.isKing {
+                    if piece.player == 1 && dRow > 0 {
+                        continue;
+                    }
+                    if piece.player == 2 && dRow < 0 {
+                        continue;
+                    }
+                }
+                
+                let newRow = piece.row + dRow;
+                let newCol = piece.col + dCol;
+                
+                if isValidPos(newRow, newCol) {
+                    let targetPiece = getPieceAt(newRow, newCol);
+                    
+                    // Simple move to empty square
+                    if let None = targetPiece {
+                        moves = vec![...moves, Move {
+                            fromRow: piece.row,
+                            fromCol: piece.col,
+                            toRow: newRow,
+                            toCol: newCol,
+                            capturedRow: -1,
+                            capturedCol: -1,
+                        }];
+                    }
+                    
+                    // Capture move
+                    if let Some(target) = targetPiece {
+                        if target.player != piece.player {
+                            let jumpRow = newRow + dRow;
+                            let jumpCol = newCol + dCol;
+                            
+                            if isValidPos(jumpRow, jumpCol) {
+                                let jumpTarget = getPieceAt(jumpRow, jumpCol);
+                                if let None = jumpTarget {
+                                    moves = vec![...moves, Move {
+                                        fromRow: piece.row,
+                                        fromCol: piece.col,
+                                        toRow: jumpRow,
+                                        toCol: jumpCol,
+                                        capturedRow: newRow,
+                                        capturedCol: newCol,
+                                    }];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return moves;
+    }
+    
+    // Check if any captures are available for current player
+    fn hasCaptures() -> bool {
+        let allPieces = pieces.value;
+        let player = currentPlayer.value;
+        
+        for i in 0..allPieces.length() {
+            let piece = allPieces[i];
+            if piece.player == player {
+                let moves = calculateValidMoves(piece);
+                for j in 0..moves.length() {
+                    let move = moves[j];
+                    if move.capturedRow != -1 {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    // Handle square click
+    let handleSquareClick = (row: i32, col: i32) => {
+        if gameOver.value {
+            return;
+        }
+        
+        let clickedPiece = getPieceAt(row, col);
+        
+        // If a piece is selected, try to move it
+        if let Some(selected) = selectedPiece.value {
+            let moves = validMoves.value;
+            let mut validMove = None;
+            
+            // Find if this is a valid move
+            for i in 0..moves.length() {
+                let move = moves[i];
+                if move.toRow == row && move.toCol == col {
+                    validMove = Some(move);
+                    break;
+                }
+            }
+            
+            if let Some(move) = validMove {
+                // Execute the move
+                let mut newPieces = vec![];
+                let allPieces = pieces.value;
+                
+                for i in 0..allPieces.length() {
+                    let piece = allPieces[i];
+                    
+                    // Skip captured piece
+                    if move.capturedRow != -1 && piece.row == move.capturedRow && piece.col == move.capturedCol {
+                        continue;
+                    }
+                    
+                    // Move the selected piece
+                    if piece.row == move.fromRow && piece.col == move.fromCol {
+                        let isKing = piece.isKing || (piece.player == 1 && move.toRow == 0) || (piece.player == 2 && move.toRow == 7);
+                        newPieces = vec![...newPieces, Piece {
+                            row: move.toRow,
+                            col: move.toCol,
+                            player: piece.player,
+                            isKing: isKing,
+                        }];
+                    } else {
+                        newPieces = vec![...newPieces, piece];
+                    }
+                }
+                
+                pieces.value = newPieces;
+                selectedPiece.value = None;
+                validMoves.value = vec![];
+                
+                // Check for multi-jump
+                if move.capturedRow != -1 {
+                    let movedPiece = getPieceAt(move.toRow, move.toCol);
+                    if let Some(p) = movedPiece {
+                        let nextMoves = calculateValidMoves(p);
+                        let mut hasNextCapture = false;
+                        
+                        for i in 0..nextMoves.length() {
+                            if nextMoves[i].capturedRow != -1 {
+                                hasNextCapture = true;
+                                break;
+                            }
+                        }
+                        
+                        if hasNextCapture {
+                            selectedPiece.value = Some(Position { row: move.toRow, col: move.toCol });
+                            validMoves.value = nextMoves.filter((m) => m.capturedRow != -1);
+                            return;
+                        }
+                    }
+                }
+                
+                // Switch player
+                currentPlayer.value = if currentPlayer.value == 1 { 2 } else { 1 };
+                mustCapture.value = hasCaptures();
+                
+                // Check for winner
+                checkGameOver();
+            } else {
+                // Deselect if clicking empty square or opponent piece
+                selectedPiece.value = None;
+                validMoves.value = vec![];
+                
+                // Try to select the clicked piece
+                if let Some(piece) = clickedPiece {
+                    if piece.player == currentPlayer.value {
+                        handleSquareClick(row, col);
+                    }
+                }
+            }
+        } else {
+            // Select a piece
+            if let Some(piece) = clickedPiece {
+                if piece.player == currentPlayer.value {
+                    let moves = calculateValidMoves(piece);
+                    
+                    // If must capture, filter only capture moves
+                    let finalMoves = if mustCapture.value {
+                        moves.filter((m) => m.capturedRow != -1)
+                    } else {
+                        moves
+                    };
+                    
+                    if finalMoves.length() > 0 {
+                        selectedPiece.value = Some(Position { row: row, col: col });
+                        validMoves.value = finalMoves;
+                    }
+                }
+            }
+        }
+    };
+    
+    // Check if game is over
+    fn checkGameOver() {
+        let allPieces = pieces.value;
+        let mut redCount = 0;
+        let mut blackCount = 0;
+        
+        for i in 0..allPieces.length() {
+            if allPieces[i].player == 1 {
+                redCount = redCount + 1;
+            } else {
+                blackCount = blackCount + 1;
+            }
+        }
+        
+        if redCount == 0 {
+            gameOver.value = true;
+            winner.value = 2;
+        } else if blackCount == 0 {
+            gameOver.value = true;
+            winner.value = 1;
+        }
+    }
+    
+    // Reset game
+    let resetGame = () => {
+        pieces.value = initializePieces();
+        selectedPiece.value = None;
+        validMoves.value = vec![];
+        currentPlayer.value = 1;
+        gameOver.value = false;
+        winner.value = 0;
+        mustCapture.value = false;
+    };
+    
+    // Render the board
+    return <div class="game-container">
+        <div class="header">
+            <h1>🎯 Checkers Game</h1>
+            <div class="status">
+                {gameOver.value ? (
+                    <div class="game-over">
+                        <h2>Game Over!</h2>
+                        <p class={winner.value == 1 ? "winner-red" : "winner-black"}>
+                            {winner.value == 1 ? "🔴 Red" : "⚫ Black"} Wins!
+                        </p>
+                        <button onclick={resetGame} class="reset-btn">Play Again</button>
+                    </div>
+                ) : (
+                    <div class="turn-indicator">
+                        <div class={currentPlayer.value == 1 ? "player-indicator red active" : "player-indicator red"}>
+                            <div class="player-piece red-piece"></div>
+                            <span>Red</span>
+                        </div>
+                        <div class={currentPlayer.value == 2 ? "player-indicator black active" : "player-indicator black"}>
+                            <div class="player-piece black-piece"></div>
+                            <span>Black</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+        
+        <div class="board">
+            {vec![0, 1, 2, 3, 4, 5, 6, 7].map((row) => 
+                <div class="board-row">
+                    {vec![0, 1, 2, 3, 4, 5, 6, 7].map((col) => {
+                        let isDark = (row + col) % 2 == 1;
+                        let piece = getPieceAt(row, col);
+                        let isSelected = false;
+                        let isValidMove = false;
+                        
+                        if let Some(sel) = selectedPiece.value {
+                            if sel.row == row && sel.col == col {
+                                isSelected = true;
+                            }
+                        }
+                        
+                        let moves = validMoves.value;
+                        for i in 0..moves.length() {
+                            if moves[i].toRow == row && moves[i].toCol == col {
+                                isValidMove = true;
+                                break;
+                            }
+                        }
+                        
+                        let squareClass = if isDark {
+                            if isValidMove { "square dark valid-move" } else { "square dark" }
+                        } else {
+                            "square light"
+                        };
+                        
+                        return <div 
+                            class={squareClass}
+                            onclick={() => handleSquareClick(row, col)}
+                        >
+                            {isValidMove ? (
+                                <div class="move-indicator"></div>
+                            ) : null}
+                            
+                            {if let Some(p) = piece {
+                                let pieceClass = if p.player == 1 {
+                                    if isSelected { "piece red-piece selected" } else { "piece red-piece" }
+                                } else {
+                                    if isSelected { "piece black-piece selected" } else { "piece black-piece" }
+                                };
+                                
+                                <div class={pieceClass}>
+                                    {p.isKing ? (
+                                        <div class="crown">♔</div>
+                                    ) : null}
+                                </div>
+                            } else {
+                                null
+                            }}
+                        </div>;
+                    })}
+                </div>
+            )}
+        </div>
+        
+        <div class="footer">
+            <button onclick={resetGame} class="new-game-btn">New Game</button>
+            {mustCapture.value ? (
+                <div class="capture-notice">⚡ Must capture!</div>
+            ) : null}
+        </div>
+    </div>;
+}
+
+style CheckersGame {
+    .game-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        font-family: 'Arial', sans-serif;
+    }
+    
+    .header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    h1 {
+        color: white;
+        font-size: 48px;
+        margin: 0 0 20px 0;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .status {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        min-width: 300px;
+    }
+    
+    .game-over {
+        text-align: center;
+    }
+
+    .game-over h2 {
+        margin: 0 0 10px 0;
+        color: #333;
+        font-size: 28px;
+    }
+
+    .game-over p {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 10px 0 20px 0;
+    }
+
+    .game-over .winner-red {
+        color: #e74c3c;
+    }
+
+    .game-over .winner-black {
+        color: #2c3e50;
+    }
+    
+    .turn-indicator {
+        display: flex;
+        justify-content: space-around;
+        gap: 20px;
+    }
+    
+    .player-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 15px;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        opacity: 0.5;
+    }
+
+    .player-indicator span {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .player-indicator.active {
+        opacity: 1;
+        background: rgba(103, 126, 234, 0.1);
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .player-piece {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .board {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+        backdrop-filter: blur(10px);
+    }
+    
+    .board-row {
+        display: flex;
+    }
+    
+    .square {
+        width: 70px;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+    
+    .square.light {
+        background: #f0d9b5;
+    }
+    
+    .square.dark {
+        background: #b58863;
+    }
+    
+    .square.dark:hover {
+        background: #a07553;
+    }
+    
+    .square.valid-move {
+        background: #7cb342;
+    }
+    
+    .move-indicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.6);
+        position: absolute;
+    }
+    
+    .piece {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    
+    .piece:hover {
+        transform: scale(1.1);
+    }
+    
+    .piece.selected {
+        transform: scale(1.15);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    }
+    
+    .red-piece {
+        background: radial-gradient(circle at 30% 30%, #ff6b6b, #c92a2a);
+        border: 3px solid #8b0000;
+    }
+    
+    .black-piece {
+        background: radial-gradient(circle at 30% 30%, #4a4a4a, #1a1a1a);
+        border: 3px solid #000000;
+    }
+    
+    .crown {
+        font-size: 32px;
+        color: gold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .footer {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .new-game-btn,
+    .reset-btn {
+        padding: 15px 40px;
+        font-size: 18px;
+        font-weight: bold;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+    }
+    
+    .new-game-btn:hover,
+    .reset-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+    
+    .new-game-btn:active,
+    .reset-btn:active {
+        transform: translateY(0);
+    }
+    
+    .capture-notice {
+        padding: 10px 20px;
+        background: #ffd700;
+        color: #8b0000;
+        font-weight: bold;
+        border-radius: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    @media (max-width: 768px) {
+        h1 {
+            font-size: 32px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .square {
+            width: 45px;
+            height: 45px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .piece {
+            width: 38px;
+            height: 38px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .crown {
+            font-size: 24px;
+        }
+    }
+}

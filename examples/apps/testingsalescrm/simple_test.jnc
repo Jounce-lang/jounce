@@ -1,0 +1,11 @@
+component SimpleTest() {
+    let count = signal(42);
+
+    return <div>
+        <h1>Count: {count.value}</h1>
+    </div>;
+}
+
+fn main() {
+    console.log("Simple Test - Starting...");
+}

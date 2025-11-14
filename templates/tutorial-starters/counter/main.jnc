@@ -1,3 +1,5 @@
+// Jounce Example – Verified v0.8.x
+
 // Counter App Template
 // Practice what you learned in the tutorial!
 
@@ -29,21 +31,21 @@ component App() {
 
         <div class="flex gap-4 justify-center">
             <button
-                onClick={decrement}
+                onclick={decrement}
                 class="btn btn-secondary btn-lg"
             >
                 - Decrement
             </button>
 
             <button
-                onClick={reset}
+                onclick={reset}
                 class="btn btn-outline btn-lg"
             >
                 Reset
             </button>
 
             <button
-                onClick={increment}
+                onclick={increment}
                 class="btn btn-primary btn-lg"
             >
                 + Increment

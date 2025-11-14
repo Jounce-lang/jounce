@@ -1,5 +1,7 @@
 # Jounce Utility Class System Design
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Status**: ✅ **COMPLETE - IMPLEMENTED**
 **Sprint**: Phase 7.5 Sprint 3 (Tasks 3.1-3.4)
 **Duration**: ~10 hours implementation (Tasks 3.1-3.4)

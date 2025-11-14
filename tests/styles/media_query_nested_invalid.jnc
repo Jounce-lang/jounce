@@ -1,0 +1,16 @@
+// Negative test: @media nested inside a selector (should fail)
+
+style Panel {
+    .container {
+        padding: 20px;
+
+        // ❌ This should fail with E_STY_002
+        @media (max-width: 600px) {
+            padding: 10px;
+        }
+    }
+}
+
+fn main() {
+    console.log("This should not compile");
+}

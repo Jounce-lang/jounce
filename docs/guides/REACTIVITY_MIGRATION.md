@@ -1,10 +1,15 @@
-# Migrating to Jounce v0.4.0 Reactive
+# Migrating to Jounce v0.4.0+ Reactive
 
-**Version**: v0.4.0 "Reactive"
-**Migrating From**: v0.3.x
+**Version**: v0.8.3 "Enhanced Language Features"
+**Last Updated**: November 7, 2025
+**Migrating From**: v0.3.x to v0.4.0+
 **Difficulty**: Easy to Moderate
 
-This guide helps you adopt reactivity in existing Jounce v0.3.x applications.
+This guide helps you adopt reactivity in existing Jounce v0.3.x applications. Reactivity was introduced in v0.4.0 and remains stable through v0.8.3.
+
+> **Current Reactivity Guide**: See [REACTIVITY_USER_GUIDE.md](./REACTIVITY_USER_GUIDE.md) for complete v0.8.3 API
+> **Quick Start**: See [README.md](../../README.md) for installation
+> **Technical Reference**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for language specification
 
 ---
 

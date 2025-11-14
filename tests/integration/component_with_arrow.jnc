@@ -1,0 +1,24 @@
+// Test arrow function assignments in component bodies
+component ArrowTest() {
+    let count = signal<i32>(0);
+
+    // Arrow function assignments - should be accepted
+    let increment = () => {
+        count.value = count.value + 1;
+    };
+
+    let decrement = () => {
+        count.value = count.value - 1;
+    };
+
+    let reset = () => {
+        count.value = 0;
+    };
+
+    return <div>
+        <p>Count: {count.value}</p>
+        <button onclick={increment}>+</button>
+        <button onclick={decrement}>-</button>
+        <button onclick={reset}>Reset</button>
+    </div>;
+}

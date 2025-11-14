@@ -480,7 +480,7 @@ component LoginForm() {
                 type="email"
                 placeholder="you@company.com"
                 value={email}
-                onInput={(e) => { email.value = e.target.value; }}
+                oninput={(e) => { email.value = e.target.value; }}
             />
         </div>
 
@@ -491,7 +491,7 @@ component LoginForm() {
                     type="text"
                     placeholder="Your Name"
                     value={name}
-                    onInput={(e) => { name.value = e.target.value; }}
+                    oninput={(e) => { name.value = e.target.value; }}
                 />
             </div>
         ) : null}
@@ -502,17 +502,17 @@ component LoginForm() {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onInput={(e) => { password.value = e.target.value; }}
+                oninput={(e) => { password.value = e.target.value; }}
             />
         </div>
 
-        <button class="btn" onClick={handleSubmit} disabled={loading.value}>
+        <button class="btn" onclick={handleSubmit} disabled={loading.value}>
             {loading.value ? "Loading..." : (isRegister.value ? "Register" : "Login")}
         </button>
 
         <button
             class="btn link-btn"
-            onClick={() => { isRegister.value = !isRegister.value; }}
+            onclick={() => { isRegister.value = !isRegister.value; }}
         >
             {isRegister.value ? "Already have an account? Login" : "Don't have an account? Register"}
         </button>
@@ -603,7 +603,7 @@ component CRMDashboard() {
     <div class="dashboard">
         <div class="dashboard-header">
             <h1>Sales Dashboard</h1>
-            <button class="btn logout-btn" onClick={handleLogout}>Logout</button>
+            <button class="btn logout-btn" onclick={handleLogout}>Logout</button>
         </div>
 
         <div class="metrics">
@@ -641,10 +641,10 @@ component CRMDashboard() {
 
                             {deal.status == "open" ? (
                                 <div class="deal-actions">
-                                    <button class="btn won-btn" onClick={() => { handleMarkWon(deal.id); }}>
+                                    <button class="btn won-btn" onclick={() => { handleMarkWon(deal.id); }}>
                                         Mark Won
                                     </button>
-                                    <button class="btn lost-btn" onClick={() => { handleMarkLost(deal.id); }}>
+                                    <button class="btn lost-btn" onclick={() => { handleMarkLost(deal.id); }}>
                                         Mark Lost
                                     </button>
                                 </div>

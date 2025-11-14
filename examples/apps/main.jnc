@@ -1,0 +1,452 @@
+// main.jnc
+// Personal Sales CRM Dashboard (Jounce)
+
+struct Opportunity {
+    id: i32,
+    name: string,
+    stage: string,   // "prospecting" | "proposal" | "negotiation" | "won" | "lost"
+    amount: f64,
+    account: string,
+    closeDate: string,
+}
+
+fn pipeline_amount(opps: Vec<Opportunity>) -> f64 {
+    let mut total = 0.0;
+    for i in 0..opps.len() {
+        let o = opps[i];
+        if o.stage != "won" && o.stage != "lost" {
+            total = total + o.amount;
+        }
+    }
+    return total;
+}
+
+fn biggest_deal(opps: Vec<Opportunity>) -> Option<Opportunity> {
+    if opps.len() == 0 {
+        return None;
+    }
+    let mut max = opps[0];
+    for i in 1..opps.len() {
+        let o = opps[i];
+        if o.amount > max.amount {
+            max = o;
+        }
+    }
+    return Some(max);
+}
+
+fn format_currency(amount: f64) -> string {
+    // super simple formatting – you can swap for better formatting later
+    return "$" + amount.to_string();
+}
+
+component SalesCRM() {
+    // seed data
+    let opportunities = signal<Vec<Opportunity>>(vec![
+        Opportunity { id: 1, name: "Pax8 Expansion", stage: "negotiation", amount: 42000.0, account: "Pax8", closeDate: "2025-12-01" },
+        Opportunity { id: 2, name: "Foresight Renewal", stage: "proposal", amount: 18000.0, account: "Foresight", closeDate: "2025-11-20" },
+        Opportunity { id: 3, name: "Selacloud Net-New", stage: "won", amount: 35000.0, account: "Selacloud", closeDate: "2025-10-05" },
+        Opportunity { id: 4, name: "Under Defense Add-On", stage: "prospecting", amount: 9000.0, account: "Under Defense", closeDate: "2025-11-30" },
+        Opportunity { id: 5, name: "Logically Security Bundle", stage: "lost", amount: 25000.0, account: "Logically", closeDate: "2025-09-15" },
+        Opportunity { id: 6, name: "Avail Tech MDR", stage: "proposal", amount: 52000.0, account: "Avail Tech", closeDate: "2026-01-15" },
+    ]);
+
+    // form state
+    let newName = signal<string>("");
+    let newAmount = signal<string>("");
+    let newStage = signal<string>("prospecting");
+    let newAccount = signal<string>("");
+
+    // derived metrics
+    let pipelineCount = computed<i32>(() => {
+        let list = opportunities.value;
+        let filtered = list.filter((o) => o.stage != "won" && o.stage != "lost");
+        return filtered.len() as i32;
+    });
+
+    let pipelineDollars = computed<f64>(() => {
+        return pipeline_amount(opportunities.value);
+    });
+
+    let closedWonCount = computed<i32>(() => {
+        let won = opportunities.value.filter((o) => o.stage == "won");
+        return won.len() as i32;
+    });
+
+    let closedLostCount = computed<i32>(() => {
+        let lost = opportunities.value.filter((o) => o.stage == "lost");
+        return lost.len() as i32;
+    });
+
+    let conversionRate = computed<f64>(() => {
+        let total = opportunities.value.len() as f64;
+        if total == 0.0 {
+            return 0.0;
+        }
+        let won = closedWonCount.value as f64;
+        return (won / total) * 100.0;
+    });
+
+    let biggestDeal = computed<Option<Opportunity>>(() => {
+        return biggest_deal(opportunities.value);
+    });
+
+    let handleAdd = () => {
+        let name = newName.value.trim();
+        let amtStr = newAmount.value.trim();
+        let account = newAccount.value.trim();
+
+        if name.len() == 0 || amtStr.len() == 0 {
+            return;
+        }
+
+        // basic parse – assumes number like "12000" or "12000.50"
+        let amount = amtStr.parse_f64().unwrap_or(0.0);
+
+        let nextId = (opportunities.value.len() + 1) as i32;
+        let opp = Opportunity {
+            id: nextId,
+            name: name,
+            stage: newStage.value,
+            amount: amount,
+            account: if account.len() > 0 { account } else { "Unassigned" },
+            closeDate: "2026-01-01",
+        };
+
+        opportunities.value = vec![...opportunities.value, opp];
+
+        newName.value = "";
+        newAmount.value = "";
+        newAccount.value = "";
+        newStage.value = "prospecting";
+    };
+
+    return <div class="page">
+        <header class="topbar">
+            <div class="brand">
+                <div class="logo">SC</div>
+                <div>
+                    <h1>Sales CRM</h1>
+                    <p>Personal pipeline view</p>
+                </div>
+            </div>
+            <button class="add-btn" onclick={handleAdd}>+ Add Opportunity</button>
+        </header>
+
+        <div class="content">
+            <section class="metrics">
+                <div class="metric-card primary">
+                    <p class="label">Opportunities in Pipeline</p>
+                    <h2>{pipelineCount.value.to_string()}</h2>
+                    <p class="hint">Active = not won/lost</p>
+                </div>
+                <div class="metric-card">
+                    <p class="label">Dollars in Pipeline</p>
+                    <h2>{format_currency(pipelineDollars.value)}</h2>
+                    <p class="hint">Sum of active opps</p>
+                </div>
+                <div class="metric-card">
+                    <p class="label">Closed Won Deals</p>
+                    <h2>{closedWonCount.value.to_string()}</h2>
+                    <p class="hint">You converted these</p>
+                </div>
+                <div class="metric-card">
+                    <p class="label">Closed Lost Deals</p>
+                    <h2>{closedLostCount.value.to_string()}</h2>
+                    <p class="hint">Improve messaging</p>
+                </div>
+                <div class="metric-card">
+                    <p class="label">Conversion Rate</p>
+                    <h2>{conversionRate.value.to_string()}%</h2>
+                    <p class="hint">won / total</p>
+                </div>
+                <div class="metric-card">
+                    <p class="label">Biggest Deal</p>
+                    {
+                        if let Some(deal) = biggestDeal.value {
+                            <div>
+                                <h2>{format_currency(deal.amount)}</h2>
+                                <p class="hint">{deal.name}</p>
+                            </div>
+                        } else {
+                            <div>
+                                <h2>—</h2>
+                                <p class="hint">No deals yet</p>
+                            </div>
+                        }
+                    }
+                </div>
+            </section>
+
+            <section class="body-grid">
+                <div class="panel">
+                    <h3>Add Opportunity</h3>
+                    <div class="form-field">
+                        <label>Name</label>
+                        <input
+                            value={newName.value}
+                            oninput={(e) => newName.value = e.target.value}
+                            placeholder="Ex: Pax8 Expansion"
+                        />
+                    </div>
+                    <div class="form-field">
+                        <label>Amount ($)</label>
+                        <input
+                            value={newAmount.value}
+                            oninput={(e) => newAmount.value = e.target.value}
+                            placeholder="42000"
+                        />
+                    </div>
+                    <div class="form-field">
+                        <label>Account</label>
+                        <input
+                            value={newAccount.value}
+                            oninput={(e) => newAccount.value = e.target.value}
+                            placeholder="Customer name"
+                        />
+                    </div>
+                    <div class="form-field">
+                        <label>Stage</label>
+                        <select value={newStage.value} onchange={(e) => newStage.value = e.target.value}>
+                            <option value="prospecting">Prospecting</option>
+                            <option value="proposal">Proposal</option>
+                            <option value="negotiation">Negotiation</option>
+                            <option value="won">Closed Won</option>
+                            <option value="lost">Closed Lost</option>
+                        </select>
+                    </div>
+                    <button class="full-btn" onclick={handleAdd}>Create</button>
+                </div>
+
+                <div class="panel">
+                    <h3>All Opportunities</h3>
+                    <table class="opps-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Account</th>
+                                <th>Stage</th>
+                                <th>Amount</th>
+                                <th>Close</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {opportunities.value.map((o) =>
+                                <tr class={o.stage}>
+                                    <td>{o.name}</td>
+                                    <td>{o.account}</td>
+                                    <td class={"stage " + o.stage}>{o.stage}</td>
+                                    <td>{format_currency(o.amount)}</td>
+                                    <td>{o.closeDate}</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>;
+}
+
+style SalesCRM {
+    .page {
+        min-height: 100vh;
+        background: #0f172a;
+        color: #fff;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 32px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        background: rgba(15,23,42,0.7);
+        backdrop-filter: blur(10px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .brand {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+    }
+
+    .logo {
+        width: 38px;
+        height: 38px;
+        border-radius: 9999px;
+        background: linear-gradient(135deg, #38bdf8, #6366f1);
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+    }
+
+    .brand h1 {
+        font-size: 18px;
+        margin: 0;
+    }
+
+    .brand p {
+        margin: 0;
+        font-size: 13px;
+        opacity: 0.7;
+    }
+
+    .add-btn {
+        background: #38bdf8;
+        border: none;
+        color: #0f172a;
+        font-weight: 600;
+        padding: 9px 18px;
+        border-radius: 9999px;
+        cursor: pointer;
+    }
+
+    .content {
+        padding: 24px 32px 40px 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .metrics {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(150px, 1fr));
+        gap: 16px;
+    }
+
+    .metric-card {
+        background: rgba(15,23,42,0.4);
+        border: 1px solid rgba(255,255,255,0.03);
+        border-radius: 14px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .metric-card.primary {
+        background: radial-gradient(circle at top, #38bdf8 0%, rgba(15,23,42,0.1) 80%);
+        color: #0f172a;
+    }
+
+    .metric-card .label {
+        font-size: 13px;
+        opacity: 0.65;
+    }
+
+    .metric-card h2 {
+        font-size: 24px;
+        margin: 0;
+    }
+
+    .metric-card .hint {
+        font-size: 12px;
+        opacity: 0.5;
+    }
+
+    .body-grid {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 20px;
+        align-items: flex-start;
+    }
+
+    .panel {
+        background: rgba(15,23,42,0.4);
+        border: 1px solid rgba(255,255,255,0.03);
+        border-radius: 16px;
+        padding: 16px 16px 20px 16px;
+    }
+
+    .panel h3 {
+        margin-top: 0;
+        margin-bottom: 14px;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+
+    .form-field label {
+        font-size: 13px;
+        opacity: 0.7;
+    }
+
+    input, select {
+        background: rgba(15,23,42,0.2);
+        border: 1px solid rgba(255,255,255,0.03);
+        border-radius: 10px;
+        padding: 7px 10px;
+        color: #fff;
+        font-size: 13px;
+    }
+
+    .full-btn {
+        width: 100%;
+        background: #6366f1;
+        border: none;
+        color: #fff;
+        padding: 8px 0;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 4px;
+    }
+
+    .opps-table {
+        width: 100%;
+        border-spacing: 0;
+        border-collapse: separate;
+    }
+
+    .opps-table th, .opps-table td {
+        text-align: left;
+        padding: 8px 6px;
+        font-size: 13px;
+    }
+
+    .opps-table thead tr {
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .opps-table tbody tr:nth-child(odd) {
+        background: rgba(15,23,42,0.1);
+    }
+
+    .stage {
+        border-radius: 9999px;
+        padding: 3px 10px;
+        text-transform: capitalize;
+        display: inline-block;
+        font-size: 12px;
+    }
+
+    .stage.prospecting { background: rgba(99,102,241,0.15); }
+    .stage.proposal { background: rgba(56,189,248,0.15); }
+    .stage.negotiation { background: rgba(251,191,36,0.15); }
+    .stage.won { background: rgba(22,163,74,0.15); }
+    .stage.lost { background: rgba(248,113,113,0.15); }
+
+    @media (max-width: 1100px) {
+        .metrics {
+            grid-template-columns: repeat(3, minmax(150px, 1fr));
+        }
+        .body-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+}
+
+component App() {
+    return <SalesCRM />;
+}

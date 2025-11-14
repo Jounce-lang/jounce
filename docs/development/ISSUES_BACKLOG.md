@@ -1,5 +1,7 @@
 # Issues Backlog
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 Issues discovered but not yet fixed, prioritized for future sprints.
 
 **Last Updated**: 2025-10-21

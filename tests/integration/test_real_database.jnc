@@ -96,8 +96,8 @@ component DatabaseApp() {
                 style="padding: 0.5rem; margin: 0.5rem 0; width: 200px;"
             />
             <br />
-            <button onClick={handleCreate}>Add User</button>
-            <button onClick={loadUsers}>Refresh</button>
+            <button onclick={handleCreate}>Add User</button>
+            <button onclick={loadUsers}>Refresh</button>
         </div>
 
         <div style="background: white; padding: 1rem; border: 1px solid #ddd;">

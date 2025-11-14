@@ -1,5 +1,7 @@
 # Jounce Parser Limitations
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 This document outlines the current state of the Jounce parser, what works, what doesn't, and what would be needed to implement full JSX support.
 
 ## Current State: What Works ✅

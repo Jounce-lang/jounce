@@ -1,9 +1,15 @@
 # Jounce Reactivity System Design Specification
 
-**Version**: v0.4.0-draft
-**Status**: Design Phase
-**Author**: Claude & Jordan Hill
-**Date**: October 24, 2025
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
+**Version**: v0.8.3 "Enhanced Language Features" (Original Design: v0.4.0-draft)
+**Last Updated**: November 7, 2025
+**Status**: ✅ Implemented (Historical Design Document)
+**Original Date**: October 24, 2025
+
+> **Note**: This is the original design specification from v0.4.0. The reactivity system is now fully implemented and production ready.
+> **Current Guide**: See [REACTIVITY_USER_GUIDE.md](../guides/REACTIVITY_USER_GUIDE.md) for usage guide
+> **API Reference**: See [REACTIVITY_API.md](../api/REACTIVITY_API.md) for complete API
 
 ---
 

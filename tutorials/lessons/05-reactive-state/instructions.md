@@ -43,8 +43,8 @@ A **computed value** is a reactive value that's derived from other reactive valu
 
 **Without Computed** (manual updates):
 ```jounce
-let count = createSignal(0);
-let doubled = createSignal(0);
+let count = signal(0);
+let doubled = signal(0);
 
 // You'd have to manually update doubled every time!
 onClick={() => {
@@ -55,7 +55,7 @@ onClick={() => {
 
 **With Computed** (automatic updates):
 ```jounce
-let count = createSignal(0);
+let count = signal(0);
 let doubled = computed(() => count.value * 2);
 
 // Doubled updates automatically! 🎉
@@ -65,8 +65,8 @@ onClick(() => count.set(count.value + 1))
 ### How It Works
 
 ```jounce
-let firstName = createSignal("Alice");
-let lastName = createSignal("Smith");
+let firstName = signal("Alice");
+let lastName = signal("Smith");
 
 // This automatically updates when either name changes!
 let fullName = computed(() => firstName.value + " " + lastName.value);
@@ -93,7 +93,7 @@ All automatic!
 
 ### Temperature Converter
 ```jounce
-let celsius = createSignal(0);
+let celsius = signal(0);
 let fahrenheit = computed(() => (celsius.value * 9/5) + 32);
 
 // Change celsius, fahrenheit updates automatically!
@@ -101,14 +101,14 @@ let fahrenheit = computed(() => (celsius.value * 9/5) + 32);
 
 ### Shopping Cart Total
 ```jounce
-let quantity = createSignal(1);
-let price = createSignal(29.99);
+let quantity = signal(1);
+let price = signal(29.99);
 let total = computed(() => quantity.value * price.value);
 ```
 
 ### Form Validation
 ```jounce
-let email = createSignal("");
+let email = signal("");
 let isValid = computed(() => email.value.includes("@"));
 ```
 

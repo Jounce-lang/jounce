@@ -1,6 +1,6 @@
 // App 23: Multi-line JSX
 component App() {
-    let items = createSignal([1, 2, 3]);
+    let items = signal([1, 2, 3]);
 
     <div>
         {items.value.map((item) => {

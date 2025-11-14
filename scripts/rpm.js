@@ -16,8 +16,8 @@ const VERSION = '1.0.0';
 const REGISTRY_DIR = path.join(process.cwd(), '.jncs');
 const PACKAGES_DIR = path.join(REGISTRY_DIR, 'packages');
 const CACHE_DIR = path.join(REGISTRY_DIR, 'cache');
-const LOCK_FILE = 'raven.lock';
-const MANIFEST_FILE = 'raven.json';
+const LOCK_FILE = 'jounce.lock';
+const MANIFEST_FILE = 'jounce.json';
 
 class PackageManager {
     constructor() {
@@ -34,7 +34,7 @@ class PackageManager {
 
         // Check if already initialized
         if (fs.existsSync(MANIFEST_FILE)) {
-            console.log('⚠️  Project already initialized (raven.json exists)');
+            console.log('⚠️  Project already initialized (jounce.json exists)');
             return;
         }
 
@@ -54,11 +54,11 @@ class PackageManager {
             dependencies: {},
             devDependencies: {},
             scripts: {
-                dev: 'raven dev',
-                build: 'raven build',
-                test: 'raven test'
+                dev: 'jnc dev',
+                build: 'jnc build',
+                test: 'jnc test'
             },
-            ravens: {
+            jounce: {
                 version: '>=0.1.0'
             }
         };
@@ -99,11 +99,11 @@ dist/
         console.log('   src/main.jnc');
         console.log('   tests/');
         console.log('   examples/');
-        console.log('   raven.json\n');
+        console.log('   jounce.json\n');
         console.log('🚀 Next steps:');
-        console.log('   raven install <package>  - Install a package');
-        console.log('   raven dev                - Start development server');
-        console.log('   raven build              - Build for production\n');
+        console.log('   jnc install <package>  - Install a package');
+        console.log('   jnc dev                - Start development server');
+        console.log('   jnc build              - Build for production\n');
     }
 
     /**
@@ -213,7 +213,7 @@ dist/
         for (const pkg of results) {
             console.log(`📦 ${pkg.name}@${pkg.version}`);
             console.log(`   ${pkg.description}`);
-            console.log(`   Install: raven install ${pkg.name}\n`);
+            console.log(`   Install: jnc install ${pkg.name}\n`);
         }
     }
 
@@ -281,7 +281,7 @@ dist/
         console.log(`Author:      ${pkg.author || 'Jounce Team'}`);
         console.log(`License:     ${pkg.license || 'MIT'}`);
         console.log();
-        console.log(`Install:     raven install ${pkg.name}`);
+        console.log(`Install:     jnc install ${pkg.name}`);
         console.log();
     }
 
@@ -305,7 +305,7 @@ dist/
 
     _loadManifest() {
         if (!fs.existsSync(MANIFEST_FILE)) {
-            console.error('❌ No raven.json found. Run "raven init" first.');
+            console.error('❌ No jounce.json found. Run "jnc init" first.');
             process.exit(1);
         }
 
@@ -377,7 +377,7 @@ dist/
 
         // Write package.json
         fs.writeFileSync(
-            path.join(packageDir, 'raven.json'),
+            path.join(packageDir, 'jounce.json'),
             JSON.stringify(pkg, null, 2)
         );
 
@@ -559,7 +559,7 @@ function printHelp() {
 🎯 Jounce Package Manager v${VERSION}
 
 Usage:
-  raven <command> [options]
+  jnc <command> [options]
 
 Commands:
   init                    Initialize new Jounce project
@@ -572,13 +572,13 @@ Commands:
   help                    Show this help message
 
 Examples:
-  raven init
-  raven install @ravens/http-client
-  raven install --dev @ravens/test-utils
-  raven list
-  raven search http
-  raven info @ravens/ui-components
-  raven publish
+  jnc init
+  jnc install @ravens/http-client
+  jnc install --dev @ravens/test-utils
+  jnc list
+  jnc search http
+  jnc info @ravens/ui-components
+  jnc publish
 
 Options:
   --version, -v           Show version
@@ -656,7 +656,7 @@ async function main() {
 
             default:
                 console.error(`❌ Unknown command: ${command}`);
-                console.log('Run "raven help" for usage information');
+                console.log('Run "jnc help" for usage information');
                 process.exit(1);
         }
     } catch (error) {

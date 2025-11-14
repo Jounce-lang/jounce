@@ -1,5 +1,7 @@
 # Jounce Standard Library Tutorial
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Welcome to the Jounce Standard Library Tutorial!**
 
 This hands-on guide will teach you how to use Jounce's powerful standard library to build real applications. We'll start with simple examples and gradually build more complex features.

@@ -1,5 +1,7 @@
 # Sprint 9: Critical Bug Fixes - Complete ✅
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-21
 **Duration**: ~2 hours
 **Sprint Goal**: Fix critical parser and language blockers preventing real-world application compilation

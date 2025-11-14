@@ -1,5 +1,7 @@
 # Task 3 Complete: Documentation & Git Cleanup
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-21
 **Task**: Organize documentation and clean git repository
 **Status**: ✅ **COMPLETE**

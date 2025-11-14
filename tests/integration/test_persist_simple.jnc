@@ -20,8 +20,8 @@ component Counter() {
     return <div>
         <h1>Persistent Counter</h1>
         <p>Count: {count.value}</p>
-        <button onClick={increment}>Increment</button>
-        <button onClick={decrement}>Decrement</button>
-        <button onClick={reset}>Reset</button>
+        <button onclick={increment}>Increment</button>
+        <button onclick={decrement}>Decrement</button>
+        <button onclick={reset}>Reset</button>
     </div>;
 }

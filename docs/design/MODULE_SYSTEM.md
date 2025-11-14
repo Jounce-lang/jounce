@@ -1,5 +1,7 @@
 # Jounce Module System Documentation
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Status**: Phase 11 - Module System Implementation (5/11 tasks complete)
 **Created**: October 24, 2025
 **Last Updated**: October 24, 2025

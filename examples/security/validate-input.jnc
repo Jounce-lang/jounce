@@ -58,7 +58,7 @@ fn create_product(data: ProductData) -> Product {
 fn create_users_bulk(users: Array<UserData>) -> Array<User> {
     let created_users = [];
 
-    for (let user_data in users) {
+    for user_data in users {
         let user = create_user(user_data);
         created_users.push(user);
     }
@@ -292,7 +292,7 @@ fn handle_validation_example() {
     } catch (error) {
         if (error instanceof ValidationError) {
             console.log("Validation failed:");
-            for (let err in error.errors) {
+            for err in error.errors {
                 console.log("-", err.field, ":", err.message);
             }
             // Output:

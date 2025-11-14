@@ -2,7 +2,7 @@
 // Signals are reactive variables that automatically update the UI
 
 // TODO: Change "World" to your actual name
-let name = createSignal("World");
+let name = signal("World");
 
 component App() {
     <div class="container p-8">

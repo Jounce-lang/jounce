@@ -1,5 +1,7 @@
 # Task 5 Complete: LSP & Developer Experience
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-21
 **Task**: Enhance Language Server Protocol (LSP) and developer tooling
 **Status**: ✅ **COMPLETE**

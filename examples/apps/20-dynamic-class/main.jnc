@@ -1,6 +1,6 @@
 // App 20: Dynamic class names
 component App() {
-    let active = createSignal(true);
+    let active = signal(true);
 
     <div>
         <button class="btn {active.value ? 'active' : 'inactive'}">

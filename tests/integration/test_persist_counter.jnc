@@ -30,9 +30,9 @@ component CounterApp() {
     return <div class="CounterApp">
         <h1>Persistent Counter</h1>
         <p>Count: {count.value}</p>
-        <button onClick={() => count.value = count.value + 1}>Increment</button>
-        <button onClick={() => count.value = count.value - 1}>Decrement</button>
-        <button onClick={() => count.value = 0}>Reset</button>
+        <button onclick={() => count.value = count.value + 1}>Increment</button>
+        <button onclick={() => count.value = count.value - 1}>Decrement</button>
+        <button onclick={() => count.value = 0}>Reset</button>
         <p><em>Try refreshing the page - your count persists!</em></p>
     </div>;
 }

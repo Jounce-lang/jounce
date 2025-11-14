@@ -1,495 +1,522 @@
 # Jounce Full-Stack Development Guide
 
+**Version**: v0.8.3
+**Last Updated**: November 7, 2025
+
+> **Canonical Reference**: If this document conflicts with [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md), the spec wins. Current spec: v0.8.3 (2025-11-07).
+
+---
+
 ## Overview
 
-Jounce's compiler bridge enables you to write full-stack applications in a single `.jnc` file. Using `@server` and `@client` annotations, you can mark where code runs, and the compiler automatically:
+Jounce enables full-stack development in a single `.jnc` file. Using `@server` annotations, you mark functions that run only on the server, while client-side components run in the browser. The compiler automatically handles code splitting and RPC generation.
 
-- Splits code into server and client bundles
-- Generates type-safe RPC stubs for client-server communication
-- Outputs working `server.js`, `client.js`, and `app.wasm` files
-- Handles shared utility functions on both sides
+> **Technical Reference**: See [JOUNCE_SPEC.md § Execution Model](../../JOUNCE_SPEC.md#execution-rules) for complete details on server vs client execution.
 
-## Quick Start
+---
 
-### 1. Create a New File
+## Current Status (v0.8.3)
 
-Create `my-app.jnc`:
+### ✅ Implemented (v0.1.0+)
+- **@server Functions**: Server-only function execution with `@server` annotation
+- **Automatic RPC**: Client-to-server function calls (transparent HTTP POST)
+- **Code Splitting**: Separate server.js and client.js bundles
+- **Type-Safe Communication**: Types preserved across client/server boundary
+- **Components**: Client-side reactive components with JSX
+- **Styling**: Scoped CSS with `style` blocks
+- **State Management**: Signals, computed values, effects
+- **Module System**: Multi-file projects with imports
 
-```raven
-// Server-side functions (run on Node.js)
-@server
-fn get_todos() -> Vec<String> {
-    return vec!["Buy milk", "Walk dog", "Write code"];
+### 📋 Planned (v0.10.0+)
+- **Streaming**: Server→Client streaming responses
+- **WebSocket RPC**: Bidirectional real-time communication
+- **Middleware**: Custom RPC interceptors
+- **Caching**: Built-in RPC response caching
+
+---
+
+## Basic Architecture
+
+### Simple Counter (Client-Only)
+
+```jounce
+component Counter() {
+    let count = signal<i32>(0);
+
+    return <div>
+        <h1>Count: {count.value}</h1>
+        <button onclick={() => count.value++}>+1</button>
+    </div>;
 }
 
-@server
-fn add_todo(title: String) -> bool {
-    // Database logic here
-    return true;
-}
+style Counter {
+    padding: 20px;
+    text-align: center;
 
-// Client-side functions (run in browser)
-@client
-fn render_todo_list(todos: Vec<String>) -> String {
-    return "<ul><li>" + todos.join("</li><li>") + "</li></ul>";
-}
+    button {
+        font-size: 20px;
+        padding: 10px 20px;
+        cursor: pointer;
+    }
 
-@client
-fn handle_add_click() {
-    let title = prompt("Enter todo:");
-    add_todo(title);  // Automatically becomes an RPC call!
-}
-
-// Shared functions (available on both sides)
-fn format_date(timestamp: i32) -> String {
-    return "2025-01-01";
-}
-
-fn validate_input(text: String) -> bool {
-    return text.length() > 0;
-}
-```
-
-### 2. Compile
-
-```bash
-raven compile my-app.jnc
-
-# With minification for production
-raven compile my-app.jnc --minify
-
-# Custom output directory
-raven compile my-app.jnc --output build/
-```
-
-Output:
-```
-🔥 Compiling full-stack application: my-app.jnc
-   📦 Output: server.js + client.js + app.wasm
-
-   Parsing...
-   ✓ Parsed 6 statements
-   Generating JavaScript bundles...
-   ✓ Split: 2 server, 2 client, 2 shared functions
-   Compiling to WebAssembly...
-   ✓ Generated WASM module (1024 bytes)
-
-   Writing output files...
-   ✓ dist/server.js
-   ✓ dist/client.js
-   ✓ dist/app.wasm
-   ✓ dist/index.html
-
-✨ Compilation complete!
-   Run: cd dist && node server.js
-```
-
-### 3. Run
-
-```bash
-cd dist
-node server.js
-```
-
-Your full-stack app is now running! Open `http://localhost:3000` in your browser.
-
-## Annotations
-
-### `@server`
-
-Marks functions that run only on the server (Node.js).
-
-**Use cases:**
-- Database queries
-- File system access
-- API calls to external services
-- Authentication/authorization
-- Business logic that shouldn't be exposed to clients
-
-**Example:**
-
-```raven
-@server
-fn get_user_from_db(id: i32) -> User {
-    let db = Database::connect("postgres://...");
-    return db.query("SELECT * FROM users WHERE id = ?", id);
-}
-
-@server
-fn send_email(to: String, subject: String, body: String) -> bool {
-    // Email sending logic
-    return true;
-}
-```
-
-### `@client`
-
-Marks functions that run only in the browser.
-
-**Use cases:**
-- DOM manipulation
-- Event handlers
-- UI rendering
-- Browser-specific APIs (localStorage, etc.)
-- Client-side validation
-
-**Example:**
-
-```raven
-@client
-fn render_user_card(user: User) -> String {
-    return `
-        <div class="user-card">
-            <h2>${user.name}</h2>
-            <p>${user.email}</p>
-        </div>
-    `;
-}
-
-@client
-fn handle_login_click() {
-    let username = document.getElementById("username").value;
-    let password = document.getElementById("password").value;
-
-    // This automatically becomes an RPC call
-    let result = login(username, password);
-    if (result.success) {
-        window.location = "/dashboard";
+    button:hover {
+        background: #007bff;
+        color: white;
     }
 }
 ```
 
-### No Annotation (Shared)
+**Compile**:
+```bash
+jnc compile counter.jnc
+cd dist && node server.js
+# Open http://localhost:3000
+```
 
-Functions without annotations are available on **both** server and client.
+---
 
-**Use cases:**
-- Utility functions
-- Data validation
-- Formatting functions
-- Pure business logic with no side effects
+## Server Functions (Available Now)
 
-**Example:**
+### Declaring Server Functions
 
-```raven
-fn format_currency(amount: f64) -> String {
-    return "$" + amount.to_string();
+Mark functions with `@server` to run them exclusively on the server:
+
+```jounce
+@server
+fn get_users() -> Vec<User> {
+    // Database query - runs only on server
+    return database.query("SELECT * FROM users");
 }
 
-fn validate_email(email: String) -> bool {
-    return email.contains("@") && email.contains(".");
-}
+@server
+fn create_user(name: string, email: string) -> Result<User, string> {
+    // Validation and creation - server-only
+    if !is_valid_email(email) {
+        return Err("Invalid email");
+    }
 
-fn calculate_tax(price: f64, rate: f64) -> f64 {
-    return price * rate;
+    return database.insert_user(name, email);
 }
 ```
 
-## Automatic RPC Generation
+### Client Components Calling Server Functions
 
-When you call a `@server` function from `@client` code, Jounce automatically:
+Components run in the browser and can call server functions via automatic RPC:
 
-1. Generates an async client stub
+```jounce
+component UserList() {
+    let users = signal<Vec<User>>(vec![]);
+    let loading = signal<bool>(true);
+
+    onMount(() => {
+        // Automatic RPC call to server
+        let result = get_users();
+        users.value = result;
+        loading.value = false;
+    });
+
+    return <div>
+        <h2>Users</h2>
+        {loading.value ? (
+            <p>Loading...</p>
+        ) : (
+            users.value.map((user) =>
+                <div class="user-card">
+                    <h3>{user.name}</h3>
+                    <p>{user.email}</p>
+                </div>
+            )
+        )}
+    </div>;
+}
+```
+
+### Automatic RPC Generation
+
+When you call a `@server` function from client code, Jounce automatically:
+
+1. Generates an RPC stub on the client
 2. Serializes arguments to JSON
-3. Makes an HTTP POST request to `/_rpc/function_name`
+3. Makes HTTP POST request to `/rpc/<function_name>`
 4. Deserializes the response
 5. Returns the result
 
-### Example
-
-**Source code:**
-
-```raven
+**Source**:
+```jounce
 @server
-fn get_user(id: i32) -> User {
-    // Server logic
+fn get_user(id: i32) -> Result<User, string> {
+    return database.find_user(id);
 }
 
-@client
-fn show_profile(user_id: i32) {
-    let user = get_user(user_id);  // Looks like a normal call!
-    display_user(user);
-}
-```
+component Profile(props: { userId: i32 }) {
+    let user = get_user(props.userId);  // Looks like normal call!
 
-**Generated client.js:**
-
-```javascript
-// Auto-generated RPC client stub
-export async function get_user(id) {
-    return await client.call('get_user', [id]);
-}
-
-// Your client code (automatically awaits the RPC)
-export function show_profile(user_id) {
-    let user = await get_user(user_id);
-    display_user(user);
+    match user {
+        Ok(u) => return <div>{u.name}</div>,
+        Err(e) => return <div class="error">{e}</div>,
+    }
 }
 ```
 
-**Generated server.js:**
-
+**Generated client.js**:
 ```javascript
-// Auto-generated RPC handler
-server.rpc('get_user', async (params) => {
-    const [id] = params;
-    return await get_user(id);
+function get_user(id) {
+    return fetch('/rpc/get_user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    }).then(r => r.json());
+}
+```
+
+**Generated server.js**:
+```javascript
+app.post('/rpc/get_user', async (req, res) => {
+    const { id } = req.body;
+    const result = get_user(id);
+    res.json(result);
 });
 ```
 
-## Type Safety
-
-Jounce preserves type information through the compilation process:
-
-| Jounce Type | TypeScript/JS Type |
-|----------------|-------------------|
-| `i32`, `i64`, `u32`, `u64`, `f32`, `f64` | `number` |
-| `String` | `string` |
-| `bool` | `boolean` |
-| `Vec<T>` | `Array<T>` |
-| `Option<T>` | `T \| null` |
-| `(A, B, C)` | `[A, B, C]` |
-
-**Example:**
-
-```raven
-@server
-fn get_products(category: String, limit: i32) -> Vec<Product> {
-    // Returns array of products
-}
-```
-
-**Generated TypeScript types:**
-
-```typescript
-export function get_products(category: string, limit: number): Promise<Array<Product>>;
-```
+---
 
 ## Best Practices
 
-### 1. Keep Shared Functions Pure
+### 1. Separate Concerns
 
-Shared functions should be pure (no side effects) since they run on both server and client:
+Keep client and server code organized even in one file:
 
-```raven
-// ✅ Good: Pure function
-fn calculate_total(items: Vec<Item>) -> f64 {
-    return items.map(|item| item.price).sum();
-}
+```jounce
+// ========== SERVER FUNCTIONS ==========
 
-// ❌ Bad: Side effects (use @server or @client instead)
-fn log_error(msg: String) {
-    console.log(msg);  // Won't work the same on both sides!
-}
-```
-
-### 2. Minimize RPC Calls
-
-Each `@server` function call from client code is a network request. Batch operations when possible:
-
-```raven
-// ✅ Good: Single RPC call
 @server
-fn get_dashboard_data() -> DashboardData {
-    return DashboardData {
-        users: get_users(),
-        posts: get_posts(),
-        stats: get_stats(),
-    };
+fn get_posts() -> Vec<Post> {
+    return database.query("SELECT * FROM posts");
 }
 
-// ❌ Bad: Three separate RPC calls
-@client
-fn load_dashboard() {
-    let users = get_users();   // RPC call 1
-    let posts = get_posts();   // RPC call 2
-    let stats = get_stats();   // RPC call 3
+@server
+fn create_post(title: string, body: string) -> Result<Post, string> {
+    return database.insert_post(title, body);
+}
+
+// ========== SHARED UTILITIES ==========
+
+fn validate_post_title(title: string) -> bool {
+    return title.len() > 0 && title.len() < 100;
+}
+
+// ========== CLIENT COMPONENTS ==========
+
+component PostList() {
+    let posts = get_posts();
+    return <div>...</div>;
 }
 ```
 
-### 3. Validate on Both Sides
+### 2. Type Safety
 
-Use shared validation functions, but always validate on the server too:
+Use shared types for client/server communication:
 
-```raven
+```jounce
+struct User {
+    id: i32,
+    name: string,
+    email: string,
+}
+
+@server
+fn get_user(id: i32) -> Result<User, string> {
+    // Server implementation
+    return database.find_user(id);
+}
+
+component UserProfile(props: { userId: i32 }) {
+    let result = get_user(props.userId);
+
+    match result {
+        Ok(user) => return <div>{user.name}</div>,
+        Err(e) => return <div class="error">{e}</div>,
+    }
+}
+```
+
+### 3. Error Handling
+
+Always handle RPC errors gracefully:
+
+```jounce
+component DataLoader() {
+    let data = signal<Result<Vec<Item>, string>>(Err("Not loaded"));
+    let loading = signal<bool>(true);
+
+    onMount(() => {
+        loading.value = true;
+        let result = fetch_data();  // @server function
+        data.value = result;
+        loading.value = false;
+    });
+
+    if loading.value {
+        return <div>Loading...</div>;
+    }
+
+    match data.value {
+        Ok(items) => return <div>{items.map((item) => <div>{item.name}</div>)}</div>,
+        Err(error) => return <div class="error">{error}</div>,
+    }
+}
+```
+
+### 4. Validate on Both Sides
+
+```jounce
 // Shared validation
-fn validate_email(email: String) -> bool {
+fn is_valid_email(email: string) -> bool {
     return email.contains("@");
 }
 
-@client
-fn handle_signup() {
-    let email = get_email_input();
-    if (!validate_email(email)) {
-        show_error("Invalid email");
-        return;
-    }
-    register_user(email);
+// Client validates before sending
+component SignupForm() {
+    let email = signal<string>("");
+    let error = signal<string>("");
+
+    let handle_submit = () => {
+        if !is_valid_email(email.value) {
+            error.value = "Invalid email";
+            return;
+        }
+
+        let result = register_user(email.value);
+        match result {
+            Ok(user) => console.log("Success"),
+            Err(e) => error.value = e,
+        }
+    };
+
+    return <form onsubmit={(e) => { e.preventDefault(); handle_submit(); }}>
+        <input
+            type="email"
+            value={email.value}
+            oninput={(e) => email.value = e.target.value}
+        />
+        <button type="submit">Sign Up</button>
+        {error.value.len() > 0 ? <div class="error">{error.value}</div> : null}
+    </form>;
 }
 
+// Server validates again (never trust client!)
 @server
-fn register_user(email: String) -> Result<User, String> {
-    // ALWAYS validate on server too!
-    if (!validate_email(email)) {
+fn register_user(email: string) -> Result<User, string> {
+    if !is_valid_email(email) {
         return Err("Invalid email");
     }
     // Create user...
+    return database.create_user(email);
 }
 ```
 
-### 4. Handle Errors Gracefully
-
-RPC calls can fail due to network issues. Always handle errors:
-
-```raven
-@client
-async fn load_user_profile(id: i32) {
-    try {
-        let user = await get_user(id);
-        display_user(user);
-    } catch (error) {
-        show_error("Failed to load user. Please try again.");
-        console.error(error);
-    }
-}
-```
-
-### 5. Use Minification for Production
-
-Always compile with `--minify` for production deployments:
-
-```bash
-raven compile app.jnc --minify --output dist/
-```
-
-This reduces JavaScript bundle sizes by 30-50% on average.
-
-## Project Structure
-
-### Recommended Structure
-
-```
-my-project/
-├── src/
-│   ├── main.jnc          # Main application file
-│   ├── models/
-│   │   ├── user.jnc      # Data models
-│   │   └── post.jnc
-│   ├── server/
-│   │   ├── database.jnc  # Server-only code
-│   │   └── auth.jnc
-│   └── client/
-│       ├── components.jnc # Client-only code
-│       └── ui.jnc
-├── dist/                    # Compiled output
-│   ├── server.js
-│   ├── client.js
-│   ├── app.wasm
-│   └── index.html
-├── jounce.toml              # Package manifest
-└── README.md
-```
-
-### Compiling Multiple Files
-
-Compile each file separately or combine them:
-
-```bash
-# Compile all files
-for file in src/**/*.jnc; do
-    raven compile $file --output dist/
-done
-
-# Or use the build command
-raven build --release
-```
+---
 
 ## CLI Commands
 
-### `raven compile <file>`
-
-Compiles a `.jnc` file to full-stack JavaScript.
-
-**Options:**
-- `-o, --output <dir>` - Output directory (default: `dist/`)
-- `-m, --minify` - Enable JavaScript minification
-
-**Examples:**
+### Current (v0.8.3)
 
 ```bash
-# Basic compilation
-raven compile app.jnc
+# Compile .jnc file
+jnc compile main.jnc
 
-# With minification
-raven compile app.jnc --minify
+# Initialize new project
+jnc init my-app
 
-# Custom output
-raven compile app.jnc --output build/
+# Package management
+jnc pkg add jounce-http
+jnc pkg install
+jnc pkg publish
 ```
 
-### `raven dev`
-
-Start development server with hot module replacement:
+### Planned (v0.10.0+)
 
 ```bash
-raven dev --port 3000
+# Development server with hot reload
+jnc dev main.jnc
+
+# Production build
+jnc build --release
+
+# Test runner
+jnc test
 ```
 
-### `raven build`
+---
 
-Build project for production:
+## Project Structure
+
+### Recommended Layout
+
+```
+my-app/
+├── main.jnc              # Entry point
+├── components/
+│   ├── header.jnc
+│   ├── footer.jnc
+│   └── layout.jnc
+├── services/
+│   └── api.jnc           # Server functions
+├── types/
+│   └── models.jnc        # Shared types
+└── utils/
+    └── validation.jnc    # Shared utilities
+```
+
+### Compile All Files
 
 ```bash
-raven build --release
+# Compile entry point
+jnc compile main.jnc
+
+# Or use a build script
+for file in **/*.jnc; do
+    jnc compile "$file"
+done
 ```
 
-### `raven serve`
+---
 
-Serve compiled application:
+## Full Example: Todo App with Server
 
-```bash
-raven serve --port 8000 --open
+```jounce
+// ========== TYPES ==========
+
+struct Todo {
+    id: i32,
+    text: string,
+    completed: bool,
+}
+
+// ========== SERVER FUNCTIONS ==========
+
+@server
+fn get_todos() -> Vec<Todo> {
+    return database.query("SELECT * FROM todos");
+}
+
+@server
+fn create_todo(text: string) -> Result<Todo, string> {
+    if text.len() == 0 {
+        return Err("Todo text cannot be empty");
+    }
+    return database.insert_todo(text);
+}
+
+@server
+fn toggle_todo(id: i32) -> Result<Todo, string> {
+    return database.toggle_todo(id);
+}
+
+// ========== CLIENT COMPONENTS ==========
+
+component TodoApp() {
+    let todos = signal<Vec<Todo>>(vec![]);
+    let input = signal<string>("");
+
+    onMount(() => {
+        todos.value = get_todos();
+    });
+
+    let add_todo = () => {
+        let result = create_todo(input.value);
+        match result {
+            Ok(todo) => {
+                todos.value = vec![...todos.value, todo];
+                input.value = "";
+            },
+            Err(e) => console.log("Error: " + e),
+        }
+    };
+
+    let toggle = (id: i32) => {
+        let result = toggle_todo(id);
+        match result {
+            Ok(updated) => {
+                todos.value = todos.value.map((t) => {
+                    if t.id == id { return updated; }
+                    return t;
+                });
+            },
+            Err(e) => console.log("Error: " + e),
+        }
+    };
+
+    return <div>
+        <h1>My Todos</h1>
+        <div>
+            <input
+                type="text"
+                value={input.value}
+                oninput={(e) => input.value = e.target.value}
+                placeholder="What needs to be done?"
+            />
+            <button onclick={add_todo}>Add</button>
+        </div>
+        <ul>
+            {todos.value.map((todo) =>
+                <li>
+                    <input
+                        type="checkbox"
+                        checked={todo.completed}
+                        onchange={() => toggle(todo.id)}
+                    />
+                    <span>{todo.text}</span>
+                </li>
+            )}
+        </ul>
+    </div>;
+}
 ```
+
+---
 
 ## Troubleshooting
 
-### "Compilation failed: Parse error"
-
-Check your syntax. Common issues:
-- Missing semicolons
-- Unmatched braces
-- Invalid annotation placement
-
 ### "RPC call failed: Network error"
 
-Ensure your server is running:
+**Problem**: Server not running or wrong port.
+
+**Solution**: Ensure server is running:
 ```bash
 cd dist && node server.js
 ```
 
+### "Type mismatch in RPC response"
+
+**Problem**: Server returned different type than expected.
+
+**Solution**: Ensure types match on both sides. Check server logs.
+
 ### "Function not found"
 
-Make sure `@server` functions are compiled and the server is restarted after changes.
+**Problem**: @server function not compiled or server not restarted.
 
-### "Type mismatch"
+**Solution**: Recompile and restart server:
+```bash
+jnc compile main.jnc
+cd dist && node server.js
+```
 
-Check that client and server agree on types. Recompile after changing function signatures.
+---
 
-## Next Steps
+## What's Next?
 
-- Explore the [examples/](/examples) directory for sample applications
-- Read the [API Documentation](/docs/api.md)
-- Join the [Jounce community](https://github.com/jounce)
-- Report issues on [GitHub](https://github.com/jounce/jounce/issues)
+- **Complete Tutorial**: See [LEARN_JOUNCE.md](./LEARN_JOUNCE.md) for practical examples
+- **Technical Details**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for execution model
+- **Quick Start**: See [README.md](../../README.md) for getting started
 
-## Summary
+---
 
-Jounce's full-stack compilation makes it easy to build modern web applications:
+**Version**: v0.8.3 "Enhanced Language Features"
+**Status**: ✅ Production Ready (580/580 tests passing)
+**@server/RPC**: ✅ Fully Implemented (v0.1.0+)
 
-✅ Write server and client code in one file
-✅ Automatic RPC generation
-✅ Type-safe communication
-✅ Code splitting and optimization
-✅ Production-ready builds
+---
 
-Happy coding! 🚀
+**Maintained by: The Jounce Project**

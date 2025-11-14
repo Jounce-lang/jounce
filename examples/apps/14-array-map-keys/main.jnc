@@ -2,7 +2,7 @@
 // Tests: Map with index parameter, key attribute
 
 component App() {
-    let items = createSignal(["Apple", "Banana", "Cherry"]);
+    let items = signal(["Apple", "Banana", "Cherry"]);
 
     <div class="app">
         <h1>Array Map Test</h1>

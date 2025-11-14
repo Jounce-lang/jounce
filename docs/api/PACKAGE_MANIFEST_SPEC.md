@@ -1,5 +1,7 @@
 # Jounce Package Manifest Specification
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Version**: 1.0.0
 **Format**: TOML
 **Filename**: `jounce.toml`

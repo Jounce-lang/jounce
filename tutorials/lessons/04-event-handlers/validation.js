@@ -15,7 +15,7 @@ export function validate(code) {
   const hasSet = cleanCode.includes('.set(');
 
   // Check for signal creation
-  const hasSignal = cleanCode.includes('createSignal');
+  const hasSignal = cleanCode.includes('signal');
 
   const passed = hasOnClick && hasLambda && hasSet && hasSignal;
 

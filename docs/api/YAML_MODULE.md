@@ -1,8 +1,16 @@
 # YAML Module API Reference
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
+**Version**: v0.8.3 "Enhanced Language Features"
+**Last Updated**: November 7, 2025
 **Module**: `yaml`
-**Status**: ✅ Fully Implemented (100% tests passing - 15/15 tests)
+**Status**: ✅ Production Ready
 **File**: `src/stdlib/yaml.rs` (551 lines)
+
+> **Full API Reference**: See [STDLIB_API_REFERENCE.md](../guides/STDLIB_API_REFERENCE.md) for all standard library functions
+> **Quick Start**: See [README.md](../../README.md) for installation
+> **Technical Reference**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for language specification
 
 ## Overview
 

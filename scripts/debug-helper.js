@@ -204,7 +204,7 @@ window.jnc = {
      * Enable verbose logging
      */
     enableVerboseLogging() {
-        localStorage.setItem('raven:debug', 'true');
+        localStorage.setItem('jounce:debug', 'true');
         console.log('✅ Verbose logging enabled');
     },
 
@@ -212,7 +212,7 @@ window.jnc = {
      * Disable verbose logging
      */
     disableVerboseLogging() {
-        localStorage.removeItem('raven:debug');
+        localStorage.removeItem('jounce:debug');
         console.log('✅ Verbose logging disabled');
     },
 
@@ -220,7 +220,7 @@ window.jnc = {
      * Check if verbose logging is enabled
      */
     isVerbose() {
-        return localStorage.getItem('raven:debug') === 'true';
+        return localStorage.getItem('jounce:debug') === 'true';
     },
 
     /**

@@ -1,9 +1,14 @@
 # Style System User Guide
 
-**Version**: Phase 13 (v0.5.0)
-**Last Updated**: October 24, 2025
+**Version**: v0.8.3 "Enhanced Language Features"
+**Last Updated**: November 7, 2025
+**Status**: ✅ Production Ready (580/580 tests passing)
 
 Welcome to the Jounce Style System! This guide will teach you how to style your components using Jounce's built-in CSS-in-Jounce syntax.
+
+> **Quick Start**: See [README.md](../../README.md) for installation
+> **Tutorials**: See [LEARN_JOUNCE.md](./LEARN_JOUNCE.md) for practical styling examples
+> **Technical Details**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for style system specification
 
 ---
 
@@ -14,11 +19,12 @@ Welcome to the Jounce Style System! This guide will teach you how to style your 
 3. [Theme Blocks](#theme-blocks)
 4. [Style Blocks](#style-blocks)
 5. [Nested Selectors](#nested-selectors)
-6. [Theme References](#theme-references)
-7. [Scoped Class Names](#scoped-class-names)
-8. [Complete Examples](#complete-examples)
-9. [Best Practices](#best-practices)
-10. [Troubleshooting](#troubleshooting)
+6. [Media Queries](#media-queries)
+7. [Theme References](#theme-references)
+8. [Scoped Class Names](#scoped-class-names)
+9. [Complete Examples](#complete-examples)
+10. [Best Practices](#best-practices)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -301,6 +307,110 @@ HTML usage:
 <button class="Button_707eab primary">Primary</button>
 <button class="Button_707eab danger large">Large Danger</button>
 ```
+
+---
+
+## Media Queries
+
+Jounce supports `@media` queries inside style blocks for responsive design. Media queries inherit the component's scoped class, keeping styles isolated.
+
+### Basic Usage
+
+```jounce
+style Panel {
+    .container {
+        padding: 20px;
+        background: #f0f0f0;
+    }
+
+    @media (max-width: 600px) {
+        .container {
+            padding: 10px;
+        }
+    }
+
+    @media (min-width: 1200px) {
+        .container {
+            padding: 30px;
+            background: #ffffff;
+        }
+    }
+}
+```
+
+### Generated CSS
+
+The compiler generates scoped CSS with media queries:
+
+```css
+.Panel_d0d911 .container {
+  padding: 20px;
+  background: #f0f0f0;
+}
+
+@media (max-width: 600px) {
+  .Panel_d0d911 .container {
+    padding: 10px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .Panel_d0d911 .container {
+    padding: 30px;
+    background: #ffffff;
+  }
+}
+```
+
+### Complex Example
+
+```jounce
+style Dashboard {
+    .sidebar {
+        width: 250px;
+        display: block;
+    }
+
+    .content {
+        margin-left: 250px;
+    }
+
+    @media (max-width: 768px) {
+        .sidebar {
+            width: 100%;
+            display: none;
+        }
+
+        .content {
+            margin-left: 0;
+        }
+    }
+
+    @media (min-width: 1400px) {
+        .sidebar {
+            width: 300px;
+        }
+
+        .content {
+            margin-left: 300px;
+        }
+    }
+}
+```
+
+### Supported Conditions
+
+Use any valid CSS media query condition:
+
+- **Width/Height**: `(max-width: 768px)`, `(min-width: 1200px)`
+- **Orientation**: `(orientation: portrait)`, `(orientation: landscape)`
+- **Resolution**: `(min-resolution: 2dppx)`
+- **Combined**: `(max-width: 768px) and (orientation: portrait)`
+
+### Limitations
+
+- Media queries must be at the top level of a style block (not nested inside selectors)
+- Nested media queries (media inside media) are not supported
 
 ---
 
@@ -668,13 +778,34 @@ Keep component names stable!
 
 ---
 
-## Next Steps
+## What's Next?
 
-- **API Reference**: Complete syntax reference for all features
-- **Migration Guide**: Add styles to existing apps
-- **Examples**: See `/examples/styled-*` for complete apps
+- **Practical Tutorials**: See [LEARN_JOUNCE.md](./LEARN_JOUNCE.md) for styling tutorials
+- **API Reference**: See [STYLE_SYSTEM_API.md](../api/STYLE_SYSTEM_API.md) for complete syntax reference
+- **Technical Spec**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for style system implementation
+- **Quick Start**: See [README.md](../../README.md) for installation and getting started
 
 ---
 
-**Phase 13 Complete!** 🎉
-You now have a complete style system for building beautiful Jounce apps.
+**Version**: v0.8.3 "Enhanced Language Features"
+**Status**: ✅ Production Ready (580/580 tests passing)
+
+**Style System Features** (Stable since v0.5.0):
+- ✅ Scoped class names with hash generation
+- ✅ Theme blocks with CSS custom properties
+- ✅ Nested selectors (child combinators, pseudo-classes)
+- ✅ Compile-time theme reference checking
+- ✅ Zero runtime overhead
+- ✅ Standard CSS output
+
+**v0.8.3 Advanced Features**:
+- Child combinators (`> .item`)
+- Pseudo-classes (`&:hover`, `&:focus`, `&:active`)
+- Pseudo-elements (`&::before`, `&::after`)
+- Sibling selectors (`+ .next`, `~ .sibling`)
+
+You now have a complete style system for building beautiful Jounce apps!
+
+---
+
+**Maintained by: The Jounce Project**

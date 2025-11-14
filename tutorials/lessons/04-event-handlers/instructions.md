@@ -63,7 +63,7 @@ onClick={() => {
 To change a signal's value, use `.set()`:
 
 ```jounce
-let count = createSignal(0);
+let count = signal(0);
 
 // Read the value
 let current = count.value;    // 0
@@ -128,7 +128,7 @@ After completing this lesson, try:
 → Make sure you added `onClick={() => ...}` to the button
 
 **Error: count.set is not a function**
-→ You need to create the signal first: `let count = createSignal(0);`
+→ You need to create the signal first: `let count = signal(0);`
 
 **Count doesn't update in UI**
 → Make sure you're using `{count.value}` in the JSX

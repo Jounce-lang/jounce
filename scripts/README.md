@@ -248,4 +248,4 @@ echo "Running script..."
 
 ---
 
-**Last Updated**: October 31, 2025 (v0.8.1)
+**Last Updated**: November 7, 2025 (v0.8.3)

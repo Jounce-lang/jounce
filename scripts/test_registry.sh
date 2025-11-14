@@ -3,9 +3,9 @@
 
 set -e
 
-RAVEN="./target/release/raven"
+JNC="./target/release/jnc"
 
-echo "=== RavensOne Registry End-to-End Test ==="
+echo "=== Jounce Registry End-to-End Test ==="
 echo
 
 # Test 1: Check server health
@@ -50,7 +50,7 @@ echo
 
 # Test 4: Search (empty registry)
 echo "✅ Test 4: Testing search endpoint..."
-SEARCH_RESPONSE=$(curl -s "http://localhost:4000/api/v1/search?q=raven&limit=10")
+SEARCH_RESPONSE=$(curl -s "http://localhost:4000/api/v1/search?q=jounce&limit=10")
 echo "   Response: $SEARCH_RESPONSE"
 echo "   ✓ Search endpoint working"
 echo

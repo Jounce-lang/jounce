@@ -274,8 +274,8 @@ component CRMDashboard() {
                         <div class="deal-actions">
                             {deal.status == "open" ? (
                                 <div>
-                                    <button onClick={() => markWon(deal.id)}>Mark Won</button>
-                                    <button onClick={() => markLost(deal.id)}>Mark Lost</button>
+                                    <button onclick={() => markWon(deal.id)}>Mark Won</button>
+                                    <button onclick={() => markLost(deal.id)}>Mark Lost</button>
                                 </div>
                             ) : null}
                         </div>

@@ -1,5 +1,7 @@
 # Sprint 7 Work Log - Critical Parser & Lexer Fixes
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-21
 **Status**: 🟡 In Progress
 **Sprint Goal**: Fix 3 critical compilation blockers preventing example apps from running

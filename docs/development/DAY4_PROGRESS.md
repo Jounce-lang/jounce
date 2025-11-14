@@ -1,4 +1,7 @@
 # Day 4 Progress Report
+
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-21
 **Phase**: 1.3 - Final Warning Cleanup (Optional)
 **Status**: ✅ COMPLETE

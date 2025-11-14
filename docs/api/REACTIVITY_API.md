@@ -1,10 +1,17 @@
-# Jounce v0.4.0 Reactive - API Reference
+# Jounce Reactive - API Reference
 
-**Version**: v0.4.0 "Reactive"
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
+**Version**: v0.8.3 "Enhanced Language Features"
+**Last Updated**: November 7, 2025
 **Module**: Core Reactivity
-**Status**: Stable
+**Status**: ✅ Production Ready (Stable since v0.4.0)
 
 Complete API reference for Jounce's reactivity system.
+
+> **User Guide**: See [REACTIVITY_USER_GUIDE.md](../guides/REACTIVITY_USER_GUIDE.md) for tutorials and examples
+> **Quick Start**: See [README.md](../../README.md) for installation
+> **Technical Reference**: See [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md) for language specification
 
 ---
 

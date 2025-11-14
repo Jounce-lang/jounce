@@ -2,9 +2,9 @@
 // Tests: Multiple inputs, arrays, array methods
 
 component App() {
-    let email = createSignal("");
-    let password = createSignal("");
-    let errors = createSignal([]);
+    let email = signal("");
+    let password = signal("");
+    let errors = signal([]);
 
     <div class="app">
         <h1>Form Validation Test</h1>
@@ -14,14 +14,14 @@ component App() {
                 type="email" 
                 placeholder="Email"
                 value={email.value} 
-                onInput={(e) => email.set(e.target.value)} 
+                oninput={(e) => email.set(e.target.value)} 
             />
 
             <input 
                 type="password" 
                 placeholder="Password (8+ chars)"
                 value={password.value} 
-                onInput={(e) => password.set(e.target.value)} 
+                oninput={(e) => password.set(e.target.value)} 
             />
 
             <p>Email: {email.value}</p>

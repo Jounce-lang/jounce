@@ -243,21 +243,41 @@ impl ModuleLoader {
     fn extract_exports(&self, program: &Program) -> Result<HashMap<String, ExportedSymbol>, CompileError> {
         let mut exports = HashMap::new();
 
+        // First pass: check if ANY item has explicit pub visibility
+        let has_any_pub = program.statements.iter().any(|stmt| {
+            match stmt {
+                Statement::Function(f) => f.is_public,
+                Statement::Struct(s) => s.is_public,
+                Statement::Enum(e) => e.is_public,
+                Statement::Const(c) => c.is_public,
+                _ => false,
+            }
+        });
+
+        // Second pass: export items based on pub visibility
         for statement in &program.statements {
             match statement {
                 Statement::Function(func) => {
-                    // In Jounce, all top-level functions are currently exported
-                    // TODO: Add explicit `pub` keyword support
-                    exports.insert(func.name.value.clone(), ExportedSymbol::Function(func.clone()));
+                    // If ANY item has pub, only export pub items
+                    // Otherwise, export all (backward compatibility)
+                    if !has_any_pub || func.is_public {
+                        exports.insert(func.name.value.clone(), ExportedSymbol::Function(func.clone()));
+                    }
                 }
                 Statement::Struct(struct_def) => {
-                    exports.insert(struct_def.name.value.clone(), ExportedSymbol::Struct(struct_def.clone()));
+                    if !has_any_pub || struct_def.is_public {
+                        exports.insert(struct_def.name.value.clone(), ExportedSymbol::Struct(struct_def.clone()));
+                    }
                 }
                 Statement::Enum(enum_def) => {
-                    exports.insert(enum_def.name.value.clone(), ExportedSymbol::Enum(enum_def.clone()));
+                    if !has_any_pub || enum_def.is_public {
+                        exports.insert(enum_def.name.value.clone(), ExportedSymbol::Enum(enum_def.clone()));
+                    }
                 }
                 Statement::Const(const_decl) => {
-                    exports.insert(const_decl.name.value.clone(), ExportedSymbol::Const(const_decl.clone()));
+                    if !has_any_pub || const_decl.is_public {
+                        exports.insert(const_decl.name.value.clone(), ExportedSymbol::Const(const_decl.clone()));
+                    }
                 }
                 // TODO: Handle type aliases
                 _ => {}
@@ -352,39 +372,54 @@ impl ModuleLoader {
             imported_files.push(module.file_path.clone());
 
             // Determine which symbols to import
+            // Returns tuples of (local_name, export) where local_name is the alias if provided, otherwise the original name
             let symbols_to_import: Vec<(String, ExportedSymbol)> = if use_stmt.is_glob || use_stmt.imports.is_empty() {
-                // Glob import (use foo::*) - import all exports
+                // Glob import (use foo::*) - import all exports (no aliasing for glob imports)
                 module.exports.clone().into_iter().collect()
             } else {
-                // Selective import (use foo::{A, B}) - only import specified symbols
+                // Selective import (use foo::{A, B}) or (use foo::{A as AliasA})
                 use_stmt.imports.iter()
-                    .filter_map(|ident| {
-                        let name = ident.value.clone();
-                        module.exports.get(&name)
-                            .map(|export| (name, export.clone()))
+                    .filter_map(|import_item| {
+                        let original_name = import_item.name.value.clone();
+                        // Use alias if provided, otherwise use original name
+                        let local_name = import_item.alias.as_ref()
+                            .map(|alias| alias.value.clone())
+                            .unwrap_or_else(|| original_name.clone());
+
+                        module.exports.get(&original_name)
+                            .map(|export| (local_name, export.clone()))
                     })
                     .collect()
             };
 
             // Add each imported symbol to the collection
-            for (symbol_name, export) in symbols_to_import {
+            for (local_name, export) in symbols_to_import {
                 // Skip if already imported
-                if imported_symbols.contains_key(&symbol_name) {
+                if imported_symbols.contains_key(&local_name) {
                     continue;
                 }
 
                 // Add the definition to the collection based on symbol type
+                // If the local_name is different from the original name, we need to rename the item
                 let statement = match export {
-                    ExportedSymbol::Function(func) => {
+                    ExportedSymbol::Function(mut func) => {
+                        // Rename function if aliased
+                        func.name.value = local_name.clone();
                         Some(Statement::Function(func))
                     }
-                    ExportedSymbol::Struct(struct_def) => {
+                    ExportedSymbol::Struct(mut struct_def) => {
+                        // Rename struct if aliased
+                        struct_def.name.value = local_name.clone();
                         Some(Statement::Struct(struct_def))
                     }
-                    ExportedSymbol::Enum(enum_def) => {
+                    ExportedSymbol::Enum(mut enum_def) => {
+                        // Rename enum if aliased
+                        enum_def.name.value = local_name.clone();
                         Some(Statement::Enum(enum_def))
                     }
-                    ExportedSymbol::Const(const_decl) => {
+                    ExportedSymbol::Const(mut const_decl) => {
+                        // Rename const if aliased
+                        const_decl.name.value = local_name.clone();
                         Some(Statement::Const(const_decl))
                     }
                     ExportedSymbol::Type(_) => {
@@ -398,7 +433,7 @@ impl ModuleLoader {
                     statements_to_insert.push(stmt);
                 }
 
-                imported_symbols.insert(symbol_name, true);
+                imported_symbols.insert(local_name, true);
             }
         }
 

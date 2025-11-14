@@ -4,25 +4,25 @@ component TestIncrement() {
     return <div>
         <h1>Test Increment/Decrement Operators</h1>
 
-        <button onClick={() => {
+        <button onclick={() => {
             let x = 0;
             x++;  // Postfix increment
             console.log("x after x++:", x);
         }}>Test x++</button>
 
-        <button onClick={() => {
+        <button onclick={() => {
             let y = 10;
             y--;  // Postfix decrement
             console.log("y after y--:", y);
         }}>Test y--</button>
 
-        <button onClick={() => {
+        <button onclick={() => {
             let a = 5;
             ++a;  // Prefix increment
             console.log("a after ++a:", a);
         }}>Test ++a</button>
 
-        <button onClick={() => {
+        <button onclick={() => {
             let b = 5;
             --b;  // Prefix decrement
             console.log("b after --b:", b);

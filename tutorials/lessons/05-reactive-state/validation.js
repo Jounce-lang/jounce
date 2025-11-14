@@ -15,7 +15,7 @@ export function validate(code) {
   const hasDoubledValue = cleanCode.includes('doubled.value');
 
   // Check for signal
-  const hasSignal = cleanCode.includes('createSignal');
+  const hasSignal = cleanCode.includes('signal');
 
   const passed = hasComputed && hasComputedLambda && hasDoubledValue && hasSignal;
 

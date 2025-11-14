@@ -1,5 +1,7 @@
 # Jounce Test Framework Design
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Phase 9 Sprint 2 - Developer Tools Enhancement**
 
 ## Overview

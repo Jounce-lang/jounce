@@ -1,4 +1,7 @@
 # Repository Cleanup Plan
+
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-21
 **Purpose**: Consolidate documentation and clean up temporary files
 

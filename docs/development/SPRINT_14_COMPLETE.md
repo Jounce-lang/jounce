@@ -1,5 +1,7 @@
 # Sprint 14: Const Declarations & JSX Investigation - Complete ✅
 
+> **Note**: For authoritative language rules, see [JOUNCE_SPEC.md](../../JOUNCE_SPEC.md).
+
 **Date**: 2025-10-22
 **Duration**: ~2 hours
 **Sprint Goal**: Fix critical parsing issues blocking real-world applications
